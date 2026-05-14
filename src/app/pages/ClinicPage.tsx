@@ -3,6 +3,7 @@ import {
   ArrowRight,
   CalendarPlus,
   CheckCircle2,
+  Clock,
   MessageSquare,
   PhoneCall,
   Pill as PillIcon,
@@ -19,44 +20,15 @@ import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
 import { useApp } from '../AppContext';
 
-const doctors = [
-  {
-    id: 'rk',
-    name: 'Dr. Rohit Kapoor',
-    specialty: 'Men’s Health · Andrology',
-    years: '14 yrs',
-    available: 'Today · 6:30 PM',
-    rating: 4.9,
-    avatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 'ps',
-    name: 'Dr. Priya Shah',
-    specialty: 'Endocrinology · Metabolism',
-    years: '11 yrs',
-    available: 'Tomorrow · 11:00 AM',
-    rating: 4.8,
-    avatar: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&w=200&q=80',
-  },
-  {
-    id: 'as',
-    name: 'Dr. Arjun Sen',
-    specialty: 'Cardiology · Preventive',
-    years: '18 yrs',
-    available: 'Today · 9:15 PM',
-    rating: 5.0,
-    avatar: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&w=200&q=80',
-  },
-];
-
 export default function ClinicPage() {
   const { back } = useApp();
+
   return (
     <div className="min-h-screen pb-32 bg-canvas">
       <Header
         variant="page"
         title="The Clinic"
-        subtitle="Your private concierge"
+        subtitle="Book a consultation"
         hideDoc
         onBack={back}
       />
@@ -68,7 +40,10 @@ export default function ClinicPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
         >
-          <Card raised className="!bg-indigo-600 border-indigo-600 text-white !p-7 relative overflow-hidden">
+          <Card
+            raised
+            className="!bg-indigo-600 border-indigo-600 text-white !p-7 relative overflow-hidden"
+          >
             <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-gold-500/15 blur-2xl" />
             <Pill tone="gold" size="sm">
               <Sparkles size={10} /> Concierge access
@@ -76,11 +51,14 @@ export default function ClinicPage() {
             <h1 className="font-display text-[28px] leading-tight mt-3 text-balance">
               Talk to a doctor who actually
               <br />
-              <span className="font-display-italic text-gold-400">has time.</span>
+              <span className="font-display-italic text-gold-400">
+                has time.
+              </span>
             </h1>
             <p className="mt-3 text-[13.5px] text-indigo-100 text-pretty leading-relaxed">
-              Real consultations — 20 minutes, unhurried, with doctors trained
-              in men’s health. Bring your report, leave with a plan.
+              Real consultations — 20 minutes, unhurried, with senior
+              clinicians who read your report before the call. Bring your
+              questions, leave with a plan.
             </p>
 
             <div className="mt-5 grid grid-cols-3 gap-2">
@@ -98,12 +76,20 @@ export default function ClinicPage() {
             >
               Book a consultation
             </Button>
+
+            <div className="mt-4 flex items-center justify-center gap-2 text-[11.5px] text-indigo-100">
+              <span className="relative grid place-items-center w-3 h-3">
+                <span className="absolute inset-0 rounded-full bg-good/40 animate-ping" />
+                <span className="relative w-1.5 h-1.5 rounded-full bg-good" />
+              </span>
+              Next slot available today
+            </div>
           </Card>
         </motion.div>
       </Container>
 
       {/* Modes */}
-      <Container className="mt-7">
+      <Container className="mt-8">
         <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
           Choose your mode
         </div>
@@ -118,77 +104,51 @@ export default function ClinicPage() {
         </div>
       </Container>
 
-      {/* Doctors */}
+      {/* How it works */}
       <Container className="mt-8">
-        <div className="flex items-end justify-between">
-          <div>
-            <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
-              Available now
-            </div>
-            <h2 className="font-display text-[22px] leading-tight mt-1">
-              Doctors who get men
-            </h2>
-          </div>
-          <button className="text-[11px] font-bold uppercase tracking-[0.12em] text-indigo-700">
-            See all
-          </button>
+        <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
+          What happens
         </div>
+        <h2 className="font-display text-[22px] leading-tight mt-1">
+          Three calm steps
+        </h2>
 
-        <div className="mt-4 grid gap-3">
-          {doctors.map((d, i) => (
-            <motion.div
-              key={d.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: i * 0.05, duration: 0.35 }}
+        <Card padded={false} className="mt-4 overflow-hidden">
+          {[
+            {
+              num: '01',
+              title: 'Pick a time that fits you',
+              body: 'Same-day slots most days. Reschedule any time.',
+            },
+            {
+              num: '02',
+              title: 'Your doctor reads your report first',
+              body: 'No starting from scratch. They come prepared.',
+            },
+            {
+              num: '03',
+              title: 'You leave with a written plan',
+              body: 'Sent to your locker. Share with your GP if you want.',
+            },
+          ].map((row, i, arr) => (
+            <div
+              key={row.num}
+              className={`flex items-start gap-3 p-4 ${
+                i < arr.length - 1 ? 'border-b border-line/70' : ''
+              }`}
             >
-              <Card interactive>
-                <div className="flex items-start gap-3">
-                  <div className="relative shrink-0">
-                    <div className="w-14 h-14 rounded-2xl overflow-hidden bg-indigo-100">
-                      <img
-                        src={d.avatar}
-                        alt={d.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-                    <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-good ring-2 ring-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="font-semibold text-ink truncate">
-                        {d.name}
-                      </div>
-                      <Pill tone="gold" size="sm">
-                        {d.rating}★
-                      </Pill>
-                    </div>
-                    <div className="text-[12.5px] text-ink-soft mt-0.5">
-                      {d.specialty}
-                    </div>
-                    <div className="mt-2 flex items-center gap-2 flex-wrap">
-                      <Pill tone="neutral" size="sm">
-                        {d.years}
-                      </Pill>
-                      <Pill tone="indigo" size="sm" dot>
-                        {d.available}
-                      </Pill>
-                    </div>
-                  </div>
-                </div>
-                <div className="mt-3.5 flex gap-2">
-                  <Button size="sm" variant="primary" className="flex-1">
-                    Book
-                  </Button>
-                  <Button size="sm" variant="secondary" className="flex-1">
-                    View profile
-                  </Button>
-                </div>
-              </Card>
-            </motion.div>
+              <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 font-display text-[13px] shrink-0">
+                {row.num}
+              </div>
+              <div>
+                <div className="font-semibold text-[14px]">{row.title}</div>
+                <p className="text-[13px] text-ink-soft mt-1 leading-relaxed">
+                  {row.body}
+                </p>
+              </div>
+            </div>
           ))}
-        </div>
+        </Card>
       </Container>
 
       {/* Services */}
@@ -247,17 +207,20 @@ export default function ClinicPage() {
               <div className="font-display text-[16px] leading-tight">
                 The Digital Clinic promise
               </div>
-              <ul className="mt-2 grid gap-1.5">
+              <ul className="mt-2.5 grid gap-1.5">
                 {[
-                  'Doctors trained in men’s health, not generic GPs',
-                  'Real time, not a 4-minute rush',
-                  'Plain-English follow-ups, every time',
+                  'Senior clinicians, not a four-minute rush',
+                  'Your full report read before the call',
+                  'Plain-English written follow-up, every time',
                 ].map((line) => (
                   <li
                     key={line}
                     className="flex items-center gap-2 text-[13px] text-ink-soft"
                   >
-                    <CheckCircle2 size={14} className="text-good shrink-0" />
+                    <CheckCircle2
+                      size={14}
+                      className="text-good shrink-0"
+                    />
                     {line}
                   </li>
                 ))}
@@ -265,6 +228,19 @@ export default function ClinicPage() {
             </div>
           </div>
         </Card>
+      </Container>
+
+      {/* Pricing footnote */}
+      <Container className="mt-6">
+        <div className="flex items-center justify-between rounded-2xl bg-white border border-line px-4 py-3 shadow-soft">
+          <div className="flex items-center gap-2 text-[12.5px] text-ink-soft">
+            <Clock size={14} className="text-indigo-600" />
+            20-minute consult · ₹1,499
+          </div>
+          <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-700">
+            Cancel anytime
+          </span>
+        </div>
       </Container>
 
       <BottomNav />
@@ -295,14 +271,18 @@ function ModeCard({
     >
       <div
         className={`mx-auto grid place-items-center w-10 h-10 rounded-2xl mb-2 ${
-          featured ? 'bg-indigo-500/40 text-gold-300' : 'bg-indigo-50 text-indigo-700'
+          featured
+            ? 'bg-indigo-500/40 text-gold-300'
+            : 'bg-indigo-50 text-indigo-700'
         }`}
       >
         <Icon size={18} />
       </div>
       <div className="font-semibold text-[13px]">{label}</div>
       <div
-        className={`text-[11px] mt-0.5 ${featured ? 'text-indigo-100' : 'text-muted'}`}
+        className={`text-[11px] mt-0.5 ${
+          featured ? 'text-indigo-100' : 'text-muted'
+        }`}
       >
         {sub}
       </div>
