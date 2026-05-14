@@ -43,7 +43,7 @@ export default function ReportLockerPage() {
       />
 
       {isEmpty ? (
-        <Container className="pt-12">
+        <Container size="wide" className="pt-12">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -89,8 +89,20 @@ export default function ReportLockerPage() {
           </motion.div>
         </Container>
       ) : (
-        <Container className="pt-4">
-          <div className="grid gap-3">
+        <Container size="wide" className="pt-4 lg:pt-8">
+          <div className="hidden lg:block mb-6">
+            <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
+              Your locker
+            </div>
+            <h1 className="font-display text-[28px] lg:text-[34px] leading-tight mt-1">
+              All your reports, one place
+            </h1>
+            <p className="mt-2 text-[14px] text-ink-soft max-w-[44ch]">
+              {reports.length} report{reports.length === 1 ? '' : 's'} stored
+              securely. Tap any to see the full breakdown.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
             {reports.map((r, i) => {
               const summary =
                 r.status === 'ready' ? summarizeStatuses(r.biomarkers) : null;
@@ -108,6 +120,7 @@ export default function ReportLockerPage() {
                         ? navigate({ type: 'results', reportId: r.id })
                         : navigate({ type: 'processing' })
                     }
+                    className="h-full"
                   >
                     <div className="flex items-start gap-3">
                       <div className="grid place-items-center w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 shrink-0">
@@ -156,9 +169,9 @@ export default function ReportLockerPage() {
 
           <Button
             size="lg"
-            fullWidth
             variant="outline"
-            className="mt-6"
+            fullWidth
+            className="mt-6 lg:!w-auto"
             onClick={() => navigate({ type: 'upload' })}
             leading={<Upload size={16} />}
           >

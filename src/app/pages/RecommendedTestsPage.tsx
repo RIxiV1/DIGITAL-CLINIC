@@ -23,24 +23,26 @@ export default function RecommendedTestsPage() {
   const [expanded, setExpanded] = useState<string | null>(tests[0]?.id ?? null);
 
   return (
-    <div className="min-h-screen pb-32 bg-canvas">
+    <div className="min-h-screen pb-32 lg:pb-0 bg-canvas">
       <Header variant="page" title="Your recommended tests" />
 
-      <Container className="pt-5">
-        <Pill tone="gold" size="md">
-          <Sparkles size={11} />
-          Personalised for you
-        </Pill>
+      <Container size="wide" className="pt-5 lg:pt-10">
+        <div className="lg:max-w-3xl">
+          <Pill tone="gold" size="md">
+            <Sparkles size={11} />
+            Personalised for you
+          </Pill>
 
-        <h1 className="font-display text-[28px] leading-tight mt-3 text-balance">
-          Here’s what we’d test, given what you told us.
-        </h1>
-        <p className="mt-2 text-[14.5px] text-ink-soft text-pretty">
-          Tap any test to see <em>why</em> we picked it and <em>what</em>’s
-          actually measured.
-        </p>
+          <h1 className="font-display text-[28px] lg:text-[36px] leading-tight mt-3 text-balance">
+            Here’s what we’d test, given what you told us.
+          </h1>
+          <p className="mt-2 text-[14.5px] lg:text-[15.5px] text-ink-soft text-pretty">
+            Tap any test to see <em>why</em> we picked it and <em>what</em>’s
+            actually measured.
+          </p>
+        </div>
 
-        <div className="mt-7 grid gap-3">
+        <div className="mt-7 grid gap-3 lg:max-w-3xl">
           {tests.map((t, i) => {
             const open = expanded === t.id;
             return (
@@ -141,7 +143,7 @@ export default function RecommendedTestsPage() {
           })}
         </div>
 
-        <Card className="mt-8 bg-indigo-50 border-indigo-100">
+        <Card className="mt-8 bg-indigo-50 border-indigo-100 lg:max-w-3xl">
           <div className="font-semibold text-indigo-800">
             Already done your blood work?
           </div>
@@ -152,8 +154,8 @@ export default function RecommendedTestsPage() {
         </Card>
       </Container>
 
-      {/* Sticky CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-5 pb-5 safe-bottom">
+      {/* Sticky CTA — mobile only; desktop has top nav for navigation */}
+      <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-5 pb-5 safe-bottom">
         <Container>
           <Button
             size="lg"
@@ -165,6 +167,20 @@ export default function RecommendedTestsPage() {
           </Button>
         </Container>
       </div>
+
+      {/* Desktop CTA inline */}
+      <Container size="wide" className="hidden lg:block pb-12">
+        <div className="lg:max-w-3xl">
+          <Button
+            size="lg"
+            onClick={() => navigate({ type: 'home' })}
+            trailing={<ArrowRight size={18} />}
+            className="mt-6"
+          >
+            Go to my dashboard
+          </Button>
+        </div>
+      </Container>
     </div>
   );
 }

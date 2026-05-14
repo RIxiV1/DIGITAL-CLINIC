@@ -34,7 +34,7 @@ export default function ClinicPage() {
       />
 
       {/* Hero card */}
-      <Container className="pt-5">
+      <Container size="wide" className="pt-5">
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -42,54 +42,60 @@ export default function ClinicPage() {
         >
           <Card
             raised
-            className="!bg-indigo-600 border-indigo-600 text-white !p-7 relative overflow-hidden"
+            className="!bg-indigo-600 border-indigo-600 text-white !p-7 lg:!p-10 relative overflow-hidden"
           >
-            <div className="absolute -top-10 -right-10 w-44 h-44 rounded-full bg-gold-500/15 blur-2xl" />
-            <Pill tone="gold" size="sm">
-              <Sparkles size={10} /> Concierge access
-            </Pill>
-            <h1 className="font-display text-[28px] leading-tight mt-3 text-balance">
-              Talk to a doctor who actually
-              <br />
-              <span className="font-display-italic text-gold-400">
-                has time.
-              </span>
-            </h1>
-            <p className="mt-3 text-[13.5px] text-indigo-100 text-pretty leading-relaxed">
-              Real consultations — 20 minutes, unhurried, with senior
-              clinicians who read your report before the call. Bring your
-              questions, leave with a plan.
-            </p>
+            <div className="absolute -top-10 -right-10 w-44 h-44 lg:w-72 lg:h-72 rounded-full bg-gold-500/15 blur-2xl pointer-events-none" />
+            <div className="relative grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div>
+                <Pill tone="gold" size="sm">
+                  <Sparkles size={10} /> Concierge access
+                </Pill>
+                <h1 className="font-display text-[28px] lg:text-[40px] leading-tight mt-3 text-balance">
+                  Talk to a doctor who actually
+                  <br />
+                  <span className="font-display-italic text-gold-400">
+                    has time.
+                  </span>
+                </h1>
+                <p className="mt-3 lg:mt-4 text-[13.5px] lg:text-[15px] text-indigo-100 text-pretty leading-relaxed">
+                  Real consultations — 20 minutes, unhurried, with senior
+                  clinicians who read your report before the call. Bring your
+                  questions, leave with a plan.
+                </p>
+              </div>
 
-            <div className="mt-5 grid grid-cols-3 gap-2">
-              <ClinicStat label="Avg consult" value="20 min" />
-              <ClinicStat label="Rating" value="4.92★" />
-              <ClinicStat label="Follow-ups" value="Free" />
-            </div>
+              <div>
+                <div className="grid grid-cols-3 gap-2">
+                  <ClinicStat label="Avg consult" value="20 min" />
+                  <ClinicStat label="Rating" value="4.92★" />
+                  <ClinicStat label="Follow-ups" value="Free" />
+                </div>
 
-            <Button
-              size="lg"
-              variant="gold"
-              fullWidth
-              className="mt-6"
-              trailing={<ArrowRight size={18} />}
-            >
-              Book a consultation
-            </Button>
+                <Button
+                  size="lg"
+                  variant="gold"
+                  fullWidth
+                  className="mt-5"
+                  trailing={<ArrowRight size={18} />}
+                >
+                  Book a consultation
+                </Button>
 
-            <div className="mt-4 flex items-center justify-center gap-2 text-[11.5px] text-indigo-100">
-              <span className="relative grid place-items-center w-3 h-3">
-                <span className="absolute inset-0 rounded-full bg-good/40 animate-ping" />
-                <span className="relative w-1.5 h-1.5 rounded-full bg-good" />
-              </span>
-              Next slot available today
+                <div className="mt-4 flex items-center justify-center gap-2 text-[11.5px] text-indigo-100">
+                  <span className="relative grid place-items-center w-3 h-3">
+                    <span className="absolute inset-0 rounded-full bg-good/40 animate-ping" />
+                    <span className="relative w-1.5 h-1.5 rounded-full bg-good" />
+                  </span>
+                  Next slot available today
+                </div>
+              </div>
             </div>
           </Card>
         </motion.div>
       </Container>
 
       {/* Modes */}
-      <Container className="mt-8">
+      <Container size="wide" className="mt-8">
         <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
           Choose your mode
         </div>
@@ -105,7 +111,7 @@ export default function ClinicPage() {
       </Container>
 
       {/* How it works */}
-      <Container className="mt-8">
+      <Container size="wide" className="mt-8">
         <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
           What happens
         </div>
@@ -152,7 +158,7 @@ export default function ClinicPage() {
       </Container>
 
       {/* Services */}
-      <Container className="mt-8">
+      <Container size="wide" className="mt-8">
         <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
           Other services
         </div>
@@ -160,7 +166,7 @@ export default function ClinicPage() {
           Quietly, taken care of
         </h2>
 
-        <div className="mt-4 grid gap-3">
+        <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {[
             {
               Icon: PillIcon,
@@ -178,7 +184,7 @@ export default function ClinicPage() {
               body: 'Have a diagnosis? We’ll line up a senior specialist within 48 hours.',
             },
           ].map((s) => (
-            <Card key={s.title}>
+            <Card key={s.title} className="h-full">
               <div className="flex items-start gap-3">
                 <div className="grid place-items-center w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 shrink-0">
                   <s.Icon size={18} />
@@ -199,7 +205,7 @@ export default function ClinicPage() {
       </Container>
 
       {/* Promise */}
-      <Container className="mt-8">
+      <Container size="wide" className="mt-8">
         <Card className="!bg-white border-line">
           <div className="flex items-start gap-3">
             <div className="grid place-items-center w-10 h-10 rounded-2xl bg-good-soft text-good shrink-0">
@@ -233,7 +239,7 @@ export default function ClinicPage() {
       </Container>
 
       {/* Pricing footnote */}
-      <Container className="mt-6">
+      <Container size="wide" className="mt-6">
         <div className="flex items-center justify-between rounded-2xl bg-white border border-line px-4 py-3 shadow-soft">
           <div className="flex items-center gap-2 text-[12.5px] text-ink-soft">
             <Clock size={14} className="text-indigo-600" />

@@ -29,7 +29,7 @@ export default function ProblemDetailPage({
     return (
       <div className="min-h-screen bg-canvas">
         <Header variant="page" title="Not found" />
-        <Container className="pt-10 text-center">
+        <Container size="wide" className="pt-10 text-center">
           <p className="text-ink-soft">We couldn’t find that topic.</p>
           <Button className="mt-4" onClick={back}>
             Go back
@@ -48,19 +48,20 @@ export default function ProblemDetailPage({
       <Header variant="page" title="Deep dive" subtitle={p.title} />
 
       {/* Hero */}
-      <Container className="pt-5">
+      <Container size="wide" className="pt-5 lg:pt-10">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
+          className="lg:max-w-3xl"
         >
           <Pill tone="gold" size="md">
             Personalised for you
           </Pill>
-          <h1 className="font-display text-[30px] leading-tight mt-3 text-balance">
+          <h1 className="font-display text-[30px] lg:text-[40px] leading-tight mt-3 text-balance">
             {p.title}
           </h1>
-          <p className="mt-3 text-[15px] text-ink leading-relaxed text-pretty">
+          <p className="mt-3 lg:mt-4 text-[15px] lg:text-[17px] text-ink leading-relaxed text-pretty">
             {p.summary}
           </p>
         </motion.div>
@@ -68,8 +69,8 @@ export default function ProblemDetailPage({
 
       {/* Related markers visualisation */}
       {related.length > 0 && (
-        <Container className="mt-6">
-          <Card padded={false}>
+        <Container size="wide" className="mt-6">
+          <Card padded={false} className="lg:max-w-3xl">
             <div className="px-5 pt-5 pb-3 border-b border-line">
               <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-indigo-700">
                 Your numbers
@@ -88,8 +89,8 @@ export default function ProblemDetailPage({
       )}
 
       {/* What this means */}
-      <Container className="mt-6">
-        <Card>
+      <Container size="wide" className="mt-6">
+        <Card className="lg:max-w-3xl">
           <div className="flex items-start gap-3">
             <div className="grid place-items-center w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 shrink-0">
               <Info size={18} />
@@ -107,8 +108,8 @@ export default function ProblemDetailPage({
       </Container>
 
       {/* Why it matters */}
-      <Container className="mt-3">
-        <Card className="!bg-gold-50 border-gold-200">
+      <Container size="wide" className="mt-3">
+        <Card className="!bg-gold-50 border-gold-200 lg:max-w-3xl">
           <div className="flex items-start gap-3">
             <div className="grid place-items-center w-10 h-10 rounded-2xl bg-gold-500 text-indigo-900 shrink-0">
               <Lightbulb size={18} />
@@ -126,15 +127,17 @@ export default function ProblemDetailPage({
       </Container>
 
       {/* Action plan */}
-      <Container className="mt-7">
-        <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
-          Your action plan
+      <Container size="wide" className="mt-7 lg:mt-10">
+        <div className="lg:max-w-3xl">
+          <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
+            Your action plan
+          </div>
+          <h2 className="font-display text-[22px] lg:text-[28px] leading-tight mt-1">
+            Doable this month
+          </h2>
         </div>
-        <h2 className="font-display text-[22px] leading-tight mt-1">
-          Doable this month
-        </h2>
 
-        <div className="mt-4 grid gap-3">
+        <div className="mt-4 grid sm:grid-cols-2 gap-3 lg:max-w-3xl">
           {p.actions.map((a, i) => (
             <motion.div
               key={a.title}
@@ -165,8 +168,8 @@ export default function ProblemDetailPage({
       </Container>
 
       {/* Retest */}
-      <Container className="mt-6">
-        <Card className="!bg-indigo-600 border-indigo-600 text-white">
+      <Container size="wide" className="mt-6">
+        <Card className="!bg-indigo-600 border-indigo-600 text-white lg:max-w-3xl">
           <div className="flex items-start gap-3">
             <div className="grid place-items-center w-10 h-10 rounded-2xl bg-indigo-500/40 text-gold-300 shrink-0">
               <CalendarClock size={18} />
@@ -182,8 +185,8 @@ export default function ProblemDetailPage({
       </Container>
 
       {/* Talk to a doctor */}
-      <Container className="mt-4">
-        <Card>
+      <Container size="wide" className="mt-4">
+        <Card className="lg:max-w-3xl">
           <div className="flex items-start gap-3">
             <div className="grid place-items-center w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 shrink-0">
               <Stethoscope size={18} />
@@ -201,17 +204,24 @@ export default function ProblemDetailPage({
                 onClick={() => navigate({ type: 'clinic' })}
                 trailing={<ArrowRight size={14} />}
               >
-                Book a men’s health consult
+                Book a clinician consult
               </Button>
             </div>
           </div>
         </Card>
       </Container>
 
-      <Container className="mt-6">
-        <Button size="lg" fullWidth onClick={back}>
-          Back to my report
-        </Button>
+      <Container size="wide" className="mt-6 lg:mt-8 lg:pb-12">
+        <div className="lg:max-w-3xl">
+          <Button
+            size="lg"
+            fullWidth
+            onClick={back}
+            className="lg:!w-auto"
+          >
+            Back to my report
+          </Button>
+        </div>
       </Container>
     </div>
   );

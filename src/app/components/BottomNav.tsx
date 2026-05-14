@@ -38,7 +38,7 @@ export default function BottomNav() {
             : 'home';
 
   return (
-    <nav className="no-print sticky bottom-0 z-30 safe-bottom">
+    <nav className="lg:hidden no-print sticky bottom-0 z-30 safe-bottom">
       <div className="mx-auto max-w-md px-4 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
         <div className="bg-white/95 backdrop-blur rounded-full border border-line shadow-pop flex items-center p-1.5">
           {items.map(({ id, label, page: target, Icon }) => {
