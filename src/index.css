@@ -1,0 +1,264 @@
+@import "tailwindcss";
+
+@theme {
+  /* Deep Indigo — brand authority */
+  --color-indigo-50: #EEF0F7;
+  --color-indigo-100: #D9DDEE;
+  --color-indigo-200: #B4BCDF;
+  --color-indigo-300: #8E99CE;
+  --color-indigo-400: #5E6CB4;
+  --color-indigo-500: #4252A1;
+  --color-indigo-600: #2D3B8E;
+  --color-indigo-700: #232E73;
+  --color-indigo-800: #1A2358;
+  --color-indigo-900: #11173B;
+
+  /* Clinical Blue — Digital Clinic primary (deep, authoritative, calm) */
+  --color-blue-50: #EBF5FF;
+  --color-blue-100: #D6EBFF;
+  --color-blue-200: #ADD6FF;
+  --color-blue-300: #7AB8FF;
+  --color-blue-400: #3D95FF;
+  --color-blue-500: #0F7AEB;
+  --color-blue-600: #0066CC;
+  --color-blue-700: #0052A3;
+  --color-blue-800: #003D7A;
+  --color-blue-900: #002852;
+
+  /* Soft mint — fresh AI accent */
+  --color-mint-50: #ECFDF4;
+  --color-mint-100: #D5F8E5;
+  --color-mint-500: #15B97C;
+
+  /* Golden Yellow — premium accent */
+  --color-gold-50: #FFF9E5;
+  --color-gold-100: #FFF1BF;
+  --color-gold-200: #FFE48A;
+  --color-gold-300: #FFD66B;
+  --color-gold-400: #FFC73E;
+  --color-gold-500: #FFB800;
+  --color-gold-600: #E0A300;
+  --color-gold-700: #B88500;
+  --color-gold-800: #8A6500;
+
+  /* Neutrals */
+  --color-canvas: #F8F9FA;
+  --color-surface: #FFFFFF;
+  --color-ink: #0F1422;
+  --color-ink-soft: #2C3344;
+  --color-muted: #6B7280;
+  --color-line: #E5E7EB;
+  --color-line-strong: #D1D5DB;
+
+  /* Status */
+  --color-good: #16A34A;
+  --color-good-soft: #DCFCE7;
+  --color-attention: #D97706;
+  --color-attention-soft: #FEF3C7;
+  --color-concern: #DC2626;
+  --color-concern-soft: #FEE2E2;
+
+  /* Type system */
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+
+  /* Premium shadows */
+  --shadow-soft: 0 1px 1px rgba(15, 20, 34, 0.02),
+    0 6px 18px rgba(15, 20, 34, 0.05);
+  --shadow-pop: 0 4px 8px rgba(15, 20, 34, 0.04),
+    0 16px 36px rgba(15, 20, 34, 0.10);
+  --shadow-indigo: 0 8px 24px rgba(45, 59, 142, 0.22);
+  /* Ultra-subtle premium SaaS card shadow */
+  --shadow-clinical: 0 4px 30px rgba(0, 0, 0, 0.03);
+  --shadow-clinical-lg: 0 6px 40px rgba(0, 0, 0, 0.05),
+    0 1px 1px rgba(0, 0, 0, 0.02);
+  --shadow-blue: 0 10px 30px rgba(0, 102, 204, 0.18);
+
+  /* Radii */
+  --radius-card: 20px;
+  --radius-pill: 999px;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  background: var(--color-canvas);
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--color-ink);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: 'cv11', 'ss01', 'ss03';
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+    font-weight: 600;
+    letter-spacing: -0.015em;
+  }
+
+  .font-display-italic {
+    font-family: var(--font-display);
+    font-style: italic;
+    font-weight: 500;
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-pop {
+    box-shadow: var(--shadow-pop);
+  }
+
+  .shadow-indigo {
+    box-shadow: var(--shadow-indigo);
+  }
+
+  .shadow-clinical {
+    box-shadow: var(--shadow-clinical);
+  }
+
+  .shadow-clinical-lg {
+    box-shadow: var(--shadow-clinical-lg);
+  }
+
+  .shadow-blue {
+    box-shadow: var(--shadow-blue);
+  }
+
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .text-pretty {
+    text-wrap: pretty;
+  }
+
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom), 0px);
+  }
+
+  /* Gradient bars for biomarkers */
+  .gradient-bar-band {
+    background: linear-gradient(
+      90deg,
+      #DC2626 0%,
+      #F59E0B 22%,
+      #16A34A 45%,
+      #16A34A 55%,
+      #F59E0B 78%,
+      #DC2626 100%
+    );
+  }
+  .gradient-bar-up {
+    background: linear-gradient(
+      90deg,
+      #DC2626 0%,
+      #F59E0B 35%,
+      #16A34A 60%,
+      #16A34A 100%
+    );
+  }
+  .gradient-bar-down {
+    background: linear-gradient(
+      90deg,
+      #16A34A 0%,
+      #16A34A 40%,
+      #F59E0B 65%,
+      #DC2626 100%
+    );
+  }
+
+  /* Subtle dotted grid for premium hero */
+  .bg-dot-grid {
+    background-image: radial-gradient(
+      rgba(45, 59, 142, 0.08) 1px,
+      transparent 1px
+    );
+    background-size: 18px 18px;
+  }
+
+  /* Calm clinical-blue grid for the Digital Clinic landing hero */
+  .bg-hero-grid {
+    background-image:
+      radial-gradient(rgba(0, 102, 204, 0.07) 1px, transparent 1px),
+      linear-gradient(180deg, #EBF5FF 0%, #FFFFFF 78%);
+    background-size:
+      22px 22px,
+      100% 100%;
+  }
+
+  .bg-soft-blue-gradient {
+    background:
+      radial-gradient(
+        120% 70% at 50% 0%,
+        rgba(0, 102, 204, 0.06) 0%,
+        transparent 60%
+      ),
+      linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%);
+  }
+
+  .bg-cta-gradient {
+    background:
+      radial-gradient(60% 80% at 80% 20%, rgba(61, 149, 255, 0.30) 0%, transparent 60%),
+      radial-gradient(80% 100% at 0% 100%, rgba(21, 185, 124, 0.15) 0%, transparent 55%),
+      linear-gradient(135deg, #003D7A 0%, #0052A3 45%, #0066CC 100%);
+  }
+}
+
+/* Hide native spinners */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Selection */
+::selection {
+  background: var(--color-gold-200);
+  color: var(--color-ink);
+}
+
+/* Focus rings — premium calm */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(45, 59, 142, 0.18);
+}
+
+/* Print — Save as PDF flow */
+@media print {
+  @page {
+    margin: 16mm;
+  }
+  html,
+  body,
+  #root {
+    background: #fff !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .print-shadow-none {
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+  }
+}

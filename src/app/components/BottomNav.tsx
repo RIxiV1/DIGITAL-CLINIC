@@ -1,0 +1,76 @@
+import { House, ClipboardList, Stethoscope, User } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useApp, type Page } from '../AppContext';
+
+type ItemId = 'home' | 'quiz' | 'clinic' | 'profile';
+
+type Item = {
+  id: ItemId;
+  label: string;
+  page: Page;
+  Icon: React.ElementType;
+};
+
+const items: Item[] = [
+  { id: 'home', label: 'Home', page: { type: 'home' }, Icon: House },
+  { id: 'quiz', label: 'Quiz', page: { type: 'quiz' }, Icon: ClipboardList },
+  { id: 'clinic', label: 'Clinic', page: { type: 'clinic' }, Icon: Stethoscope },
+  { id: 'profile', label: 'Profile', page: { type: 'profile' }, Icon: User },
+];
+
+export default function BottomNav() {
+  const { page, navigate } = useApp();
+
+  const activeId: ItemId =
+    page.type === 'home' ||
+    page.type === 'locker' ||
+    page.type === 'upload' ||
+    page.type === 'processing' ||
+    page.type === 'results' ||
+    page.type === 'problem'
+      ? 'home'
+      : page.type === 'quiz' || page.type === 'recommendedTests'
+        ? 'quiz'
+        : page.type === 'clinic'
+          ? 'clinic'
+          : page.type === 'profile'
+            ? 'profile'
+            : 'home';
+
+  return (
+    <nav className="no-print sticky bottom-0 z-30 safe-bottom">
+      <div className="mx-auto max-w-md px-4 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
+        <div className="bg-white/95 backdrop-blur rounded-full border border-line shadow-pop flex items-center p-1.5">
+          {items.map(({ id, label, page: target, Icon }) => {
+            const active = activeId === id;
+            return (
+              <button
+                key={id}
+                onClick={() => navigate(target)}
+                className="relative flex-1 grid place-items-center"
+              >
+                <div className="relative flex flex-col items-center justify-center h-12 w-full">
+                  {active && (
+                    <motion.div
+                      layoutId="nav-pill"
+                      className="absolute inset-0 rounded-full bg-indigo-600"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  <div
+                    className={`relative flex flex-col items-center gap-0.5 ${
+                      active ? 'text-white' : 'text-muted'
+                    }`}
+                  >
+                    <Icon size={18} strokeWidth={active ? 2.4 : 2} />
+                    <span className="text-[10px] font-semibold">{label}</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </nav>
+  );
+}
