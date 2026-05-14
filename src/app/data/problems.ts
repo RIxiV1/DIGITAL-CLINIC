@@ -50,7 +50,7 @@ export const problems: Record<string, Problem> = {
     summary:
       'Your vitamin D is below the healthy range. Very common, very easy to fix — but worth taking seriously.',
     what:
-      'Vitamin D is more like a hormone than a vitamin. It’s involved in bone strength, immunity, mood, and hormone balance. Most Indian men are deficient because indoor work + sunscreen + skin tone = less natural production.',
+      'Vitamin D is more like a hormone than a vitamin. It’s involved in bone strength, immunity, mood, and hormone balance. Most people in India are deficient because indoor work + sunscreen + skin tone = less natural production.',
     whyMatters:
       'Persistent fatigue, low mood, frequent colds, muscle aches, and even low testosterone are all linked to low D. It’s often the single biggest lever for how you feel day-to-day.',
     actions: [
@@ -86,7 +86,7 @@ export const problems: Record<string, Problem> = {
     what:
       'LDL particles carry cholesterol from the liver to your cells. When there’s too much, they slip into the wall of arteries and start a slow process of plaque buildup — the root cause of most heart attacks.',
     whyMatters:
-      'Heart disease is the leading cause of death for Indian men. The earlier you lower LDL, the more years of artery health you stack up. Most of it is reversible with diet, movement, and sleep.',
+      'Heart disease is India’s leading cause of death. The earlier you lower LDL, the more years of artery health you stack up. Most of it is reversible with diet, movement, and sleep.',
     actions: [
       {
         title: 'Swap refined for whole grains',

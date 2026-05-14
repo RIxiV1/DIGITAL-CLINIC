@@ -23,7 +23,7 @@ export const allTests: RecommendedTest[] = [
         ? 'You flagged sexual health or low libido — testosterone and related hormones often sit behind it.'
         : q.priorities.includes('muscle') || q.priorities.includes('energy')
           ? 'Energy and muscle response are closely tied to testosterone and thyroid hormones.'
-          : 'A baseline hormone picture is the single most useful test for men over 30.',
+          : 'A baseline hormone picture is one of the most useful tests anyone can run from their 30s onward.',
     includes: [
       { name: 'Total Testosterone', about: 'Your primary male hormone — drives energy, libido, muscle.' },
       { name: 'Free Testosterone', about: 'The portion of testosterone your body can actually use.' },
@@ -64,7 +64,7 @@ export const allTests: RecommendedTest[] = [
     whyTemplate: (q) =>
       q.priorities.includes('heart') || q.priorities.includes('longevity')
         ? 'You picked heart or longevity as a priority. This is the standard panel cardiologists use.'
-        : 'Heart disease is the #1 killer of Indian men. Worth checking yearly from 30.',
+        : 'Heart disease is India’s #1 cause of death. Worth checking yearly from 30.',
     includes: [
       { name: 'Total Cholesterol', about: 'All the cholesterol in your blood combined.' },
       { name: 'LDL', about: '“Bad” cholesterol — the type that builds up in artery walls.' },
@@ -103,7 +103,7 @@ export const allTests: RecommendedTest[] = [
     whyTemplate: (q) =>
       q.symptoms.includes('low-energy') || q.symptoms.includes('foggy-mind')
         ? 'Low energy and foggy mind are most often a vitamin D or B12 deficiency.'
-        : 'Vitamin D deficiency is near-universal in Indian men. Cheap to test, easy to fix.',
+        : 'Vitamin D deficiency is near-universal in India. Cheap to test, easy to fix.',
     includes: [
       { name: 'Vitamin D (25-OH)', about: 'Drives bone, mood, and immune function.' },
       { name: 'Vitamin B12', about: 'Fuels nerves and clear thinking.' },

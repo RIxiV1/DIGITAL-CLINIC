@@ -47,7 +47,9 @@ export default function BottomNav() {
               <button
                 key={id}
                 onClick={() => navigate(target)}
-                className="relative flex-1 grid place-items-center"
+                aria-label={label}
+                aria-current={active ? 'page' : undefined}
+                className="relative flex-1 grid place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-full"
               >
                 <div className="relative flex flex-col items-center justify-center h-12 w-full">
                   {active && (
