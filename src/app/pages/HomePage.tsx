@@ -344,7 +344,7 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05, duration: 0.35 }}
                 >
-                  <Card interactive>
+                  <Card>
                     <Pill tone="indigo" size="sm">
                       {priorityLabels.get(id)}
                     </Pill>

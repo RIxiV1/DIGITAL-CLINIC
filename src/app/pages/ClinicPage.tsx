@@ -178,7 +178,7 @@ export default function ClinicPage() {
               body: 'Have a diagnosis? We’ll line up a senior specialist within 48 hours.',
             },
           ].map((s) => (
-            <Card key={s.title} interactive>
+            <Card key={s.title}>
               <div className="flex items-start gap-3">
                 <div className="grid place-items-center w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 shrink-0">
                   <s.Icon size={18} />
@@ -189,7 +189,9 @@ export default function ClinicPage() {
                     {s.body}
                   </p>
                 </div>
-                <ArrowRight size={16} className="text-muted shrink-0 mt-1" />
+                <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-[10px] font-bold uppercase tracking-[0.1em] text-muted shrink-0 mt-1">
+                  Soon
+                </span>
               </div>
             </Card>
           ))}

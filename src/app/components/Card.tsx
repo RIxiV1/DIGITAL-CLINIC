@@ -20,21 +20,25 @@ export default function Card({
 
   if (interactive) {
     const handleClick = rest.onClick;
+    const isButton = typeof handleClick === 'function';
     return (
       <motion.div
         whileHover={{ y: -2, boxShadow: 'var(--shadow-pop)' }}
         transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-        className={`${base} cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60`}
+        className={`${base} ${isButton ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60' : ''}`}
         {...(rest as any)}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e: KeyboardEvent<HTMLDivElement>) => {
-          if (!handleClick) return;
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            (e.currentTarget as HTMLDivElement).click();
-          }
-        }}
+        role={isButton ? 'button' : undefined}
+        tabIndex={isButton ? 0 : undefined}
+        onKeyDown={
+          isButton
+            ? (e: KeyboardEvent<HTMLDivElement>) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  (e.currentTarget as HTMLDivElement).click();
+                }
+              }
+            : undefined
+        }
       >
         {children}
       </motion.div>
