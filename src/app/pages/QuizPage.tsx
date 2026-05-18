@@ -141,25 +141,35 @@ export default function QuizPage() {
           })}
         </div>
 
-        <div className="mt-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em]">
-          <span className="text-indigo-700">{step.sectionLabel}</span>
-          <span className="text-muted">
-            Step {stepIndex + 1} of {totalQuizSteps} · {Math.round(progress)}%
-          </span>
+        {/* Progress strip — step counter only. Section label is now inside the
+            animated block so it crossfades with the question instead of
+            updating instantly while the old title is still visible. */}
+        <div className="mt-3 flex items-center justify-end text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+          Step {stepIndex + 1} of {totalQuizSteps} · {Math.round(progress)}%
         </div>
       </Container>
 
       {/* Step content */}
-      <Container className="mt-8">
+      <Container className="mt-6">
         <AnimatePresence custom={direction} mode="wait">
           <motion.div
             key={step.id}
             custom={direction}
-            initial={{ opacity: 0, x: direction === 1 ? 24 : -24 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: direction === 1 ? -24 : 24 }}
-            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            initial={{ opacity: 0, x: direction === 1 ? 18 : -18 }}
+            animate={{
+              opacity: 1,
+              x: 0,
+              transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
+            }}
+            exit={{
+              opacity: 0,
+              x: direction === 1 ? -12 : 12,
+              transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
+            }}
           >
+            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-700 mb-2">
+              {step.sectionLabel}
+            </div>
             <h1 className="font-display text-[30px] leading-tight text-balance">
               {step.title}
             </h1>

@@ -152,19 +152,32 @@ export default function HomePage() {
                     has the full read.
                   </p>
                 )}
-                <Button
-                  variant="gold"
-                  size="md"
-                  className="mt-5 w-full lg:w-auto"
-                  onClick={() =>
-                    ready
-                      ? navigate({ type: 'results', reportId: ready.id })
-                      : navigate({ type: 'upload' })
-                  }
-                  trailing={<ArrowRight size={16} />}
-                >
-                  {ready ? 'See full breakdown' : 'Upload a report'}
-                </Button>
+                <div className="mt-5 flex flex-col sm:flex-row gap-2.5 lg:items-center">
+                  <Button
+                    variant="gold"
+                    size="md"
+                    className="w-full sm:w-auto"
+                    onClick={() =>
+                      ready
+                        ? navigate({ type: 'results', reportId: ready.id })
+                        : navigate({ type: 'upload' })
+                    }
+                    trailing={<ArrowRight size={16} />}
+                  >
+                    {ready ? 'See full breakdown' : 'Upload a report'}
+                  </Button>
+                  {!ready && reports.length === 0 && (
+                    <button
+                      onClick={() =>
+                        navigate({ type: 'results', reportId: 'rep-001' })
+                      }
+                      className="inline-flex items-center justify-center gap-1 px-2 text-[13px] font-semibold text-indigo-100 hover:text-white transition-colors"
+                    >
+                      Or see a sample report
+                      <ArrowRight size={14} />
+                    </button>
+                  )}
+                </div>
               </div>
 
               {/* Right: score + tiles */}
@@ -233,21 +246,38 @@ export default function HomePage() {
 
               <div className="mt-4 grid sm:grid-cols-2 gap-3">
                 {reports.length === 0 ? (
-                  <Card className="text-center !py-8 sm:col-span-2">
-                    <div className="font-display text-[18px]">
+                  <Card className="text-center !py-10 sm:col-span-2">
+                    <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 mb-3">
+                      <FileText size={20} />
+                    </div>
+                    <div className="font-display text-[20px]">
                       No reports yet.
                     </div>
-                    <p className="text-[13px] text-ink-soft mt-1">
-                      Drop your first report here — we’ll handle the rest.
+                    <p className="text-[13.5px] text-ink-soft mt-1.5 max-w-sm mx-auto leading-relaxed">
+                      Drop a report and we’ll translate it into plain English —
+                      or open the sample first to see exactly what you’ll get.
                     </p>
-                    <Button
-                      size="md"
-                      className="mt-4"
-                      onClick={() => navigate({ type: 'upload' })}
-                      leading={<Upload size={14} />}
-                    >
-                      Upload report
-                    </Button>
+                    <div className="mt-5 flex flex-col sm:flex-row gap-2.5 justify-center">
+                      <Button
+                        size="md"
+                        onClick={() => navigate({ type: 'upload' })}
+                        leading={<Upload size={14} />}
+                      >
+                        Upload a report
+                      </Button>
+                      <Button
+                        size="md"
+                        variant="secondary"
+                        onClick={() =>
+                          navigate({
+                            type: 'results',
+                            reportId: 'rep-001',
+                          })
+                        }
+                      >
+                        Try a sample
+                      </Button>
+                    </div>
                   </Card>
                 ) : (
                   reports.map((r, i) => {

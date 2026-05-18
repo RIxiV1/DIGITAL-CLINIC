@@ -115,7 +115,7 @@ function TopNav({
             onClick={onSample}
             className="hidden md:inline-flex items-center h-10 px-4 rounded-full text-[13px] font-semibold text-ink-soft hover:text-ink hover:bg-blue-50 transition-colors"
           >
-            See a sample
+            See a sample report
           </button>
           <button
             onClick={onStart}
@@ -969,9 +969,9 @@ function WhatYoullGet({ onSample }: { onSample: () => void }) {
                   </div>
                   <button
                     onClick={onSample}
-                    className="hidden sm:inline-flex items-center gap-1 h-8 px-3 rounded-full bg-blue-50 text-blue-700 text-[12px] font-semibold hover:bg-blue-100"
+                    className="hidden sm:inline-flex items-center gap-1 h-8 px-3 rounded-full bg-blue-50 text-blue-700 text-[12px] font-semibold hover:bg-blue-100 whitespace-nowrap"
                   >
-                    Sample <ChevronRight size={12} />
+                    See a sample report <ChevronRight size={12} />
                   </button>
                 </div>
               </div>
@@ -1355,7 +1355,7 @@ function Footer({ onSample }: { onSample: () => void }) {
             </li>
             <li>
               <button onClick={onSample} className="hover:text-ink">
-                Sample report
+                See a sample report
               </button>
             </li>
           </ul>
