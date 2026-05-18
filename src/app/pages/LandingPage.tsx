@@ -1,4 +1,4 @@
-import { Fragment, type ReactNode } from 'react';
+import { type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -393,7 +393,7 @@ function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
 
 function CascadeBig() {
   return (
-    <div className="mx-auto w-full max-w-[460px]">
+    <div className="mx-auto w-full max-w-[480px]">
       <span className="sr-only">
         The HPG axis: the hypothalamus secretes GnRH, which signals the
         pituitary gland to release LH and FSH, which prompts the testes to
@@ -403,47 +403,71 @@ function CascadeBig() {
         fog.
       </span>
 
-      {/* Axis title */}
-      <div className="text-center mb-5">
-        <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] font-bold text-blue-700">
-          <FlaskConical size={11} />
-          The HPG axis
+      {/* Axis title strip */}
+      <div className="flex items-center gap-3 mb-7">
+        <div className="grid place-items-center w-8 h-8 rounded-xl bg-blue-600 text-white shrink-0 shadow-clinical">
+          <FlaskConical size={14} />
         </div>
-        <div className="mt-1 text-[11.5px] text-muted">
-          Three stations. One signal chain.
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-blue-700">
+            The HPG axis
+          </div>
+          <div className="text-[12.5px] text-ink-soft font-medium">
+            Three glands. One signal chain.
+          </div>
         </div>
       </div>
 
-      {/* Cascade */}
-      <div className="grid gap-0">
-        {STATIONS.map((s, i) => (
-          <Fragment key={s.num}>
-            <StationCard {...s} delay={0.1 + i * 0.2} />
-            {i < STATIONS.length - 1 && (
-              <FlowConnector delay={0.25 + i * 0.2} hormone={s.hormone} />
-            )}
-          </Fragment>
-        ))}
+      {/* The axis itself + stations branching to the right */}
+      <div className="relative pl-[60px]">
+        {/* Vertical gradient backbone */}
+        <motion.div
+          initial={{ scaleY: 0 }}
+          whileInView={{ scaleY: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute origin-top"
+          style={{
+            left: '23px',
+            top: '8px',
+            bottom: '8px',
+            width: '3px',
+            borderRadius: '999px',
+            background:
+              'linear-gradient(180deg, rgba(122,184,255,0.5) 0%, rgba(15,122,235,0.95) 55%, rgba(0,82,163,1) 100%)',
+          }}
+        />
+
+        <div className="space-y-5">
+          {STATIONS.map((s, i) => (
+            <AxisStation
+              key={s.num}
+              station={s}
+              showSignal={i < STATIONS.length - 1}
+              delay={0.2 + i * 0.22}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Branching label */}
-      <div className="mt-6 text-center">
-        <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] font-bold text-blue-700">
-          <span className="w-4 h-px bg-blue-300" />
-          When the axis is off, you feel it as
-          <span className="w-4 h-px bg-blue-300" />
-        </div>
+      {/* Branching divider */}
+      <div className="mt-8 flex items-center gap-3">
+        <span className="flex-1 h-px bg-blue-200" />
+        <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-blue-700 whitespace-nowrap">
+          When the axis is off — you feel it as
+        </span>
+        <span className="flex-1 h-px bg-blue-200" />
       </div>
 
       {/* Symptoms — 2 × 4 grid */}
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-5 grid grid-cols-2 gap-2">
         {SYMPTOMS.map((label, i) => (
           <motion.div
             key={label}
             initial={{ opacity: 0, y: 8 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.35, delay: 1.0 + i * 0.05 }}
+            transition={{ duration: 0.35, delay: 1.2 + i * 0.05 }}
             className="px-3 py-2.5 rounded-xl bg-white border border-line text-center font-semibold text-[12.5px] text-ink shadow-clinical"
           >
             {label}
@@ -454,63 +478,86 @@ function CascadeBig() {
   );
 }
 
-function StationCard({
-  num,
-  organ,
-  verb,
-  hormone,
-  sub,
-  isOutput,
+function AxisStation({
+  station,
+  showSignal,
   delay,
-}: Station & { delay: number }) {
+}: {
+  station: Station;
+  showSignal: boolean;
+  delay: number;
+}) {
+  const { num, organ, verb, hormone, sub, isOutput } = station;
   return (
     <motion.div
-      initial={{ opacity: 0, x: -16 }}
+      initial={{ opacity: 0, x: -12 }}
       whileInView={{ opacity: 1, x: 0 }}
       viewport={{ once: true }}
-      transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
-      className={`relative rounded-2xl border p-4 md:p-5 overflow-hidden ${
-        isOutput
-          ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
-          : 'bg-white border-line shadow-clinical'
-      }`}
+      transition={{ duration: 0.55, delay, ease: [0.22, 1, 0.36, 1] }}
+      className="relative"
     >
-      {isOutput && (
-        <>
+      {/* Node on the axis (with organ glyph) */}
+      <div
+        className={`absolute -left-[60px] top-0.5 grid place-items-center w-12 h-12 rounded-full border-[2.5px] ${
+          isOutput
+            ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
+            : 'bg-white border-blue-500 text-blue-700 shadow-clinical'
+        }`}
+      >
+        <OrganGlyph variant={num} />
+      </div>
+
+      {/* Station info card */}
+      <div
+        className={`relative rounded-2xl border p-4 md:p-5 overflow-hidden ${
+          isOutput
+            ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
+            : 'bg-white border-line shadow-clinical'
+        }`}
+      >
+        {isOutput && (
           <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-blue-400/30 blur-2xl pointer-events-none" />
-          <div className="absolute top-2 right-3 inline-flex items-center gap-1 px-2 h-5 rounded-full bg-white/15 text-[9px] font-bold uppercase tracking-[0.12em] text-blue-100">
-            Output
+        )}
+        <div className="relative">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div
+                className={`text-[9.5px] uppercase tracking-[0.22em] font-bold ${
+                  isOutput ? 'text-blue-200' : 'text-blue-700'
+                }`}
+              >
+                Stage {num}
+              </div>
+              <div
+                className={`font-display text-[16px] md:text-[18px] leading-tight mt-1 ${
+                  isOutput ? 'text-white' : 'text-ink'
+                }`}
+              >
+                {organ}
+              </div>
+            </div>
+            {isOutput && (
+              <span className="shrink-0 inline-flex items-center px-2 h-5 rounded-full bg-white/15 text-[9px] font-bold uppercase tracking-[0.14em] text-blue-100">
+                Output
+              </span>
+            )}
           </div>
-        </>
-      )}
-      <div className="relative flex items-start gap-3">
-        <span
-          className={`shrink-0 grid place-items-center w-9 h-9 rounded-lg font-mono font-bold text-[12px] ${
-            isOutput
-              ? 'bg-white/15 text-white'
-              : 'bg-blue-50 text-blue-700 border border-blue-100'
-          }`}
-        >
-          {num}
-        </span>
-        <div className="flex-1 min-w-0">
-          <div
-            className={`font-display text-[16px] md:text-[17px] leading-tight ${
-              isOutput ? 'text-white' : 'text-ink'
-            }`}
-          >
-            {organ}
-          </div>
-          <div
-            className={`mt-1 text-[12px] leading-relaxed ${
+
+          <p
+            className={`mt-2 text-[12.5px] leading-relaxed ${
               isOutput ? 'text-blue-100' : 'text-ink-soft'
             }`}
           >
             {sub}
-          </div>
-          <div className="mt-3 inline-flex items-baseline gap-2">
+          </p>
+
+          <div
+            className={`mt-3 pt-3 border-t flex items-baseline gap-2 ${
+              isOutput ? 'border-white/15' : 'border-line/70'
+            }`}
+          >
             <span
-              className={`text-[9.5px] uppercase tracking-[0.16em] font-bold ${
+              className={`text-[9px] uppercase tracking-[0.18em] font-bold ${
                 isOutput ? 'text-blue-200' : 'text-blue-700'
               }`}
             >
@@ -526,39 +573,92 @@ function StationCard({
           </div>
         </div>
       </div>
+
+      {/* Hormone signal floating between stations */}
+      {showSignal && (
+        <motion.div
+          initial={{ opacity: 0, y: -4 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.4, delay: delay + 0.15 }}
+          className="absolute -bottom-[14px] -left-[60px] z-10 flex items-center"
+          style={{ width: '60px' }}
+        >
+          <div className="relative w-12 grid place-items-center">
+            <div className="absolute left-1/2 -translate-x-1/2 w-px h-full" />
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white border border-blue-200 shadow-clinical">
+              <ChevronDown
+                size={10}
+                strokeWidth={2.5}
+                className="text-blue-600"
+              />
+              <span className="text-[8.5px] uppercase tracking-[0.14em] font-bold text-blue-700">
+                {hormone}
+              </span>
+            </span>
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 }
 
-function FlowConnector({
-  delay,
-  hormone,
-}: {
-  delay: number;
-  hormone: string;
-}) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.3, delay }}
-      className="relative mx-auto flex items-center justify-center h-9 my-1"
-    >
-      <div className="relative flex flex-col items-center h-full">
-        <div className="flex-1 w-px border-l-2 border-dashed border-blue-300" />
-        <div className="grid place-items-center w-5 h-5 rounded-full bg-white border border-blue-200 -mt-0.5 shadow-clinical">
-          <ChevronDown size={11} className="text-blue-600" />
-        </div>
-      </div>
-      <div className="absolute left-[55%] flex items-center gap-1.5 ml-2">
-        <span className="w-3 h-px bg-blue-200" />
-        <span className="text-[9px] uppercase tracking-[0.14em] font-bold text-blue-700 whitespace-nowrap">
-          {hormone}
-        </span>
-      </div>
-    </motion.div>
-  );
+/**
+ * Small abstract SVG glyphs for each gland. Not anatomically literal — just
+ * iconographic enough to differentiate the three stations visually.
+ * - Hypothalamus → a small "neural constellation" (signal-starter)
+ * - Pituitary    → a droplet (the classic gland symbol)
+ * - Testes       → two ovals
+ */
+function OrganGlyph({ variant }: { variant: string }) {
+  switch (variant) {
+    case '01':
+      // Hypothalamus — neural constellation
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.4"
+          className="w-5 h-5"
+          aria-hidden
+        >
+          <path d="M7 9 L13 6 M13 6 L17 11 M17 11 L11 14 M11 14 L14 17 M7 9 L11 14" strokeOpacity="0.5" />
+          <circle cx="7" cy="9" r="1.6" fill="currentColor" />
+          <circle cx="13" cy="6" r="1.3" fill="currentColor" />
+          <circle cx="17" cy="11" r="1.5" fill="currentColor" />
+          <circle cx="11" cy="14" r="1.3" fill="currentColor" />
+          <circle cx="14" cy="17" r="1.5" fill="currentColor" />
+        </svg>
+      );
+    case '02':
+      // Pituitary — droplet
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-5 h-5"
+          aria-hidden
+        >
+          <path d="M12 3.5 C 8.5 9, 7 13, 7 15.5 A 5 5 0 0 0 17 15.5 C 17 13, 15.5 9, 12 3.5 Z" />
+        </svg>
+      );
+    case '03':
+      // Testes — two ovals
+      return (
+        <svg
+          viewBox="0 0 24 24"
+          fill="currentColor"
+          className="w-5 h-5"
+          aria-hidden
+        >
+          <ellipse cx="8.5" cy="13" rx="3.4" ry="5" />
+          <ellipse cx="15.5" cy="13" rx="3.4" ry="5" />
+        </svg>
+      );
+    default:
+      return null;
+  }
 }
 
 function CascadeCompact() {
@@ -569,54 +669,77 @@ function CascadeCompact() {
         testes — driving eight visible symptoms.
       </span>
 
-      {/* Mini cascade */}
-      <div className="grid gap-1">
-        {STATIONS.map((s, i) => (
-          <Fragment key={s.num}>
+      {/* Mini cascade with axis backbone */}
+      <div className="relative pl-[40px]">
+        {/* Backbone */}
+        <motion.div
+          initial={{ scaleY: 0 }}
+          whileInView={{ scaleY: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="absolute origin-top"
+          style={{
+            left: '15px',
+            top: '6px',
+            bottom: '6px',
+            width: '2px',
+            borderRadius: '999px',
+            background:
+              'linear-gradient(180deg, rgba(122,184,255,0.5) 0%, rgba(15,122,235,0.95) 60%, rgba(0,82,163,1) 100%)',
+          }}
+        />
+
+        <div className="space-y-1.5">
+          {STATIONS.map((s, i) => (
             <motion.div
-              initial={{ opacity: 0, x: -10 }}
+              key={s.num}
+              initial={{ opacity: 0, x: -8 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.35, delay: 0.05 + i * 0.12 }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${
-                s.isOutput
-                  ? 'bg-blue-600 border-blue-600 text-white'
-                  : 'bg-white border-blue-100'
-              }`}
+              transition={{ duration: 0.35, delay: 0.1 + i * 0.13 }}
+              className="relative"
             >
-              <span
-                className={`shrink-0 grid place-items-center w-6 h-6 rounded-md font-mono text-[10px] font-bold ${
+              {/* Node */}
+              <div
+                className={`absolute -left-[40px] top-0.5 grid place-items-center w-8 h-8 rounded-full border-2 ${
                   s.isOutput
-                    ? 'bg-white/15 text-white'
-                    : 'bg-blue-50 text-blue-700'
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'bg-white border-blue-500 text-blue-700'
                 }`}
               >
-                {s.num}
-              </span>
-              <div className="flex-1 min-w-0">
-                <div
-                  className={`text-[11.5px] font-semibold leading-tight truncate ${
-                    s.isOutput ? 'text-white' : 'text-ink'
-                  }`}
-                >
-                  {s.organ}
+                <div className="scale-[0.7]">
+                  <OrganGlyph variant={s.num} />
                 </div>
-                <div
-                  className={`text-[9px] font-bold uppercase tracking-[0.1em] mt-0.5 truncate ${
-                    s.isOutput ? 'text-blue-100' : 'text-blue-700'
-                  }`}
-                >
-                  {s.hormone}
+              </div>
+
+              {/* Row */}
+              <div
+                className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${
+                  s.isOutput
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'bg-white border-blue-100'
+                }`}
+              >
+                <div className="flex-1 min-w-0">
+                  <div
+                    className={`text-[11px] font-semibold leading-tight truncate ${
+                      s.isOutput ? 'text-white' : 'text-ink'
+                    }`}
+                  >
+                    {s.organ}
+                  </div>
+                  <div
+                    className={`text-[9px] font-bold uppercase tracking-[0.1em] mt-0.5 truncate ${
+                      s.isOutput ? 'text-blue-100' : 'text-blue-700'
+                    }`}
+                  >
+                    {s.hormone}
+                  </div>
                 </div>
               </div>
             </motion.div>
-            {i < STATIONS.length - 1 && (
-              <div className="grid place-items-center h-3">
-                <ChevronDown size={11} className="text-blue-400" />
-              </div>
-            )}
-          </Fragment>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* "Felt as" divider */}
