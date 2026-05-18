@@ -1,9 +1,10 @@
-import { type ReactNode } from 'react';
+import { Fragment, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
+  ChevronDown,
   ChevronRight,
   ClipboardList,
   Download,
@@ -262,15 +263,49 @@ function HeroVisual() {
 /* SECTION 2 — The Connection (the central insight)                    */
 /* ------------------------------------------------------------------ */
 
-const SYMPTOMS: Array<{ label: string; angle: number }> = [
-  { label: 'Hair loss', angle: -90 },
-  { label: 'Low libido', angle: -45 },
-  { label: 'Belly fat', angle: 0 },
-  { label: 'Infertility', angle: 45 },
-  { label: 'Low energy', angle: 90 },
-  { label: 'ED', angle: 135 },
-  { label: 'Poor sleep', angle: 180 },
-  { label: 'Brain fog', angle: -135 },
+type Station = {
+  num: string;
+  organ: string;
+  verb: string;
+  hormone: string;
+  sub: string;
+  isOutput?: boolean;
+};
+
+const STATIONS: Station[] = [
+  {
+    num: '01',
+    organ: 'Hypothalamus',
+    verb: 'Secretes',
+    hormone: 'GnRH',
+    sub: 'The signal starts in your brain.',
+  },
+  {
+    num: '02',
+    organ: 'Pituitary gland',
+    verb: 'Releases',
+    hormone: 'LH · FSH',
+    sub: 'Relays the signal to the testes.',
+  },
+  {
+    num: '03',
+    organ: 'Testes',
+    verb: 'Produce',
+    hormone: 'Testosterone',
+    sub: 'The hormone that runs the show.',
+    isOutput: true,
+  },
+];
+
+const SYMPTOMS: string[] = [
+  'Hair loss',
+  'Low libido',
+  'Belly fat',
+  'Infertility',
+  'Low energy',
+  'ED',
+  'Poor sleep',
+  'Brain fog',
 ];
 
 function ConnectionSection({ onStart }: { onStart: () => void }) {
@@ -293,14 +328,14 @@ function ConnectionSection({ onStart }: { onStart: () => void }) {
           />
         </Reveal>
 
-        <div className="mt-12 md:mt-16 grid lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+        <div className="mt-12 md:mt-16 grid lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           <div className="lg:col-span-7">
             <Reveal>
               <ConnectionDiagram />
             </Reveal>
           </div>
 
-          <div className="lg:col-span-5">
+          <div className="lg:col-span-5 lg:sticky lg:top-24">
             <Reveal delay={0.1}>
               <div className="rounded-2xl bg-white border border-line shadow-clinical p-6 md:p-7">
                 <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-blue-700">
@@ -345,123 +380,265 @@ function ConnectionSection({ onStart }: { onStart: () => void }) {
   );
 }
 
+/**
+ * The HPG-axis cascade: a vertical three-station diagram showing how the
+ * brain → pituitary → testes pipeline drives the symptoms men experience.
+ * Replaces the previous radial "hub + spokes" treatment, which read as a
+ * generic healthtech logo. This version actually teaches the science.
+ */
 function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
-  // Geometry tuned so the widest label ("Low libido" / "Low energy") still has
-  // visual clearance from the container edge at every viewport — including
-  // narrow phones (≥ 320px viewport → container ≈ 280px after page padding).
-  // Hub is percentage-based so it scales with the wrapper, keeping the
-  // hub-edge → spoke-start gap consistent on every breakpoint.
-  const labelRadius = compact ? 38 : 36;
-  const spokeStart = compact ? 18 : 17;
-  const lineEndRadius = compact ? 27 : 25;
-  const hubSizePct = compact ? 30 : 28;
-  const labelTextCls = compact
-    ? 'text-[10px]'
-    : 'text-[11.5px] md:text-[12.5px]';
-  const labelPadCls = compact ? 'px-2.5 py-1' : 'px-3 py-1.5';
-  const wrapperCls = compact
-    ? 'aspect-square w-full max-w-[260px]'
-    : 'aspect-square w-full max-w-[440px]';
+  if (compact) return <CascadeCompact />;
+  return <CascadeBig />;
+}
 
+function CascadeBig() {
   return (
-    <div className={`relative mx-auto ${wrapperCls}`}>
+    <div className="mx-auto w-full max-w-[460px]">
       <span className="sr-only">
-        Eight symptoms — hair loss, low libido, belly fat, infertility, low
-        energy, erectile dysfunction, poor sleep, and brain fog — radiate from
-        one central HPG-axis hub. They are signals from the same hormonal
-        system.
+        The HPG axis: the hypothalamus secretes GnRH, which signals the
+        pituitary gland to release LH and FSH, which prompts the testes to
+        produce testosterone. When this cascade is off-balance, it shows up
+        as eight visible symptoms — hair loss, low libido, belly fat,
+        infertility, low energy, erectile dysfunction, poor sleep, and brain
+        fog.
       </span>
-      {/* Spoke lines as SVG behind */}
-      <svg
-        viewBox="0 0 100 100"
-        className="absolute inset-0 w-full h-full"
-        aria-hidden
-      >
-        {SYMPTOMS.map((s, i) => {
-          const rad = (s.angle * Math.PI) / 180;
-          const x1 = 50 + Math.cos(rad) * spokeStart;
-          const y1 = 50 + Math.sin(rad) * spokeStart;
-          const x2 = 50 + Math.cos(rad) * lineEndRadius;
-          const y2 = 50 + Math.sin(rad) * lineEndRadius;
-          return (
-            <motion.line
-              key={s.label}
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke="rgb(0,102,204)"
-              strokeWidth="0.4"
-              strokeDasharray="0.8 0.8"
-              strokeLinecap="round"
-              initial={{ pathLength: 0, opacity: 0 }}
-              whileInView={{ pathLength: 1, opacity: 0.7 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.7, delay: 0.2 + i * 0.06 }}
-            />
-          );
-        })}
-      </svg>
 
-      {/* Hub — percentage-sized so the hub-to-spoke gap stays consistent */}
-      <motion.div
-        initial={{ scale: 0.6, opacity: 0 }}
-        whileInView={{ scale: 1, opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center text-white text-center shadow-blue"
-        style={{
-          width: `${hubSizePct}%`,
-          height: `${hubSizePct}%`,
-          background:
-            'radial-gradient(120% 120% at 30% 20%, #3D95FF 0%, #0066CC 60%, #0052A3 100%)',
-        }}
-      >
-        <div className="px-2">
+      {/* Axis title */}
+      <div className="text-center mb-5">
+        <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.22em] font-bold text-blue-700">
+          <FlaskConical size={11} />
+          The HPG axis
+        </div>
+        <div className="mt-1 text-[11.5px] text-muted">
+          Three stations. One signal chain.
+        </div>
+      </div>
+
+      {/* Cascade */}
+      <div className="grid gap-0">
+        {STATIONS.map((s, i) => (
+          <Fragment key={s.num}>
+            <StationCard {...s} delay={0.1 + i * 0.2} />
+            {i < STATIONS.length - 1 && (
+              <FlowConnector delay={0.25 + i * 0.2} hormone={s.hormone} />
+            )}
+          </Fragment>
+        ))}
+      </div>
+
+      {/* Branching label */}
+      <div className="mt-6 text-center">
+        <div className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.18em] font-bold text-blue-700">
+          <span className="w-4 h-px bg-blue-300" />
+          When the axis is off, you feel it as
+          <span className="w-4 h-px bg-blue-300" />
+        </div>
+      </div>
+
+      {/* Symptoms — 2 × 4 grid */}
+      <div className="mt-4 grid grid-cols-2 gap-2">
+        {SYMPTOMS.map((label, i) => (
+          <motion.div
+            key={label}
+            initial={{ opacity: 0, y: 8 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.35, delay: 1.0 + i * 0.05 }}
+            className="px-3 py-2.5 rounded-xl bg-white border border-line text-center font-semibold text-[12.5px] text-ink shadow-clinical"
+          >
+            {label}
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StationCard({
+  num,
+  organ,
+  verb,
+  hormone,
+  sub,
+  isOutput,
+  delay,
+}: Station & { delay: number }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -16 }}
+      whileInView={{ opacity: 1, x: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
+      className={`relative rounded-2xl border p-4 md:p-5 overflow-hidden ${
+        isOutput
+          ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
+          : 'bg-white border-line shadow-clinical'
+      }`}
+    >
+      {isOutput && (
+        <>
+          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-blue-400/30 blur-2xl pointer-events-none" />
+          <div className="absolute top-2 right-3 inline-flex items-center gap-1 px-2 h-5 rounded-full bg-white/15 text-[9px] font-bold uppercase tracking-[0.12em] text-blue-100">
+            Output
+          </div>
+        </>
+      )}
+      <div className="relative flex items-start gap-3">
+        <span
+          className={`shrink-0 grid place-items-center w-9 h-9 rounded-lg font-mono font-bold text-[12px] ${
+            isOutput
+              ? 'bg-white/15 text-white'
+              : 'bg-blue-50 text-blue-700 border border-blue-100'
+          }`}
+        >
+          {num}
+        </span>
+        <div className="flex-1 min-w-0">
           <div
-            className={`font-sans font-bold leading-tight ${
-              compact ? 'text-[11px]' : 'text-[13px] md:text-[15px]'
+            className={`font-display text-[16px] md:text-[17px] leading-tight ${
+              isOutput ? 'text-white' : 'text-ink'
             }`}
           >
-            Your hormones
+            {organ}
           </div>
           <div
-            className={`uppercase tracking-[0.16em] font-semibold mt-1 text-blue-100 ${
-              compact ? 'text-[7px]' : 'text-[9px] md:text-[10px]'
+            className={`mt-1 text-[12px] leading-relaxed ${
+              isOutput ? 'text-blue-100' : 'text-ink-soft'
             }`}
           >
-            HPG axis
+            {sub}
+          </div>
+          <div className="mt-3 inline-flex items-baseline gap-2">
+            <span
+              className={`text-[9.5px] uppercase tracking-[0.16em] font-bold ${
+                isOutput ? 'text-blue-200' : 'text-blue-700'
+              }`}
+            >
+              {verb}
+            </span>
+            <span
+              className={`font-sans font-bold text-[15px] md:text-[16px] tracking-[-0.01em] ${
+                isOutput ? 'text-white' : 'text-ink'
+              }`}
+            >
+              {hormone}
+            </span>
           </div>
         </div>
-      </motion.div>
+      </div>
+    </motion.div>
+  );
+}
 
-      {/* Symptom labels */}
-      {SYMPTOMS.map((s, i) => {
-        const rad = (s.angle * Math.PI) / 180;
-        const left = 50 + Math.cos(rad) * labelRadius;
-        const top = 50 + Math.sin(rad) * labelRadius;
-        return (
-          <motion.div
-            key={s.label}
-            initial={{ opacity: 0, scale: 0.7 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{
-              duration: 0.45,
-              delay: 0.5 + i * 0.06,
-              ease: [0.22, 1, 0.36, 1],
-            }}
-            style={{ left: `${left}%`, top: `${top}%` }}
-            className="absolute -translate-x-1/2 -translate-y-1/2"
-          >
-            <div
-              className={`whitespace-nowrap rounded-full bg-white border border-blue-100 font-semibold text-ink shadow-clinical ${labelPadCls} ${labelTextCls}`}
+function FlowConnector({
+  delay,
+  hormone,
+}: {
+  delay: number;
+  hormone: string;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      whileInView={{ opacity: 1 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.3, delay }}
+      className="relative mx-auto flex items-center justify-center h-9 my-1"
+    >
+      <div className="relative flex flex-col items-center h-full">
+        <div className="flex-1 w-px border-l-2 border-dashed border-blue-300" />
+        <div className="grid place-items-center w-5 h-5 rounded-full bg-white border border-blue-200 -mt-0.5 shadow-clinical">
+          <ChevronDown size={11} className="text-blue-600" />
+        </div>
+      </div>
+      <div className="absolute left-[55%] flex items-center gap-1.5 ml-2">
+        <span className="w-3 h-px bg-blue-200" />
+        <span className="text-[9px] uppercase tracking-[0.14em] font-bold text-blue-700 whitespace-nowrap">
+          {hormone}
+        </span>
+      </div>
+    </motion.div>
+  );
+}
+
+function CascadeCompact() {
+  return (
+    <div className="mx-auto w-full max-w-[280px]">
+      <span className="sr-only">
+        A miniature view of the HPG axis cascade — hypothalamus → pituitary →
+        testes — driving eight visible symptoms.
+      </span>
+
+      {/* Mini cascade */}
+      <div className="grid gap-1">
+        {STATIONS.map((s, i) => (
+          <Fragment key={s.num}>
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: 0.05 + i * 0.12 }}
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl border ${
+                s.isOutput
+                  ? 'bg-blue-600 border-blue-600 text-white'
+                  : 'bg-white border-blue-100'
+              }`}
             >
-              {s.label}
-            </div>
-          </motion.div>
-        );
-      })}
+              <span
+                className={`shrink-0 grid place-items-center w-6 h-6 rounded-md font-mono text-[10px] font-bold ${
+                  s.isOutput
+                    ? 'bg-white/15 text-white'
+                    : 'bg-blue-50 text-blue-700'
+                }`}
+              >
+                {s.num}
+              </span>
+              <div className="flex-1 min-w-0">
+                <div
+                  className={`text-[11.5px] font-semibold leading-tight truncate ${
+                    s.isOutput ? 'text-white' : 'text-ink'
+                  }`}
+                >
+                  {s.organ}
+                </div>
+                <div
+                  className={`text-[9px] font-bold uppercase tracking-[0.1em] mt-0.5 truncate ${
+                    s.isOutput ? 'text-blue-100' : 'text-blue-700'
+                  }`}
+                >
+                  {s.hormone}
+                </div>
+              </div>
+            </motion.div>
+            {i < STATIONS.length - 1 && (
+              <div className="grid place-items-center h-3">
+                <ChevronDown size={11} className="text-blue-400" />
+              </div>
+            )}
+          </Fragment>
+        ))}
+      </div>
+
+      {/* "Felt as" divider */}
+      <div className="mt-3 flex items-center gap-2">
+        <span className="flex-1 h-px bg-blue-100" />
+        <span className="text-[9px] uppercase tracking-[0.14em] font-bold text-blue-700">
+          Felt as
+        </span>
+        <span className="flex-1 h-px bg-blue-100" />
+      </div>
+
+      <div className="mt-2 flex flex-wrap justify-center gap-1">
+        {SYMPTOMS.slice(0, 5).map((label) => (
+          <span
+            key={label}
+            className="text-[9.5px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold"
+          >
+            {label}
+          </span>
+        ))}
+        <span className="text-[9.5px] text-muted px-1 py-0.5">+ 3 more</span>
+      </div>
     </div>
   );
 }
