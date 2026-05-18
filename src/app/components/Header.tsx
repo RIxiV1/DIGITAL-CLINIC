@@ -9,12 +9,6 @@ type Props = {
   subtitle?: string;
   onBack?: () => void;
   rightSlot?: ReactNode;
-  /**
-   * Kept as a no-op prop for source compatibility — the doctor consultation
-   * feature is removed in this release, so the header no longer renders a
-   * "Talk to a Doc" CTA regardless of value.
-   */
-  hideDoc?: boolean;
   size?: 'narrow' | 'wide';
 };
 
@@ -33,7 +27,6 @@ const NAV_SLOTS: NavSlot[] = [
 function activeNavId(page: Page): NavSlot['id'] {
   switch (page.type) {
     case 'home':
-    case 'locker':
     case 'upload':
     case 'processing':
     case 'results':

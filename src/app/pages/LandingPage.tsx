@@ -346,18 +346,31 @@ function ConnectionSection({ onStart }: { onStart: () => void }) {
 }
 
 function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
-  const labelRadius = compact ? 41 : 42;
-  const lineEndRadius = compact ? 30 : 31;
-  const hubSizeCls = compact
-    ? 'w-[88px] h-[88px]'
-    : 'w-[124px] h-[124px] md:w-[140px] md:h-[140px]';
-  const labelTextCls = compact ? 'text-[10.5px]' : 'text-[12px] md:text-[13px]';
+  // Geometry tuned so the widest label ("Low libido" / "Low energy") still has
+  // visual clearance from the container edge at every viewport — including
+  // narrow phones (≥ 320px viewport → container ≈ 280px after page padding).
+  // Hub is percentage-based so it scales with the wrapper, keeping the
+  // hub-edge → spoke-start gap consistent on every breakpoint.
+  const labelRadius = compact ? 38 : 36;
+  const spokeStart = compact ? 18 : 17;
+  const lineEndRadius = compact ? 27 : 25;
+  const hubSizePct = compact ? 30 : 28;
+  const labelTextCls = compact
+    ? 'text-[10px]'
+    : 'text-[11.5px] md:text-[12.5px]';
+  const labelPadCls = compact ? 'px-2.5 py-1' : 'px-3 py-1.5';
   const wrapperCls = compact
-    ? 'aspect-square w-full max-w-[280px]'
-    : 'aspect-square w-full max-w-[460px]';
+    ? 'aspect-square w-full max-w-[260px]'
+    : 'aspect-square w-full max-w-[440px]';
 
   return (
     <div className={`relative mx-auto ${wrapperCls}`}>
+      <span className="sr-only">
+        Eight symptoms — hair loss, low libido, belly fat, infertility, low
+        energy, erectile dysfunction, poor sleep, and brain fog — radiate from
+        one central HPG-axis hub. They are signals from the same hormonal
+        system.
+      </span>
       {/* Spoke lines as SVG behind */}
       <svg
         viewBox="0 0 100 100"
@@ -366,8 +379,8 @@ function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
       >
         {SYMPTOMS.map((s, i) => {
           const rad = (s.angle * Math.PI) / 180;
-          const x1 = 50 + Math.cos(rad) * 16;
-          const y1 = 50 + Math.sin(rad) * 16;
+          const x1 = 50 + Math.cos(rad) * spokeStart;
+          const y1 = 50 + Math.sin(rad) * spokeStart;
           const x2 = 50 + Math.cos(rad) * lineEndRadius;
           const y2 = 50 + Math.sin(rad) * lineEndRadius;
           return (
@@ -390,29 +403,31 @@ function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
         })}
       </svg>
 
-      {/* Hub */}
+      {/* Hub — percentage-sized so the hub-to-spoke gap stays consistent */}
       <motion.div
         initial={{ scale: 0.6, opacity: 0 }}
         whileInView={{ scale: 1, opacity: 1 }}
         viewport={{ once: true }}
         transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        className={`absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 ${hubSizeCls} rounded-full grid place-items-center text-white text-center shadow-blue`}
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full grid place-items-center text-white text-center shadow-blue"
         style={{
+          width: `${hubSizePct}%`,
+          height: `${hubSizePct}%`,
           background:
             'radial-gradient(120% 120% at 30% 20%, #3D95FF 0%, #0066CC 60%, #0052A3 100%)',
         }}
       >
-        <div>
+        <div className="px-2">
           <div
             className={`font-sans font-bold leading-tight ${
-              compact ? 'text-[12px]' : 'text-[14px] md:text-[16px]'
+              compact ? 'text-[11px]' : 'text-[13px] md:text-[15px]'
             }`}
           >
             Your hormones
           </div>
           <div
             className={`uppercase tracking-[0.16em] font-semibold mt-1 text-blue-100 ${
-              compact ? 'text-[7.5px]' : 'text-[9px] md:text-[10px]'
+              compact ? 'text-[7px]' : 'text-[9px] md:text-[10px]'
             }`}
           >
             HPG axis
@@ -440,7 +455,7 @@ function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
             className="absolute -translate-x-1/2 -translate-y-1/2"
           >
             <div
-              className={`whitespace-nowrap rounded-full bg-white border border-blue-100 px-3 py-1.5 font-semibold text-ink shadow-clinical ${labelTextCls}`}
+              className={`whitespace-nowrap rounded-full bg-white border border-blue-100 font-semibold text-ink shadow-clinical ${labelPadCls} ${labelTextCls}`}
             >
               {s.label}
             </div>
@@ -470,7 +485,7 @@ function HowItWorks() {
                 </span>
               </>
             }
-            subtitle="No appointments. No insurance forms. No reading medical journals on your own. Three honest steps."
+            subtitle="Three honest steps. About three minutes total. You leave knowing which tests, which specialist, and what your symptoms might mean."
           />
         </Reveal>
 

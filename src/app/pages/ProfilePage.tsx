@@ -42,7 +42,6 @@ export default function ProfilePage() {
         variant="page"
         title="Profile"
         subtitle="Account & preferences"
-        hideDoc
       />
 
       <Container size="wide" className="pt-5 lg:pt-10">

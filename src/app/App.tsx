@@ -4,7 +4,6 @@ import LandingPage from './pages/LandingPage';
 import QuizPage from './pages/QuizPage';
 import RecommendedTestsPage from './pages/RecommendedTestsPage';
 import HomePage from './pages/HomePage';
-import ReportLockerPage from './pages/ReportLockerPage';
 import UploadPage from './pages/UploadPage';
 import ProcessingPage from './pages/ProcessingPage';
 import ReportResultsPage from './pages/ReportResultsPage';
@@ -38,9 +37,6 @@ function PageHost() {
       break;
     case 'home':
       node = <HomePage />;
-      break;
-    case 'locker':
-      node = <ReportLockerPage />;
       break;
     case 'upload':
       node = <UploadPage />;

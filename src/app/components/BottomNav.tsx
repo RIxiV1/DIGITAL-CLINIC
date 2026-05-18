@@ -22,7 +22,6 @@ export default function BottomNav() {
 
   const activeId: ItemId =
     page.type === 'home' ||
-    page.type === 'locker' ||
     page.type === 'upload' ||
     page.type === 'processing' ||
     page.type === 'results' ||

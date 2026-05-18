@@ -13,7 +13,6 @@ export type Page =
   | { type: 'quiz' }
   | { type: 'recommendedTests' }
   | { type: 'home' }
-  | { type: 'locker' }
   | { type: 'upload' }
   | { type: 'processing' }
   | { type: 'results'; reportId: string }
