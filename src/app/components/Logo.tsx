@@ -6,18 +6,22 @@ type Props = {
 export default function Logo({ size = 'md', tone = 'dark' }: Props) {
   const text =
     size === 'sm'
-      ? 'text-[15px]'
+      ? 'text-[14px]'
       : size === 'md'
-        ? 'text-[17px]'
-        : 'text-[20px]';
+        ? 'text-[15.5px]'
+        : 'text-[18px]';
   const mark =
     size === 'sm' ? 'w-7 h-7' : size === 'md' ? 'w-8 h-8' : 'w-10 h-10';
 
-  const wordmarkColor = tone === 'dark' ? 'text-ink' : 'text-white';
-  const tintColor = tone === 'dark' ? 'text-blue-600' : 'text-blue-200';
+  const brandColor = tone === 'dark' ? 'text-ink' : 'text-white';
+  const subColor = tone === 'dark' ? 'text-ink-soft' : 'text-white/85';
+  const dotColor = tone === 'dark' ? 'text-blue-600' : 'text-blue-200';
 
   return (
-    <div className="inline-flex items-center gap-2 select-none" aria-label="Digital Clinic">
+    <div
+      className="inline-flex items-center gap-2 select-none"
+      aria-label="ForMen · Digital Clinic"
+    >
       <div
         className={`${mark} rounded-xl grid place-items-center bg-blue-600 text-white shadow-soft`}
       >
@@ -35,9 +39,11 @@ export default function Logo({ size = 'md', tone = 'dark' }: Props) {
         </svg>
       </div>
       <span
-        className={`font-sans font-semibold tracking-[-0.01em] ${text} ${wordmarkColor} leading-none`}
+        className={`font-sans tracking-[-0.01em] leading-none ${text} flex items-baseline gap-1.5`}
       >
-        Digital<span className={`${tintColor} ml-1.5 font-medium`}>Clinic</span>
+        <span className={`font-bold ${brandColor}`}>ForMen</span>
+        <span className={`${dotColor} font-bold`}>·</span>
+        <span className={`font-medium ${subColor}`}>Digital Clinic</span>
       </span>
     </div>
   );

@@ -18,7 +18,6 @@ export type Page =
   | { type: 'processing' }
   | { type: 'results'; reportId: string }
   | { type: 'problem'; problemId: string }
-  | { type: 'clinic' }
   | { type: 'profile' };
 
 export type QuizAnswers = {

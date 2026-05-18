@@ -1,8 +1,8 @@
-import { House, ClipboardList, Stethoscope, User } from 'lucide-react';
+import { House, ClipboardList, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, type Page } from '../AppContext';
 
-type ItemId = 'home' | 'quiz' | 'clinic' | 'profile';
+type ItemId = 'home' | 'quiz' | 'profile';
 
 type Item = {
   id: ItemId;
@@ -14,7 +14,6 @@ type Item = {
 const items: Item[] = [
   { id: 'home', label: 'Home', page: { type: 'home' }, Icon: House },
   { id: 'quiz', label: 'Quiz', page: { type: 'quiz' }, Icon: ClipboardList },
-  { id: 'clinic', label: 'Clinic', page: { type: 'clinic' }, Icon: Stethoscope },
   { id: 'profile', label: 'Profile', page: { type: 'profile' }, Icon: User },
 ];
 
@@ -31,11 +30,9 @@ export default function BottomNav() {
       ? 'home'
       : page.type === 'quiz' || page.type === 'recommendedTests'
         ? 'quiz'
-        : page.type === 'clinic'
-          ? 'clinic'
-          : page.type === 'profile'
-            ? 'profile'
-            : 'home';
+        : page.type === 'profile'
+          ? 'profile'
+          : 'home';
 
   return (
     <nav className="lg:hidden no-print sticky bottom-0 z-30 safe-bottom">

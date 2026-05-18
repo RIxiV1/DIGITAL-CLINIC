@@ -9,7 +9,6 @@ import UploadPage from './pages/UploadPage';
 import ProcessingPage from './pages/ProcessingPage';
 import ReportResultsPage from './pages/ReportResultsPage';
 import ProblemDetailPage from './pages/ProblemDetailPage';
-import ClinicPage from './pages/ClinicPage';
 import ProfilePage from './pages/ProfilePage';
 
 function pageKey(p: Page) {
@@ -54,9 +53,6 @@ function PageHost() {
       break;
     case 'problem':
       node = <ProblemDetailPage problemId={page.problemId} />;
-      break;
-    case 'clinic':
-      node = <ClinicPage />;
       break;
     case 'profile':
       node = <ProfilePage />;

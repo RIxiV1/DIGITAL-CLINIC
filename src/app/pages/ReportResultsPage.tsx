@@ -6,7 +6,6 @@ import {
   Info,
   Share2,
   Sparkles,
-  Stethoscope,
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -112,18 +111,11 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   <Button
                     variant="dark"
                     size="sm"
-                    onClick={() => navigate({ type: 'clinic' })}
-                    leading={<Stethoscope size={14} />}
-                  >
-                    Talk to a Doctor
-                  </Button>
-                  <button
+                    leading={<Download size={14} />}
                     onClick={handleDownload}
-                    className="grid place-items-center w-9 h-9 rounded-[12px] bg-indigo-900/15 text-indigo-900 hover:bg-indigo-900/25"
-                    aria-label="Download"
                   >
-                    <Download size={16} />
-                  </button>
+                    Download as PDF
+                  </Button>
                   <button
                     className="grid place-items-center w-9 h-9 rounded-[12px] bg-indigo-900/15 text-indigo-900 hover:bg-indigo-900/25"
                     aria-label="Share"

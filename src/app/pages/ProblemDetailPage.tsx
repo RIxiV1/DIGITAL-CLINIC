@@ -1,11 +1,9 @@
 import { motion } from 'framer-motion';
 import {
-  ArrowRight,
   CalendarClock,
   CheckCircle2,
   Info,
   Lightbulb,
-  Stethoscope,
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -22,7 +20,7 @@ export default function ProblemDetailPage({
 }: {
   problemId: string;
 }) {
-  const { back, navigate } = useApp();
+  const { back } = useApp();
   const p = getProblem(problemId);
 
   if (!p) {
@@ -179,33 +177,6 @@ export default function ProblemDetailPage({
               <p className="text-[13.5px] text-indigo-100 mt-1.5 leading-relaxed">
                 {p.retest}
               </p>
-            </div>
-          </div>
-        </Card>
-      </Container>
-
-      {/* Talk to a doctor */}
-      <Container size="wide" className="mt-4">
-        <Card className="lg:max-w-3xl">
-          <div className="flex items-start gap-3">
-            <div className="grid place-items-center w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 shrink-0">
-              <Stethoscope size={18} />
-            </div>
-            <div className="flex-1">
-              <div className="font-semibold">Talk this through</div>
-              <p className="text-[13px] text-ink-soft mt-1 leading-relaxed">
-                Bigger changes — like starting medication — belong with your
-                doctor. Bring this page to your next consult.
-              </p>
-              <Button
-                size="sm"
-                variant="outline"
-                className="mt-3"
-                onClick={() => navigate({ type: 'clinic' })}
-                trailing={<ArrowRight size={14} />}
-              >
-                Book a clinician consult
-              </Button>
             </div>
           </div>
         </Card>

@@ -1,7 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 import Logo from './Logo';
-import TalkToADoc from './TalkToADoc';
 import { useApp, type Page } from '../AppContext';
 
 type Props = {
@@ -10,13 +9,17 @@ type Props = {
   subtitle?: string;
   onBack?: () => void;
   rightSlot?: ReactNode;
+  /**
+   * Kept as a no-op prop for source compatibility — the doctor consultation
+   * feature is removed in this release, so the header no longer renders a
+   * "Talk to a Doc" CTA regardless of value.
+   */
   hideDoc?: boolean;
-  /** Container width for the header inner — defaults to `wide` to match desktop. */
   size?: 'narrow' | 'wide';
 };
 
 type NavSlot = {
-  id: 'home' | 'quiz' | 'clinic' | 'profile';
+  id: 'home' | 'quiz' | 'profile';
   label: string;
   target: Page;
 };
@@ -24,7 +27,6 @@ type NavSlot = {
 const NAV_SLOTS: NavSlot[] = [
   { id: 'home', label: 'Home', target: { type: 'home' } },
   { id: 'quiz', label: 'Quiz', target: { type: 'quiz' } },
-  { id: 'clinic', label: 'Clinic', target: { type: 'clinic' } },
   { id: 'profile', label: 'Profile', target: { type: 'profile' } },
 ];
 
@@ -40,8 +42,6 @@ function activeNavId(page: Page): NavSlot['id'] {
     case 'quiz':
     case 'recommendedTests':
       return 'quiz';
-    case 'clinic':
-      return 'clinic';
     case 'profile':
       return 'profile';
     default:
@@ -55,12 +55,10 @@ export default function Header({
   subtitle,
   onBack,
   rightSlot,
-  hideDoc,
   size = 'wide',
 }: Props) {
   const { back, navigate, page } = useApp();
   const handleBack = onBack ?? back;
-  const handleDoc = () => navigate({ type: 'clinic' });
   const active = activeNavId(page);
 
   const widthCls =
@@ -103,10 +101,9 @@ export default function Header({
 
           {variant === 'home' && <div className="flex-1" />}
 
-          <div className="flex items-center gap-1.5">
-            {rightSlot}
-            {!hideDoc && <TalkToADoc onClick={handleDoc} />}
-          </div>
+          {rightSlot && (
+            <div className="flex items-center gap-1.5">{rightSlot}</div>
+          )}
         </div>
 
         {/* ---------- Desktop shell ---------- */}
@@ -128,9 +125,7 @@ export default function Header({
                   onClick={() => navigate(slot.target)}
                   aria-current={isActive ? 'page' : undefined}
                   className={`relative font-medium transition-colors ${
-                    isActive
-                      ? 'text-ink'
-                      : 'text-ink-soft hover:text-ink'
+                    isActive ? 'text-ink' : 'text-ink-soft hover:text-ink'
                   }`}
                 >
                   {slot.label}
@@ -164,10 +159,15 @@ export default function Header({
             </div>
           )}
 
-          <div className={`flex items-center gap-2 ${variant === 'page' && title ? '' : 'ml-auto'}`}>
-            {rightSlot}
-            {!hideDoc && <TalkToADoc onClick={handleDoc} />}
-          </div>
+          {rightSlot && (
+            <div
+              className={`flex items-center gap-2 ${
+                variant === 'page' && title ? '' : 'ml-auto'
+              }`}
+            >
+              {rightSlot}
+            </div>
+          )}
         </div>
       </div>
     </header>
