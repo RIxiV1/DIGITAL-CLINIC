@@ -1166,7 +1166,7 @@ function Credibility() {
             title={
               <>
                 Built on research,{' '}
-                <span className="text-blue-700">not stock photos.</span>
+                <span className="text-blue-700">backed by data.</span>
               </>
             }
             subtitle="Indian male hormonal health is barely talked about — and barely tested. The data is sobering."
