@@ -69,14 +69,14 @@ function PageHost() {
 
   return (
     <div className="min-h-screen bg-canvas relative overflow-x-hidden">
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode="popLayout">
         <motion.div
           key={pageKey(page)}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-          className="min-h-screen"
+          className="min-h-screen w-full"
         >
           {node}
         </motion.div>
