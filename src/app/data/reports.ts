@@ -64,6 +64,13 @@ export function isSampleReport(id: string): boolean {
   return sampleReports.some((r) => r.id === id);
 }
 
+/** Returns the first curated sample report — used by the "Load sample
+ *  data into my dashboard" CTA on the empty-state dashboard so the user
+ *  can see a populated dashboard without uploading anything. */
+export function getSampleReportForDashboard(): Report {
+  return sampleReports[0];
+}
+
 export function badgeFor(r: Report): ReportBadge {
   if (r.badge) return r.badge;
   if (r.status === 'processing') return 'processing';

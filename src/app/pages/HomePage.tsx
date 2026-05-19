@@ -18,7 +18,7 @@ import {
   type Biomarker,
   type BiomarkerCategoryId,
 } from '../data/biomarkers';
-import { badgeFor } from '../data/reports';
+import { badgeFor, getSampleReportForDashboard } from '../data/reports';
 import { getMarkerInfo } from '../data/markerInfo';
 
 /**
@@ -34,8 +34,17 @@ import { getMarkerInfo } from '../data/markerInfo';
  * progress bars measured nothing and obscured the actual signal.
  */
 export default function HomePage() {
-  const { reports } = useReports();
+  const { reports, addReport } = useReports();
   const { navigate } = useNavigation();
+
+  /** Loads the curated sample report into the user's locker so the
+   *  empty dashboard becomes a populated dashboard in one click — no
+   *  upload required. Lets people see what the product actually does
+   *  before doing the work of finding a real report. */
+  const loadSampleData = () => {
+    if (reports.some((r) => r.id === 'rep-001')) return;
+    addReport(getSampleReportForDashboard());
+  };
 
   const ready = useMemo(() => reports.find((r) => r.status === 'ready'), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
@@ -100,7 +109,7 @@ export default function HomePage() {
       <Header variant="home" />
 
       {/* ZONE 1 · Dynamic headline insight */}
-      <Container size="wide" className="pt-6 lg:pt-10">
+      <Container size="wide" className="pt-5 lg:pt-8">
         <DashboardHeadline
           markers={ready ? biomarkers : null}
           hasReport={!!ready}
@@ -110,7 +119,7 @@ export default function HomePage() {
 
       {/* ZONE 2 · Markers that need attention */}
       {attentionMarkers.length > 0 && (
-        <Container size="wide" className="mt-8 lg:mt-12">
+        <Container size="wide" className="mt-6 lg:mt-8">
           <SectionHeading
             eyebrow="Needs attention"
             title="Markers to act on first"
@@ -138,7 +147,7 @@ export default function HomePage() {
 
       {/* ZONE 3 · Trends over time */}
       {trendsByPathway.length > 0 && (
-        <Container size="wide" className="mt-8 lg:mt-12">
+        <Container size="wide" className="mt-6 lg:mt-8">
           <SectionHeading
             eyebrow="Your trends"
             title="How your numbers have moved"
@@ -171,7 +180,7 @@ export default function HomePage() {
       )}
 
       {/* ZONE 4 · Your locker */}
-      <Container size="wide" className="mt-8 lg:mt-12">
+      <Container size="wide" className="mt-6 lg:mt-8">
         <SectionHeading
           eyebrow="Your locker"
           title="All your reports, one place"
@@ -208,11 +217,9 @@ export default function HomePage() {
                 <Button
                   size="md"
                   variant="secondary"
-                  onClick={() =>
-                    navigate({ type: 'results', reportId: 'rep-001' })
-                  }
+                  onClick={loadSampleData}
                 >
-                  Try a sample
+                  Load sample data
                 </Button>
               </div>
             </Card>

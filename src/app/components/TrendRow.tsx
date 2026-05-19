@@ -71,7 +71,7 @@ export default function TrendRow({ marker, onLearnMore }: Props) {
       </div>
 
       <div className="shrink-0">
-        <Sparkline marker={marker} width={96} height={32} />
+        <Sparkline marker={marker} width={120} height={36} />
       </div>
     </div>
   );

@@ -63,25 +63,28 @@ export default function Sparkline({
       height={height}
       className={className}
     >
-      {/* Healthy range band */}
+      {/* Healthy range band — slightly stronger green tint so it reads as
+          "in this zone is good" without overwhelming the trend line. */}
       <rect
         x={0}
         y={bandTop}
         width={width}
         height={Math.max(0, bandBottom - bandTop)}
-        fill="rgb(22 163 74 / 0.10)"
+        fill="rgb(22 163 74 / 0.14)"
       />
       {/* Trend line */}
       <polyline
         points={polyline}
         fill="none"
         stroke={stroke}
-        strokeWidth={1.75}
+        strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
       />
-      {/* End-point dot (current reading) */}
-      <circle cx={lastX} cy={lastY} r={2.75} fill={stroke} />
+      {/* End-point dot (current reading) — white halo + filled core so
+          it reads even when the dot lands inside the band. */}
+      <circle cx={lastX} cy={lastY} r={4} fill="#FFFFFF" />
+      <circle cx={lastX} cy={lastY} r={3} fill={stroke} />
     </svg>
   );
 }

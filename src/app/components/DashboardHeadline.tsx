@@ -39,26 +39,28 @@ export default function DashboardHeadline({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-[24px] bg-indigo-600 text-white p-6 lg:p-8 shadow-pop"
+      className="relative overflow-hidden rounded-[20px] bg-indigo-600 text-white p-5 lg:p-6 shadow-pop"
     >
       <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-indigo-400/25 blur-3xl pointer-events-none" />
-      <div className="relative">
-        <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-bold text-indigo-100">
-          <Sparkles size={11} />
-          {eyebrow}
+      <div className="relative grid lg:grid-cols-[1fr_auto] gap-4 lg:gap-6 lg:items-center">
+        <div>
+          <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-bold text-indigo-100">
+            <Sparkles size={11} />
+            {eyebrow}
+          </div>
+          <h1 className="mt-2 font-display text-[20px] sm:text-[22px] lg:text-[26px] leading-[1.2] text-balance">
+            {headline}
+          </h1>
+          {sub && (
+            <p className="mt-1.5 text-[13px] lg:text-[13.5px] text-indigo-100 leading-relaxed max-w-[60ch]">
+              {sub}
+            </p>
+          )}
         </div>
-        <h1 className="mt-3 font-display text-[22px] sm:text-[26px] lg:text-[32px] leading-[1.2] text-balance">
-          {headline}
-        </h1>
-        {sub && (
-          <p className="mt-2 text-[13.5px] lg:text-[14.5px] text-indigo-100 leading-relaxed max-w-[60ch]">
-            {sub}
-          </p>
-        )}
         <button
           type="button"
           onClick={onPrimaryCTA}
-          className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-[13.5px] font-semibold shadow-soft transition-colors"
+          className="inline-flex items-center justify-center gap-2 h-10 lg:h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-[13px] lg:text-[13.5px] font-semibold shadow-soft transition-colors whitespace-nowrap self-start lg:self-center"
         >
           {ctaLabel}
           <ArrowRight size={14} />
