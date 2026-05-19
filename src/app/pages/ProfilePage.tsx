@@ -20,9 +20,17 @@ import { useNavigation, useQuiz, useReports } from '../AppContext';
 import { buildLabelMap, findOptionLabel } from '../data/quiz';
 
 export default function ProfilePage() {
-  const { quiz } = useQuiz();
+  const { quiz, resetQuiz } = useQuiz();
   const { reports } = useReports();
-  const { navigate } = useNavigation();
+  const { navigate, replace } = useNavigation();
+
+  const handleSignOut = () => {
+    // Anonymous account model — sign out resets the quiz and bounces
+    // back to the landing page. Reports persist (they're the user's
+    // locker, semantically separate from the session).
+    resetQuiz();
+    replace({ type: 'landing' });
+  };
 
   const priorityLabels = useMemo(() => buildLabelMap(), []);
 
@@ -233,6 +241,7 @@ export default function ProfilePage() {
               variant="secondary"
               responsiveFullWidth
               leading={<LogOut size={16} />}
+              onClick={handleSignOut}
               className="lg:self-start"
             >
               Sign out

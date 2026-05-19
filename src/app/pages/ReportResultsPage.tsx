@@ -72,6 +72,36 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
   const handleDownload = () => window.print();
 
+  const [shareToast, setShareToast] = useState<string | null>(null);
+  const handleShare = async () => {
+    const url = typeof window !== 'undefined' ? window.location.href : '';
+    const shareData = {
+      title: report?.name ?? 'My report',
+      text: 'My ForMen · Digital Clinic report',
+      url,
+    };
+    try {
+      if (
+        typeof navigator !== 'undefined' &&
+        'share' in navigator &&
+        typeof navigator.share === 'function'
+      ) {
+        await navigator.share(shareData);
+        return;
+      }
+      if (
+        typeof navigator !== 'undefined' &&
+        navigator.clipboard?.writeText
+      ) {
+        await navigator.clipboard.writeText(url);
+        setShareToast('Link copied to clipboard');
+        window.setTimeout(() => setShareToast(null), 2200);
+      }
+    } catch {
+      // User cancelled native share — fail silently.
+    }
+  };
+
   if (!report) {
     return (
       <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
@@ -154,8 +184,11 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                     Download as PDF
                   </Button>
                   <button
-                    className="grid place-items-center w-9 h-9 rounded-[12px] bg-indigo-900/15 text-indigo-900 hover:bg-indigo-900/25"
-                    aria-label="Share"
+                    type="button"
+                    onClick={handleShare}
+                    className="grid place-items-center w-9 h-9 rounded-[12px] bg-indigo-900/15 text-indigo-900 hover:bg-indigo-900/25 transition-colors"
+                    aria-label="Share this report"
+                    title="Share this report"
                   >
                     <Share2 size={16} />
                   </button>
@@ -486,6 +519,20 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
       </Container>
 
       <BottomNav />
+
+      {/* Lightweight toast — surfaces clipboard-copy success without a
+          framework. Auto-dismisses after 2.2s via the share handler. */}
+      {shareToast && (
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed inset-x-0 bottom-24 lg:bottom-8 z-40 grid place-items-center pointer-events-none no-print"
+        >
+          <div className="pointer-events-auto px-4 py-2.5 rounded-full bg-ink text-white text-[12.5px] font-semibold shadow-pop">
+            {shareToast}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

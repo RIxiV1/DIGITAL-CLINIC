@@ -86,15 +86,14 @@ export default function HomePage() {
     navigate({ type: 'results', reportId: ready.id });
   };
 
-  // Per-marker action handler — opens its action plan if the marker
-  // has a problemId, else falls back to the report view.
-  const onMarkerAction = (marker: Biomarker) => () => {
-    if (marker.problemId) {
-      navigate({ type: 'problem', problemId: marker.problemId });
-      return;
-    }
-    if (ready) navigate({ type: 'results', reportId: ready.id });
-  };
+  // Per-marker action handler — only navigable when the marker has a
+  // problemId (we have a real action plan to open). Otherwise the
+  // action label renders as muted/informational text — no fake link
+  // that promises a destination we don't have.
+  const onMarkerAction = (marker: Biomarker) =>
+    marker.problemId
+      ? () => navigate({ type: 'problem', problemId: marker.problemId! })
+      : undefined;
 
   return (
     <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">

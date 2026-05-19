@@ -122,17 +122,25 @@ export default function MarkerAttentionCard({
         {marker.plain}
       </p>
 
-      {actionLabel && (
-        <button
-          type="button"
-          onClick={onAction}
-          disabled={!onAction}
-          className="mt-4 inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-700 hover:text-indigo-800 disabled:text-muted disabled:cursor-default self-start"
-        >
-          {actionLabel}
-          {onAction && <ArrowRight size={12} />}
-        </button>
-      )}
+      {actionLabel &&
+        (onAction ? (
+          <button
+            type="button"
+            onClick={onAction}
+            className="mt-4 inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-700 hover:text-indigo-800 self-start"
+          >
+            {actionLabel}
+            <ArrowRight size={12} />
+          </button>
+        ) : (
+          // No action plan exists for this marker — render the label as
+          // informational guidance, not as a button. Honesty over fake
+          // affordance.
+          <div className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-muted self-start">
+            <span aria-hidden>·</span>
+            {actionLabel}
+          </div>
+        ))}
     </motion.div>
   );
 }
