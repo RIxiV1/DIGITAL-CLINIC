@@ -22,13 +22,18 @@ import {
   statusColor,
   summarizeStatuses,
 } from '../data/biomarkers';
+import { findReport, isSampleReport } from '../data/reports';
 
 type Filter = 'all' | 'concern' | 'attention' | 'good';
 
 export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const { reports } = useReports();
   const { navigate } = useNavigation();
-  const report = reports.find((r) => r.id === reportId);
+  // findReport falls back to the curated sample-reports list, so links
+  // like /results/rep-001 keep working even though the user's locker
+  // starts empty.
+  const report = findReport(reports, reportId);
+  const showingSample = isSampleReport(reportId);
   const [filter, setFilter] = useState<Filter>('all');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
