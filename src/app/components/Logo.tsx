@@ -25,17 +25,19 @@ export default function Logo({ size = 'md', tone = 'dark' }: Props) {
 
   if (pngFailed) {
     // Inline SVG wordmark fallback — same shape as the favicon.
-    const w = Math.round(heightPx * 0.95);
+    // viewBox is 80x80 so "men" at font-size 34 in Georgia doesn't
+    // clip on the right edge (previously 64x64 was too narrow).
+    const w = Math.round(heightPx * 1.0);
     return (
       <span
         className="inline-flex items-center align-middle select-none"
         aria-label="ForMen · Digital Clinic"
         style={{ width: w, height: heightPx }}
       >
-        <svg viewBox="0 0 64 64" width="100%" height="100%" aria-hidden>
+        <svg viewBox="0 0 80 80" width="100%" height="100%" aria-hidden>
           <text
-            x="4"
-            y="26"
+            x="6"
+            y="28"
             fontFamily="Georgia, 'Times New Roman', serif"
             fontSize="22"
             fontWeight="600"
@@ -43,10 +45,10 @@ export default function Logo({ size = 'md', tone = 'dark' }: Props) {
           >
             for
           </text>
-          <rect x="4" y="30" width="28" height="3.5" rx="1.75" fill={color} />
+          <rect x="6" y="32" width="28" height="3.5" rx="1.75" fill={color} />
           <text
-            x="4"
-            y="60"
+            x="6"
+            y="70"
             fontFamily="Georgia, 'Times New Roman', serif"
             fontSize="34"
             fontWeight="700"

@@ -20,10 +20,12 @@
     <meta property="og:image" content="/hero-cover.webp" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <!-- Favicon — the brand's ECG/pulse mark on a blue rounded square,
-         rendered inline as SVG so it stays crisp at any DPI. -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/favicon.svg" />
+    <!-- Favicon — the actual brand wordmark PNG. SVG fallback exists at
+         /favicon.svg for older agents that don't render PNG favicons
+         crisply, but PNG matches the brand asset exactly. -->
+    <link rel="icon" type="image/png" href="/formen-logo.png" />
+    <link rel="alternate icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/formen-logo.png" />
 
     <!-- Preload the hero LCP image so first paint shows it instantly.
          WebP is preferred (~60 KB) — browsers without WebP support skip
