@@ -188,9 +188,8 @@ export default function ProblemDetailPage({
         <div className="lg:max-w-3xl">
           <Button
             size="lg"
-            fullWidth
+            responsiveFullWidth
             onClick={back}
-            className="lg:!w-auto"
           >
             Back to my report
           </Button>

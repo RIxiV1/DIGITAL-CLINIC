@@ -9,7 +9,10 @@ type Props = Omit<HTMLMotionProps<'button'>, 'children'> & {
   variant?: Variant;
   size?: Size;
   shape?: Shape;
+  /** Full-width on every breakpoint. */
   fullWidth?: boolean;
+  /** Full-width on small screens; shrinks to content width on lg+. */
+  responsiveFullWidth?: boolean;
   leading?: ReactNode;
   trailing?: ReactNode;
   children?: ReactNode;
@@ -44,6 +47,7 @@ export default function Button({
   size = 'md',
   shape = 'rounded',
   fullWidth,
+  responsiveFullWidth,
   leading,
   trailing,
   className = '',
@@ -51,6 +55,11 @@ export default function Button({
   type,
   ...rest
 }: Props) {
+  const widthCls = fullWidth
+    ? 'w-full'
+    : responsiveFullWidth
+      ? 'w-full lg:w-auto'
+      : '';
   return (
     <motion.button
       whileTap={{ scale: 0.97 }}
@@ -59,7 +68,7 @@ export default function Button({
       // Default to type="button" so a Button inside a <form> doesn't
       // accidentally submit it.
       type={type ?? 'button'}
-      className={`inline-flex items-center justify-center gap-2 font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${shapeClasses[shape]} ${fullWidth ? 'w-full' : ''} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${shapeClasses[shape]} ${widthCls} ${className}`}
       {...rest}
     >
       {leading}

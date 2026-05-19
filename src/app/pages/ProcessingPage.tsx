@@ -12,6 +12,12 @@ const steps = [
   { id: 'translate', label: 'Translating into plain English' },
 ];
 
+// Duration the active-step indicator hangs on each line. Total processing
+// time = steps.length * STEP_MS + COMPLETION_PAUSE_MS, so the redirect
+// always fires AFTER the ticker has visibly reached the last step.
+const STEP_MS = 900;
+const COMPLETION_PAUSE_MS = 600;
+
 export default function ProcessingPage() {
   const { reports, replace, markReportReady } = useApp();
   const [stepIndex, setStepIndex] = useState(0);
@@ -32,13 +38,16 @@ export default function ProcessingPage() {
         }
         return i + 1;
       });
-    }, 900);
+    }, STEP_MS);
 
-    const done = setTimeout(() => {
-      if (cancelled) return;
-      markReportReady(processingId);
-      replace({ type: 'results', reportId: processingId });
-    }, 4200);
+    const done = setTimeout(
+      () => {
+        if (cancelled) return;
+        markReportReady(processingId);
+        replace({ type: 'results', reportId: processingId });
+      },
+      steps.length * STEP_MS + COMPLETION_PAUSE_MS,
+    );
 
     return () => {
       cancelled = true;
@@ -49,11 +58,11 @@ export default function ProcessingPage() {
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col">
-      <Container className="pt-6">
+      <Container size="narrow" className="pt-6">
         <Logo />
       </Container>
 
-      <Container className="flex-1 flex flex-col items-center justify-center text-center pb-16">
+      <Container size="narrow" className="flex-1 flex flex-col items-center justify-center text-center pb-16">
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

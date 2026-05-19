@@ -229,9 +229,9 @@ export default function ProfilePage() {
             <Button
               size="md"
               variant="secondary"
-              fullWidth
+              responsiveFullWidth
               leading={<LogOut size={16} />}
-              className="lg:!w-auto lg:self-start"
+              className="lg:self-start"
             >
               Sign out
             </Button>

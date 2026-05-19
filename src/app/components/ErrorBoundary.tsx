@@ -23,9 +23,11 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   reset = () => {
+    // Clear the error so the children re-render. Previously we also
+    // forced window.location.reload(), which threw away in-memory
+    // navigation history + quiz answers. Now the user gets back to a
+    // clean tree without losing their context.
     this.setState({ error: null });
-    // Reload to flush any half-applied state.
-    if (typeof window !== 'undefined') window.location.reload();
   };
 
   render() {
@@ -47,18 +49,19 @@ export default class ErrorBoundary extends Component<Props, State> {
               A page render failed mid-flight.
             </h1>
             <p className="mt-3 text-[13.5px] text-ink-soft leading-relaxed">
-              You hit a render error in the app. Reload to get back to a clean
-              state. If it keeps happening on the same page, the message below
-              is the clue to send back.
+              You hit a render error in the app. Try again to get back to a
+              clean state — if it keeps happening on the same page, the
+              message below is the clue to send back.
             </p>
             <pre className="mt-5 text-left text-[11.5px] leading-relaxed font-mono bg-white border border-line rounded-2xl p-4 overflow-auto max-h-48">
               {msg}
             </pre>
             <button
+              type="button"
               onClick={this.reset}
               className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-indigo-600 text-white text-[13.5px] font-semibold shadow-clinical hover:bg-indigo-700 transition-colors"
             >
-              Reload
+              Try again
             </button>
           </div>
         </div>

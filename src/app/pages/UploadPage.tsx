@@ -45,7 +45,7 @@ export default function UploadPage() {
         subtitle="PDF, photo, or screenshot"
       />
 
-      <Container className="pt-5">
+      <Container size="narrow" className="pt-5">
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
@@ -164,7 +164,7 @@ export default function UploadPage() {
       </Container>
 
       <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-4 pb-4 safe-bottom">
-        <Container>
+        <Container size="narrow">
           <Button
             size="lg"
             fullWidth

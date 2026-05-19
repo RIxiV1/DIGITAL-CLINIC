@@ -3,8 +3,10 @@ import type { ReactNode } from 'react';
 type Props = {
   children: ReactNode;
   /**
-   * narrow: phone-style centered column (default — for focused flows)
-   * wide:   expands to a comfortable laptop width on `lg+`
+   * wide:   expands to a comfortable laptop width on `lg+` (default —
+   *         every dashboard/report/profile/landing screen wants this).
+   * narrow: phone-style centered column (for single-flow screens like
+   *         Quiz, Upload, and Processing).
    */
   size?: 'narrow' | 'wide';
   className?: string;
@@ -12,7 +14,7 @@ type Props = {
 
 export default function Container({
   children,
-  size = 'narrow',
+  size = 'wide',
   className = '',
 }: Props) {
   const widthCls =

@@ -218,10 +218,9 @@ export default function RecommendedTestsPage() {
         <div className="lg:max-w-3xl">
           <Button
             size="lg"
-            fullWidth
+            responsiveFullWidth
             onClick={() => navigate({ type: 'home' })}
             trailing={<ArrowRight size={18} />}
-            className="lg:!w-auto"
           >
             Go to my dashboard
           </Button>

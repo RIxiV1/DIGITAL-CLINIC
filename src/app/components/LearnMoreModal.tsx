@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, X } from 'lucide-react';
 import Button from './Button';
 import type { LearnMore } from '../data/markerInfo';
+import { acquireBodyScrollLock } from '../utils/bodyScrollLock';
 
 type Props = {
   open: boolean;
@@ -78,13 +79,12 @@ export default function LearnMoreModal({
     };
 
     document.addEventListener('keydown', onKey);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
+    const releaseScrollLock = acquireBodyScrollLock();
     /* Focus the close button on open */
     const id = window.setTimeout(() => closeBtnRef.current?.focus(), 30);
     return () => {
       document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = prevOverflow;
+      releaseScrollLock();
       window.clearTimeout(id);
     };
   }, [open]);

@@ -111,7 +111,7 @@ export default function QuizPage() {
   return (
     <div className="min-h-screen pb-36 bg-canvas">
       {/* Top */}
-      <Container className="pt-5">
+      <Container size="narrow" className="pt-5">
         <div className="flex items-center justify-between">
           <button
             onClick={goBack}
@@ -168,7 +168,7 @@ export default function QuizPage() {
       </Container>
 
       {/* Step content */}
-      <Container className="mt-6">
+      <Container size="narrow" className="mt-6">
         <AnimatePresence custom={direction} mode="wait">
           <motion.div
             key={step.id}
@@ -241,7 +241,7 @@ export default function QuizPage() {
 
       {/* Sticky bottom CTA */}
       <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-5 pb-5 safe-bottom">
-        <Container>
+        <Container size="narrow">
           <div className="flex items-center gap-2">
             {stepIndex > 0 && (
               <Button variant="secondary" size="lg" onClick={goBack}>
