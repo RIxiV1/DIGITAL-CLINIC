@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bell,
-  ChevronRight,
   CreditCard,
   FileLock2,
   Lock,
@@ -86,8 +85,10 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   <button
-                    aria-label="Edit"
-                    className="grid place-items-center w-9 h-9 rounded-full hover:bg-canvas text-indigo-700"
+                    onClick={() => navigate({ type: 'quiz' })}
+                    aria-label="Edit profile via quiz"
+                    title="Re-do the quiz to update"
+                    className="grid place-items-center w-9 h-9 rounded-full hover:bg-canvas text-indigo-700 transition-colors"
                   >
                     <Pencil size={16} />
                   </button>
@@ -193,9 +194,9 @@ export default function ProfilePage() {
                     hint: 'Who sees what, and when',
                   },
                 ].map((row, i, arr) => (
-                  <button
+                  <div
                     key={row.label}
-                    className={`w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-canvas/60 transition-colors ${
+                    className={`w-full px-5 py-4 flex items-center gap-3 text-left ${
                       i < arr.length - 1 ? 'border-b border-line/70' : ''
                     }`}
                   >
@@ -210,11 +211,10 @@ export default function ProfilePage() {
                         {row.hint}
                       </div>
                     </div>
-                    <ChevronRight
-                      size={16}
-                      className="text-muted shrink-0"
-                    />
-                  </button>
+                    <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-[10px] font-bold uppercase tracking-[0.1em] text-muted shrink-0">
+                      Soon
+                    </span>
+                  </div>
                 ))}
               </Card>
             </section>

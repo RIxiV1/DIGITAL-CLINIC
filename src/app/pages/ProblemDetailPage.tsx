@@ -11,6 +11,7 @@ import Container from '../components/Container';
 import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
+import BottomNav from '../components/BottomNav';
 import { useApp } from '../AppContext';
 import { sampleBiomarkers } from '../data/biomarkers';
 import { getProblem } from '../data/problems';
@@ -25,7 +26,7 @@ export default function ProblemDetailPage({
 
   if (!p) {
     return (
-      <div className="min-h-screen bg-canvas">
+      <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
         <Header variant="page" title="Not found" />
         <Container size="wide" className="pt-10 text-center">
           <p className="text-ink-soft">We couldn’t find that topic.</p>
@@ -33,6 +34,7 @@ export default function ProblemDetailPage({
             Go back
           </Button>
         </Container>
+        <BottomNav />
       </div>
     );
   }
@@ -42,7 +44,7 @@ export default function ProblemDetailPage({
   );
 
   return (
-    <div className="min-h-screen pb-20 bg-canvas">
+    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
       <Header variant="page" title="Deep dive" subtitle={p.title} />
 
       {/* Hero */}
@@ -194,6 +196,8 @@ export default function ProblemDetailPage({
           </Button>
         </div>
       </Container>
+
+      <BottomNav />
     </div>
   );
 }

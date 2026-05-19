@@ -14,6 +14,7 @@ import Card from '../components/Card';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import Pill from '../components/Pill';
+import BottomNav from '../components/BottomNav';
 import { useApp } from '../AppContext';
 import { recommendTestsFor } from '../data/tests';
 
@@ -23,7 +24,7 @@ export default function RecommendedTestsPage() {
   const [expanded, setExpanded] = useState<string | null>(tests[0]?.id ?? null);
 
   return (
-    <div className="min-h-screen pb-32 lg:pb-0 bg-canvas">
+    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
       <Header variant="page" title="Your recommended tests" />
 
       <Container size="wide" className="pt-5 lg:pt-10">
@@ -154,33 +155,23 @@ export default function RecommendedTestsPage() {
         </Card>
       </Container>
 
-      {/* Sticky CTA — mobile only; desktop has top nav for navigation */}
-      <div className="lg:hidden fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-5 pb-5 safe-bottom">
-        <Container>
+      {/* Inline CTA visible on every viewport — no more sticky-bottom takeover
+          that competed with the BottomNav on mobile. */}
+      <Container size="wide" className="mt-6 lg:mt-8">
+        <div className="lg:max-w-3xl">
           <Button
             size="lg"
             fullWidth
             onClick={() => navigate({ type: 'home' })}
             trailing={<ArrowRight size={18} />}
-          >
-            Go to my dashboard
-          </Button>
-        </Container>
-      </div>
-
-      {/* Desktop CTA inline */}
-      <Container size="wide" className="hidden lg:block pb-12">
-        <div className="lg:max-w-3xl">
-          <Button
-            size="lg"
-            onClick={() => navigate({ type: 'home' })}
-            trailing={<ArrowRight size={18} />}
-            className="mt-6"
+            className="lg:!w-auto"
           >
             Go to my dashboard
           </Button>
         </div>
       </Container>
+
+      <BottomNav />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import Container from '../components/Container';
 import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
+import BottomNav from '../components/BottomNav';
 import { useApp } from '../AppContext';
 import {
   biomarkersByCategory,
@@ -62,7 +63,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     .slice(0, 4);
 
   return (
-    <div className="min-h-screen pb-20 bg-canvas">
+    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
       <Header
         variant="page"
         title={report.name}
@@ -447,6 +448,8 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           </div>
         )}
       </Container>
+
+      <BottomNav />
     </div>
   );
 }
