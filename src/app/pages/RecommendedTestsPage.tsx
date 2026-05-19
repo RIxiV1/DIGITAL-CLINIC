@@ -1,12 +1,14 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ArrowRight,
   CheckCircle2,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   Clock,
   Coffee,
+  Info,
   Sparkles,
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -15,13 +17,38 @@ import Container from '../components/Container';
 import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
+import LearnMoreModal from '../components/LearnMoreModal';
 import { useApp } from '../AppContext';
 import { recommendTestsFor } from '../data/tests';
+import { getMarkerInfo } from '../data/markerInfo';
+import { getTestInfo } from '../data/testInfo';
 
 export default function RecommendedTestsPage() {
   const { quiz, navigate } = useApp();
   const tests = useMemo(() => recommendTestsFor(quiz), [quiz]);
   const [expanded, setExpanded] = useState<string | null>(tests[0]?.id ?? null);
+
+  /* Learn More state — only one of these is non-null at a time. */
+  const [openTestId, setOpenTestId] = useState<string | null>(null);
+  const [openMarkerName, setOpenMarkerName] = useState<string | null>(null);
+  /* Element that triggered the modal — restore focus to it on close. */
+  const triggerRef = useRef<HTMLElement | null>(null);
+
+  const openTest = openTestId
+    ? tests.find((t) => t.id === openTestId) ?? null
+    : null;
+  const openTestLM = openTestId ? getTestInfo(openTestId) ?? null : null;
+  const openMarkerLM = openMarkerName ? getMarkerInfo(openMarkerName) ?? null : null;
+  const modalTitle = openTest?.name ?? openMarkerName ?? '';
+  const modalSubtitle = openTest ? openTest.short : 'Marker · Learn more';
+  const modalInfo = openTestLM ?? openMarkerLM;
+
+  const closeModal = () => {
+    setOpenTestId(null);
+    setOpenMarkerName(null);
+    // Return focus to whichever trigger opened the modal.
+    requestAnimationFrame(() => triggerRef.current?.focus());
+  };
 
   return (
     <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
@@ -108,30 +135,60 @@ export default function RecommendedTestsPage() {
                             </p>
                           </div>
 
+                          {/* Test-level Learn More — only shows if testInfo has an entry */}
+                          {getTestInfo(t.id) && (
+                            <button
+                              onClick={(e) => {
+                                triggerRef.current = e.currentTarget;
+                                setOpenTestId(t.id);
+                              }}
+                              className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-indigo-700 hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-md px-1 -mx-1"
+                            >
+                              Learn more about this panel
+                              <ChevronRight size={14} />
+                            </button>
+                          )}
+
                           <div className="mt-4">
                             <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-indigo-700">
                               What’s in this test
                             </div>
                             <ul className="mt-2 grid gap-2">
-                              {t.includes.map((m) => (
-                                <li
-                                  key={m.name}
-                                  className="flex items-start gap-3 py-2 border-b border-line/70 last:border-0"
-                                >
-                                  <CheckCircle2
-                                    size={16}
-                                    className="text-indigo-600 mt-0.5 shrink-0"
-                                  />
-                                  <div>
-                                    <div className="font-semibold text-[14px]">
-                                      {m.name}
+                              {t.includes.map((m) => {
+                                const hasInfo = !!getMarkerInfo(m.name);
+                                return (
+                                  <li
+                                    key={m.name}
+                                    className="flex items-start gap-3 py-2 border-b border-line/70 last:border-0"
+                                  >
+                                    <CheckCircle2
+                                      size={16}
+                                      className="text-indigo-600 mt-0.5 shrink-0"
+                                    />
+                                    <div className="flex-1 min-w-0">
+                                      <div className="font-semibold text-[14px]">
+                                        {m.name}
+                                      </div>
+                                      <div className="text-[13px] text-ink-soft leading-relaxed">
+                                        {m.about}
+                                      </div>
                                     </div>
-                                    <div className="text-[13px] text-ink-soft leading-relaxed">
-                                      {m.about}
-                                    </div>
-                                  </div>
-                                </li>
-                              ))}
+                                    {hasInfo && (
+                                      <button
+                                        onClick={(e) => {
+                                          triggerRef.current = e.currentTarget;
+                                          setOpenMarkerName(m.name);
+                                        }}
+                                        aria-label={`Learn more about ${m.name}`}
+                                        title={`Learn more about ${m.name}`}
+                                        className="shrink-0 mt-0.5 grid place-items-center w-7 h-7 rounded-full text-muted hover:text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
+                                      >
+                                        <Info size={14} />
+                                      </button>
+                                    )}
+                                  </li>
+                                );
+                              })}
                             </ul>
                           </div>
                         </div>
@@ -172,6 +229,14 @@ export default function RecommendedTestsPage() {
       </Container>
 
       <BottomNav />
+
+      <LearnMoreModal
+        open={!!modalInfo}
+        title={modalTitle}
+        subtitle={modalSubtitle}
+        info={modalInfo}
+        onClose={closeModal}
+      />
     </div>
   );
 }
