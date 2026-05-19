@@ -24,14 +24,19 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const [page, setPage] = useState<Page>({ type: 'landing' });
   const [history, setHistory] = useState<Page[]>([]);
 
-  // Keep a ref to the current page so navigate() can read it without
-  // capturing it as a dependency (which would re-create the callback on
-  // every navigation). The ref is updated via the effect below — safe
-  // under Strict Mode because writing to a ref is not a state update.
+  // Refs let navigate()/back() read the current page+history without
+  // capturing them as callback dependencies (which would invalidate the
+  // callback on every change). Updating a ref is not a state update, so
+  // this is Strict-Mode-safe — unlike calling setState inside another
+  // setState updater, which Strict Mode invokes twice in dev.
   const pageRef = useRef(page);
+  const historyRef = useRef(history);
   useEffect(() => {
     pageRef.current = page;
   }, [page]);
+  useEffect(() => {
+    historyRef.current = history;
+  }, [history]);
 
   const navigate = useCallback((next: Page) => {
     setHistory((h) => [...h, pageRef.current]);
@@ -43,11 +48,12 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const back = useCallback(() => {
-    setHistory((h) => {
-      if (h.length === 0) return h;
-      setPage(h[h.length - 1]);
-      return h.slice(0, -1);
-    });
+    const h = historyRef.current;
+    if (h.length === 0) return;
+    // Both setters get called independently, each with a precomputed
+    // value — neither is nested inside the other's updater.
+    setPage(h[h.length - 1]);
+    setHistory(h.slice(0, -1));
   }, []);
 
   const value = useMemo<NavigationValue>(
