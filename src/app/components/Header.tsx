@@ -70,7 +70,14 @@ export default function Header({
         {/* ---------- Mobile / tablet shell ---------- */}
         <div className="flex lg:hidden items-center gap-2 w-full">
           {variant === 'home' ? (
-            <Logo size="md" />
+            <button
+              type="button"
+              onClick={() => navigate({ type: 'home' })}
+              aria-label="Go home"
+              className="flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+            >
+              <Logo size="md" />
+            </button>
           ) : (
             <>
               <button
