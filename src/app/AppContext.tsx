@@ -2,7 +2,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -58,11 +60,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [reports, setReports] = useState<Report[]>(initialReports);
   const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false);
 
+  // Keep a ref to the current page so navigate() can read it without
+  // capturing it as a dependency (and thus identity-flipping every change).
+  // The ref is updated on every render via the effect below — Strict-Mode-safe
+  // because writing to a ref is not a state update.
+  const pageRef = useRef(page);
+  useEffect(() => {
+    pageRef.current = page;
+  }, [page]);
+
+  /* Navigation — both state updaters are pure (no setState inside). */
   const navigate = useCallback((next: Page) => {
-    setPage((prev) => {
-      setHistory((h) => [...h, prev]);
-      return next;
-    });
+    setHistory((h) => [...h, pageRef.current]);
+    setPage(next);
   }, []);
 
   const replace = useCallback((next: Page) => {
@@ -72,25 +82,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const back = useCallback(() => {
     setHistory((h) => {
       if (h.length === 0) return h;
-      const prev = h[h.length - 1];
-      setPage(prev);
+      setPage(h[h.length - 1]);
       return h.slice(0, -1);
     });
   }, []);
 
+  /* Quiz — merge first, then derive hasCompletedQuiz off the next state
+     via effect so we never set state inside another updater. */
   const setQuiz = useCallback((next: Partial<QuizAnswers>) => {
-    setQuizState((prev) => {
-      const merged = { ...prev, ...next };
-      if (
-        merged.age &&
-        merged.activity &&
-        merged.priorities.length > 0
-      ) {
-        setHasCompletedQuiz(true);
-      }
-      return merged;
-    });
+    setQuizState((prev) => ({ ...prev, ...next }));
   }, []);
+
+  useEffect(() => {
+    if (quiz.age && quiz.activity && quiz.priorities.length > 0) {
+      setHasCompletedQuiz(true);
+    }
+  }, [quiz.age, quiz.activity, quiz.priorities.length]);
 
   const resetQuiz = useCallback(() => {
     setQuizState(emptyQuiz);

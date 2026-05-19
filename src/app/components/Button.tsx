@@ -1,17 +1,18 @@
-import { motion } from 'framer-motion';
-import type { ButtonHTMLAttributes, ReactNode } from 'react';
+import { motion, type HTMLMotionProps } from 'framer-motion';
+import type { ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'gold' | 'dark';
 type Size = 'sm' | 'md' | 'lg';
 type Shape = 'pill' | 'rounded';
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> & {
+type Props = Omit<HTMLMotionProps<'button'>, 'children'> & {
   variant?: Variant;
   size?: Size;
   shape?: Shape;
   fullWidth?: boolean;
   leading?: ReactNode;
   trailing?: ReactNode;
+  children?: ReactNode;
 };
 
 const variantClasses: Record<Variant, string> = {
@@ -47,6 +48,7 @@ export default function Button({
   trailing,
   className = '',
   children,
+  type,
   ...rest
 }: Props) {
   return (
@@ -54,8 +56,11 @@ export default function Button({
       whileTap={{ scale: 0.97 }}
       whileHover={{ y: -1 }}
       transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+      // Default to type="button" so a Button inside a <form> doesn't
+      // accidentally submit it.
+      type={type ?? 'button'}
       className={`inline-flex items-center justify-center gap-2 font-semibold transition-colors disabled:opacity-50 disabled:pointer-events-none ${variantClasses[variant]} ${sizeClasses[size]} ${shapeClasses[shape]} ${fullWidth ? 'w-full' : ''} ${className}`}
-      {...(rest as any)}
+      {...rest}
     >
       {leading}
       <span>{children}</span>

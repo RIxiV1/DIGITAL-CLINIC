@@ -18,7 +18,12 @@ export default function UploadPage() {
   const { addReport, replace } = useApp();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
+  // Drag-enter/leave fire for every child element, not just the dropzone
+  // boundary. Counting active drags is the standard workaround so the
+  // "dragging" highlight doesn't flicker when the cursor moves over the
+  // icon or label nested inside the dropzone.
+  const [dragDepth, setDragDepth] = useState(0);
+  const dragging = dragDepth > 0;
 
   const onSelect = (f: File | null) => {
     if (f) setFileName(f.name);
@@ -48,14 +53,18 @@ export default function UploadPage() {
         >
           <Card padded={false} className="overflow-hidden">
             <div
-              onDragOver={(e) => {
+              onDragEnter={(e) => {
                 e.preventDefault();
-                setDragging(true);
+                setDragDepth((d) => d + 1);
               }}
-              onDragLeave={() => setDragging(false)}
+              onDragOver={(e) => e.preventDefault()}
+              onDragLeave={(e) => {
+                e.preventDefault();
+                setDragDepth((d) => Math.max(0, d - 1));
+              }}
               onDrop={(e) => {
                 e.preventDefault();
-                setDragging(false);
+                setDragDepth(0);
                 onSelect(e.dataTransfer.files?.[0] ?? null);
               }}
               onClick={() => inputRef.current?.click()}

@@ -28,6 +28,7 @@ export default function LearnMoreModal({
 }: Props) {
   const titleId = useId();
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
   /**
    * Keep onClose in a ref so the scroll-lock effect doesn't tear down + re-set
    * up on every parent re-render (onClose is usually a new arrow function each
@@ -40,12 +41,42 @@ export default function LearnMoreModal({
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  /* Close on Escape + lock body scroll while open — depends ONLY on `open` */
+  /* Close on Escape + focus-trap Tab + lock body scroll — depends ONLY on `open` */
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onCloseRef.current();
+
+    const focusablesIn = (el: HTMLElement | null) => {
+      if (!el) return [] as HTMLElement[];
+      return Array.from(
+        el.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((node) => !node.hasAttribute('aria-hidden'));
     };
+
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onCloseRef.current();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const nodes = focusablesIn(cardRef.current);
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      // Wrap focus around the card so keyboard users can't tab into the
+      // (visually hidden) page underneath the modal.
+      if (e.shiftKey && (active === first || !cardRef.current?.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
     document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -71,6 +102,7 @@ export default function LearnMoreModal({
           role="presentation"
         >
           <motion.div
+            ref={cardRef}
             initial={{ y: 40, opacity: 0, scale: 0.96 }}
             animate={{ y: 0, opacity: 1, scale: 1 }}
             exit={{ y: 20, opacity: 0, scale: 0.97 }}

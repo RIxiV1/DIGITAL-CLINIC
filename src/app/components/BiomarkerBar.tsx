@@ -33,15 +33,10 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
         ? 'gradient-bar-down'
         : 'gradient-bar-band';
 
-  const Wrapper: any = onClick ? motion.button : motion.div;
+  const wrapperClasses = `w-full text-left rounded-[16px] ${compact ? 'p-4' : 'p-5'} transition-colors ${onClick ? 'hover:bg-canvas/60' : ''}`;
 
-  return (
-    <Wrapper
-      onClick={onClick}
-      whileHover={onClick ? { y: -1 } : undefined}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className={`w-full text-left rounded-[16px] ${compact ? 'p-4' : 'p-5'} transition-colors ${onClick ? 'hover:bg-canvas/60' : ''}`}
-    >
+  const body = (
+    <>
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
@@ -113,6 +108,24 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           )}
         </div>
       )}
-    </Wrapper>
+    </>
   );
+
+  // Render as a real <button> when clickable — keyboard-navigable and
+  // announced correctly to screen readers — otherwise as a plain <div>.
+  if (onClick) {
+    return (
+      <motion.button
+        type="button"
+        onClick={onClick}
+        whileHover={{ y: -1 }}
+        transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+        className={wrapperClasses}
+      >
+        {body}
+      </motion.button>
+    );
+  }
+
+  return <div className={wrapperClasses}>{body}</div>;
 }

@@ -18,9 +18,12 @@ export default function ProcessingPage() {
 
   const latestProcessing =
     reports.find((r) => r.status === 'processing') ?? reports[0];
+  const processingId = latestProcessing?.id;
 
   useEffect(() => {
+    if (!processingId) return;
     let cancelled = false;
+
     const id = setInterval(() => {
       setStepIndex((i) => {
         if (i >= steps.length - 1) {
@@ -33,10 +36,8 @@ export default function ProcessingPage() {
 
     const done = setTimeout(() => {
       if (cancelled) return;
-      if (latestProcessing) {
-        markReportReady(latestProcessing.id);
-        replace({ type: 'results', reportId: latestProcessing.id });
-      }
+      markReportReady(processingId);
+      replace({ type: 'results', reportId: processingId });
     }, 4200);
 
     return () => {
@@ -44,7 +45,7 @@ export default function ProcessingPage() {
       clearInterval(id);
       clearTimeout(done);
     };
-  }, [latestProcessing?.id]);
+  }, [processingId, markReportReady, replace]);
 
   return (
     <div className="min-h-screen bg-canvas flex flex-col">

@@ -2,6 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 import Logo from './Logo';
 import { useApp, type Page } from '../AppContext';
+import { assertNever } from '../utils/assertNever';
 
 type Props = {
   variant?: 'home' | 'page';
@@ -37,8 +38,10 @@ function activeNavId(page: Page): NavSlot['id'] {
       return 'quiz';
     case 'profile':
       return 'profile';
-    default:
+    case 'landing':
       return 'home';
+    default:
+      return assertNever(page);
   }
 }
 

@@ -504,6 +504,8 @@ function PillOptions({
         return (
           <motion.button
             key={opt.id}
+            type="button"
+            aria-pressed={multi ? selected : undefined}
             whileTap={{ scale: 0.95 }}
             whileHover={{ y: -1 }}
             onClick={() => toggle(opt.id)}
@@ -548,6 +550,8 @@ function CardOptions({
         return (
           <motion.button
             key={opt.id}
+            type="button"
+            aria-pressed={selected}
             whileTap={{ scale: 0.985 }}
             onClick={() => toggle(opt.id)}
             className={`relative w-full text-left px-4 py-3.5 rounded-[16px] border transition-all ${

@@ -27,40 +27,75 @@ type Filter = 'all' | 'concern' | 'attention' | 'good';
 
 export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const { reports, navigate } = useApp();
-  const report = reports.find((r) => r.id === reportId) ?? reports[0];
+  const report = reports.find((r) => r.id === reportId);
   const [filter, setFilter] = useState<Filter>('all');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
+  // Hooks must be called unconditionally — derive everything off an empty
+  // biomarker list when the report isn't found, then render the "not found"
+  // view below. This keeps hook order stable across renders.
+  const biomarkers = report?.biomarkers ?? [];
+
   const filtered = useMemo(() => {
-    return report.biomarkers.filter((m) => {
+    return biomarkers.filter((m) => {
       if (filter !== 'all' && m.status !== filter) return false;
       if (activeCategory !== 'all' && m.category !== activeCategory)
         return false;
       return true;
     });
-  }, [report.biomarkers, filter, activeCategory]);
+  }, [biomarkers, filter, activeCategory]);
 
   const summary = useMemo(
-    () => summarizeStatuses(report.biomarkers),
-    [report.biomarkers],
+    () => summarizeStatuses(biomarkers),
+    [biomarkers],
   );
 
   const bottomLine = useMemo(
-    () => bottomLineFor(report.biomarkers),
-    [report.biomarkers],
+    () => bottomLineFor(biomarkers),
+    [biomarkers],
   );
 
   const groups = useMemo(() => biomarkersByCategory(filtered), [filtered]);
   const presentCategoryIds = useMemo(
-    () => new Set(report.biomarkers.map((m) => m.category)),
-    [report.biomarkers],
+    () => new Set(biomarkers.map((m) => m.category)),
+    [biomarkers],
+  );
+
+  const deepDives = useMemo(
+    () =>
+      biomarkers
+        .filter((m) => m.problemId && m.status !== 'good')
+        .slice(0, 4),
+    [biomarkers],
   );
 
   const handleDownload = () => window.print();
 
-  const deepDives = report.biomarkers
-    .filter((m) => m.problemId && m.status !== 'good')
-    .slice(0, 4);
+  if (!report) {
+    return (
+      <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
+        <Header variant="page" title="Report not found" />
+        <Container size="wide" className="pt-10 lg:pt-16 text-center">
+          <div className="mx-auto max-w-md">
+            <h1 className="font-display text-[24px] leading-tight">
+              We couldn’t find that report.
+            </h1>
+            <p className="mt-3 text-[14px] text-ink-soft leading-relaxed">
+              It may have been removed, or the link may be out of date. Head
+              back to your dashboard to pick another one.
+            </p>
+            <Button
+              className="mt-6"
+              onClick={() => navigate({ type: 'home' })}
+            >
+              Back to dashboard
+            </Button>
+          </div>
+        </Container>
+        <BottomNav />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">

@@ -78,21 +78,29 @@ export default function HomePage() {
 
   const priorityLabels = useMemo(() => buildLabelMap(), []);
 
-  const greeting = (() => {
+  const greeting = useMemo(() => {
     const h = new Date().getHours();
     if (h < 12) return 'Good morning';
     if (h < 18) return 'Good afternoon';
     return 'Good evening';
-  })();
+  }, []);
 
-  const topPriorities = quiz.priorities.slice(0, 3);
-  const worthALook =
-    ready?.biomarkers
-      .filter(
-        (m) =>
-          (m.status === 'concern' || m.status === 'attention') && m.problemId,
-      )
-      .slice(0, 3) ?? [];
+  const topPriorities = useMemo(
+    () => quiz.priorities.slice(0, 3),
+    [quiz.priorities],
+  );
+
+  const worthALook = useMemo(
+    () =>
+      ready?.biomarkers
+        .filter(
+          (m) =>
+            (m.status === 'concern' || m.status === 'attention') &&
+            m.problemId,
+        )
+        .slice(0, 3) ?? [],
+    [ready],
+  );
 
   return (
     <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">

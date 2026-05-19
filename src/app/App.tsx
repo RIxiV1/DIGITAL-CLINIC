@@ -10,15 +10,24 @@ import ProcessingPage from './pages/ProcessingPage';
 import ReportResultsPage from './pages/ReportResultsPage';
 import ProblemDetailPage from './pages/ProblemDetailPage';
 import ProfilePage from './pages/ProfilePage';
+import { assertNever } from './utils/assertNever';
 
-function pageKey(p: Page) {
+function pageKey(p: Page): string {
   switch (p.type) {
     case 'results':
       return `results:${p.reportId}`;
     case 'problem':
       return `problem:${p.problemId}`;
-    default:
+    case 'landing':
+    case 'quiz':
+    case 'recommendedTests':
+    case 'home':
+    case 'upload':
+    case 'processing':
+    case 'profile':
       return p.type;
+    default:
+      return assertNever(p);
   }
 }
 
@@ -54,6 +63,8 @@ function PageHost() {
     case 'profile':
       node = <ProfilePage />;
       break;
+    default:
+      assertNever(page);
   }
 
   return (

@@ -1,6 +1,7 @@
 import { House, ClipboardList, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useApp, type Page } from '../AppContext';
+import { assertNever } from '../utils/assertNever';
 
 type ItemId = 'home' | 'quiz' | 'profile';
 
@@ -17,21 +18,30 @@ const items: Item[] = [
   { id: 'profile', label: 'Profile', page: { type: 'profile' }, Icon: User },
 ];
 
+function navIdFor(page: Page): ItemId {
+  switch (page.type) {
+    case 'home':
+    case 'upload':
+    case 'processing':
+    case 'results':
+    case 'problem':
+      return 'home';
+    case 'quiz':
+    case 'recommendedTests':
+      return 'quiz';
+    case 'profile':
+      return 'profile';
+    case 'landing':
+      return 'home';
+    default:
+      return assertNever(page);
+  }
+}
+
 export default function BottomNav() {
   const { page, navigate } = useApp();
 
-  const activeId: ItemId =
-    page.type === 'home' ||
-    page.type === 'upload' ||
-    page.type === 'processing' ||
-    page.type === 'results' ||
-    page.type === 'problem'
-      ? 'home'
-      : page.type === 'quiz' || page.type === 'recommendedTests'
-        ? 'quiz'
-        : page.type === 'profile'
-          ? 'profile'
-          : 'home';
+  const activeId: ItemId = navIdFor(page);
 
   return (
     <nav className="lg:hidden no-print sticky bottom-0 z-30 safe-bottom">
