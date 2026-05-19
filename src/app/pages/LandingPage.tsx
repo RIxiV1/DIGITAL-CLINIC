@@ -244,18 +244,15 @@ function Hero({
 function HeroVisual() {
   return (
     <div className="relative w-full max-w-[560px] mx-auto lg:mx-0 lg:ml-auto lg:-mb-20">
-      {/* Founders / clinicians photo — modern browsers get the WebP
-          (~60 KB vs ~725 KB for the PNG). Browsers without WebP support
-          fall back to the PNG via the <picture> element. */}
-      <picture>
-        <source srcSet="/hero-cover.webp" type="image/webp" />
-        <img
-          src="/hero-cover.png"
-          alt="ForMen · Digital Clinic clinicians"
-          className="relative block w-full h-auto select-none pointer-events-none"
-          draggable={false}
-        />
-      </picture>
+      {/* Founders / clinicians photo — WebP only (60 KB, universally
+          supported in modern browsers). The PNG fallback got removed
+          to keep /public lean. */}
+      <img
+        src="/hero-cover.webp"
+        alt="ForMen · Digital Clinic clinicians"
+        className="relative block w-full h-auto select-none pointer-events-none"
+        draggable={false}
+      />
 
       {/* Floating Hormonal Health Map card — overlaps the photo */}
       <motion.div
