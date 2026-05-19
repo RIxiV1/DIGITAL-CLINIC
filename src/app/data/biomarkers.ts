@@ -1,6 +1,14 @@
 export type BiomarkerStatus = 'good' | 'attention' | 'concern';
 export type GradientDirection = 'band' | 'up' | 'down';
 
+/** A single prior reading for a marker — ordered earliest → latest, NOT
+ *  including the current `value`. Lets the dashboard render trends and
+ *  compute deltas without needing multi-report joins. */
+export type BiomarkerReading = {
+  date: string; // ISO yyyy-mm-dd
+  value: number;
+};
+
 export type Biomarker = {
   id: string;
   name: string;
@@ -20,6 +28,8 @@ export type Biomarker = {
   direction?: GradientDirection;
   plain: string;
   problemId?: string;
+  /** Earlier readings (earliest → latest, exclusive of `value`). */
+  history?: BiomarkerReading[];
 };
 
 export type BiomarkerCategoryId =
@@ -106,6 +116,10 @@ export const sampleBiomarkers: Biomarker[] = [
     plain:
       'Just below the healthy range. Often felt as low drive, less stamina, harder workouts, slower recovery. The good news: very responsive to sleep, training, and Vitamin D.',
     problemId: 'low-testosterone',
+    history: [
+      { date: '2026-01-15', value: 302 },
+      { date: '2026-03-04', value: 295 },
+    ],
   },
   {
     id: 'free-t',
@@ -119,6 +133,10 @@ export const sampleBiomarkers: Biomarker[] = [
     direction: 'up',
     plain:
       'This is the testosterone your body can actually use. Yours is just under the line — a small lift here makes a big day-to-day difference.',
+    history: [
+      { date: '2026-01-15', value: 9.1 },
+      { date: '2026-03-04', value: 8.7 },
+    ],
   },
   {
     id: 'estradiol',
@@ -145,6 +163,10 @@ export const sampleBiomarkers: Biomarker[] = [
     category: 'metabolic',
     direction: 'down',
     plain: 'Your average blood sugar over 3 months. Looks great — keep going.',
+    history: [
+      { date: '2026-01-15', value: 5.4 },
+      { date: '2026-03-04', value: 5.4 },
+    ],
   },
   {
     id: 'glucose',
@@ -160,6 +182,10 @@ export const sampleBiomarkers: Biomarker[] = [
     direction: 'down',
     plain:
       'Right at the upper edge of normal. A walk after every meal will pull this comfortably down.',
+    history: [
+      { date: '2026-01-15', value: 95 },
+      { date: '2026-03-04', value: 97 },
+    ],
   },
   {
     id: 'insulin',
@@ -176,6 +202,10 @@ export const sampleBiomarkers: Biomarker[] = [
     plain:
       'Higher than ideal — your pancreas is working overtime. Early sign worth addressing now, while it’s easy.',
     problemId: 'insulin-resistance',
+    history: [
+      { date: '2026-01-15', value: 11 },
+      { date: '2026-03-04', value: 12 },
+    ],
   },
   {
     id: 'total-chol',
@@ -202,6 +232,10 @@ export const sampleBiomarkers: Biomarker[] = [
     plain:
       'The cholesterol that builds up in artery walls. Yours is meaningfully above ideal — worth bringing down with a 12-week plan.',
     problemId: 'high-ldl',
+    history: [
+      { date: '2026-01-15', value: 128 },
+      { date: '2026-03-04', value: 138 },
+    ],
   },
   {
     id: 'hdl',
@@ -245,7 +279,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'vit-d',
     name: 'Vitamin D (25-OH)',
-    value: 18,
+    value: 26,
     unit: 'ng/mL',
     min: 30,
     max: 100,
@@ -257,6 +291,10 @@ export const sampleBiomarkers: Biomarker[] = [
     plain:
       'Low. Affects mood, energy, immunity, bone health — and is the single easiest thing to fix on this report.',
     problemId: 'low-vit-d',
+    history: [
+      { date: '2026-01-15', value: 14 },
+      { date: '2026-03-04', value: 18 },
+    ],
   },
   {
     id: 'b12',
@@ -272,6 +310,10 @@ export const sampleBiomarkers: Biomarker[] = [
     direction: 'up',
     plain:
       'Technically in range, but lower than what we’d want for sharp thinking and steady energy.',
+    history: [
+      { date: '2026-01-15', value: 270 },
+      { date: '2026-03-04', value: 280 },
+    ],
   },
   {
     id: 'ferritin',
@@ -337,7 +379,7 @@ export function statusColor(s: BiomarkerStatus) {
         text: 'text-attention',
         bg: 'bg-attention-soft',
         dot: 'bg-attention',
-        label: 'WORTH A LOOK',
+        label: 'NEEDS ATTENTION',
       };
     case 'concern':
       return {
@@ -381,11 +423,97 @@ export function bottomLineFor(markers: Biomarker[] = sampleBiomarkers) {
     line =
       'Across the board — you’re in great shape. Keep the basics dialled in and re-test in 6 months.';
   } else if (summary.concern === 0) {
-    line = `Mostly excellent — ${summary.good} markers on track. The ${summary.attention} flagged as “worth a look” are simple lifestyle nudges, not red flags.`;
+    line = `Mostly excellent — ${summary.good} markers on track. The ${summary.attention} flagged as “needs attention” are simple lifestyle nudges, not red flags.`;
   } else if (summary.concern === 1) {
     line = `One thing to act on: ${concerns[0]}. Everything else is on track or close to it — a clean, focused plan is enough to fix it.`;
   } else {
     line = `Two things to focus on: ${concerns.slice(0, 2).join(' and ')}. Both are reversible with the same set of habits — sleep, movement, and a couple of nutrient swaps.`;
   }
   return line;
+}
+
+/* ------------------------------------------------------------------ */
+/* Trend helpers — power the dashboard's headline + sparklines         */
+/* ------------------------------------------------------------------ */
+
+export type TrendDirection = 'up' | 'down' | 'stable';
+
+/** Returns the trend of `value` vs the most recent historical reading,
+ *  or null if there's no history. Threshold below is intentionally
+ *  small (1% of current value) so jitter doesn't read as "rising". */
+export function getTrend(marker: Biomarker): TrendDirection | null {
+  if (!marker.history || marker.history.length === 0) return null;
+  const prev = marker.history[marker.history.length - 1].value;
+  const delta = marker.value - prev;
+  const threshold = Math.max(0.5, Math.abs(prev) * 0.01);
+  if (delta > threshold) return 'up';
+  if (delta < -threshold) return 'down';
+  return 'stable';
+}
+
+/** Most recent prior reading, or undefined if no history. */
+export function getPreviousValue(marker: Biomarker): number | undefined {
+  if (!marker.history || marker.history.length === 0) return undefined;
+  return marker.history[marker.history.length - 1].value;
+}
+
+/**
+ * "Improving" or "declining" judgment that respects the marker's direction:
+ * for an "up-is-better" marker (Vit D, Testosterone), going up = improving;
+ * for a "down-is-better" marker (LDL, Glucose), going down = improving.
+ * For a "band" marker we don't make a value judgment — return 'neutral'.
+ */
+export type TrendTone = 'improving' | 'declining' | 'stable' | 'neutral';
+
+export function getTrendTone(marker: Biomarker): TrendTone {
+  const trend = getTrend(marker);
+  if (trend === null) return 'neutral';
+  if (trend === 'stable') return 'stable';
+  const dir = marker.direction ?? 'band';
+  if (dir === 'band') return 'neutral';
+  const isUpBetter = dir === 'up';
+  if (trend === 'up') return isUpBetter ? 'improving' : 'declining';
+  return isUpBetter ? 'declining' : 'improving';
+}
+
+/** Picks the marker whose trend is most newsworthy for the headline —
+ *  largest declining concern wins, else largest declining attention,
+ *  else largest improving marker, else null. */
+export function pickHeadlineMarker(
+  markers: Biomarker[],
+): Biomarker | null {
+  const withHistory = markers.filter((m) => getTrend(m) !== null);
+  if (withHistory.length === 0) return null;
+
+  const decliningConcerns = withHistory.filter(
+    (m) => m.status === 'concern' && getTrendTone(m) === 'declining',
+  );
+  if (decliningConcerns.length > 0) {
+    return decliningConcerns.sort(
+      (a, b) =>
+        Math.abs(b.value - (getPreviousValue(b) ?? 0)) -
+        Math.abs(a.value - (getPreviousValue(a) ?? 0)),
+    )[0];
+  }
+  const decliningAttention = withHistory.filter(
+    (m) => m.status === 'attention' && getTrendTone(m) === 'declining',
+  );
+  if (decliningAttention.length > 0) return decliningAttention[0];
+
+  const improving = withHistory.filter(
+    (m) => getTrendTone(m) === 'improving',
+  );
+  if (improving.length > 0) return improving[0];
+
+  return null;
+}
+
+/** "+22" / "-12" / "0" formatted for display. */
+export function formatDelta(marker: Biomarker): string | null {
+  const prev = getPreviousValue(marker);
+  if (prev === undefined) return null;
+  const delta = marker.value - prev;
+  const rounded = Math.abs(delta) < 1 ? delta.toFixed(1) : Math.round(delta).toString();
+  if (delta > 0) return `+${rounded}`;
+  return rounded;
 }

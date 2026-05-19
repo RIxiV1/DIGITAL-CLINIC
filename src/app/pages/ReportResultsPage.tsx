@@ -171,7 +171,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 />
                 <BottomLineTile
                   count={summary.attention}
-                  label="Worth a look"
+                  label="Needs attention"
                   tone="attention"
                 />
                 <BottomLineTile
@@ -198,7 +198,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                     [
                       { id: 'all', label: 'All markers' },
                       { id: 'concern', label: 'Needs care' },
-                      { id: 'attention', label: 'Worth a look' },
+                      { id: 'attention', label: 'Needs attention' },
                       { id: 'good', label: 'On track' },
                     ] satisfies Array<{ id: Filter; label: string }>
                   ).map((f) => {
@@ -340,7 +340,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                     [
                       { id: 'all', label: 'All markers' },
                       { id: 'concern', label: 'Needs care' },
-                      { id: 'attention', label: 'Worth a look' },
+                      { id: 'attention', label: 'Needs attention' },
                       { id: 'good', label: 'On track' },
                     ] satisfies Array<{ id: Filter; label: string }>
                   ).map((f) => {
