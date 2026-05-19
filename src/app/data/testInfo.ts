@@ -1,101 +1,106 @@
 /**
- * Test-panel-level educational content for the "Learn More" modal on the
- * Recommended Tests page. Keyed by `RecommendedTest.id` from `tests.ts`.
+ * Panel-category-level educational content for the "Learn More" modal on
+ * the Recommended Tests page. Keyed by the panel category id from the
+ * recommendation engine in `tests.ts` (foundational / hormonal / metabolic
+ * / nutritional / screening / fertility).
+ *
+ * Old test ids (hormone / lipid / thyroid / vitamins / liver-kidney) are
+ * gone — the engine now groups by category, not by named test.
  */
 
 import type { LearnMore } from './markerInfo';
 
 export const testInfo: Record<string, LearnMore> = {
-  hormone: {
+  foundational: {
     measures:
-      'A bundle of the five key male hormonal markers: Total Testosterone, Free Testosterone, SHBG, LH/FSH, and Estradiol. Drawn fasted, between 8–10 AM, when testosterone peaks naturally.',
+      'The six universal markers every man should run: Total Testosterone, Free Testosterone, SHBG, Vitamin D, TSH (thyroid signal), and fasting glucose. Drawn fasting between 8–10 AM when testosterone peaks naturally.',
     importance:
-      'The single most useful test for any man from his 30s onward. One blood draw tells you your hormonal baseline — production, availability, conversion, signal — in a single picture.',
+      'This is the hormonal baseline plus the two screens (TSH and fasting glucose) that mimic low-T symptoms most often. Without these six, you can’t interpret anything else. With them, you have a reference point for the rest of your life.',
     hormonalImpact:
-      'This panel covers the entire HPG axis in five markers. Each one tells a different part of the story; together they distinguish primary from secondary causes of low T, identify high estradiol, and tell you whether SHBG is the bottleneck.',
+      'Total T + Free T + SHBG form the hormonal triangle — you can’t read any one without the other two. Vitamin D is required for testosterone production. TSH and glucose rule out thyroid + early metabolic causes of low-T symptoms before assuming the problem is hormonal.',
     improve: [
       'Establishing the baseline IS the action — you can’t improve what you haven’t measured',
-      'Test at the same time of day for fair comparison on re-tests',
-      'Re-test in 12 weeks if you change something (sleep, training, diet, supplement) to measure the actual impact',
+      'Always test in the morning, fasted — for fair comparison on re-tests',
+      'Re-test in 12 weeks if you change something significant (sleep, training, diet, supplement)',
+    ],
+  },
+
+  hormonal: {
+    measures:
+      'The pituitary signals (LH, FSH), the secondary hormones (Prolactin, Estradiol, DHT), and the stress axis (Cortisol AM, DHEA-S). Everything downstream and upstream of testosterone that affects how it works.',
+    importance:
+      'These tell you WHERE in the system any imbalance sits. Low T with high LH = the testes are failing. Low T with low LH = the brain signal is weak. High prolactin = something’s suppressing the whole loop. Cortisol high = stress is the driver. You can’t fix what you haven’t located.',
+    hormonalImpact:
+      'This panel covers the full HPG axis — hypothalamus → pituitary → gonads — plus the stress axis that constantly modulates it. The fastest way to a precise diagnosis when the foundational panel shows low T but doesn’t explain why.',
+    improve: [
+      'Sleep 7–8 hours — most hormonal recovery happens in deep sleep',
+      'Lift heavy 2–3× a week — moves testosterone, lowers cortisol',
+      'Address chronic stressors at the source (sleep apnea, financial, relational)',
+      'Lose visceral fat — it suppresses LH and raises estradiol',
+      'Treat any underactive thyroid first — it lowers SHBG and free T',
     ],
   },
 
   metabolic: {
     measures:
-      'HbA1c (3-month sugar average), fasting glucose, fasting insulin, and HOMA-IR. Drawn fasting in the morning. The complete early-warning metabolic picture.',
+      'HbA1c (3-month sugar average), Fasting Insulin, HOMA-IR (insulin resistance score), Lipid Panel, and IGF-1 (growth hormone marker). Catches metabolic decline years before standard tests do.',
     importance:
-      'Catches insulin resistance years before diabetes shows up on a standard test. For men, this panel is also a hormonal panel in disguise — every marker here suppresses or raises testosterone.',
+      'Insulin resistance is one of the strongest drivers of low T in modern men — it suppresses SHBG, increases the conversion of T to estradiol via belly fat, and worsens sleep. Catching it here gives you years of runway before it becomes a diabetes diagnosis.',
     hormonalImpact:
-      'Insulin resistance is one of the strongest drivers of low T in modern men. It suppresses SHBG, increases the conversion of T to estradiol via belly fat, and worsens sleep. Fixing the metabolic picture often fixes the hormonal one with no T therapy needed.',
+      'Metabolic health and hormonal health are the same project. Fixing insulin resistance often raises T more than any hormone therapy. Lipids respond visibly within 12 weeks. IGF-1 declines steadily after 30 — tracking it gives you the "biological age" trend.',
     improve: [
       'Walk for 10 minutes after every meal — biggest single lever',
       'Strength training 2× a week — adds the muscle that "parks" glucose',
       'Cut sugar in liquid form (chai, soda, juice)',
-      'Protein-first meals — eat protein and vegetables before carbs',
+      'Protein-first meals — protein and veg before carbs at each meal',
       'Earlier dinner — eating before 7 PM lowers fasting glucose noticeably',
     ],
   },
 
-  lipid: {
+  nutritional: {
     measures:
-      'Total cholesterol, LDL, HDL, triglycerides, and Apo-B. The complete cardiovascular risk picture. Drawn fasting.',
+      'Iron stores (Ferritin), Vitamin B12, Zinc, and intracellular Magnesium (RBC). The four deficiencies that quietly cause "hormonal" symptoms — fatigue, brain fog, hair loss, poor sleep — when the actual fix is a cheap supplement.',
     importance:
-      'Heart disease is India’s leading cause of death. The lipid panel is the most actionable single piece of cardiac-risk information — every number on it responds to lifestyle within 8–12 weeks.',
+      'Cheap to test, easy to fix. Many men get treated for low T or low thyroid when the real culprit is one of these four. Always rule them out before assuming the symptoms are hormonal.',
     hormonalImpact:
-      'Lipid health and hormonal health are linked. The same lifestyle that improves lipids (movement, sleep, less alcohol, less refined carbs) improves testosterone. Statins, when used, do not lower testosterone — that’s a common myth.',
-    improve: [
-      'Soluble fibre (oats, beans, psyllium) drops LDL fastest',
-      'Walk after dinner specifically — lowers triglycerides',
-      'Two fistfuls of nuts daily for the long game',
-      'Strength training raises HDL',
-      'Re-test in 12 weeks if making changes — lipids respond visibly faster than weight does',
-    ],
-  },
-
-  thyroid: {
-    measures:
-      'TSH, free T3, free T4 — the three numbers that together tell the full thyroid story. No fasting needed; morning preferred for consistency on re-tests.',
-    importance:
-      'Thyroid dysfunction mimics low testosterone almost perfectly: fatigue, weight gain, low mood, brain fog, cold hands, hair changes. Many men get treated for low T without ever ruling thyroid out first.',
-    hormonalImpact:
-      'The thyroid axis runs parallel to the HPG axis with regulatory crosstalk. Low thyroid lowers free T and SHBG. High thyroid raises SHBG. Either direction shifts your testosterone availability.',
-    improve: [
-      'Iodine adequacy from iodised salt, dairy, seafood',
-      'Selenium (200 µg/day from brazil nuts) supports T4 → T3 conversion',
-      'Manage stress — cortisol blunts thyroid output',
-      'Don’t crash diet — calorie restriction tanks T3 quickly',
-      'Eat enough carbs — extreme low-carb diets lower T3',
-    ],
-  },
-
-  vitamins: {
-    measures:
-      'Vitamin D (25-OH), Vitamin B12, and Ferritin (iron stores). The three deficiencies that show up most often in Indian men — and most often look like low T or low thyroid.',
-    importance:
-      'Cheap to test, easy to fix. Most fatigue, mood, and brain-fog complaints have one of these three behind them. Often the first thing to fix before assuming the symptoms are hormonal.',
-    hormonalImpact:
-      'Vitamin D is required for testosterone production. B12 deficiency mimics low T symptoms exactly. Low iron impairs thyroid hormone conversion. Fix these three first — many "hormonal" complaints resolve on their own.',
+      'Vitamin D is required for testosterone production. Zinc supports T synthesis. Iron is required for thyroid hormone conversion. Magnesium regulates cortisol and supports T. Fix these four first — many "hormonal" complaints resolve on their own.',
     improve: [
       'Vitamin D: sunlight + supplement if needed, aim for 40–80 ng/mL',
       'B12: methylcobalamin 500–1000 µg/day if vegetarian or borderline',
-      'Ferritin: pair plant iron with Vitamin C, avoid tea with iron-rich meals, treat any gut absorption issues',
-      'Re-test in 8–12 weeks after starting supplements',
+      'Iron: pair plant iron with Vitamin C, avoid tea with iron meals',
+      'Zinc: 15 mg/day with food if low; oysters, red meat, pumpkin seeds otherwise',
+      'Magnesium: glycinate 200–400 mg before bed — also helps sleep',
     ],
   },
 
-  'liver-kidney': {
+  screening: {
     measures:
-      'Liver enzymes (ALT, AST, GGT) plus kidney filters (creatinine, eGFR, urea). The "silent organs" check — neither liver nor kidney problems usually have symptoms until they’re advanced.',
+      'Full thyroid (T3, T4 on top of TSH), Complete Blood Count (CBC), and PSA (prostate marker for men 40+). Routine checks for systems that quietly drift before symptoms appear.',
     importance:
-      'Fatty liver is extremely common in men, mostly silent, and a leading hidden driver of insulin resistance and low T. Kidney decline from diabetes and hypertension is similarly silent for years. An annual baseline catches both before they’re irreversible.',
+      'These aren’t for symptoms — they’re for catching things before they become symptoms. T3/T4 catches thyroid conversion issues when TSH alone misses them. CBC catches anaemia + inflammation. PSA gives a prostate baseline.',
     hormonalImpact:
-      'The liver clears hormones (especially estrogens) and makes SHBG — its health directly shapes your hormonal availability. Stressed kidneys lower testosterone and raise prolactin.',
+      'Thyroid dysfunction mimics low T almost exactly — and standard TSH-only testing misses conversion problems. Anaemia from any cause secondarily suppresses T. PSA tracks loosely with DHT and prostate health.',
     improve: [
-      'Lose visceral fat — reverses fatty liver faster than anything else',
-      'Limit alcohol — the main driver of elevated GGT and ALT',
-      'Control blood pressure under 130/80',
-      'Stay hydrated — 2–3L daily',
-      'Avoid chronic NSAID use — kidney damage is dose-dependent',
+      'These are for early detection — the action is the test itself',
+      'Annual cadence is right for most men over 40',
+      'PSA: avoid sexual activity 48 hours before the draw (raises it transiently)',
+      'Thyroid: iodine and selenium adequacy support both production and conversion',
+    ],
+  },
+
+  fertility: {
+    measures:
+      'Semen Analysis — a separate appointment, not a blood draw. Measures sperm count, motility, morphology, and volume. Collected after 2–5 days of abstinence.',
+    importance:
+      'Fertility runs on two tracks — the hormones telling your testes what to do (LH, FSH, in the Hormonal Panel), and the output itself (this test). Both can be normal while the other is off, which is why a real fertility workup needs both.',
+    hormonalImpact:
+      'Sperm production depends on testosterone inside the testes (much higher than blood T) plus FSH stimulation. Anything suppressing LH/FSH — including exogenous testosterone — suppresses sperm. Men on TRT typically have very low sperm counts; this is reversible.',
+    improve: [
+      'Avoid heat — saunas, hot tubs, laptop-on-lap sessions, tight underwear',
+      'Antioxidants — Vitamin C, E, zinc, selenium, CoQ10 — support sperm quality',
+      'Stop smoking and limit alcohol',
+      'If on TRT and trying to conceive — switch to hCG or clomiphene to restart sperm production (with a doctor)',
+      'Sperm production takes ~74 days; changes today show up in a re-test 3 months later',
     ],
   },
 };

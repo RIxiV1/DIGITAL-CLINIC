@@ -78,6 +78,205 @@ export const markerInfo: Record<string, LearnMore> = {
     ],
   },
 
+  LH: {
+    measures:
+      'Luteinizing Hormone — the pituitary signal that tells your testes to make testosterone. Reported in mIU/mL. Best drawn in the morning alongside Total T.',
+    importance:
+      'LH is the diagnostic compass. Low T with HIGH LH = your testes are struggling to respond (primary hypogonadism). Low T with LOW or normal LH = the signal itself is weak (secondary, often pituitary or lifestyle-driven). Two completely different diagnoses, two different treatments.',
+    hormonalImpact:
+      'LH is the middle stage of the HPG axis — pituitary output that drives testicular testosterone production. Estrogen, prolactin, and obesity all suppress LH. Reading it alongside T tells you whether the brain or the testes is the bottleneck.',
+    improve: [
+      'Not directly "improvable" — it’s an indicator',
+      'If suppressed by high estrogen or prolactin, address those first',
+      'Weight loss + better sleep often raise LH back to normal',
+      'Pituitary imaging if persistently low alongside low T',
+    ],
+  },
+
+  FSH: {
+    measures:
+      'Follicle-Stimulating Hormone — the pituitary signal that drives sperm production. Reported in mIU/mL.',
+    importance:
+      'FSH is the fertility-side compass. Elevated FSH with low sperm count signals testicular failure. Low FSH usually points at the pituitary. Always read alongside LH and a semen analysis.',
+    hormonalImpact:
+      'FSH and LH share the same pituitary axis. Most things that suppress LH also suppress FSH — obesity, steroid use, poor sleep, chronic stress. Sperm production needs adequate FSH plus adequate testosterone in the testis itself.',
+    improve: [
+      'Address whatever is suppressing the pituitary axis — weight, sleep, alcohol, exogenous steroids',
+      'Zinc and Vitamin D adequacy support spermatogenesis',
+      'Heat exposure (saunas, long laptop-on-lap sessions) reduces output — minimise',
+      'If considering fertility treatment, FSH + LH + semen analysis is the starting triad',
+    ],
+  },
+
+  Prolactin: {
+    measures:
+      'A hormone made by the pituitary gland. Usually associated with breastfeeding in women, but men make it too. Healthy <15 ng/mL. Reported in ng/mL.',
+    importance:
+      'Elevated prolactin in men shuts down the entire testosterone system — it suppresses LH/FSH, which suppresses T, which causes low libido, ED, fatigue, and infertility. Often missed because doctors don’t routinely check it in men.',
+    hormonalImpact:
+      'High prolactin is one of the most common reversible causes of low T. The fix is usually identifying the cause (medication, pituitary microadenoma, chronic stress, hypothyroidism) and treating that. Once prolactin normalises, T usually follows on its own.',
+    improve: [
+      'Avoid blood draws right after sexual activity or strenuous exercise — both transiently raise it',
+      'Review any medications: antipsychotics, antidepressants, and some anti-nausea drugs can raise prolactin',
+      'Treat hypothyroidism if present — low thyroid raises prolactin',
+      'If consistently elevated, a pituitary MRI is the next step — small benign prolactinomas are common and very treatable',
+    ],
+  },
+
+  DHT: {
+    measures:
+      'Dihydrotestosterone — a more potent form of testosterone, converted by an enzyme called 5-alpha-reductase. Reported in ng/dL.',
+    importance:
+      'DHT is the main driver of male pattern hair loss. It’s also crucial for prostate growth and male sexual function in development. Genetic sensitivity matters more than absolute level — some men go bald at "normal" DHT.',
+    hormonalImpact:
+      'DHT is downstream of testosterone. When T → DHT conversion is high, you get hair loss and prostate enlargement. Drugs like finasteride block the conversion enzyme, which preserves hair at the cost of slightly lower libido for some men.',
+    improve: [
+      'Saw palmetto extract (320 mg/day) modestly inhibits 5-alpha-reductase',
+      'Topical minoxidil targets follicles directly without affecting whole-body DHT',
+      'Finasteride 1 mg/day — strongest evidence for hair retention; discuss side effects with a doctor first',
+      'Lifestyle (zinc, Vitamin D, lower insulin) supports natural balance',
+    ],
+  },
+
+  'Cortisol (AM)': {
+    measures:
+      'Your stress hormone, measured first thing in the morning when it naturally peaks. Healthy 6–23 µg/dL between 6–8 AM. Reported in µg/dL.',
+    importance:
+      'Cortisol that’s chronically high (or weirdly low — burned out) is one of the strongest disruptors of testosterone, sleep, mood, and metabolic health. Catching it here lets you address the stress driver before it tanks everything else.',
+    hormonalImpact:
+      'Cortisol and testosterone are inversely linked — chronic high cortisol suppresses T directly and via the pituitary. The brain prioritises survival over reproduction. Cortisol also worsens insulin resistance and disrupts the thyroid axis.',
+    improve: [
+      'Sleep 7–8 hours — single biggest cortisol-lowering lever',
+      'Cut caffeine after 2 PM — extends cortisol into the evening',
+      'Daily walks outdoors — sunlight helps reset the cortisol rhythm',
+      'Strength training (not endurance) — endurance work raises cortisol; lifting lowers chronic levels',
+      'Address the actual stressor — sleep apnea, chronic financial stress, undertreated anxiety — bigger leverage than any supplement',
+    ],
+  },
+
+  'DHEA-S': {
+    measures:
+      'Dehydroepiandrosterone sulfate — the most abundant hormone in your body, produced by the adrenal glands. Acts as the precursor pool the body draws from to make testosterone and estradiol. Reported in µg/dL.',
+    importance:
+      'DHEA-S is your body’s stress buffer. It rises in your 20s, peaks around 30, then steadily declines. Chronic stress burns through it faster. Low DHEA-S in your 30s or 40s is a sign your stress system is depleted.',
+    hormonalImpact:
+      'DHEA-S sits at the top of the steroid hormone cascade — it can be converted into testosterone or estradiol depending on what the body needs. When DHEA-S is low and cortisol is high, you’re in the "burnt out" pattern: stressed but lacking the resilience hormones to handle it.',
+    improve: [
+      'Sleep — DHEA-S is restored during deep sleep',
+      'Strength training (not chronic cardio) raises DHEA-S',
+      'Address chronic stress at the source',
+      'Some men benefit from short DHEA supplementation (25–50 mg/day) — discuss with a doctor; not casual',
+    ],
+  },
+
+  'IGF-1': {
+    measures:
+      'Insulin-like Growth Factor 1 — the main mediator of growth hormone’s effects in the body. A stable proxy for growth hormone status because GH itself fluctuates too fast to measure usefully. Reported in ng/mL; age-adjusted reference ranges.',
+    importance:
+      'IGF-1 declines steadily after age 30 — that decline tracks with the loss of muscle, recovery, and skin/connective tissue quality men associate with "getting older." Catching the trend matters more than any single value.',
+    hormonalImpact:
+      'Growth hormone and IGF-1 interact with the HPG axis at every level. Low IGF-1 worsens insulin sensitivity and lowers testosterone bioavailability. The same lifestyle that supports T (sleep, training, lower body fat) also supports IGF-1.',
+    improve: [
+      'Sleep — most growth hormone is released during deep sleep',
+      'Strength training, especially heavy compound lifts',
+      'Adequate protein intake (1.6–2.0 g/kg)',
+      'Avoid excess simple carbs late in the day — they blunt the nighttime GH pulse',
+      'Don’t chase exogenous GH — risks outweigh benefits unless you have measured deficiency',
+    ],
+  },
+
+  Zinc: {
+    measures:
+      'A trace mineral essential for testosterone production, immune function, hair growth, and over 300 enzyme reactions. Healthy 70–150 µg/dL. Reported in µg/dL.',
+    importance:
+      'Zinc deficiency directly lowers testosterone — small clinical trials show supplementation in deficient men raises T meaningfully. Also accelerates hair loss when low. Common in vegetarians and heavy sweaters.',
+    hormonalImpact:
+      'Zinc is a cofactor for the enzymes that make testosterone in the testes and that convert T → DHT. It also moderates aromatase (the T → estradiol enzyme). Adequate zinc keeps the whole male hormonal system running cleanly.',
+    improve: [
+      'Red meat, shellfish (especially oysters), pumpkin seeds, lentils',
+      'If supplementing: 15–30 mg/day with food. Higher doses long-term can suppress copper',
+      'Avoid taking zinc + iron + calcium in the same meal — they compete for absorption',
+      'Vegetarians benefit most from a daily 15 mg dose',
+    ],
+  },
+
+  'Magnesium (RBC)': {
+    measures:
+      'Magnesium measured inside red blood cells — a more accurate picture of tissue magnesium than the standard serum test, which can read normal while you’re actually depleted. Healthy 4.2–6.8 mg/dL.',
+    importance:
+      'Magnesium is the sleep + stress + muscle mineral. Deficiency causes restless sleep, leg cramps, anxiety, low energy, and disrupted blood sugar. Most men are short of it without realising — the standard serum test misses it.',
+    hormonalImpact:
+      'Magnesium is required for over 300 reactions including testosterone biosynthesis. It also regulates cortisol release and supports thyroid function. Low magnesium is associated with lower free testosterone in men.',
+    improve: [
+      'Pumpkin seeds, dark chocolate, leafy greens, almonds',
+      'Magnesium glycinate 200–400 mg before bed — improves sleep + recovery',
+      'Avoid magnesium oxide (poorly absorbed) and magnesium citrate (laxative effect)',
+      'Re-test in 8 weeks of supplementation — RBC magnesium moves slowly',
+    ],
+  },
+
+  CBC: {
+    measures:
+      'Complete Blood Count — measures red cells, white cells, platelets, and haemoglobin. The baseline blood test every adult should have on file.',
+    importance:
+      'Catches anaemia (low red cells), infection or inflammation (high white cells), and clotting issues (platelets). All three mimic or worsen hormonal symptoms — anaemia especially causes fatigue and brain fog that look exactly like low T or low thyroid.',
+    hormonalImpact:
+      'Testosterone stimulates red blood cell production — men on TRT often see haematocrit rise. Conversely, anaemia from any cause can suppress testosterone secondarily. A CBC alongside hormones tells you whether the fatigue is hormonal or hematologic.',
+    improve: [
+      'Most CBC issues need investigation, not lifestyle change — the value is in catching them',
+      'Anaemia: address iron / B12 / folate / gut absorption',
+      'Inflammation: identify the source (infection, autoimmune, undiagnosed condition)',
+      'If on TRT, monitor haematocrit and donate blood if it climbs above 52%',
+    ],
+  },
+
+  PSA: {
+    measures:
+      'Prostate-Specific Antigen — a protein made by the prostate gland that leaks into blood. Healthy <4 ng/mL, but trend over time matters more than absolute value. Reported in ng/mL.',
+    importance:
+      'PSA is the standard prostate screening tool from age 40 onward. Catches prostate enlargement and (more importantly) prostate cancer early, when it’s most treatable. A baseline in your 40s gives you a comparison point for the rest of your life.',
+    hormonalImpact:
+      'PSA rises with DHT levels and with prostate growth — both of which testosterone supports. TRT can raise PSA slightly; that’s expected, not a contraindication. The trajectory matters: a fast-rising PSA (even at "normal" values) deserves urological workup.',
+    improve: [
+      'Annual PSA from age 45 (40 if family history of prostate cancer)',
+      'Avoid sexual activity for 48 hours before the draw — temporarily raises PSA',
+      'Diet rich in tomatoes (lycopene) and cruciferous vegetables associates with lower prostate cancer risk',
+      'Maintain healthy body weight — obesity is a stronger prostate cancer risk than most realise',
+    ],
+  },
+
+  'Semen Analysis': {
+    measures:
+      'A separate laboratory test (not a blood draw) that measures sperm count, motility (how well they move), morphology (shape), and volume. Collected after 2–5 days of abstinence.',
+    importance:
+      'The output side of the fertility equation. Hormones (LH, FSH, T) tell you whether the signals are right; semen analysis tells you whether the production is working. Both can be normal while the other is off — that’s why fertility workups need both.',
+    hormonalImpact:
+      'Sperm production depends on testosterone INSIDE the testes (much higher than blood T) plus FSH stimulation. Anything that suppresses LH/FSH — including exogenous testosterone use — suppresses sperm production. A man on TRT will usually have very low sperm counts.',
+    improve: [
+      'Avoid heat: saunas, hot tubs, long sessions with laptop on lap, tight underwear',
+      'Stop smoking and limit alcohol — both reduce sperm count and motility',
+      'Antioxidant-rich diet — Vitamin C, E, zinc, selenium, CoQ10 all support sperm quality',
+      'If trying to conceive while on TRT — switch to hCG or clomiphene to restart sperm production (with a doctor)',
+      'Sperm production takes ~74 days — changes made today show up in a re-test 3 months later',
+    ],
+  },
+
+  'Lipid Panel': {
+    measures:
+      'A bundled blood test measuring Total Cholesterol, LDL ("bad"), HDL ("good"), Triglycerides, and increasingly Apo-B. The standard cardiovascular risk panel. Drawn fasting.',
+    importance:
+      'Heart disease is India’s #1 cause of death, and the lipid panel is the most actionable single piece of cardiac risk information you can have. Every number on it responds visibly to lifestyle within 8–12 weeks.',
+    hormonalImpact:
+      'Lipid health and hormonal health are linked. The same lifestyle that improves lipids (movement, sleep, less alcohol, less refined carbs) improves testosterone. Cholesterol is also the raw material your body uses to make testosterone — so very low cholesterol can impair hormone production.',
+    improve: [
+      'Soluble fibre (oats, beans, psyllium) drops LDL fastest',
+      'Daily 30-minute walk after dinner lowers triglycerides over weeks',
+      'Two fistfuls of nuts daily for the long game',
+      'Strength training raises HDL',
+      'Re-test in 12 weeks if making changes — lipids respond visibly faster than weight does',
+    ],
+  },
+
   Estradiol: {
     measures:
       'The estrogen your body makes — yes, men make it too. Mostly converted from testosterone by an enzyme called aromatase, much of it in fat tissue. Reported in pg/mL.',
