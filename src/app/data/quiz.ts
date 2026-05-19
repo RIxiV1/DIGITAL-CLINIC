@@ -1,5 +1,5 @@
 /**
- * Quiz flow, restructured per the "Quiz Flow Feedback" brief.
+ * Quiz flow.
  *
  * Now three screens (was four), reordered to lead with symptoms — the most
  * engaging "yes, that's me" moment — and to bury the demographic survey

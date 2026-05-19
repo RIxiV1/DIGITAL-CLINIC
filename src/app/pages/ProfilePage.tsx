@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bell,
@@ -16,6 +16,7 @@ import Container from '../components/Container';
 import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
+import DataPanelModal from '../components/DataPanelModal';
 import { useNavigation, useQuiz, useReports } from '../AppContext';
 import { buildLabelMap, findOptionLabel } from '../data/quiz';
 
@@ -31,6 +32,10 @@ export default function ProfilePage() {
     resetQuiz();
     replace({ type: 'landing' });
   };
+
+  // "My data & exports" opens DataPanelModal, which surfaces storage
+  // stats and a one-button wipe path.
+  const [dataPanelOpen, setDataPanelOpen] = useState(false);
 
   const priorityLabels = useMemo(() => buildLabelMap(), []);
 
@@ -184,55 +189,69 @@ export default function ProfilePage() {
               </h2>
 
               <Card padded={false} className="mt-4 overflow-hidden">
-                {[
-                  {
-                    Icon: Bell,
-                    label: 'Notifications',
-                    hint: 'Reminders, retest alerts',
-                  },
-                  {
-                    Icon: FileLock2,
-                    label: 'My data & exports',
-                    hint: 'Download or delete everything',
-                  },
-                  {
-                    Icon: CreditCard,
-                    label: 'Membership',
-                    hint: 'Founder’s Circle · active',
-                  },
-                  {
-                    Icon: Lock,
-                    label: 'Security & passcode',
-                    hint: 'Face ID, app lock',
-                  },
-                  {
-                    Icon: ShieldCheck,
-                    label: 'Privacy & consent',
-                    hint: 'Who sees what, and when',
-                  },
-                ].map((row, i, arr) => (
-                  <div
-                    key={row.label}
-                    className={`w-full px-5 py-4 flex items-center gap-3 text-left ${
-                      i < arr.length - 1 ? 'border-b border-line/70' : ''
-                    }`}
-                  >
-                    <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
-                      <row.Icon size={16} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-[14px]">
-                        {row.label}
+                {(
+                  [
+                    {
+                      Icon: Bell,
+                      label: 'Notifications',
+                      hint: 'Reminders, retest alerts',
+                      onClick: undefined,
+                    },
+                    {
+                      Icon: FileLock2,
+                      label: 'My data & exports',
+                      hint: 'See what we store · delete everything',
+                      onClick: () => setDataPanelOpen(true),
+                    },
+                    {
+                      Icon: CreditCard,
+                      label: 'Membership',
+                      hint: 'Founder’s Circle · active',
+                      onClick: undefined,
+                    },
+                    {
+                      Icon: Lock,
+                      label: 'Security & passcode',
+                      hint: 'Face ID, app lock',
+                      onClick: undefined,
+                    },
+                    {
+                      Icon: ShieldCheck,
+                      label: 'Privacy & consent',
+                      hint: 'Who sees what, and when',
+                      onClick: undefined,
+                    },
+                  ] as const
+                ).map((row, i, arr) => {
+                  const Wrapper = row.onClick ? 'button' : 'div';
+                  return (
+                    <Wrapper
+                      key={row.label}
+                      type={row.onClick ? 'button' : undefined}
+                      onClick={row.onClick}
+                      className={`w-full px-5 py-4 flex items-center gap-3 text-left ${
+                        i < arr.length - 1 ? 'border-b border-line/70' : ''
+                      } ${row.onClick ? 'hover:bg-canvas/60 transition-colors cursor-pointer' : ''}`}
+                    >
+                      <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
+                        <row.Icon size={16} />
                       </div>
-                      <div className="text-[12px] text-muted truncate">
-                        {row.hint}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-[14px]">
+                          {row.label}
+                        </div>
+                        <div className="text-[12px] text-muted truncate">
+                          {row.hint}
+                        </div>
                       </div>
-                    </div>
-                    <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-[10px] font-bold uppercase tracking-[0.1em] text-muted shrink-0">
-                      Soon
-                    </span>
-                  </div>
-                ))}
+                      {!row.onClick && (
+                        <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-[10px] font-bold uppercase tracking-[0.1em] text-muted shrink-0">
+                          Soon
+                        </span>
+                      )}
+                    </Wrapper>
+                  );
+                })}
               </Card>
             </section>
 
@@ -255,6 +274,11 @@ export default function ProfilePage() {
       </Container>
 
       <BottomNav />
+
+      <DataPanelModal
+        open={dataPanelOpen}
+        onClose={() => setDataPanelOpen(false)}
+      />
     </div>
   );
 }

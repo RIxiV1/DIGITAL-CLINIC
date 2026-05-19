@@ -1,5 +1,6 @@
 import { sampleBiomarkers, type Biomarker } from './biomarkers';
 import type { ReportBadge } from '../components/StatusBadge';
+import { formatDate } from '../utils/uiUtils';
 
 export type ReportStatus = 'processing' | 'ready';
 
@@ -82,11 +83,7 @@ export function makeReport(name: string): Report {
     id: `rep-${Math.random().toString(36).slice(2, 8)}`,
     name,
     lab: 'New upload',
-    uploadedOn: new Date().toLocaleDateString('en-GB', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    }),
+    uploadedOn: formatDate(new Date()),
     status: 'processing',
     badge: 'processing',
     biomarkers: sampleBiomarkers,

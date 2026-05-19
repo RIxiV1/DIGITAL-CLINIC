@@ -4,10 +4,17 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 import type { QuizAnswers } from './types';
+import {
+  loadQuiz,
+  loadQuizComplete,
+  saveQuiz,
+  saveQuizComplete,
+} from '../utils/persistence';
 
 type QuizValue = {
   quiz: QuizAnswers;
@@ -24,8 +31,27 @@ const emptyQuiz: QuizAnswers = {
 };
 
 export function QuizProvider({ children }: { children: ReactNode }) {
-  const [quiz, setQuizState] = useState<QuizAnswers>(emptyQuiz);
-  const [hasCompletedQuiz, setHasCompletedQuiz] = useState(false);
+  // Hydrate from localStorage on first mount so a returning user sees
+  // their quiz answers preserved across sessions.
+  const [quiz, setQuizState] = useState<QuizAnswers>(() => {
+    const persisted = loadQuiz<QuizAnswers>();
+    if (persisted && typeof persisted === 'object') {
+      // Defensive merge — persisted state might be from an older schema
+      // missing the arrays we now require.
+      return {
+        ...emptyQuiz,
+        ...persisted,
+        priorities: Array.isArray(persisted.priorities)
+          ? persisted.priorities
+          : [],
+        symptoms: Array.isArray(persisted.symptoms) ? persisted.symptoms : [],
+      };
+    }
+    return emptyQuiz;
+  });
+  const [hasCompletedQuiz, setHasCompletedQuiz] = useState<boolean>(
+    () => loadQuizComplete(),
+  );
 
   const setQuiz = useCallback((next: Partial<QuizAnswers>) => {
     setQuizState((prev) => ({ ...prev, ...next }));
@@ -38,6 +64,26 @@ export function QuizProvider({ children }: { children: ReactNode }) {
       setHasCompletedQuiz(true);
     }
   }, [quiz.age, quiz.activity, quiz.priorities.length]);
+
+  // Persist on every change (skipping the first render so we don't
+  // overwrite the freshly-hydrated localStorage).
+  const firstQuiz = useRef(true);
+  useEffect(() => {
+    if (firstQuiz.current) {
+      firstQuiz.current = false;
+      return;
+    }
+    saveQuiz(quiz);
+  }, [quiz]);
+
+  const firstComplete = useRef(true);
+  useEffect(() => {
+    if (firstComplete.current) {
+      firstComplete.current = false;
+      return;
+    }
+    saveQuizComplete(hasCompletedQuiz);
+  }, [hasCompletedQuiz]);
 
   const resetQuiz = useCallback(() => {
     setQuizState(emptyQuiz);
