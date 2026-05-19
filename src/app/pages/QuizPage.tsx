@@ -5,44 +5,59 @@ import Button from '../components/Button';
 import Container from '../components/Container';
 import Logo from '../components/Logo';
 import { useApp, type QuizAnswers } from '../AppContext';
-import { quizSteps, totalQuizSteps } from '../data/quiz';
+import { quizSteps, totalQuizSteps, type QuizStep } from '../data/quiz';
+
+type Field = 'age' | 'activity' | 'priorities' | 'symptoms';
 
 export default function QuizPage() {
-  const { quiz, setQuiz, navigate, replace, back, hasCompletedQuiz } = useApp();
+  const { quiz, setQuiz, replace, back, hasCompletedQuiz } = useApp();
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [isPersonalizing, setIsPersonalizing] = useState(false);
   const [confirmExit, setConfirmExit] = useState(false);
 
   const step = quizSteps[stepIndex];
+  const isCompound = !!step.subSteps;
   const progress = ((stepIndex + 1) / totalQuizSteps) * 100;
 
-  const currentValue = quiz[step.field as keyof QuizAnswers] as
-    | string
-    | string[]
-    | undefined;
+  /* ---- simple-step helpers ---- */
+  const currentValue =
+    !isCompound && step.field
+      ? (quiz[step.field as keyof QuizAnswers] as
+          | string
+          | string[]
+          | undefined)
+      : undefined;
 
-  const isSelected = (id: string) =>
-    step.multi
-      ? (currentValue as string[] | undefined)?.includes(id) ?? false
-      : currentValue === id;
+  const isSelectedFor = (id: string, field: Field): boolean => {
+    const value = quiz[field as keyof QuizAnswers];
+    if (Array.isArray(value)) return value.includes(id);
+    return value === id;
+  };
 
-  const toggle = (id: string) => {
-    if (step.multi) {
-      const next = new Set((currentValue as string[] | undefined) ?? []);
+  const toggleFor = (id: string, field: Field, multi: boolean) => {
+    if (multi) {
+      const value = quiz[field as keyof QuizAnswers] as string[] | undefined;
+      const next = new Set(value ?? []);
       if (next.has(id)) next.delete(id);
       else next.add(id);
-      setQuiz({ [step.field]: Array.from(next) } as Partial<QuizAnswers>);
+      setQuiz({ [field]: Array.from(next) } as Partial<QuizAnswers>);
     } else {
-      setQuiz({ [step.field]: id } as Partial<QuizAnswers>);
+      setQuiz({ [field]: id } as Partial<QuizAnswers>);
     }
   };
 
-  const canContinue = step.multi
-    ? step.field === 'symptoms'
-      ? true
-      : ((currentValue as string[] | undefined)?.length ?? 0) > 0
-    : !!currentValue;
+  const canContinue = (() => {
+    if (isCompound) {
+      return step.subSteps!.every((s) => !!quiz[s.field]);
+    }
+    if (step.multi) {
+      // Symptoms screen is skippable
+      if (step.field === 'symptoms') return true;
+      return ((currentValue as string[] | undefined)?.length ?? 0) > 0;
+    }
+    return !!currentValue;
+  })();
 
   const goNext = () => {
     if (stepIndex < totalQuizSteps - 1) {
@@ -83,10 +98,14 @@ export default function QuizPage() {
     replace(hasCompletedQuiz ? { type: 'home' } : { type: 'landing' });
   };
 
-  const sectionOrder: Array<'basics' | 'priorities' | 'symptoms'> = [
-    'basics',
-    'priorities',
+  /**
+   * New section order — symptoms first to create the "yes, that's me" moment,
+   * demographics last as the low-engagement housekeeping step.
+   */
+  const sectionOrder: Array<QuizStep['sectionId']> = [
     'symptoms',
+    'priorities',
+    'basics',
   ];
 
   return (
@@ -141,9 +160,8 @@ export default function QuizPage() {
           })}
         </div>
 
-        {/* Progress strip — step counter only. Section label is now inside the
-            animated block so it crossfades with the question instead of
-            updating instantly while the old title is still visible. */}
+        {/* Progress strip — step counter only. Section label is inside the
+            animated block so it crossfades with the question. */}
         <div className="mt-3 flex items-center justify-end text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
           Step {stepIndex + 1} of {totalQuizSteps} · {Math.round(progress)}%
         </div>
@@ -177,19 +195,39 @@ export default function QuizPage() {
               {step.subtitle}
             </p>
 
-            {step.layout === 'cards' ? (
-              <CardOptions
-                options={step.options}
-                isSelected={isSelected}
-                toggle={toggle}
+            {isCompound ? (
+              <CompoundOptions
+                subSteps={step.subSteps!}
+                isSelectedFor={isSelectedFor}
+                toggleFor={toggleFor}
               />
+            ) : step.layout === 'cards' ? (
+              <div className="mt-6">
+                <CardOptions
+                  options={step.options ?? []}
+                  isSelected={(id) =>
+                    !!step.field && isSelectedFor(id, step.field)
+                  }
+                  toggle={(id) =>
+                    step.field &&
+                    toggleFor(id, step.field, step.multi ?? false)
+                  }
+                />
+              </div>
             ) : (
-              <PillOptions
-                options={step.options}
-                isSelected={isSelected}
-                toggle={toggle}
-                multi={step.multi}
-              />
+              <div className="mt-6">
+                <PillOptions
+                  options={step.options ?? []}
+                  isSelected={(id) =>
+                    !!step.field && isSelectedFor(id, step.field)
+                  }
+                  toggle={(id) =>
+                    step.field &&
+                    toggleFor(id, step.field, step.multi ?? false)
+                  }
+                  multi={step.multi ?? false}
+                />
+              </div>
             )}
 
             {step.field === 'symptoms' && (
@@ -247,6 +285,56 @@ export default function QuizPage() {
           />
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Compound options — used by the merged Age + Activity screen          */
+/* ------------------------------------------------------------------ */
+
+function CompoundOptions({
+  subSteps,
+  isSelectedFor,
+  toggleFor,
+}: {
+  subSteps: NonNullable<QuizStep['subSteps']>;
+  isSelectedFor: (id: string, field: Field) => boolean;
+  toggleFor: (id: string, field: Field, multi: boolean) => void;
+}) {
+  return (
+    <div className="mt-7 grid gap-8">
+      {subSteps.map((sub, i) => (
+        <motion.section
+          key={sub.field}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{
+            opacity: 1,
+            y: 0,
+            transition: { delay: 0.1 + i * 0.08, duration: 0.32 },
+          }}
+        >
+          <div className="text-[15px] font-semibold text-ink leading-tight">
+            {sub.question}
+          </div>
+          <div className="mt-3">
+            {sub.layout === 'cards' ? (
+              <CardOptions
+                options={sub.options}
+                isSelected={(id) => isSelectedFor(id, sub.field)}
+                toggle={(id) => toggleFor(id, sub.field, false)}
+              />
+            ) : (
+              <PillOptions
+                options={sub.options}
+                isSelected={(id) => isSelectedFor(id, sub.field)}
+                toggle={(id) => toggleFor(id, sub.field, false)}
+                multi={false}
+              />
+            )}
+          </div>
+        </motion.section>
+      ))}
     </div>
   );
 }
@@ -394,6 +482,10 @@ function PersonalizingOverlay({ onDone }: { onDone: () => void }) {
   );
 }
 
+/* ------------------------------------------------------------------ */
+/* Reusable option groups (no top margin — caller controls spacing)    */
+/* ------------------------------------------------------------------ */
+
 function PillOptions({
   options,
   isSelected,
@@ -406,7 +498,7 @@ function PillOptions({
   multi: boolean;
 }) {
   return (
-    <div className="mt-6 flex flex-wrap gap-2.5">
+    <div className="flex flex-wrap gap-2.5">
       {options.map((opt) => {
         const selected = isSelected(opt.id);
         return (
@@ -450,7 +542,7 @@ function CardOptions({
   toggle: (id: string) => void;
 }) {
   return (
-    <div className="mt-6 grid gap-2.5">
+    <div className="grid gap-2.5">
       {options.map((opt) => {
         const selected = isSelected(opt.id);
         return (

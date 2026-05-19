@@ -17,7 +17,7 @@ import BottomNav from '../components/BottomNav';
 import ProgressBar from '../components/ProgressBar';
 import StatusBadge from '../components/StatusBadge';
 import { useApp } from '../AppContext';
-import { quizSteps } from '../data/quiz';
+import { buildLabelMap } from '../data/quiz';
 import { summarizeStatuses } from '../data/biomarkers';
 import { badgeFor } from '../data/reports';
 
@@ -25,50 +25,45 @@ const priorityCopy: Record<
   string,
   { headline: string; sub: string; bar: number }
 > = {
+  sexual: {
+    headline: 'Reclaim your drive',
+    sub: 'Testosterone, prolactin, and estradiol — the three levers behind libido and performance.',
+    bar: 42,
+  },
+  'hair-scalp': {
+    headline: 'Keep your hairline',
+    sub: 'DHT drives most male hair loss. Iron and thyroid quietly accelerate it.',
+    bar: 38,
+  },
   energy: {
     headline: 'Steady, all-day energy',
     sub: 'Most energy dips trace to D3, B12, or thyroid. We’ll watch those.',
     bar: 36,
   },
+  fertility: {
+    headline: 'Set up for fatherhood',
+    sub: 'LH, FSH, and semen analysis — two tracks, both worth checking.',
+    bar: 45,
+  },
   weight: {
     headline: 'Get the metabolism back',
-    sub: 'Insulin and sugar handling matter more than calorie counting.',
+    sub: 'Insulin and estrogen run body composition more than calories do.',
     bar: 28,
-  },
-  sexual: {
-    headline: 'Reclaim your drive',
-    sub: 'Testosterone, sleep, and stress hormones — three levers worth tracking.',
-    bar: 42,
-  },
-  heart: {
-    headline: 'Protect the long game',
-    sub: 'LDL, ApoB, and blood pressure tracked over time. Small wins compound.',
-    bar: 55,
   },
   sleep: {
     headline: 'Deeper, repairing sleep',
-    sub: 'Cortisol rhythm, screen habits — we’ll surface what’s out of sync.',
+    sub: 'Cortisol rhythm + low T form a loop. We’ll surface what’s out of sync.',
     bar: 30,
   },
   mood: {
     headline: 'Lift mood from the inside',
-    sub: 'Vitamin D, B12 and thyroid sit behind surprising amounts of mood drag.',
+    sub: 'Vitamin D, B12, thyroid and cortisol sit behind surprising amounts of mood drag.',
     bar: 33,
   },
-  muscle: {
-    headline: 'Build lean, strong tissue',
-    sub: 'Testosterone, protein, and recovery. We’ll keep score.',
-    bar: 48,
-  },
-  focus: {
-    headline: 'Sharper, longer focus',
-    sub: 'B12, iron, and sleep depth — the brain’s quietest drivers.',
-    bar: 38,
-  },
-  longevity: {
-    headline: 'Stack the long-life basics',
-    sub: 'ApoB, glucose, and consistency. Boring beats brilliant here.',
-    bar: 50,
+  hormonal: {
+    headline: 'The complete picture',
+    sub: 'Every key hormone measured in one draw — the full HPG axis read.',
+    bar: 55,
   },
 };
 
@@ -81,13 +76,7 @@ export default function HomePage() {
     [ready],
   );
 
-  const priorityLabels = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const step of quizSteps) {
-      for (const o of step.options) map.set(o.id, o.label);
-    }
-    return map;
-  }, []);
+  const priorityLabels = useMemo(() => buildLabelMap(), []);
 
   const greeting = (() => {
     const h = new Date().getHours();

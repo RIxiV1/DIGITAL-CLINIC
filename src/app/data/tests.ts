@@ -21,8 +21,8 @@ export const allTests: RecommendedTest[] = [
     whyTemplate: (q) =>
       q.priorities.includes('sexual') || q.symptoms.includes('low-libido')
         ? 'You flagged sexual health or low libido — testosterone and related hormones often sit behind it.'
-        : q.priorities.includes('muscle') || q.priorities.includes('energy')
-          ? 'Energy and muscle response are closely tied to testosterone and thyroid hormones.'
+        : q.priorities.includes('hormonal') || q.priorities.includes('energy')
+          ? 'Energy and drive are closely tied to testosterone, thyroid, and the rest of the HPG axis.'
           : 'A baseline hormone picture is one of the most useful tests anyone can run from their 30s onward.',
     includes: [
       { name: 'Total Testosterone', about: 'Your primary male hormone — drives energy, libido, muscle.' },
@@ -33,7 +33,7 @@ export const allTests: RecommendedTest[] = [
     ],
     fasting: true,
     turnaround: '24 hrs',
-    priorityKeys: ['sexual', 'muscle', 'energy', 'mood'],
+    priorityKeys: ['sexual', 'hormonal', 'energy', 'mood'],
     symptomKeys: ['low-libido', 'low-mood', 'low-energy'],
   },
   {
@@ -55,15 +55,15 @@ export const allTests: RecommendedTest[] = [
     fasting: true,
     turnaround: '24 hrs',
     priorityKeys: ['weight', 'energy'],
-    symptomKeys: ['belly-fat', 'low-energy', 'foggy-mind'],
+    symptomKeys: ['belly-fat', 'low-energy', 'brain-fog'],
   },
   {
     id: 'lipid',
     name: 'Heart Health Panel',
     short: 'Cholesterol & lipids',
     whyTemplate: (q) =>
-      q.priorities.includes('heart') || q.priorities.includes('longevity')
-        ? 'You picked heart or longevity as a priority. This is the standard panel cardiologists use.'
+      q.priorities.includes('hormonal') || q.symptoms.includes('difficulty-in-bed')
+        ? 'Erection quality has a vascular side as well as a hormonal one. Lipids show the vascular half.'
         : 'Heart disease is India’s #1 cause of death. Worth checking yearly from 30.',
     includes: [
       { name: 'Total Cholesterol', about: 'All the cholesterol in your blood combined.' },
@@ -74,8 +74,8 @@ export const allTests: RecommendedTest[] = [
     ],
     fasting: true,
     turnaround: '24 hrs',
-    priorityKeys: ['heart', 'weight', 'longevity'],
-    symptomKeys: [],
+    priorityKeys: ['weight', 'hormonal'],
+    symptomKeys: ['difficulty-in-bed'],
     alwaysRecommend: true,
   },
   {
@@ -101,8 +101,8 @@ export const allTests: RecommendedTest[] = [
     name: 'Vitamin & Mineral Check',
     short: 'D, B12, iron',
     whyTemplate: (q) =>
-      q.symptoms.includes('low-energy') || q.symptoms.includes('foggy-mind')
-        ? 'Low energy and foggy mind are most often a vitamin D or B12 deficiency.'
+      q.symptoms.includes('low-energy') || q.symptoms.includes('brain-fog')
+        ? 'Low energy and brain fog are most often a vitamin D or B12 deficiency.'
         : 'Vitamin D deficiency is near-universal in India. Cheap to test, easy to fix.',
     includes: [
       { name: 'Vitamin D (25-OH)', about: 'Drives bone, mood, and immune function.' },
@@ -111,8 +111,8 @@ export const allTests: RecommendedTest[] = [
     ],
     fasting: false,
     turnaround: '24 hrs',
-    priorityKeys: ['energy', 'focus', 'mood'],
-    symptomKeys: ['low-energy', 'foggy-mind', 'low-mood'],
+    priorityKeys: ['energy', 'mood', 'hormonal'],
+    symptomKeys: ['low-energy', 'brain-fog', 'low-mood'],
     alwaysRecommend: true,
   },
   {
@@ -129,7 +129,7 @@ export const allTests: RecommendedTest[] = [
     ],
     fasting: false,
     turnaround: '24 hrs',
-    priorityKeys: ['longevity'],
+    priorityKeys: ['hormonal'],
     symptomKeys: [],
     alwaysRecommend: true,
   },

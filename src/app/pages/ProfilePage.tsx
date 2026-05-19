@@ -17,23 +17,19 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
 import { useApp } from '../AppContext';
-import { quizSteps } from '../data/quiz';
+import { buildLabelMap, findOptionLabel } from '../data/quiz';
 
 export default function ProfilePage() {
   const { quiz, navigate, reports } = useApp();
 
-  const priorityLabels = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const step of quizSteps) {
-      for (const o of step.options) map.set(o.id, o.label);
-    }
-    return map;
-  }, []);
+  const priorityLabels = useMemo(() => buildLabelMap(), []);
 
-  const ageLabel =
-    quizSteps[0].options.find((o) => o.id === quiz.age)?.label ?? 'Not set';
-  const activityLabel =
-    quizSteps[1].options.find((o) => o.id === quiz.activity)?.label ?? 'Not set';
+  const ageLabel = quiz.age
+    ? findOptionLabel('age', quiz.age) ?? 'Not set'
+    : 'Not set';
+  const activityLabel = quiz.activity
+    ? findOptionLabel('activity', quiz.activity) ?? 'Not set'
+    : 'Not set';
 
   return (
     <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
