@@ -28,12 +28,23 @@ export default function LearnMoreModal({
 }: Props) {
   const titleId = useId();
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  /**
+   * Keep onClose in a ref so the scroll-lock effect doesn't tear down + re-set
+   * up on every parent re-render (onClose is usually a new arrow function each
+   * time). If we depended on onClose, repeated mount/unmount of the keydown
+   * listener + repeated body.style mutations are needless churn — and on rare
+   * timing edge-cases can leave body.overflow stuck at 'hidden'.
+   */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
 
-  /* Close on Escape + lock body scroll while open */
+  /* Close on Escape + lock body scroll while open — depends ONLY on `open` */
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', onKey);
     const prevOverflow = document.body.style.overflow;
@@ -45,7 +56,7 @@ export default function LearnMoreModal({
       document.body.style.overflow = prevOverflow;
       window.clearTimeout(id);
     };
-  }, [open, onClose]);
+  }, [open]);
 
   return (
     <AnimatePresence>

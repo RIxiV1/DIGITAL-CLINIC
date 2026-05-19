@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppProvider, useApp, type Page } from './AppContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import LandingPage from './pages/LandingPage';
 import QuizPage from './pages/QuizPage';
 import RecommendedTestsPage from './pages/RecommendedTestsPage';
@@ -75,8 +76,10 @@ function PageHost() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <PageHost />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <PageHost />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }
