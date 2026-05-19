@@ -61,49 +61,60 @@ export default function ProfilePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4 }}
             >
-              <Card raised className="!p-6">
-                <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <div className="w-16 h-16 rounded-2xl grid place-items-center bg-indigo-600 text-white font-display text-[24px]">
-                      S
-                    </div>
-                    <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gold-500 grid place-items-center text-indigo-900">
-                      <Sparkles size={10} strokeWidth={3} />
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-display text-[20px] leading-tight">
-                      Suhaib
-                    </div>
-                    <div className="text-[12px] text-muted mt-0.5">
-                      Member since Apr 2026
-                    </div>
-                    <div className="mt-2 flex items-center gap-1.5">
-                      <Pill tone="gold" size="sm">
-                        <Sparkles size={10} /> Founder’s Circle
-                      </Pill>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => navigate({ type: 'quiz' })}
-                    aria-label="Edit profile via quiz"
-                    title="Re-do the quiz to update"
-                    className="grid place-items-center w-9 h-9 rounded-full hover:bg-canvas text-indigo-700 transition-colors"
-                  >
-                    <Pencil size={16} />
-                  </button>
-                </div>
+              <Card
+                raised
+                className="!bg-indigo-600 border-indigo-600 text-white !p-6 relative overflow-hidden"
+              >
+                <div className="absolute -top-14 -right-14 w-44 h-44 rounded-full bg-indigo-400/25 blur-3xl pointer-events-none" />
+                <div className="absolute -bottom-20 -left-10 w-44 h-44 rounded-full bg-gold-500/10 blur-3xl pointer-events-none" />
 
-                <div className="mt-5 grid grid-cols-3 gap-2">
-                  <ProfileStat
-                    label="Reports"
-                    value={String(reports.length)}
-                  />
-                  <ProfileStat
-                    label="Age band"
-                    value={quiz.age ? ageLabel : '—'}
-                  />
-                  <ProfileStat label="Activity" value={activityLabel} />
+                <div className="relative">
+                  <div className="flex items-center gap-4">
+                    <div className="relative shrink-0">
+                      <div className="w-16 h-16 rounded-2xl grid place-items-center bg-gold-500 text-indigo-900 font-display text-[26px] shadow-soft">
+                        S
+                      </div>
+                      <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white text-indigo-700 grid place-items-center shadow-soft">
+                        <Sparkles size={10} strokeWidth={3} />
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-display text-[22px] leading-tight">
+                        Suhaib
+                      </div>
+                      <div className="text-[12px] text-indigo-100 mt-0.5">
+                        Member since Apr 2026
+                      </div>
+                      <div className="mt-2 flex items-center gap-1.5">
+                        <Pill tone="gold" size="sm">
+                          <Sparkles size={10} /> Founder’s Circle
+                        </Pill>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => navigate({ type: 'quiz' })}
+                      aria-label="Edit profile via quiz"
+                      title="Re-do the quiz to update"
+                      className="grid place-items-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0"
+                    >
+                      <Pencil size={16} />
+                    </button>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-3 gap-2">
+                    <ProfileStat
+                      label="Reports"
+                      value={String(reports.length)}
+                    />
+                    <ProfileStat
+                      label="Age band"
+                      value={quiz.age ? ageLabel : '—'}
+                    />
+                    <ProfileStat
+                      label="Activity"
+                      value={activityLabel}
+                    />
+                  </div>
                 </div>
               </Card>
             </motion.div>
@@ -243,9 +254,11 @@ export default function ProfilePage() {
 
 function ProfileStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[14px] bg-canvas p-3 text-center border border-line/70">
-      <div className="font-display text-[16px] leading-tight">{value}</div>
-      <div className="text-[10px] uppercase tracking-[0.12em] font-bold text-muted mt-1.5">
+    <div className="rounded-[14px] bg-indigo-700/50 p-3 text-center">
+      <div className="font-display text-[16px] leading-tight text-white truncate">
+        {value}
+      </div>
+      <div className="text-[10px] uppercase tracking-[0.12em] font-bold text-indigo-100 mt-1.5">
         {label}
       </div>
     </div>
