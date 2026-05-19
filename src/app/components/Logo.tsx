@@ -1,50 +1,65 @@
 type Props = {
   size?: 'sm' | 'md' | 'lg';
+  /** 'dark' = brand indigo on a transparent background (default).
+   *  'light' = white on a dark background (for indigo cards/heroes). */
   tone?: 'dark' | 'light';
 };
 
+/**
+ * Brand wordmark — the stacked "for / — / men" mark in brand indigo.
+ * Same visual as the favicon, rendered inline as SVG so it stays crisp
+ * at every size and inherits the tone via CSS color.
+ *
+ * Uses Georgia (a serif that ships with every OS) so we don't depend on
+ * a Google Font request to render the mark.
+ */
 export default function Logo({ size = 'md', tone = 'dark' }: Props) {
-  const text =
+  // Square dimensions per size variant — kept compact so the mark sits
+  // nicely in headers and on settings rows.
+  const dim =
     size === 'sm'
-      ? 'text-[14px]'
+      ? { w: 30, h: 32 }
       : size === 'md'
-        ? 'text-[15.5px]'
-        : 'text-[18px]';
-  const mark =
-    size === 'sm' ? 'w-7 h-7' : size === 'md' ? 'w-8 h-8' : 'w-10 h-10';
+        ? { w: 38, h: 40 }
+        : { w: 52, h: 56 };
 
-  const brandColor = tone === 'dark' ? 'text-ink' : 'text-white';
-  const subColor = tone === 'dark' ? 'text-ink-soft' : 'text-white/85';
-  const dotColor = tone === 'dark' ? 'text-blue-600' : 'text-blue-200';
+  const color = tone === 'dark' ? '#2D3B8E' : '#FFFFFF';
 
   return (
-    <div
-      className="inline-flex items-center gap-2 select-none"
+    <span
+      className="inline-block select-none align-middle"
       aria-label="ForMen · Digital Clinic"
+      style={{ width: dim.w, height: dim.h }}
     >
-      <div
-        className={`${mark} rounded-xl grid place-items-center bg-blue-600 text-white shadow-soft`}
+      <svg
+        viewBox="0 0 64 64"
+        width="100%"
+        height="100%"
+        role="img"
+        aria-hidden
       >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth={2.3}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="w-[60%] h-[60%]"
-          aria-hidden
+        <text
+          x="4"
+          y="26"
+          fontFamily="Georgia, 'Times New Roman', serif"
+          fontSize="22"
+          fontWeight="600"
+          fill={color}
         >
-          <path d="M3 12 H7 L9.2 6.5 L13 18 L15 12 H21" />
-        </svg>
-      </div>
-      <span
-        className={`font-sans tracking-[-0.01em] leading-none ${text} flex items-baseline gap-1.5`}
-      >
-        <span className={`font-bold ${brandColor}`}>ForMen</span>
-        <span className={`${dotColor} font-bold`}>·</span>
-        <span className={`font-medium ${subColor}`}>Digital Clinic</span>
-      </span>
-    </div>
+          for
+        </text>
+        <rect x="4" y="30" width="28" height="3.5" rx="1.75" fill={color} />
+        <text
+          x="4"
+          y="60"
+          fontFamily="Georgia, 'Times New Roman', serif"
+          fontSize="34"
+          fontWeight="700"
+          fill={color}
+        >
+          men
+        </text>
+      </svg>
+    </span>
   );
 }
