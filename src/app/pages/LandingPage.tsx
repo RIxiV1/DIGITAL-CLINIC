@@ -1,4 +1,4 @@
-import { type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
@@ -18,6 +18,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import Logo from '../components/Logo';
+import LegalModal, { type LegalKind } from '../components/LegalModal';
 import { useNavigation } from '../AppContext';
 
 /* ------------------------------------------------------------------ */
@@ -97,7 +98,14 @@ function TopNav({
   return (
     <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-line/70">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8 h-16 flex items-center justify-between">
-        <Logo />
+        <button
+          type="button"
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          aria-label="ForMen · Digital Clinic — back to top"
+          className="rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+        >
+          <Logo />
+        </button>
         <nav className="hidden md:flex items-center gap-7 text-[13.5px] text-ink-soft">
           <a href="#connection" className="hover:text-ink transition-colors">
             The connection
@@ -236,13 +244,18 @@ function Hero({
 function HeroVisual() {
   return (
     <div className="relative w-full max-w-[560px] mx-auto lg:mx-0 lg:ml-auto lg:-mb-20">
-      {/* Founders / clinicians photo */}
-      <img
-        src="/hero-cover.png"
-        alt="ForMen · Digital Clinic clinicians"
-        className="relative block w-full h-auto select-none pointer-events-none"
-        draggable={false}
-      />
+      {/* Founders / clinicians photo — modern browsers get the WebP
+          (~60 KB vs ~725 KB for the PNG). Browsers without WebP support
+          fall back to the PNG via the <picture> element. */}
+      <picture>
+        <source srcSet="/hero-cover.webp" type="image/webp" />
+        <img
+          src="/hero-cover.png"
+          alt="ForMen · Digital Clinic clinicians"
+          className="relative block w-full h-auto select-none pointer-events-none"
+          draggable={false}
+        />
+      </picture>
 
       {/* Floating Hormonal Health Map card — overlaps the photo */}
       <motion.div
@@ -1399,6 +1412,7 @@ function FinalCta({ onStart }: { onStart: () => void }) {
 /* ------------------------------------------------------------------ */
 
 function Footer({ onSample }: { onSample: () => void }) {
+  const [legal, setLegal] = useState<LegalKind | null>(null);
   return (
     <footer className="border-t border-line/70 bg-white">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8 py-12 grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-[13px]">
@@ -1436,7 +1450,11 @@ function Footer({ onSample }: { onSample: () => void }) {
               </a>
             </li>
             <li>
-              <button onClick={onSample} className="hover:text-ink">
+              <button
+                type="button"
+                onClick={onSample}
+                className="hover:text-ink"
+              >
                 See a sample report
               </button>
             </li>
@@ -1445,10 +1463,42 @@ function Footer({ onSample }: { onSample: () => void }) {
         <div>
           <div className="font-semibold text-ink mb-3">Company</div>
           <ul className="space-y-2 text-ink-soft">
-            <li>About</li>
-            <li>Privacy</li>
-            <li>Terms</li>
-            <li>Contact</li>
+            <li>
+              <button
+                type="button"
+                onClick={() => setLegal('about')}
+                className="hover:text-ink"
+              >
+                About
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={() => setLegal('privacy')}
+                className="hover:text-ink"
+              >
+                Privacy
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={() => setLegal('terms')}
+                className="hover:text-ink"
+              >
+                Terms
+              </button>
+            </li>
+            <li>
+              <button
+                type="button"
+                onClick={() => setLegal('contact')}
+                className="hover:text-ink"
+              >
+                Contact
+              </button>
+            </li>
           </ul>
         </div>
       </div>
@@ -1459,6 +1509,7 @@ function Footer({ onSample }: { onSample: () => void }) {
         </span>
         <span>Educational use only. Not a replacement for a doctor.</span>
       </div>
+      <LegalModal kind={legal} onClose={() => setLegal(null)} />
     </footer>
   );
 }

@@ -17,7 +17,7 @@
       property="og:description"
       content="Your hair loss, your fatigue, and your sex drive might be the same problem. One hormonal system controls all three."
     />
-    <meta property="og:image" content="/hero-cover.png" />
+    <meta property="og:image" content="/hero-cover.webp" />
     <meta name="twitter:card" content="summary_large_image" />
 
     <!-- Favicon — the brand's ECG/pulse mark on a blue rounded square,
@@ -25,8 +25,11 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/favicon.svg" />
 
-    <!-- Preload the hero LCP image so first paint shows it instantly -->
-    <link rel="preload" as="image" href="/hero-cover.png" fetchpriority="high" />
+    <!-- Preload the hero LCP image so first paint shows it instantly.
+         WebP is preferred (~60 KB) — browsers without WebP support skip
+         this preload (correct behavior) and load the PNG fallback from
+         the <picture> element on render. -->
+    <link rel="preload" as="image" href="/hero-cover.webp" type="image/webp" fetchpriority="high" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
