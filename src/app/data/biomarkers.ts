@@ -11,7 +11,13 @@ export type BiomarkerReading = {
 
 export type Biomarker = {
   id: string;
+  /** The clinical name as it prints on lab reports (e.g. "HbA1c"). */
   name: string;
+  /** Plain-English nickname shown under the clinical name on cards
+   *  (e.g. "3-month sugar average"). The clinical name stays so users
+   *  can match it to what their lab gave them; the nickname is the
+   *  on-ramp for people who aren't doctors. */
+  simpleName?: string;
   value: number;
   unit: string;
   min: number;
@@ -65,7 +71,7 @@ export const categories: BiomarkerCategory[] = [
   {
     id: 'heart',
     name: 'Heart Health',
-    description: 'Cholesterol, lipids, cardiovascular risk.',
+    description: 'Cholesterol and how clear your arteries stay.',
     icon: '❤️',
   },
   {
@@ -104,6 +110,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'testosterone',
     name: 'Total Testosterone',
+    simpleName: 'Your main male hormone',
     value: 280,
     unit: 'ng/dL',
     min: 300,
@@ -124,6 +131,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'free-t',
     name: 'Free Testosterone',
+    simpleName: 'Testosterone your body can actually use',
     value: 8.4,
     unit: 'pg/mL',
     min: 8.7,
@@ -141,6 +149,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'estradiol',
     name: 'Estradiol',
+    simpleName: 'Estrogen (yes, men have it too)',
     value: 28,
     unit: 'pg/mL',
     min: 11,
@@ -153,6 +162,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'hba1c',
     name: 'HbA1c',
+    simpleName: '3-month sugar average',
     value: 5.4,
     unit: '%',
     min: 4,
@@ -171,6 +181,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'glucose',
     name: 'Fasting Glucose',
+    simpleName: 'Blood sugar this morning',
     value: 98,
     unit: 'mg/dL',
     min: 70,
@@ -190,6 +201,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'insulin',
     name: 'Fasting Insulin',
+    simpleName: 'How hard your pancreas is working',
     value: 12,
     unit: 'µIU/mL',
     min: 2,
@@ -210,6 +222,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'total-chol',
     name: 'Total Cholesterol',
+    simpleName: 'All your cholesterol added together',
     value: 212,
     unit: 'mg/dL',
     min: 0,
@@ -222,6 +235,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'ldl',
     name: 'LDL Cholesterol',
+    simpleName: 'The bad cholesterol',
     value: 145,
     unit: 'mg/dL',
     min: 0,
@@ -240,6 +254,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'hdl',
     name: 'HDL Cholesterol',
+    simpleName: 'The good cholesterol',
     value: 48,
     unit: 'mg/dL',
     min: 40,
@@ -254,6 +269,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'tg',
     name: 'Triglycerides',
+    simpleName: 'Fat in your blood',
     value: 168,
     unit: 'mg/dL',
     min: 0,
@@ -267,6 +283,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'tsh',
     name: 'TSH',
+    simpleName: 'Thyroid signal from your brain',
     value: 2.1,
     unit: 'µIU/mL',
     min: 0.4,
@@ -279,6 +296,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'vit-d',
     name: 'Vitamin D (25-OH)',
+    simpleName: 'Vitamin D',
     value: 26,
     unit: 'ng/mL',
     min: 30,
@@ -299,6 +317,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'b12',
     name: 'Vitamin B12',
+    simpleName: 'Brain and nerve fuel',
     value: 285,
     unit: 'pg/mL',
     min: 200,
@@ -318,6 +337,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'ferritin',
     name: 'Ferritin',
+    simpleName: 'Your iron stores',
     value: 95,
     unit: 'ng/mL',
     min: 30,
@@ -330,6 +350,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'alt',
     name: 'ALT',
+    simpleName: 'A liver enzyme',
     value: 32,
     unit: 'U/L',
     min: 7,
@@ -342,6 +363,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'creatinine',
     name: 'Creatinine',
+    simpleName: 'How well your kidneys are filtering',
     value: 0.95,
     unit: 'mg/dL',
     min: 0.7,
@@ -354,6 +376,7 @@ export const sampleBiomarkers: Biomarker[] = [
   {
     id: 'hb',
     name: 'Hemoglobin',
+    simpleName: 'Your blood’s oxygen carrier',
     value: 14.8,
     unit: 'g/dL',
     min: 13.5,

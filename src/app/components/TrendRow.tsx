@@ -53,6 +53,11 @@ export default function TrendRow({ marker, onLearnMore }: Props) {
             </button>
           )}
         </div>
+        {marker.simpleName && (
+          <div className="text-[10.5px] text-muted leading-tight truncate">
+            {marker.simpleName}
+          </div>
+        )}
         <div className="mt-0.5 flex items-baseline gap-1.5">
           <span className="text-[13.5px] font-display text-ink tabular-nums">
             {marker.value}

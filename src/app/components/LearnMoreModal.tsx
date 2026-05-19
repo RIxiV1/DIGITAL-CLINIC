@@ -152,7 +152,7 @@ export default function LearnMoreModal({
                 </p>
               </Section>
 
-              <Section eyebrow="Hormonal impact">
+              <Section eyebrow="How it affects you">
                 <p className="text-[14px] leading-relaxed text-ink-soft">
                   {info.hormonalImpact}
                 </p>

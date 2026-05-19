@@ -222,7 +222,7 @@ function Hero({
             >
               <span className="inline-flex items-center gap-1.5">
                 <FlaskConical size={13} className="text-blue-600" />
-                Built on HPG-axis endocrinology
+                Grounded in men’s hormone science
               </span>
               <span className="inline-flex items-center gap-1.5">
                 <Lock size={13} className="text-blue-600" />
@@ -416,7 +416,7 @@ function ConnectionSection({ onStart }: { onStart: () => void }) {
                 </span>
               </>
             }
-            subtitle="The HPG axis — your body’s hormonal control loop — connects all of them. The Digital Clinic helps you understand yours."
+            subtitle="One system — your brain talking to your testes — runs all of them. The Digital Clinic shows you yours, in plain English."
           />
         </Reveal>
 
@@ -487,12 +487,11 @@ function CascadeBig() {
   return (
     <div className="mx-auto w-full max-w-[480px]">
       <span className="sr-only">
-        The HPG axis: the hypothalamus secretes GnRH, which signals the
-        pituitary gland to release LH and FSH, which prompts the testes to
-        produce testosterone. When this cascade is off-balance, it shows up
-        as eight visible symptoms — hair loss, low libido, belly fat,
-        infertility, low energy, erectile dysfunction, poor sleep, and brain
-        fog.
+        Your hormone system runs as a chain — brain signals trigger a relay
+        gland, which tells your testes to produce testosterone. When any
+        step is off-balance, it shows up as eight everyday symptoms — hair
+        loss, low sex drive, belly fat, fertility problems, low energy,
+        erection issues, poor sleep, and brain fog.
       </span>
 
       {/* Axis title strip */}
@@ -502,10 +501,10 @@ function CascadeBig() {
         </div>
         <div className="min-w-0">
           <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-blue-700">
-            The HPG axis
+            Your hormone chain
           </div>
           <div className="text-[12.5px] text-ink-soft font-medium">
-            Three glands. One signal chain.
+            Three glands. One signal that runs them all.
           </div>
         </div>
       </div>
@@ -1424,7 +1423,7 @@ function Footer({ onSample }: { onSample: () => void }) {
             </span>
             <span>·</span>
             <span className="inline-flex items-center gap-1">
-              <FlaskConical size={12} /> Built on HPG-axis science
+              <FlaskConical size={12} /> Grounded in men’s hormone science
             </span>
           </div>
         </div>

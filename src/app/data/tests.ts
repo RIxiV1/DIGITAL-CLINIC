@@ -72,37 +72,37 @@ const ALL_MARKERS: Marker[] = Object.values(M);
 /* ------------------------------------------------------------------ */
 
 const ABOUT: Record<Marker, string> = {
-  [M.TOTAL_T]: 'Your primary male hormone — drives energy, libido, muscle.',
-  [M.FREE_T]: 'The portion of testosterone your body can actually use.',
-  [M.SHBG]: 'The carrier protein that decides how much T is available.',
-  [M.VIT_D]: 'Drives bone, mood, immunity — most Indian men are low.',
-  [M.TSH]: 'The main signal from your brain to the thyroid.',
-  [M.FASTING_GLUCOSE]: 'A snapshot of your blood sugar this morning.',
+  [M.TOTAL_T]: 'Your main male hormone. Drives energy, sex drive, and muscle.',
+  [M.FREE_T]: 'The bit of testosterone your body can actually use.',
+  [M.SHBG]: 'A protein that decides how much testosterone gets used vs. wasted.',
+  [M.VIT_D]: 'The sunshine vitamin. Most Indian men are low — affects mood, energy, immunity.',
+  [M.TSH]: 'Your brain’s message to the thyroid. Sets your overall pace.',
+  [M.FASTING_GLUCOSE]: 'Your blood sugar this morning, before breakfast.',
 
-  [M.LH]: 'Pituitary signal that tells your testes to produce testosterone.',
-  [M.FSH]: 'Pituitary signal that tells your testes to produce sperm.',
-  [M.PROLACTIN]: 'When elevated, it shuts down the whole testosterone system.',
-  [M.E2]: 'The estrogen your body makes from testosterone.',
-  [M.DHT]: 'A more potent form of testosterone — drives hair loss.',
-  [M.CORTISOL_AM]: 'Your stress hormone — competes directly with testosterone.',
-  [M.DHEA_S]: 'Your body’s stress buffer — drops when burned out.',
+  [M.LH]: 'A signal from your brain telling your testes to make testosterone.',
+  [M.FSH]: 'A signal from your brain telling your testes to make sperm.',
+  [M.PROLACTIN]: 'When too high, it quietly shuts down the testosterone system.',
+  [M.E2]: 'The estrogen your body makes from testosterone. Men need a little, not a lot.',
+  [M.DHT]: 'A stronger form of testosterone. Drives male hair loss.',
+  [M.CORTISOL_AM]: 'Your stress hormone. The more stressed you are, the less testosterone gets made.',
+  [M.DHEA_S]: 'A backup hormone that helps you handle stress. Drops when you’re burned out.',
 
-  [M.HBA1C]: 'Average blood sugar over the last 3 months.',
-  [M.FASTING_INSULIN]: 'How hard your pancreas is working to keep sugar in check.',
-  [M.HOMA_IR]: 'A simple score for insulin resistance.',
-  [M.LIPID]: 'Cholesterol, triglycerides, ApoB — your vascular health.',
-  [M.IGF1]: 'Growth hormone marker — declines with age.',
+  [M.HBA1C]: 'Your average blood sugar over the last 3 months.',
+  [M.FASTING_INSULIN]: 'How hard your pancreas is working to keep sugar normal.',
+  [M.HOMA_IR]: 'A simple score showing how well your body listens to insulin.',
+  [M.LIPID]: 'Cholesterol and fats in your blood. Tells you how clear your arteries are.',
+  [M.IGF1]: 'A growth-hormone marker. Naturally drops with age.',
 
-  [M.IRON_FERRITIN]: 'Your iron stores — affects energy and hair.',
-  [M.B12]: 'Nerve and brain fuel — often low in vegetarian diets.',
-  [M.ZINC]: 'Essential for T production and hair — often depleted.',
-  [M.MAGNESIUM_RBC]: 'Sleep, stress, and muscle mineral — low in most men.',
+  [M.IRON_FERRITIN]: 'Your iron stores. Low iron means low energy, slower hair growth.',
+  [M.B12]: 'Fuel for your brain and nerves. Often low in vegetarian diets.',
+  [M.ZINC]: 'Mineral needed to make testosterone. Often depleted, easy to top up.',
+  [M.MAGNESIUM_RBC]: 'Sleep, stress, and muscle mineral. Most men don’t get enough.',
 
-  [M.T3_T4]: 'Full thyroid picture when TSH alone isn’t enough.',
-  [M.CBC]: 'Overall blood health — red cells, white cells, platelets.',
-  [M.PSA]: 'Prostate screening marker — baseline for men 40+.',
+  [M.T3_T4]: 'The full thyroid picture, when the simple thyroid test isn’t enough.',
+  [M.CBC]: 'A general blood health check — red cells, white cells, platelets.',
+  [M.PSA]: 'A prostate health marker. Worth a baseline reading after 40.',
 
-  [M.SEMEN]: 'Sperm count, motility, morphology — the fertility output test.',
+  [M.SEMEN]: 'How healthy your sperm are. The actual fertility output test.',
 };
 
 /* ------------------------------------------------------------------ */
@@ -225,8 +225,8 @@ type PanelCategory = {
 const CATEGORIES: PanelCategory[] = [
   {
     id: 'foundational',
-    name: 'Foundational Panel',
-    short: 'Your hormonal baseline',
+    name: 'The Starter Check',
+    short: 'The 6 numbers every man should know',
     markers: [
       M.TOTAL_T,
       M.FREE_T,
@@ -240,8 +240,8 @@ const CATEGORIES: PanelCategory[] = [
   },
   {
     id: 'hormonal',
-    name: 'Hormonal Panel',
-    short: 'Pituitary signals & sex hormones',
+    name: 'Full Hormone Read',
+    short: 'How your hormones talk to each other',
     markers: [
       M.LH,
       M.FSH,
@@ -256,8 +256,8 @@ const CATEGORIES: PanelCategory[] = [
   },
   {
     id: 'metabolic',
-    name: 'Metabolic Panel',
-    short: 'Sugar, insulin, lipids',
+    name: 'Sugar & Energy Check',
+    short: 'Blood sugar, insulin, cholesterol',
     markers: [
       M.HBA1C,
       M.FASTING_INSULIN,
@@ -270,7 +270,7 @@ const CATEGORIES: PanelCategory[] = [
   },
   {
     id: 'nutritional',
-    name: 'Nutritional Panel',
+    name: 'Vitamin & Mineral Check',
     short: 'Iron, B12, zinc, magnesium',
     markers: [M.IRON_FERRITIN, M.B12, M.ZINC, M.MAGNESIUM_RBC],
     fasting: false,
@@ -278,16 +278,16 @@ const CATEGORIES: PanelCategory[] = [
   },
   {
     id: 'screening',
-    name: 'Screening Panel',
-    short: 'Thyroid, blood, prostate',
+    name: 'Routine Health Check',
+    short: 'Thyroid, blood count, prostate',
     markers: [M.T3_T4, M.CBC, M.PSA],
     fasting: false,
     turnaround: '24 hrs',
   },
   {
     id: 'fertility',
-    name: 'Fertility — Semen Analysis',
-    short: 'Separate appointment',
+    name: 'Sperm Test',
+    short: 'Separate appointment — not a blood draw',
     markers: [M.SEMEN],
     fasting: false,
     turnaround: '3–5 days',

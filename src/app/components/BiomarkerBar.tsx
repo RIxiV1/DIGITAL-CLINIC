@@ -41,7 +41,12 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="font-semibold text-ink truncate">{marker.name}</div>
-          <div className="mt-0.5 text-[11px] text-muted uppercase tracking-[0.08em]">
+          {marker.simpleName && (
+            <div className="text-[12px] text-ink-soft mt-0.5 truncate">
+              {marker.simpleName}
+            </div>
+          )}
+          <div className="mt-1 text-[11px] text-muted uppercase tracking-[0.08em]">
             Healthy range · {marker.min}–{marker.max} {marker.unit}
           </div>
         </div>

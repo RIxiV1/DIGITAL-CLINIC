@@ -1,11 +1,7 @@
 /**
- * Panel-category-level educational content for the "Learn More" modal on
- * the Recommended Tests page. Keyed by the panel category id from the
- * recommendation engine in `tests.ts` (foundational / hormonal / metabolic
- * / nutritional / screening / fertility).
- *
- * Old test ids (hormone / lipid / thyroid / vitamins / liver-kidney) are
- * gone — the engine now groups by category, not by named test.
+ * Panel-level educational content for the "Learn More" modal on the
+ * Recommended Tests page. Plain English, no jargon — keyed by the
+ * panel category id from the recommendation engine in `tests.ts`.
  */
 
 import type { LearnMore } from './markerInfo';
@@ -13,94 +9,94 @@ import type { LearnMore } from './markerInfo';
 export const testInfo: Record<string, LearnMore> = {
   foundational: {
     measures:
-      'The six universal markers every man should run: Total Testosterone, Free Testosterone, SHBG, Vitamin D, TSH (thyroid signal), and fasting glucose. Drawn fasting between 8–10 AM when testosterone peaks naturally.',
+      'The six numbers every man should know: testosterone (total and the active part), the protein that carries it (SHBG), Vitamin D, the thyroid signal (TSH), and morning blood sugar. Done first thing in the morning, on an empty stomach — that’s when testosterone is naturally highest.',
     importance:
-      'This is the hormonal baseline plus the two screens (TSH and fasting glucose) that mimic low-T symptoms most often. Without these six, you can’t interpret anything else. With them, you have a reference point for the rest of your life.',
+      'This is your starting line. If you only ever run one set of tests, run these. Without them, every other test result is just numbers floating in space. With them, you have a baseline you can compare against for the rest of your life.',
     hormonalImpact:
-      'Total T + Free T + SHBG form the hormonal triangle — you can’t read any one without the other two. Vitamin D is required for testosterone production. TSH and glucose rule out thyroid + early metabolic causes of low-T symptoms before assuming the problem is hormonal.',
+      'These six numbers tell you whether your testosterone is low, why it might be low, and whether something else — your thyroid, your blood sugar, your Vitamin D — is the actual cause. You can’t fix one without checking the others.',
     improve: [
-      'Establishing the baseline IS the action — you can’t improve what you haven’t measured',
-      'Always test in the morning, fasted — for fair comparison on re-tests',
-      'Re-test in 12 weeks if you change something significant (sleep, training, diet, supplement)',
+      'Just getting tested is the action — you can’t improve what you haven’t measured',
+      'Always test in the morning, before eating, so re-tests are comparable',
+      'Re-test in 12 weeks if you change something big — your sleep, training, diet, or a supplement',
     ],
   },
 
   hormonal: {
     measures:
-      'The pituitary signals (LH, FSH), the secondary hormones (Prolactin, Estradiol, DHT), and the stress axis (Cortisol AM, DHEA-S). Everything downstream and upstream of testosterone that affects how it works.',
+      'The signals from your brain to your testes (LH and FSH), the other hormones in the system (prolactin, estrogen, DHT), and your stress hormones (cortisol, DHEA). Basically, everything that talks to testosterone or shuts it down.',
     importance:
-      'These tell you WHERE in the system any imbalance sits. Low T with high LH = the testes are failing. Low T with low LH = the brain signal is weak. High prolactin = something’s suppressing the whole loop. Cortisol high = stress is the driver. You can’t fix what you haven’t located.',
+      'These tell you WHERE the problem is. Low testosterone with high signals from the brain means your testes are tired. Low testosterone with low signals means your brain isn’t pushing hard enough. High prolactin or cortisol means something else is shutting the whole system down. You can’t fix what you haven’t found.',
     hormonalImpact:
-      'This panel covers the full HPG axis — hypothalamus → pituitary → gonads — plus the stress axis that constantly modulates it. The fastest way to a precise diagnosis when the foundational panel shows low T but doesn’t explain why.',
+      'Your brain talks to your testes through a chain of signals. This panel measures every step in that chain — plus your stress hormones, which interrupt it constantly. The quickest path to a real diagnosis when something’s clearly off but the basics didn’t explain why.',
     improve: [
-      'Sleep 7–8 hours — most hormonal recovery happens in deep sleep',
-      'Lift heavy 2–3× a week — moves testosterone, lowers cortisol',
-      'Address chronic stressors at the source (sleep apnea, financial, relational)',
-      'Lose visceral fat — it suppresses LH and raises estradiol',
-      'Treat any underactive thyroid first — it lowers SHBG and free T',
+      'Sleep 7–8 hours — most hormone repair happens during deep sleep',
+      'Lift weights 2–3 times a week — moves testosterone up, stress down',
+      'Tackle the things stressing you out — sleep apnea, money, relationships — at the source',
+      'Lose belly fat — it directly lowers testosterone and raises estrogen',
+      'Treat an underactive thyroid first, if you have one — it drags everything else down',
     ],
   },
 
   metabolic: {
     measures:
-      'HbA1c (3-month sugar average), Fasting Insulin, HOMA-IR (insulin resistance score), Lipid Panel, and IGF-1 (growth hormone marker). Catches metabolic decline years before standard tests do.',
+      'Long-term blood sugar (HbA1c), insulin levels, how well your body listens to insulin (HOMA-IR), cholesterol and fats, and a growth-hormone marker (IGF-1). Catches problems years before a standard sugar test would.',
     importance:
-      'Insulin resistance is one of the strongest drivers of low T in modern men — it suppresses SHBG, increases the conversion of T to estradiol via belly fat, and worsens sleep. Catching it here gives you years of runway before it becomes a diabetes diagnosis.',
+      'When your body stops listening to insulin, your testosterone drops too. It’s one of the biggest hidden causes of low energy and low sex drive in men today — and you can catch it years before it becomes diabetes. The earlier you spot it, the easier it is to reverse.',
     hormonalImpact:
-      'Metabolic health and hormonal health are the same project. Fixing insulin resistance often raises T more than any hormone therapy. Lipids respond visibly within 12 weeks. IGF-1 declines steadily after 30 — tracking it gives you the "biological age" trend.',
+      'Sugar control and hormone health aren’t separate problems. Belly fat actively converts your testosterone into estrogen, so the more you carry, the lower your T runs. Fixing your insulin often raises testosterone more than any hormone treatment.',
     improve: [
-      'Walk for 10 minutes after every meal — biggest single lever',
-      'Strength training 2× a week — adds the muscle that "parks" glucose',
-      'Cut sugar in liquid form (chai, soda, juice)',
-      'Protein-first meals — protein and veg before carbs at each meal',
-      'Earlier dinner — eating before 7 PM lowers fasting glucose noticeably',
+      'Walk for 10 minutes after every meal — the single biggest lever',
+      'Strength training 2× a week — muscle absorbs sugar instead of leaving it in your blood',
+      'Cut sugary drinks — sweet chai, soda, juice, sweetened coffee',
+      'Eat protein first at every meal — protein and veg before rice or roti',
+      'Eat dinner earlier — finishing by 7 PM noticeably lowers morning sugar',
     ],
   },
 
   nutritional: {
     measures:
-      'Iron stores (Ferritin), Vitamin B12, Zinc, and intracellular Magnesium (RBC). The four deficiencies that quietly cause "hormonal" symptoms — fatigue, brain fog, hair loss, poor sleep — when the actual fix is a cheap supplement.',
+      'Iron stores (ferritin), Vitamin B12, zinc, and magnesium — the four shortages that quietly cause symptoms that LOOK hormonal. Tired? Foggy? Hair falling? Sleeping badly? It’s often one of these, not your hormones.',
     importance:
-      'Cheap to test, easy to fix. Many men get treated for low T or low thyroid when the real culprit is one of these four. Always rule them out before assuming the symptoms are hormonal.',
+      'Cheap to check, easy to fix. Many men get treated for low testosterone or thyroid problems when the actual cause is one of these four shortages. Rule these out before assuming the problem is hormonal.',
     hormonalImpact:
-      'Vitamin D is required for testosterone production. Zinc supports T synthesis. Iron is required for thyroid hormone conversion. Magnesium regulates cortisol and supports T. Fix these four first — many "hormonal" complaints resolve on their own.',
+      'You need Vitamin D to make testosterone. You need zinc to make testosterone. You need iron for your thyroid to work. You need magnesium to handle stress. Fix the basics first — a lot of "hormone problems" disappear once you do.',
     improve: [
-      'Vitamin D: sunlight + supplement if needed, aim for 40–80 ng/mL',
-      'B12: methylcobalamin 500–1000 µg/day if vegetarian or borderline',
-      'Iron: pair plant iron with Vitamin C, avoid tea with iron meals',
-      'Zinc: 15 mg/day with food if low; oysters, red meat, pumpkin seeds otherwise',
-      'Magnesium: glycinate 200–400 mg before bed — also helps sleep',
+      'Vitamin D: get sunlight + take a supplement if needed; aim for a level between 40 and 80',
+      'B12: take methylcobalamin if you’re vegetarian or your level is on the low side',
+      'Iron: pair plant iron with Vitamin C; don’t drink tea with iron-rich meals',
+      'Zinc: 15 mg a day with food if low; otherwise oysters, red meat, pumpkin seeds',
+      'Magnesium: glycinate form, 200–400 mg before bed — also helps you sleep',
     ],
   },
 
   screening: {
     measures:
-      'Full thyroid (T3, T4 on top of TSH), Complete Blood Count (CBC), and PSA (prostate marker for men 40+). Routine checks for systems that quietly drift before symptoms appear.',
+      'A full thyroid check (T3 and T4 on top of TSH), a general blood count, and a prostate marker (PSA, for men 40+). Routine checks that catch problems before symptoms show up.',
     importance:
-      'These aren’t for symptoms — they’re for catching things before they become symptoms. T3/T4 catches thyroid conversion issues when TSH alone misses them. CBC catches anaemia + inflammation. PSA gives a prostate baseline.',
+      'These aren’t for fixing what’s wrong — they’re for spotting what could go wrong before it does. Catches thyroid problems the basic test misses, blood disorders, and early prostate changes.',
     hormonalImpact:
-      'Thyroid dysfunction mimics low T almost exactly — and standard TSH-only testing misses conversion problems. Anaemia from any cause secondarily suppresses T. PSA tracks loosely with DHT and prostate health.',
+      'Thyroid problems and low testosterone feel almost identical — tired, slow, low sex drive — but the fix is different for each. Anaemia (from any cause) also drags testosterone down. PSA gives you a personal baseline for prostate health.',
     improve: [
-      'These are for early detection — the action is the test itself',
-      'Annual cadence is right for most men over 40',
-      'PSA: avoid sexual activity 48 hours before the draw (raises it transiently)',
-      'Thyroid: iodine and selenium adequacy support both production and conversion',
+      'These tests are early-warning systems — the action is just running them',
+      'Once a year is right for most men over 40',
+      'For PSA: skip sex for 48 hours before the draw (it temporarily raises the reading)',
+      'For thyroid: enough iodine and selenium in your diet keeps it running smoothly',
     ],
   },
 
   fertility: {
     measures:
-      'Semen Analysis — a separate appointment, not a blood draw. Measures sperm count, motility, morphology, and volume. Collected after 2–5 days of abstinence.',
+      'A sperm test — a separate appointment, not a blood draw. Measures how many sperm you have, how well they swim, what shape they’re in, and how much fluid is there. Collected after 2–5 days of no sex.',
     importance:
-      'Fertility runs on two tracks — the hormones telling your testes what to do (LH, FSH, in the Hormonal Panel), and the output itself (this test). Both can be normal while the other is off, which is why a real fertility workup needs both.',
+      'Fertility runs on two parallel tracks: the hormones telling your testes what to do, and the actual sperm those testes produce. Both can look fine while the other is broken — which is why a real fertility check needs both.',
     hormonalImpact:
-      'Sperm production depends on testosterone inside the testes (much higher than blood T) plus FSH stimulation. Anything suppressing LH/FSH — including exogenous testosterone — suppresses sperm. Men on TRT typically have very low sperm counts; this is reversible.',
+      'Inside your testes, testosterone levels are much higher than in your blood — and that’s what makes sperm. Anything that shuts down the brain signals (including taking testosterone as therapy) shuts down sperm production. The good news: it’s usually reversible.',
     improve: [
-      'Avoid heat — saunas, hot tubs, laptop-on-lap sessions, tight underwear',
-      'Antioxidants — Vitamin C, E, zinc, selenium, CoQ10 — support sperm quality',
-      'Stop smoking and limit alcohol',
-      'If on TRT and trying to conceive — switch to hCG or clomiphene to restart sperm production (with a doctor)',
-      'Sperm production takes ~74 days; changes today show up in a re-test 3 months later',
+      'Avoid heat — saunas, hot tubs, laptop on your lap, tight underwear',
+      'Antioxidants — Vitamin C, E, zinc, selenium, CoQ10 — help sperm quality',
+      'Stop smoking and cut alcohol',
+      'If you’re on testosterone therapy and want to conceive, talk to a doctor about switching to hCG or clomiphene — they restart sperm production',
+      'Sperm take about 74 days to make — anything you change today shows up in a test 3 months from now',
     ],
   },
 };

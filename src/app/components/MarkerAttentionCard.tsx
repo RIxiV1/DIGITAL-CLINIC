@@ -77,8 +77,15 @@ export default function MarkerAttentionCard({
       className="bg-white border border-line/70 rounded-[18px] shadow-soft p-5 h-full flex flex-col"
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-muted truncate">
-          {marker.name}
+        <div className="min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-muted truncate">
+            {marker.name}
+          </div>
+          {marker.simpleName && (
+            <div className="text-[11.5px] text-ink-soft mt-0.5 truncate">
+              {marker.simpleName}
+            </div>
+          )}
         </div>
         {onLearnMore && (
           <button
