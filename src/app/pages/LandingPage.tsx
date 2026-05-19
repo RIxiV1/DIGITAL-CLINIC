@@ -235,7 +235,7 @@ function Hero({
 
 function HeroVisual() {
   return (
-    <div className="relative w-full max-w-[440px] mx-auto lg:mx-0 lg:ml-auto">
+    <div className="relative w-full max-w-[560px] mx-auto lg:mx-0 lg:ml-auto lg:-mb-20">
       {/* Founders / clinicians photo */}
       <img
         src="/hero-cover.png"
@@ -248,7 +248,7 @@ function HeroVisual() {
       <motion.div
         animate={{ y: [0, -5, 0] }}
         transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute -left-4 sm:-left-10 bottom-[6%] sm:bottom-[10%] w-[82%] sm:w-[75%] rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden"
+        className="absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden"
       >
         {/* Mac-style window chrome */}
         <div className="px-3.5 py-2 border-b border-line/70 flex items-center justify-between">
