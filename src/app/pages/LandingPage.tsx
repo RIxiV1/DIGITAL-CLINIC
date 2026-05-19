@@ -18,7 +18,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import Logo from '../components/Logo';
-import { useApp } from '../AppContext';
+import { useNavigation } from '../AppContext';
 
 /* ------------------------------------------------------------------ */
 /* Motion helpers                                                      */
@@ -65,7 +65,7 @@ function Reveal({
 /* ------------------------------------------------------------------ */
 
 export default function LandingPage() {
-  const { navigate } = useApp();
+  const { navigate } = useNavigation();
   const startQuiz = () => navigate({ type: 'quiz' });
   const viewSample = () => navigate({ type: 'results', reportId: 'rep-001' });
 

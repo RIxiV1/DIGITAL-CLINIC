@@ -1,6 +1,6 @@
 import { House, ClipboardList, User } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useApp, type Page } from '../AppContext';
+import { useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
 
 type ItemId = 'home' | 'quiz' | 'profile';
@@ -39,7 +39,7 @@ function navIdFor(page: Page): ItemId {
 }
 
 export default function BottomNav() {
-  const { page, navigate } = useApp();
+  const { page, navigate } = useNavigation();
 
   const activeId: ItemId = navIdFor(page);
 

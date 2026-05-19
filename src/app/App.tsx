@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { AppProvider, useApp, type Page } from './AppContext';
+import { AppProvider, useNavigation, type Page } from './AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import LandingPage from './pages/LandingPage';
 import QuizPage from './pages/QuizPage';
@@ -32,7 +32,7 @@ function pageKey(p: Page): string {
 }
 
 function PageHost() {
-  const { page } = useApp();
+  const { page } = useNavigation();
 
   let node: React.ReactNode = null;
   switch (page.type) {

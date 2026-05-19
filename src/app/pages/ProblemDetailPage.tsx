@@ -12,7 +12,7 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
-import { useApp } from '../AppContext';
+import { useNavigation } from '../AppContext';
 import { sampleBiomarkers } from '../data/biomarkers';
 import { getProblem } from '../data/problems';
 
@@ -21,7 +21,7 @@ export default function ProblemDetailPage({
 }: {
   problemId: string;
 }) {
-  const { back } = useApp();
+  const { back } = useNavigation();
   const p = getProblem(problemId);
 
   if (!p) {

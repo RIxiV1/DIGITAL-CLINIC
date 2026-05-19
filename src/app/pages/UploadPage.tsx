@@ -11,11 +11,12 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
 import Header from '../components/Header';
-import { useApp } from '../AppContext';
+import { useNavigation, useReports } from '../AppContext';
 import { makeReport } from '../data/reports';
 
 export default function UploadPage() {
-  const { addReport, replace } = useApp();
+  const { addReport } = useReports();
+  const { replace } = useNavigation();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   // Drag-enter/leave fire for every child element, not just the dropzone

@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, ScanLine, Sparkles } from 'lucide-react';
 import Container from '../components/Container';
 import Logo from '../components/Logo';
-import { useApp } from '../AppContext';
+import { useNavigation, useReports } from '../AppContext';
 
 const steps = [
   { id: 'extract', label: 'Reading the document' },
@@ -19,7 +19,8 @@ const STEP_MS = 900;
 const COMPLETION_PAUSE_MS = 600;
 
 export default function ProcessingPage() {
-  const { reports, replace, markReportReady } = useApp();
+  const { reports, markReportReady } = useReports();
+  const { replace } = useNavigation();
   const [stepIndex, setStepIndex] = useState(0);
 
   const latestProcessing =

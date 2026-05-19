@@ -14,7 +14,7 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
-import { useApp } from '../AppContext';
+import { useNavigation, useReports } from '../AppContext';
 import {
   biomarkersByCategory,
   bottomLineFor,
@@ -26,7 +26,8 @@ import {
 type Filter = 'all' | 'concern' | 'attention' | 'good';
 
 export default function ReportResultsPage({ reportId }: { reportId: string }) {
-  const { reports, navigate } = useApp();
+  const { reports } = useReports();
+  const { navigate } = useNavigation();
   const report = reports.find((r) => r.id === reportId);
   const [filter, setFilter] = useState<Filter>('all');
   const [activeCategory, setActiveCategory] = useState<string>('all');

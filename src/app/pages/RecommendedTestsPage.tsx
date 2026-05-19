@@ -18,13 +18,14 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
 import LearnMoreModal from '../components/LearnMoreModal';
-import { useApp } from '../AppContext';
+import { useNavigation, useQuiz } from '../AppContext';
 import { recommendTestsFor } from '../data/tests';
 import { getMarkerInfo } from '../data/markerInfo';
 import { getTestInfo } from '../data/testInfo';
 
 export default function RecommendedTestsPage() {
-  const { quiz, navigate } = useApp();
+  const { quiz } = useQuiz();
+  const { navigate } = useNavigation();
   const tests = useMemo(() => recommendTestsFor(quiz), [quiz]);
   const [expanded, setExpanded] = useState<string | null>(tests[0]?.id ?? null);
 

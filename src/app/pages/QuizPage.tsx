@@ -4,13 +4,14 @@ import { ArrowLeft, ArrowRight, Brain, Check, Sparkles, X } from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
 import Logo from '../components/Logo';
-import { useApp, type QuizAnswers } from '../AppContext';
+import { useNavigation, useQuiz, type QuizAnswers } from '../AppContext';
 import { quizSteps, totalQuizSteps, type QuizStep } from '../data/quiz';
 
 type Field = 'age' | 'activity' | 'priorities' | 'symptoms';
 
 export default function QuizPage() {
-  const { quiz, setQuiz, replace, back, hasCompletedQuiz } = useApp();
+  const { quiz, setQuiz, hasCompletedQuiz } = useQuiz();
+  const { replace, back } = useNavigation();
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [isPersonalizing, setIsPersonalizing] = useState(false);

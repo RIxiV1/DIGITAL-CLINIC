@@ -1,7 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 import Logo from './Logo';
-import { useApp, type Page } from '../AppContext';
+import { useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
 
 type Props = {
@@ -53,7 +53,7 @@ export default function Header({
   rightSlot,
   size = 'wide',
 }: Props) {
-  const { back, navigate, page } = useApp();
+  const { back, navigate, page } = useNavigation();
   const handleBack = onBack ?? back;
   const active = activeNavId(page);
 

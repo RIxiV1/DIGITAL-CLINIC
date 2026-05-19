@@ -16,7 +16,7 @@ import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import ProgressBar from '../components/ProgressBar';
 import StatusBadge from '../components/StatusBadge';
-import { useApp } from '../AppContext';
+import { useNavigation, useQuiz, useReports } from '../AppContext';
 import { buildLabelMap } from '../data/quiz';
 import { summarizeStatuses } from '../data/biomarkers';
 import { badgeFor } from '../data/reports';
@@ -68,7 +68,9 @@ const priorityCopy: Record<
 };
 
 export default function HomePage() {
-  const { quiz, reports, navigate } = useApp();
+  const { quiz } = useQuiz();
+  const { reports } = useReports();
+  const { navigate } = useNavigation();
 
   const ready = reports.find((r) => r.status === 'ready');
   const summary = useMemo(

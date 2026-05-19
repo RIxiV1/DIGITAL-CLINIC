@@ -16,11 +16,13 @@ import Container from '../components/Container';
 import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
-import { useApp } from '../AppContext';
+import { useNavigation, useQuiz, useReports } from '../AppContext';
 import { buildLabelMap, findOptionLabel } from '../data/quiz';
 
 export default function ProfilePage() {
-  const { quiz, navigate, reports } = useApp();
+  const { quiz } = useQuiz();
+  const { reports } = useReports();
+  const { navigate } = useNavigation();
 
   const priorityLabels = useMemo(() => buildLabelMap(), []);
 
