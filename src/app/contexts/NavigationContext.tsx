@@ -49,6 +49,18 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   }, [history]);
 
   /**
+   * Scroll-to-top on every page change. Without this, the browser
+   * preserves the previous page's scroll position — so clicking
+   * "Go to my dashboard" from the bottom of a long RecommendedTestsPage
+   * dumps you at the bottom of the shorter HomePage, looking at blank
+   * space below the content (which looks like a "white screen" bug).
+   */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+  }, [page]);
+
+  /**
    * Browser-history integration so the back button doesn't exit the SPA.
    *
    * - On every navigate(), push the new page to window.history via
