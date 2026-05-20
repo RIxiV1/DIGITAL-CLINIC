@@ -75,7 +75,19 @@ export default function ProcessingPage() {
   return (
     <div className="min-h-dvh bg-canvas flex flex-col">
       <Container size="narrow" className="pt-6">
-        <Logo />
+        {/* Logo is a real button — clicking it bails out of processing
+            and goes home. Without this, if the parse stalls there's
+            no way out except browser back / refresh, which was the
+            "page is static" complaint. */}
+        <button
+          type="button"
+          onClick={() => replace({ type: 'home' })}
+          aria-label="Cancel parsing and go home"
+          title="Cancel and go home"
+          className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+        >
+          <Logo />
+        </button>
       </Container>
 
       <Container

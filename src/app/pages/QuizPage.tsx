@@ -199,7 +199,19 @@ export default function QuizPage() {
           >
             <ArrowLeft size={18} />
           </button>
-          <Logo size="sm" />
+          {/* Logo behaves like the X — clicking it requests exit (with
+              progress-preserving confirm if the user has answers). The
+              previous static <Logo /> looked clickable but did nothing,
+              which made the page feel frozen. */}
+          <button
+            type="button"
+            onClick={requestExit}
+            aria-label="Exit quiz, go home"
+            title="Go home"
+            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+          >
+            <Logo size="sm" />
+          </button>
           <button
             onClick={requestExit}
             className="grid place-items-center w-12 h-12 -mr-1.5 rounded-full hover:bg-canvas text-muted hover:text-ink transition-colors"
