@@ -56,14 +56,27 @@ function applyTheme(resolved: 'light' | 'dark', animate: boolean) {
   }
 }
 
+/**
+ * Toggle UI is currently removed from the Header. While that's the
+ * case, we hard-lock the app to light mode — picking up system 'dark'
+ * automatically would break the landing page (which is light-only)
+ * and the marketing visuals. Flip this back to readStoredMode() /
+ * matchMedia when the toggle returns.
+ */
+const TOGGLE_ENABLED = false;
+
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<ThemeMode>(() => readStoredMode());
+  const [mode, setModeState] = useState<ThemeMode>(() =>
+    TOGGLE_ENABLED ? readStoredMode() : 'light',
+  );
   const [systemPref, setSystemPref] = useState<'light' | 'dark'>(() =>
-    readSystemPreference(),
+    TOGGLE_ENABLED ? readSystemPreference() : 'light',
   );
 
-  // Watch for OS-level theme changes (only matters when mode === 'system').
+  // Watch for OS-level theme changes (only matters when mode === 'system'
+  // and the toggle is enabled).
   useEffect(() => {
+    if (!TOGGLE_ENABLED) return;
     if (typeof window === 'undefined' || !window.matchMedia) return;
     const mql = window.matchMedia('(prefers-color-scheme: dark)');
     const onChange = (e: MediaQueryListEvent) => {
@@ -73,8 +86,11 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     return () => mql.removeEventListener('change', onChange);
   }, []);
 
-  const resolved: 'light' | 'dark' =
-    mode === 'system' ? systemPref : mode;
+  const resolved: 'light' | 'dark' = TOGGLE_ENABLED
+    ? mode === 'system'
+      ? systemPref
+      : mode
+    : 'light';
 
   // Apply on every resolved change. First mount: no fade animation
   // (avoid flash). Subsequent: fade.
