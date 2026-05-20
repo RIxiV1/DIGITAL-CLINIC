@@ -88,36 +88,67 @@ function escapeRegex(input: string): string {
 }
 
 /**
- * Build a per-template regex that matches:
- *
- *   <any alias> [up to 80 non-newline chars] <number> [up to 30 chars] <unit>
- *
- * The unit gate cuts down on false positives — e.g. "Testosterone" appearing
- * inside narrative text without a value nearby wouldn't match because no
- * "ng/dL" follows within 30 characters of the next number.
- *
- * Templates with an empty unit (only "pH" today) skip the unit gate.
+ * True when the alias itself contains the template's unit (or any unit
+ * alias) as a substring. Common in lab reports that label a row
+ * "Density (million per ml)" — the unit is in the LABEL, not after the
+ * value, so requiring a unit token after the number would (incorrectly)
+ * reject this row.
  */
-function buildMatchRegex(template: BiomarkerTemplate): RegExp {
-  const aliasPattern = template.aliases.map(escapeRegex).join('|');
-  // [\s\S] lets us cross line breaks; non-greedy keeps the value close
-  // to the alias rather than racing to a later number on the page.
+function aliasContainsUnit(alias: string, template: BiomarkerTemplate): boolean {
+  if (!template.unit) return false;
+  const aliasLower = alias.toLowerCase();
+  if (aliasLower.includes(template.unit.toLowerCase())) return true;
+  for (const u of template.unitAliases ?? []) {
+    if (u.length > 0 && aliasLower.includes(u.toLowerCase())) return true;
+  }
+  return false;
+}
+
+/**
+ * Try every alias in order; return the first regex that hits the text.
+ *
+ * Per-alias gating:
+ *   - alias names its own unit (e.g. "Density (million per ml)") →
+ *     `alias <80 chars> number`             (no unit gate; the alias is
+ *                                            specific enough to avoid
+ *                                            false positives on its own)
+ *   - template has a unit and the alias does NOT name it →
+ *     `alias <80 chars> number <30 chars> unit`
+ *   - template has no unit (pH) →
+ *     `alias <80 chars> number`
+ *
+ * The unit gate, when present, cuts down on false positives — e.g.
+ * "Testosterone" appearing inside narrative text without ng/dL nearby
+ * shouldn't match.
+ */
+function extractMarkerValue(
+  text: string,
+  template: BiomarkerTemplate,
+): number | null {
   const between = '[\\s\\S]{0,80}?';
   const number = '(-?\\d+(?:\\.\\d+)?)';
-
-  if (!template.unit) {
-    return new RegExp(`(?:${aliasPattern})${between}${number}`, 'i');
-  }
-
-  const unitTokens = [template.unit, ...(template.unitAliases ?? [])]
-    .filter((u) => u.length > 0)
-    .map(escapeRegex);
-  const unitPattern = unitTokens.join('|');
   const tail = '[\\s\\S]{0,30}?';
-  return new RegExp(
-    `(?:${aliasPattern})${between}${number}${tail}(?:${unitPattern})`,
-    'i',
-  );
+
+  // Pre-build the unit alternation once per template — same across aliases.
+  const unitTokens = template.unit
+    ? [template.unit, ...(template.unitAliases ?? [])]
+        .filter((u) => u.length > 0)
+        .map(escapeRegex)
+    : [];
+  const unitGate = unitTokens.length > 0 ? `(?:${unitTokens.join('|')})` : '';
+
+  for (const alias of template.aliases) {
+    const aliasPattern = escapeRegex(alias);
+    const skipUnitGate = !template.unit || aliasContainsUnit(alias, template);
+    const pattern = skipUnitGate
+      ? `${aliasPattern}${between}${number}`
+      : `${aliasPattern}${between}${number}${tail}${unitGate}`;
+    const match = text.match(new RegExp(pattern, 'i'));
+    if (!match) continue;
+    const value = parseFloat(match[1]);
+    if (!Number.isNaN(value)) return value;
+  }
+  return null;
 }
 
 /**
@@ -130,11 +161,8 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
   const seen = new Set<string>();
   for (const template of biomarkerCatalog) {
     if (seen.has(template.id)) continue;
-    const regex = buildMatchRegex(template);
-    const match = text.match(regex);
-    if (!match) continue;
-    const value = parseFloat(match[1]);
-    if (Number.isNaN(value)) continue;
+    const value = extractMarkerValue(text, template);
+    if (value === null) continue;
     found.push(markerFromTemplate(template, value));
     seen.add(template.id);
   }
