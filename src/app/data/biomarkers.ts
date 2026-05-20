@@ -837,16 +837,34 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     plain: 'Oxygen-carrying capacity. Both anaemia and very high counts matter clinically.',
   },
 
-  /* ---- Fertility & Andrology (semen analysis) ------------------ */
+  /* ---- Fertility & Andrology (semen analysis) ------------------
+   * Reference values updated to the WHO Laboratory Manual for the
+   * Examination of Human Semen, 6th edition (2021). Differences from
+   * the older WHO 2010 reference, which many older lab reports still
+   * cite:
+   *
+   *   Marker                  WHO 2010   WHO 2021
+   *   Sample volume (ml)      ≥1.5       ≥1.4
+   *   Sperm density (M/ml)    ≥15        ≥16
+   *   Total motility (%)      ≥40        ≥42
+   *   Progressive (%)         ≥32        ≥30  (LOWERED)
+   *   Morphology (%)          ≥4         ≥4   (unchanged)
+   *   Total count (M)         ≥39        ≥39  (unchanged)
+   *
+   * If a user uploads an older report graded against WHO 2010, the
+   * lab's "borderline / low" verdicts may disagree with ours — that's
+   * a real interpretive difference, not a bug. The plain-English copy
+   * notes the standard so users can reconcile.
+   */
   {
     id: 'semen-volume',
     name: 'Semen volume',
     aliases: ['Sample volume', 'Semen volume', 'Volume', 'Ejaculate volume'],
     unit: 'ml', unitAliases: ['mL', 'ML'],
-    min: 1.5, max: 6,
+    min: 1.4, max: 6,
     category: 'fertility', direction: 'up',
     simpleName: 'How much semen per sample',
-    plain: 'Below 1.5 ml may suggest a blockage or hormonal issue. Most samples land between 2–5 ml.',
+    plain: 'WHO 2021 reference is ≥1.4 ml. Below that may suggest a blockage or hormonal issue; most samples land between 2–5 ml.',
   },
   {
     id: 'semen-ph',
@@ -863,10 +881,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     name: 'Sperm density',
     aliases: ['Density (million per ml)', 'Sperm concentration', 'Sperm density', 'Concentration'],
     unit: 'million/ml', unitAliases: ['M/ml', 'million per ml', '10^6/ml', 'x10^6/mL'],
-    min: 15, max: 200,
+    min: 16, max: 200,
     category: 'fertility', direction: 'up',
     simpleName: 'Sperm per milliliter of semen',
-    plain: 'Below 15 million/ml is considered low (oligospermia). Most fertile men show 40–200 million/ml.',
+    plain: 'WHO 2021 reference is ≥16 million/ml. Below that is oligospermia; most fertile men show 40–200 million/ml.',
   },
   {
     id: 'sperm-total-count',
@@ -876,27 +894,27 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     min: 39, max: 500,
     category: 'fertility', direction: 'up',
     simpleName: 'Total sperm in the whole sample',
-    plain: 'Below 39 million is below the WHO 2010 reference. Higher counts give more swimmers per shot.',
+    plain: 'WHO 2021 reference is ≥39 million. Higher counts give more swimmers per shot.',
   },
   {
     id: 'sperm-motility-total',
     name: 'Total motility',
     aliases: ['Total motility %', 'Total motility', 'Motility'],
     unit: '%',
-    min: 40, max: 100,
+    min: 42, max: 100,
     category: 'fertility', direction: 'up',
     simpleName: '% of sperm that move at all',
-    plain: 'Below 40% motility is asthenospermia — sperm need to move enough to reach an egg.',
+    plain: 'WHO 2021 reference is ≥42%. Below that is asthenospermia — sperm need to move enough to reach an egg.',
   },
   {
     id: 'sperm-motility-progressive',
     name: 'Progressive motility',
     aliases: ['Progressive', 'Progressive motility', 'Forward motility'],
     unit: '%',
-    min: 32, max: 100,
+    min: 30, max: 100,
     category: 'fertility', direction: 'up',
     simpleName: '% of sperm swimming forward',
-    plain: 'Sperm need to swim forward, not in circles. Below 32% is below the reference threshold.',
+    plain: 'WHO 2021 reference is ≥30% (down from 32% in WHO 2010). Sperm need to swim forward, not in circles.',
   },
   {
     id: 'sperm-immotile',
@@ -916,7 +934,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     min: 4, max: 100,
     category: 'fertility', direction: 'up',
     simpleName: '% of sperm with normal shape',
-    plain: 'WHO reference is ≥4% normal forms. Sperm shape matters for successful fertilization.',
+    plain: 'WHO 2021 reference is ≥4% normal forms (unchanged from WHO 2010). Sperm shape matters for successful fertilization.',
   },
 ];
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ChevronRight,
@@ -75,7 +75,22 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     [biomarkers],
   );
 
-  const handleDownload = () => window.print();
+  // Ref-based dedup so a double-tap on the download button doesn't
+  // produce two PDFs while the lazy chunk is still resolving.
+  const pdfBusyRef = useRef(false);
+  const handleDownload = async () => {
+    if (!report || pdfBusyRef.current) return;
+    pdfBusyRef.current = true;
+    try {
+      // Lazy import — jspdf + its peer html2canvas add ~400KB to the
+      // bundle, and most sessions never hit the download button. Keep
+      // it out of the main chunk; load only on first click.
+      const { generateReportPdf } = await import('../services/reportPdf');
+      generateReportPdf(report);
+    } finally {
+      pdfBusyRef.current = false;
+    }
+  };
 
   const [shareToast, setShareToast] = useState<string | null>(null);
   const handleShare = async () => {

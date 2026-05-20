@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "framer-motion": "^11.11.17",
+    "jspdf": "^4.2.1",
     "lucide-react": "^0.469.0",
     "pdfjs-dist": "^5.7.284",
     "react": "^18.3.1",
