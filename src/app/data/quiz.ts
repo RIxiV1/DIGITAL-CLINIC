@@ -70,7 +70,7 @@ export const quizSteps: QuizStep[] = [
       { id: 'stress', label: 'Stressed Out' },
       { id: 'difficulty-in-bed', label: 'Difficulty in bed' },
       { id: 'fertility-concerns', label: 'Fertility concerns' },
-      { id: 'proactive', label: 'Nothing specific — just checking' },
+      { id: 'proactive', label: 'Nothing specific' },
     ],
   },
 
