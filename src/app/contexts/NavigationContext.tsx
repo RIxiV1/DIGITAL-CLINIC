@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import type { Page } from './types';
+import { assertNever } from '../utils/assertNever';
 
 type NavigationValue = {
   page: Page;
@@ -30,8 +31,78 @@ function isPage(value: unknown): value is Page {
   );
 }
 
+/**
+ * Encode a Page into a URL search string for deep linking.
+ *   { type: 'home' }                        -> '?page=home'
+ *   { type: 'results', reportId: 'r1' }     -> '?page=results&id=r1'
+ *   { type: 'problem', problemId: 'low-t' } -> '?page=problem&id=low-t'
+ *   { type: 'landing' }                     -> '' (clean root URL)
+ */
+function pageToSearch(page: Page): string {
+  switch (page.type) {
+    case 'landing':
+      return '';
+    case 'results':
+      return `?page=results&id=${encodeURIComponent(page.reportId)}`;
+    case 'problem':
+      return `?page=problem&id=${encodeURIComponent(page.problemId)}`;
+    case 'quiz':
+    case 'recommendedTests':
+    case 'home':
+    case 'upload':
+    case 'processing':
+    case 'profile':
+      return `?page=${page.type}`;
+    default:
+      return assertNever(page);
+  }
+}
+
+/**
+ * Parse the current URL search string into a Page. Returns null if the URL
+ * doesn't describe a known page (callers should fall back to landing).
+ */
+function searchToPage(search: string): Page | null {
+  if (!search) return null;
+  const params = new URLSearchParams(search);
+  const type = params.get('page');
+  const id = params.get('id') ?? '';
+  switch (type) {
+    case 'landing':
+      return { type: 'landing' };
+    case 'quiz':
+      return { type: 'quiz' };
+    case 'recommendedTests':
+      return { type: 'recommendedTests' };
+    case 'home':
+      return { type: 'home' };
+    case 'upload':
+      return { type: 'upload' };
+    case 'processing':
+      return { type: 'processing' };
+    case 'profile':
+      return { type: 'profile' };
+    case 'results':
+      return id ? { type: 'results', reportId: id } : null;
+    case 'problem':
+      return id ? { type: 'problem', problemId: id } : null;
+    default:
+      return null;
+  }
+}
+
+/** Pathname + new search string, preserving any base path the app is mounted under. */
+function pageUrl(page: Page): string {
+  if (typeof window === 'undefined') return pageToSearch(page) || '/';
+  return `${window.location.pathname}${pageToSearch(page)}`;
+}
+
 export function NavigationProvider({ children }: { children: ReactNode }) {
-  const [page, setPage] = useState<Page>({ type: 'landing' });
+  // Bootstrap from the URL so a deep link like /?page=home lands on home.
+  const [page, setPage] = useState<Page>(() => {
+    if (typeof window === 'undefined') return { type: 'landing' };
+    return searchToPage(window.location.search) ?? { type: 'landing' };
+  });
   const [history, setHistory] = useState<Page[]>([]);
 
   // Refs let navigate()/back() read the current page+history without
@@ -49,11 +120,11 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   }, [history]);
 
   /**
-   * Scroll-to-top on every page change. Without this, the browser
-   * preserves the previous page's scroll position — so clicking
-   * "Go to my dashboard" from the bottom of a long RecommendedTestsPage
-   * dumps you at the bottom of the shorter HomePage, looking at blank
-   * space below the content (which looks like a "white screen" bug).
+   * Scroll-to-top on every page change. Without this, the browser preserves
+   * the previous page's scroll position — so clicking "Go to my dashboard"
+   * from the bottom of a long RecommendedTestsPage dumps you at the bottom
+   * of the shorter HomePage, looking at blank space below the content
+   * (which looks like a "white screen" bug).
    */
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -61,38 +132,39 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   }, [page]);
 
   /**
-   * Browser-history integration so the back button doesn't exit the SPA.
+   * Browser-history integration so back/forward and refresh both work.
    *
-   * - On every navigate(), push the new page to window.history via
-   *   pushState so the browser knows a back step exists.
-   * - On every replace(), use replaceState — no new entry.
-   * - On popstate (back/forward), read the page off e.state and
-   *   sync our internal state with the browser.
+   * - navigate() pushes a new entry with the page encoded in BOTH
+   *   history.state (fast re-hydration) AND the URL search params (deep
+   *   linking + shareable URLs + refresh-safe).
+   * - replace() rewrites the current entry without adding a step.
+   * - popstate (back/forward) rehydrates from history.state if present,
+   *   otherwise re-parses the URL search params (covers cases where state
+   *   was serialized/lost — e.g., session restore).
    *
-   * We anchor the initial state with a replaceState once on mount so
-   * the very first back press has a real entry to land on.
+   * Anchor on mount: replace the current entry so the very first back
+   * press has a real state object to read from, and normalize the URL to
+   * match whatever page we booted into.
    */
   useEffect(() => {
-    // Anchor — only if the current history entry has no page state.
-    if (
-      typeof window !== 'undefined' &&
-      (window.history.state == null ||
-        !isPage((window.history.state as { page?: unknown } | null)?.page))
-    ) {
-      window.history.replaceState({ page: pageRef.current }, '');
-    }
+    if (typeof window === 'undefined') return;
+    const initial = pageRef.current;
+    window.history.replaceState({ page: initial }, '', pageUrl(initial));
 
     const onPopState = (e: PopStateEvent) => {
-      const candidate = (e.state as { page?: unknown } | null)?.page;
-      if (isPage(candidate)) {
-        // Sync our internal state to whatever entry the browser navigated
-        // to. Pop one from our internal history stack so back() and the
+      const fromState = (e.state as { page?: unknown } | null)?.page;
+      const candidate: Page | null = isPage(fromState)
+        ? fromState
+        : searchToPage(window.location.search);
+      if (candidate) {
+        // Sync our internal state to the entry the browser navigated to.
+        // Pop one from our internal history stack so back() and the
         // browser back behave consistently.
         setPage(candidate);
         setHistory((h) => (h.length > 0 ? h.slice(0, -1) : h));
       } else {
-        // Browser walked past our app's earliest entry — surface the
-        // landing page rather than letting the user fall out.
+        // Browser walked past our app's earliest entry — surface landing
+        // rather than letting the user fall out of the SPA.
         setPage({ type: 'landing' });
         setHistory([]);
       }
@@ -106,24 +178,24 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     setHistory((h) => [...h, pageRef.current]);
     setPage(next);
     if (typeof window !== 'undefined') {
-      window.history.pushState({ page: next }, '');
+      window.history.pushState({ page: next }, '', pageUrl(next));
     }
   }, []);
 
   const replace = useCallback((next: Page) => {
     setPage(next);
     if (typeof window !== 'undefined') {
-      window.history.replaceState({ page: next }, '');
+      window.history.replaceState({ page: next }, '', pageUrl(next));
     }
   }, []);
 
   /**
    * back() defers to the browser. window.history.back() fires popstate,
-   * which our handler above translates into state updates. This keeps
-   * the internal history and the browser history strictly in sync — vs
-   * the previous implementation which only mutated our internal stack
-   * and left the browser stack alone (which is why hitting the browser
-   * back button exited the app instead of stepping back inside it).
+   * which our handler above translates into state updates. This keeps the
+   * internal history and the browser history strictly in sync — vs the
+   * previous implementation which only mutated our internal stack and
+   * left the browser stack alone (which is why hitting the browser back
+   * button exited the app instead of stepping back inside it).
    */
   const back = useCallback(() => {
     if (historyRef.current.length === 0) return;

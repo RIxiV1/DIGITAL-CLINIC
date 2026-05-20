@@ -14,6 +14,7 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
+import Emoji from '../components/Emoji';
 import { useNavigation, useReports } from '../AppContext';
 import {
   biomarkersByCategory,
@@ -109,7 +110,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
   if (!report) {
     return (
-      <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
+      <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
         <Header variant="page" title="Report not found" />
         <Container size="wide" className="pt-10 lg:pt-16 text-center">
           <div className="mx-auto max-w-md">
@@ -134,7 +135,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   }
 
   return (
-    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
       <Header
         variant="page"
         title={report.name}
@@ -270,7 +271,8 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                     .map((c) => (
                       <CategoryChip
                         key={c.id}
-                        label={`${c.icon} ${c.name}`}
+                        emoji={c.icon}
+                        label={c.name}
                         active={activeCategory === c.id}
                         onClick={() => setActiveCategory(c.id)}
                       />
@@ -299,9 +301,12 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   >
                     <Card padded={false}>
                       <div className="px-5 pt-5 pb-3 flex items-start gap-3 border-b border-line">
-                        <div className="text-[22px] leading-none">
+                        <Emoji
+                          label={category.name}
+                          className="text-[22px] leading-none"
+                        >
                           {category.icon}
-                        </div>
+                        </Emoji>
                         <div className="flex-1">
                           <div className="font-display text-[17px] leading-tight">
                             {category.name}
@@ -414,7 +419,8 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                     .map((c) => (
                       <CategoryChip
                         key={c.id}
-                        label={`${c.icon} ${c.name}`}
+                        emoji={c.icon}
+                        label={c.name}
                         active={activeCategory === c.id}
                         onClick={() => setActiveCategory(c.id)}
                       />
@@ -573,10 +579,14 @@ function BottomLineTile({
 }
 
 function CategoryChip({
+  emoji,
   label,
   active,
   onClick,
 }: {
+  /** Optional emoji glyph rendered inside an accessible <Emoji /> wrapper.
+   *  Omit for chips like "All" / "All categories" that have no glyph. */
+  emoji?: string;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -584,12 +594,19 @@ function CategoryChip({
   return (
     <button
       onClick={onClick}
-      className={`px-3 h-8 rounded-full text-[11px] font-semibold whitespace-nowrap transition-colors ${
+      // min-h-12 (48px) hit target — the visible chip stays compact but
+      // taps don't miss on touch.
+      className={`inline-flex items-center gap-1 px-3 min-h-12 rounded-full text-[11.5px] font-semibold whitespace-nowrap transition-colors ${
         active
           ? 'bg-gold-500 text-indigo-900 border border-gold-500'
           : 'bg-surface border border-line text-ink-soft'
       }`}
     >
+      {emoji && (
+        <Emoji label={label} className="text-[13px] leading-none">
+          {emoji}
+        </Emoji>
+      )}
       {label}
     </button>
   );

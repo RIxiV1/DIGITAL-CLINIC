@@ -47,7 +47,7 @@ export default function ProfilePage() {
     : 'Not set';
 
   return (
-    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
       <Header
         variant="page"
         title="Profile"

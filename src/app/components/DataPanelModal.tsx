@@ -18,6 +18,16 @@ type Props = {
  * ManageDataPanel — surfaces what we have stored locally, when it was
  * last touched, and gives the user a one-button way to delete everything.
  *
+ * Accessibility — same guarantees as LearnMoreModal:
+ *   - role="dialog" + aria-modal="true"
+ *   - aria-labelledby targeting the heading
+ *   - Esc closes (stopPropagation so a parent listener can't react)
+ *   - Tab / Shift+Tab focus-trap that wraps inside the card
+ *   - Initial focus lands on the close button
+ *   - On close, focus returns to whichever element had it when the
+ *     modal opened — caller doesn't have to track the trigger
+ *   - Body scroll lock via ref-counted utility
+ *
  * Two-step confirmation on wipe so users can't nuke their reports
  * accidentally.
  */
@@ -42,19 +52,62 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
       setWiped(false);
       return;
     }
+
+    // Capture pre-open focus owner so we can return focus on close.
+    // Skip <body> for the same reason as in LearnMoreModal.
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement &&
+      document.activeElement !== document.body
+        ? document.activeElement
+        : null;
+
+    // Mirror the focus-trap pattern from LearnMoreModal so keyboard
+    // users can't tab out of the wipe-confirmation flow into the
+    // (visually hidden) page beneath. Without this, Shift+Tab from the
+    // close button jumps focus to the bottom-nav links underneath.
+    const focusablesIn = (el: HTMLElement | null) => {
+      if (!el) return [] as HTMLElement[];
+      return Array.from(
+        el.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((node) => !node.hasAttribute('aria-hidden'));
+    };
+
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation();
         onCloseRef.current();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const nodes = focusablesIn(cardRef.current);
+      if (nodes.length === 0) return;
+      const first = nodes[0];
+      const last = nodes[nodes.length - 1];
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && (active === first || !cardRef.current?.contains(active))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
+
     document.addEventListener('keydown', onKey);
     const release = acquireBodyScrollLock();
     const id = window.setTimeout(() => closeBtnRef.current?.focus(), 30);
+
     return () => {
       document.removeEventListener('keydown', onKey);
       release();
       window.clearTimeout(id);
+      if (previouslyFocused && document.body.contains(previouslyFocused)) {
+        requestAnimationFrame(() => {
+          previouslyFocused.focus({ preventScroll: true });
+        });
+      }
     };
   }, [open]);
 
@@ -87,7 +140,7 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="w-full sm:max-w-md bg-surface rounded-t-3xl sm:rounded-3xl shadow-pop border border-line flex flex-col max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
+            className="w-full sm:max-w-md bg-surface rounded-t-3xl sm:rounded-3xl shadow-pop border border-line flex flex-col max-h-[85dvh] sm:max-h-[80dvh] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-start gap-3 px-6 pt-6 pb-4 border-b border-line/70">
@@ -110,7 +163,7 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="grid place-items-center w-9 h-9 -mr-1.5 -mt-1 rounded-full hover:bg-canvas text-muted hover:text-ink transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                className="grid place-items-center w-12 h-12 -mr-2 -mt-2 rounded-full hover:bg-canvas text-muted hover:text-ink transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
               >
                 <X size={18} />
               </button>

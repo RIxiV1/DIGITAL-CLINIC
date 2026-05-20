@@ -1,6 +1,6 @@
-import { useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Plus, Upload } from 'lucide-react';
+import { FileText, Plus, Search, Upload, X } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
@@ -12,26 +12,35 @@ import DashboardHeadline from '../components/DashboardHeadline';
 import MarkerAttentionCard from '../components/MarkerAttentionCard';
 import TrendRow from '../components/TrendRow';
 import LearnMoreModal from '../components/LearnMoreModal';
+import Emoji from '../components/Emoji';
 import { useNavigation, useReports } from '../AppContext';
 import {
   getTrend,
   type Biomarker,
   type BiomarkerCategoryId,
+  type BiomarkerStatus,
 } from '../data/biomarkers';
 import { badgeFor, getSampleReportForDashboard } from '../data/reports';
 import { getMarkerInfo } from '../data/markerInfo';
+
+type StatusFilter = 'all' | BiomarkerStatus;
+
+const STATUS_FILTERS: Array<{ id: StatusFilter; label: string }> = [
+  { id: 'all', label: 'All markers' },
+  { id: 'concern', label: 'Needs care' },
+  { id: 'attention', label: 'Needs attention' },
+  { id: 'good', label: 'On track' },
+];
 
 /**
  * Dashboard (HomePage) restructured per the dashboard brief.
  *
  * Four zones, top to bottom:
  *   1. Dynamic headline insight (data-driven, 4 states)
- *   2. Markers that need attention (red + amber, trend + action + LearnMore)
- *   3. Trends over time (sparklines grouped by pathway)
- *   4. The locker (upload + stored reports)
- *
- * The "Focused on you / Your priorities" section is gone — its gamified
- * progress bars measured nothing and obscured the actual signal.
+ *   2. Search/filter bar (controls Zones 3-4)
+ *   3. Markers that need attention (red + amber, trend + action + LearnMore)
+ *   4. Trends over time (sparklines grouped by pathway)
+ *   5. The locker (upload + stored reports)
  */
 export default function HomePage() {
   const { reports, addReport } = useReports();
@@ -49,28 +58,51 @@ export default function HomePage() {
   const ready = useMemo(() => reports.find((r) => r.status === 'ready'), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
 
+  /* ---- Search + status filter ---- */
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  // Deferred query keeps the input feel snappy on slower devices —
+  // filtering happens against a slightly stale value while typing.
+  const deferredQuery = useDeferredValue(query);
+  const trimmedQuery = deferredQuery.trim().toLowerCase();
+  const isFiltering = trimmedQuery.length > 0 || statusFilter !== 'all';
+
+  const visibleMarkers = useMemo(() => {
+    const q = trimmedQuery;
+    return biomarkers.filter((m) => {
+      const queryHit =
+        !q ||
+        m.name.toLowerCase().includes(q) ||
+        (m.simpleName?.toLowerCase().includes(q) ?? false) ||
+        m.plain.toLowerCase().includes(q) ||
+        m.category.toLowerCase().includes(q);
+      const statusHit = statusFilter === 'all' || m.status === statusFilter;
+      return queryHit && statusHit;
+    });
+  }, [biomarkers, trimmedQuery, statusFilter]);
+
   // Markers that need attention — red + amber, latest report only.
-  const attentionMarkers = useMemo(
-    () =>
-      biomarkers
-        .filter((m) => m.status === 'concern' || m.status === 'attention')
-        // concern first, then attention, then by "biggest absolute delta vs prev"
-        .sort((a, b) => {
-          if (a.status !== b.status) return a.status === 'concern' ? -1 : 1;
-          return 0;
-        })
-        .slice(0, 6),
-    [biomarkers],
-  );
+  // When filtering, the user is explicitly asking to see everything that
+  // matches, so we drop the "attention only" gate.
+  const attentionMarkers = useMemo(() => {
+    if (isFiltering) return visibleMarkers.slice(0, 12);
+    return visibleMarkers
+      .filter((m) => m.status === 'concern' || m.status === 'attention')
+      .sort((a, b) => {
+        if (a.status !== b.status) return a.status === 'concern' ? -1 : 1;
+        return 0;
+      })
+      .slice(0, 6);
+  }, [visibleMarkers, isFiltering]);
 
   // Markers with trend data — group by pathway for Zone 3.
   const trendsByPathway = useMemo(() => {
-    const withHistory = biomarkers.filter((m) => getTrend(m) !== null);
+    const withHistory = visibleMarkers.filter((m) => getTrend(m) !== null);
     return PATHWAYS.map((p) => ({
       ...p,
       markers: withHistory.filter((m) => p.categories.includes(m.category)),
     })).filter((p) => p.markers.length > 0);
-  }, [biomarkers]);
+  }, [visibleMarkers]);
 
   // Learn More modal state — shared across attention cards + trend rows.
   const [openMarkerName, setOpenMarkerName] = useState<string | null>(null);
@@ -104,8 +136,12 @@ export default function HomePage() {
       ? () => navigate({ type: 'problem', problemId: marker.problemId! })
       : undefined;
 
+  const totalMatches = visibleMarkers.length;
+  const hasAnyContent =
+    attentionMarkers.length > 0 || trendsByPathway.length > 0;
+
   return (
-    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
       <Header variant="home" />
 
       {/* ZONE 1 · Dynamic headline (with embedded health ring) */}
@@ -117,8 +153,105 @@ export default function HomePage() {
         />
       </Container>
 
+      {/* ZONE 2 · Search + filter. Only renders when there's a report to
+          filter — pre-upload the user has nothing to look through. */}
+      {ready && biomarkers.length > 0 && (
+        <Container size="wide" className="mt-6 lg:mt-8">
+          <div className="rounded-[18px] bg-surface border border-line/70 shadow-soft p-3 sm:p-4">
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search
+                  size={16}
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+                />
+                <input
+                  // `type="text"` not "search" so WebKit doesn't render its
+                  // own cancel button next to our custom one (which would
+                  // be a double X in Safari/Chrome).
+                  type="text"
+                  inputMode="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search markers, goals, or tests"
+                  aria-label="Search markers, goals, or tests"
+                  className="w-full h-12 pl-10 pr-12 rounded-[14px] bg-canvas/70 border border-line text-[14px] placeholder:text-muted text-ink focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400"
+                />
+                {query && (
+                  <button
+                    type="button"
+                    onClick={() => setQuery('')}
+                    aria-label="Clear search"
+                    className="absolute right-0 top-1/2 -translate-y-1/2 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-ink"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-3 overflow-x-auto scrollbar-none -mx-1 px-1">
+              <div className="flex gap-2 w-max">
+                {STATUS_FILTERS.map((f) => {
+                  const active = statusFilter === f.id;
+                  return (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setStatusFilter(f.id)}
+                      // min-h-12 (48px) so the hit area meets the
+                      // 48x48 touch-target rule even though the visible
+                      // chip is compact.
+                      className={`px-4 min-h-12 rounded-full text-[12.5px] font-semibold whitespace-nowrap transition-colors ${
+                        active
+                          ? 'bg-indigo-600 text-white shadow-soft'
+                          : 'bg-canvas/70 border border-line text-ink-soft hover:border-indigo-300'
+                      }`}
+                      aria-pressed={active}
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* aria-live="polite" so AT users hear the count update as
+                they type — without focus moving here. role="status"
+                groups the message + clear button as a single update. */}
+            {isFiltering && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="mt-3 text-[12px] text-ink-soft"
+              >
+                {totalMatches === 0 ? (
+                  <span>No matches. Try a broader search.</span>
+                ) : (
+                  <span>
+                    Showing <span className="font-semibold text-ink">{totalMatches}</span>{' '}
+                    of {biomarkers.length} markers
+                  </span>
+                )}
+                {(query || statusFilter !== 'all') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setQuery('');
+                      setStatusFilter('all');
+                    }}
+                    className="ml-2 text-indigo-700 font-semibold hover:underline"
+                  >
+                    Clear filters
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </Container>
+      )}
+
       {/* BENTO ROW · Attention markers (left) + Trends (right) on lg+ */}
-      {(attentionMarkers.length > 0 || trendsByPathway.length > 0) && (
+      {hasAnyContent && (
         <Container size="wide" className="mt-6 lg:mt-8">
           <div className="grid lg:grid-cols-12 gap-4 lg:gap-5">
             {/* Attention block — col-span-7 on lg, full width otherwise */}
@@ -129,8 +262,12 @@ export default function HomePage() {
                 }`}
               >
                 <SectionHeading
-                  eyebrow="Needs attention"
-                  title="Markers to act on first"
+                  eyebrow={isFiltering ? 'Matching markers' : 'Needs attention'}
+                  title={
+                    isFiltering
+                      ? 'What you searched for'
+                      : 'Markers to act on first'
+                  }
                 />
                 <div className="mt-4 grid sm:grid-cols-2 gap-3">
                   {attentionMarkers.map((m, i) => (
@@ -172,9 +309,12 @@ export default function HomePage() {
                       className="rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden backdrop-blur-sm"
                     >
                       <div className="px-5 pt-5 pb-2 flex items-center gap-2">
-                        <span className="text-[18px] leading-none">
+                        <Emoji
+                          label={`${group.name} pathway`}
+                          className="text-[18px] leading-none"
+                        >
                           {group.icon}
-                        </span>
+                        </Emoji>
                         <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-indigo-700">
                           {group.name}
                         </div>
@@ -201,6 +341,35 @@ export default function HomePage() {
         </Container>
       )}
 
+      {/* Empty state for filtered-to-nothing — distinct from the
+          first-time-no-reports state below so the CTA makes sense. */}
+      {ready && isFiltering && totalMatches === 0 && (
+        <Container size="wide" className="mt-6">
+          <Card className="text-center !py-10">
+            <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 mb-3">
+              <Search size={20} />
+            </div>
+            <div className="font-display text-[20px]">Nothing matched.</div>
+            <p className="text-[13.5px] text-ink-soft mt-1.5 max-w-sm mx-auto leading-relaxed">
+              Try a different keyword (e.g. "vitamin", "sugar", "heart"), or
+              switch the status filter back to "All markers".
+            </p>
+            <div className="mt-5 flex justify-center">
+              <Button
+                size="md"
+                variant="secondary"
+                onClick={() => {
+                  setQuery('');
+                  setStatusFilter('all');
+                }}
+              >
+                Clear filters
+              </Button>
+            </div>
+          </Card>
+        </Container>
+      )}
+
       {/* ZONE 4 · Your locker */}
       <Container size="wide" className="mt-6 lg:mt-8">
         <SectionHeading
@@ -210,7 +379,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => navigate({ type: 'upload' })}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-indigo-600 text-white text-[12px] font-semibold shadow-soft hover:bg-indigo-700"
+              className="inline-flex items-center gap-1.5 min-h-12 h-12 px-4 rounded-full bg-indigo-600 text-white text-[13px] font-semibold shadow-soft hover:bg-indigo-700"
             >
               <Plus size={14} /> Upload
             </button>

@@ -16,11 +16,164 @@ import {
   saveQuizComplete,
 } from '../utils/persistence';
 
+/* ================================================================== */
+/* Men's Health Risk Priority Algorithm                                 */
+/*                                                                      */
+/* Maps the user's symptom selections to three clinical systems with    */
+/* weighted clinical priorities. The weights are tuned so that the      */
+/* combined score for a system lands in one of three bands:             */
+/*                                                                      */
+/*   High Risk     — score ≥ 15                                         */
+/*   Moderate Risk — score 7–14                                         */
+/*   Low Risk      — score  < 7                                         */
+/*                                                                      */
+/* The map is exported so other surfaces (the recommendation engine,    */
+/* a future "why we suggest these tests" view) can introspect it.       */
+/*                                                                      */
+/* Important: this is a screening heuristic, not a diagnosis. Anywhere  */
+/* it's surfaced to the user, the copy must say so.                     */
+/* ================================================================== */
+
+export type RiskSystemId =
+  | 'hypogonadism'
+  | 'erectileDysfunction'
+  | 'cardiovascular';
+
+export type RiskTier = 'low' | 'moderate' | 'high';
+
+/** Human-facing label for each clinical system. Kept in code (not the
+ *  data files) because it's tied to the algorithm, not the quiz copy. */
+export const SYSTEM_LABELS: Record<RiskSystemId, string> = {
+  hypogonadism: 'Hypogonadism (low T) indicators',
+  erectileDysfunction: 'Erectile-function indicators',
+  cardiovascular: 'Cardiovascular risk indicators',
+};
+
+/**
+ * Weight table — for each symptom id (matching ids in data/quiz.ts), how
+ * heavily it implicates each clinical system. Weights are 0–5 with 5 =
+ * primary signal. Missing entries are treated as 0.
+ *
+ * Notes on the picks:
+ *   - "difficulty-in-bed" is the strongest ED signal but also a known
+ *     comorbidity with cardiovascular disease and low T — weighted on
+ *     all three.
+ *   - "belly-fat" and "poor-sleep" are the most under-weighted clinical
+ *     signals in lay screening — both are independent risk multipliers
+ *     for low T AND cardiovascular events, so we weight them assertively.
+ *   - "proactive" carries no risk weight; the user is symptom-free.
+ */
+export const SYMPTOM_WEIGHTS: Record<
+  string,
+  Partial<Record<RiskSystemId, number>>
+> = {
+  'low-energy':         { hypogonadism: 4, erectileDysfunction: 1, cardiovascular: 2 },
+  'hair-loss':          { hypogonadism: 3 },
+  'low-libido':         { hypogonadism: 5, erectileDysfunction: 4 },
+  'belly-fat':          { hypogonadism: 3, erectileDysfunction: 2, cardiovascular: 4 },
+  'brain-fog':          { hypogonadism: 2, cardiovascular: 1 },
+  'poor-sleep':         { hypogonadism: 3, erectileDysfunction: 1, cardiovascular: 3 },
+  'low-mood':           { hypogonadism: 3, erectileDysfunction: 2, cardiovascular: 1 },
+  'stress':             { hypogonadism: 2, erectileDysfunction: 2, cardiovascular: 3 },
+  'difficulty-in-bed':  { hypogonadism: 4, erectileDysfunction: 5, cardiovascular: 3 },
+  'fertility-concerns': { hypogonadism: 5, erectileDysfunction: 2 },
+  // 'proactive' deliberately omitted — no risk signal when the user is
+  // symptom-free.
+};
+
+const ALL_SYSTEMS: readonly RiskSystemId[] = [
+  'hypogonadism',
+  'erectileDysfunction',
+  'cardiovascular',
+] as const;
+
+function tierFor(score: number): RiskTier {
+  if (score >= 15) return 'high';
+  if (score >= 7) return 'moderate';
+  return 'low';
+}
+
+/** Ranking helper so we can compute the "worst" tier across systems
+ *  without a fragile if/else ladder. */
+const TIER_RANK: Record<RiskTier, number> = { low: 0, moderate: 1, high: 2 };
+
+export type RiskSystemResult = {
+  id: RiskSystemId;
+  label: string;
+  score: number;
+  tier: RiskTier;
+};
+
+export type RiskAssessment = {
+  /** Raw weighted score per system (0..n, unbounded above). */
+  systemScores: Record<RiskSystemId, number>;
+  /** Tier per system, computed from the score thresholds. */
+  systemTiers: Record<RiskSystemId, RiskTier>;
+  /** The worst tier across all three systems — useful for the
+   *  dashboard headline / "how should I feel about this?" cue. */
+  highestTier: RiskTier;
+  /** All three systems sorted highest-score-first so the UI can lead
+   *  with the system that has the loudest signal. */
+  rankedSystems: RiskSystemResult[];
+};
+
+/**
+ * Compute the risk assessment for a given symptom selection. Pure
+ * function — only the symptoms array matters, so memoization upstream
+ * stays narrow.
+ */
+export function calculateRisk(symptoms: readonly string[]): RiskAssessment {
+  const systemScores: Record<RiskSystemId, number> = {
+    hypogonadism: 0,
+    erectileDysfunction: 0,
+    cardiovascular: 0,
+  };
+
+  for (const sId of symptoms) {
+    const weights = SYMPTOM_WEIGHTS[sId];
+    if (!weights) continue;
+    // Iterate the canonical system list rather than Object.entries so
+    // the key narrowing stays type-safe — no `as RiskSystemId` casts.
+    for (const sysId of ALL_SYSTEMS) {
+      const w = weights[sysId];
+      if (typeof w === 'number') systemScores[sysId] += w;
+    }
+  }
+
+  const systemTiers: Record<RiskSystemId, RiskTier> = {
+    hypogonadism: tierFor(systemScores.hypogonadism),
+    erectileDysfunction: tierFor(systemScores.erectileDysfunction),
+    cardiovascular: tierFor(systemScores.cardiovascular),
+  };
+
+  let highestTier: RiskTier = 'low';
+  for (const sysId of ALL_SYSTEMS) {
+    if (TIER_RANK[systemTiers[sysId]] > TIER_RANK[highestTier]) {
+      highestTier = systemTiers[sysId];
+    }
+  }
+
+  const rankedSystems: RiskSystemResult[] = ALL_SYSTEMS.map((id) => ({
+    id,
+    label: SYSTEM_LABELS[id],
+    score: systemScores[id],
+    tier: systemTiers[id],
+  })).sort((a, b) => b.score - a.score);
+
+  return { systemScores, systemTiers, highestTier, rankedSystems };
+}
+
+/* ================================================================== */
+/* Context                                                              */
+/* ================================================================== */
+
 type QuizValue = {
   quiz: QuizAnswers;
   hasCompletedQuiz: boolean;
   setQuiz: (next: Partial<QuizAnswers>) => void;
   resetQuiz: () => void;
+  /** Derived risk assessment. Recomputes only when symptoms change. */
+  riskAssessment: RiskAssessment;
 };
 
 const QuizContext = createContext<QuizValue | null>(null);
@@ -90,9 +243,20 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     setHasCompletedQuiz(false);
   }, []);
 
+  /**
+   * Risk recomputes ONLY when the symptom set changes — toggling a
+   * priority or editing age/activity won't re-run the algorithm.
+   * This is the "update dynamically only when the final answer set
+   * changes" guarantee the directive asks for.
+   */
+  const riskAssessment = useMemo(
+    () => calculateRisk(quiz.symptoms),
+    [quiz.symptoms],
+  );
+
   const value = useMemo<QuizValue>(
-    () => ({ quiz, hasCompletedQuiz, setQuiz, resetQuiz }),
-    [quiz, hasCompletedQuiz, setQuiz, resetQuiz],
+    () => ({ quiz, hasCompletedQuiz, setQuiz, resetQuiz, riskAssessment }),
+    [quiz, hasCompletedQuiz, setQuiz, resetQuiz, riskAssessment],
   );
 
   return <QuizContext.Provider value={value}>{children}</QuizContext.Provider>;

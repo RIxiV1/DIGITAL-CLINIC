@@ -1,13 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowLeft, ArrowRight, Brain, Check, Sparkles, X } from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
+import Emoji from '../components/Emoji';
 import Logo from '../components/Logo';
 import { useNavigation, useQuiz, type QuizAnswers } from '../AppContext';
 import { quizSteps, totalQuizSteps, type QuizStep } from '../data/quiz';
 
 type Field = 'age' | 'activity' | 'priorities' | 'symptoms';
+
+/** Pixels of horizontal travel before we treat a touch drag as a swipe.
+ *  60px lines up with iOS Safari's own swipe-back gesture so we don't
+ *  triggers on incidental scrolls. */
+const SWIPE_THRESHOLD_PX = 60;
 
 export default function QuizPage() {
   const { quiz, setQuiz, hasCompletedQuiz } = useQuiz();
@@ -100,6 +106,69 @@ export default function QuizPage() {
   };
 
   /**
+   * Global keyboard navigation. Power users hate clicking "Continue"
+   * fourteen times — they want Enter / arrow keys. Listener is
+   * page-scoped, ignores keystrokes when the user is mid-typing in an
+   * input/textarea, and yields to the exit/personalizing overlays
+   * (those swallow their own keys).
+   */
+  useEffect(() => {
+    if (confirmExit || isPersonalizing) return;
+    const onKey = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const editable =
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable);
+      if (editable) return;
+      if (e.key === 'ArrowRight' || e.key === 'Enter') {
+        if (canContinue || step.field === 'symptoms') {
+          e.preventDefault();
+          goNext();
+        }
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        goBack();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        requestExit();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canContinue, stepIndex, confirmExit, isPersonalizing, step.field]);
+
+  /* ---- Swipe gestures ----
+   *
+   * Pointer-based so it works on both touch and trackpad. We only treat
+   * a horizontal movement as a swipe if (a) it dominates over vertical
+   * motion (otherwise scrolling-with-finger would feel like a swipe)
+   * and (b) it exceeds SWIPE_THRESHOLD_PX. Swipe-right = back,
+   * swipe-left = next.
+   */
+  const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === 'mouse') return; // mouse uses keyboard / buttons
+    swipeStartRef.current = { x: e.clientX, y: e.clientY };
+  };
+  const onPointerUp = (e: React.PointerEvent) => {
+    const start = swipeStartRef.current;
+    swipeStartRef.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return;
+    if (Math.abs(dx) < Math.abs(dy)) return; // mostly vertical = scroll
+    if (dx < 0 && (canContinue || step.field === 'symptoms')) {
+      goNext();
+    } else if (dx > 0) {
+      goBack();
+    }
+  };
+
+  /**
    * New section order — symptoms first to create the "yes, that's me" moment,
    * demographics last as the low-engagement housekeeping step.
    */
@@ -110,13 +179,13 @@ export default function QuizPage() {
   ];
 
   return (
-    <div className="min-h-screen pb-44 bg-canvas">
+    <div className="min-h-dvh pb-44 bg-canvas">
       {/* Top */}
       <Container size="narrow" className="pt-5">
         <div className="flex items-center justify-between">
           <button
             onClick={goBack}
-            className="grid place-items-center w-9 h-9 -ml-1.5 rounded-full hover:bg-indigo-50 text-indigo-700 transition-colors"
+            className="grid place-items-center w-12 h-12 -ml-1.5 rounded-full hover:bg-indigo-50 text-indigo-700 transition-colors"
             aria-label="Back"
           >
             <ArrowLeft size={18} />
@@ -124,7 +193,7 @@ export default function QuizPage() {
           <Logo size="sm" />
           <button
             onClick={requestExit}
-            className="grid place-items-center w-9 h-9 -mr-1.5 rounded-full hover:bg-canvas text-muted hover:text-ink transition-colors"
+            className="grid place-items-center w-12 h-12 -mr-1.5 rounded-full hover:bg-canvas text-muted hover:text-ink transition-colors"
             aria-label="Exit quiz"
             title="Exit quiz"
           >
@@ -161,83 +230,97 @@ export default function QuizPage() {
           })}
         </div>
 
-        {/* Progress strip — step counter only. Section label is inside the
-            animated block so it crossfades with the question. */}
-        <div className="mt-3 flex items-center justify-end text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
-          Step {stepIndex + 1} of {totalQuizSteps} · {Math.round(progress)}%
+        {/* Progress strip — step counter + an unobtrusive swipe hint that
+            only renders on touch contexts (hidden via the parent flex on
+            very-small viewports otherwise). */}
+        <div className="mt-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+          <span className="hidden sm:inline opacity-70">
+            Tip · arrow keys or swipe to move
+          </span>
+          <span>
+            Step {stepIndex + 1} of {totalQuizSteps} · {Math.round(progress)}%
+          </span>
         </div>
       </Container>
 
-      {/* Step content */}
+      {/* Step content — wrapped in the swipe / fade region. */}
       <Container size="narrow" className="mt-6">
-        <AnimatePresence custom={direction} mode="wait">
-          <motion.div
-            key={step.id}
-            custom={direction}
-            initial={{ opacity: 0, x: direction === 1 ? 18 : -18 }}
-            animate={{
-              opacity: 1,
-              x: 0,
-              transition: { duration: 0.32, ease: [0.22, 1, 0.36, 1] },
-            }}
-            exit={{
-              opacity: 0,
-              x: direction === 1 ? -12 : 12,
-              transition: { duration: 0.16, ease: [0.4, 0, 1, 1] },
-            }}
-          >
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-700 mb-2">
-              {step.sectionLabel}
-            </div>
-            <h1 className="font-display text-[30px] leading-tight text-balance">
-              {step.title}
-            </h1>
-            <p className="mt-2 text-[15px] text-ink-soft text-pretty">
-              {step.subtitle}
-            </p>
-
-            {isCompound ? (
-              <CompoundOptions
-                subSteps={step.subSteps!}
-                isSelectedFor={isSelectedFor}
-                toggleFor={toggleFor}
-              />
-            ) : step.layout === 'cards' ? (
-              <div className="mt-6">
-                <CardOptions
-                  options={step.options ?? []}
-                  isSelected={(id) =>
-                    !!step.field && isSelectedFor(id, step.field)
-                  }
-                  toggle={(id) =>
-                    step.field &&
-                    toggleFor(id, step.field, step.multi ?? false)
-                  }
-                />
+        <div
+          onPointerDown={onPointerDown}
+          onPointerUp={onPointerUp}
+          // touch-action: pan-y lets the OS handle vertical scrolling
+          // natively while we keep horizontal gesture detection
+          style={{ touchAction: 'pan-y' }}
+        >
+          <AnimatePresence custom={direction} mode="wait">
+            <motion.div
+              key={step.id}
+              custom={direction}
+              initial={{ opacity: 0, x: direction === 1 ? 22 : -22 }}
+              animate={{
+                opacity: 1,
+                x: 0,
+                transition: { duration: 0.36, ease: [0.22, 1, 0.36, 1] },
+              }}
+              exit={{
+                opacity: 0,
+                x: direction === 1 ? -16 : 16,
+                transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
+              }}
+            >
+              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-700 mb-2">
+                {step.sectionLabel}
               </div>
-            ) : (
-              <div className="mt-6">
-                <PillOptions
-                  options={step.options ?? []}
-                  isSelected={(id) =>
-                    !!step.field && isSelectedFor(id, step.field)
-                  }
-                  toggle={(id) =>
-                    step.field &&
-                    toggleFor(id, step.field, step.multi ?? false)
-                  }
-                  multi={step.multi ?? false}
-                />
-              </div>
-            )}
-
-            {step.field === 'symptoms' && (
-              <p className="mt-5 text-xs text-muted">
-                Nothing fits? You can skip this step.
+              <h1 className="font-display text-[30px] leading-tight text-balance">
+                {step.title}
+              </h1>
+              <p className="mt-2 text-[15px] text-ink-soft text-pretty">
+                {step.subtitle}
               </p>
-            )}
-          </motion.div>
-        </AnimatePresence>
+
+              {isCompound ? (
+                <CompoundOptions
+                  subSteps={step.subSteps!}
+                  isSelectedFor={isSelectedFor}
+                  toggleFor={toggleFor}
+                />
+              ) : step.layout === 'cards' ? (
+                <div className="mt-6">
+                  <CardOptions
+                    options={step.options ?? []}
+                    isSelected={(id) =>
+                      !!step.field && isSelectedFor(id, step.field)
+                    }
+                    toggle={(id) =>
+                      step.field &&
+                      toggleFor(id, step.field, step.multi ?? false)
+                    }
+                  />
+                </div>
+              ) : (
+                <div className="mt-6">
+                  <PillOptions
+                    options={step.options ?? []}
+                    isSelected={(id) =>
+                      !!step.field && isSelectedFor(id, step.field)
+                    }
+                    toggle={(id) =>
+                      step.field &&
+                      toggleFor(id, step.field, step.multi ?? false)
+                    }
+                    multi={step.multi ?? false}
+                  />
+                </div>
+              )}
+
+              {step.field === 'symptoms' && (
+                <p className="mt-5 text-xs text-muted">
+                  Nothing fits? You can skip this step.
+                </p>
+              )}
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </Container>
 
       {/* Sticky bottom CTA */}
@@ -555,7 +638,7 @@ function CardOptions({
             aria-pressed={selected}
             whileTap={{ scale: 0.985 }}
             onClick={() => toggle(opt.id)}
-            className={`relative w-full text-left px-4 py-3.5 rounded-[16px] border transition-all ${
+            className={`relative w-full text-left px-4 py-3.5 rounded-[16px] border transition-all min-h-[52px] ${
               selected
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
                 : 'bg-surface border-line text-ink hover:border-indigo-300 shadow-soft'
@@ -564,11 +647,13 @@ function CardOptions({
             <div className="flex items-center gap-3">
               {opt.emoji && (
                 <div
-                  className={`w-10 h-10 rounded-xl grid place-items-center text-lg ${
+                  className={`w-10 h-10 rounded-xl grid place-items-center ${
                     selected ? 'bg-indigo-500/40' : 'bg-canvas'
                   }`}
                 >
-                  {opt.emoji}
+                  <Emoji label={opt.label} className="text-lg leading-none">
+                    {opt.emoji}
+                  </Emoji>
                 </div>
               )}
               <div className="flex-1">

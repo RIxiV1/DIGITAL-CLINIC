@@ -71,7 +71,7 @@ export default function LandingPage() {
   const viewSample = () => navigate({ type: 'results', reportId: 'rep-001' });
 
   return (
-    <div className="min-h-screen bg-white text-ink overflow-x-hidden">
+    <div className="min-h-dvh bg-white text-ink overflow-x-hidden">
       <TopNav onStart={startQuiz} onSample={viewSample} />
       <Hero onStart={startQuiz} onSample={viewSample} />
       <ConnectionSection onStart={startQuiz} />

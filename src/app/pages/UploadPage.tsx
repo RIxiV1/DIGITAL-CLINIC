@@ -1,10 +1,14 @@
 import { useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
+  AlertTriangle,
   ArrowRight,
   FileText,
   Image as ImageIcon,
+  Info,
+  RotateCcw,
   ShieldCheck,
+  Sparkles,
   UploadCloud,
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -12,13 +16,34 @@ import Card from '../components/Card';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import { useNavigation, useReports } from '../AppContext';
-import { makeReport } from '../data/reports';
+import { makeReport, sampleReports } from '../data/reports';
+import {
+  validateUpload,
+  type FileValidationError,
+} from '../services/api';
 
+/**
+ * Selecting + validating a lab report before handing it off to the
+ * processing pipeline.
+ *
+ * Failure modes the user can hit, in order of likelihood:
+ *   - type   → tried to upload .docx, .heic, etc.
+ *   - size   → file > 20 MB
+ *   - unrecognized → filename doesn't look like a lab report (camera-
+ *                    roll names like IMG_1234.jpg fall here)
+ *
+ * "type" and "size" surface as a thin inline alert above the dropzone.
+ * "unrecognized" surfaces as a full clinical-error card with two recovery
+ * paths — try a different file, or jump straight to a sample report so
+ * the user can keep exploring the product without finding a real one.
+ */
 export default function UploadPage() {
-  const { addReport } = useReports();
-  const { replace } = useNavigation();
+  const { reports, addReport } = useReports();
+  const { replace, navigate } = useNavigation();
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
+  const [error, setError] = useState<FileValidationError | null>(null);
+
   // Drag-enter/leave fire for every child element, not just the dropzone
   // boundary. Counting active drags is the standard workaround so the
   // "dragging" highlight doesn't flicker when the cursor moves over the
@@ -27,7 +52,15 @@ export default function UploadPage() {
   const dragging = dragDepth > 0;
 
   const onSelect = (f: File | null) => {
-    if (f) setFileName(f.name);
+    if (!f) return;
+    const result = validateUpload(f);
+    if (!result.ok) {
+      setError(result.error);
+      setFileName(null);
+      return;
+    }
+    setError(null);
+    setFileName(result.file.name);
   };
 
   const startProcessing = () => {
@@ -38,8 +71,35 @@ export default function UploadPage() {
     replace({ type: 'processing' });
   };
 
+  /**
+   * Recovery path when the filename heuristic rejects the upload. Loads
+   * the first curated sample into the user's locker (if not already
+   * there) and routes them to its results page, so they don't dead-end
+   * on the error screen.
+   */
+  const loadSampleFallback = () => {
+    const sample = sampleReports[0];
+    if (!reports.some((r) => r.id === sample.id)) {
+      addReport(sample);
+    }
+    setError(null);
+    navigate({ type: 'results', reportId: sample.id });
+  };
+
+  const resetAndPickAgain = () => {
+    setError(null);
+    setFileName(null);
+    // Open the file picker once the error card has dismounted so the
+    // OS dialog feels like a continuation of the user's action.
+    requestAnimationFrame(() => inputRef.current?.click());
+  };
+
+  const isClinicalError = error?.kind === 'unrecognized';
+  const isInlineError =
+    error?.kind === 'type' || error?.kind === 'size' || error?.kind === 'empty';
+
   return (
-    <div className="min-h-screen pb-32 bg-canvas">
+    <div className="min-h-dvh pb-32 bg-canvas">
       <Header
         variant="page"
         title="Upload a report"
@@ -47,79 +107,199 @@ export default function UploadPage() {
       />
 
       <Container size="narrow" className="pt-5">
-        <motion.div
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.35 }}
+        {/* Honest disclaimer — the parsing pipeline is a UI simulation,
+            not a real OCR/extraction engine. Without this notice, users
+            who upload a real report (e.g. a semen analysis) get the
+            sample hormone dataset and reasonably assume that's what
+            their file contained. Position above the dropzone so it's
+            read before the user commits. */}
+        <div
+          role="note"
+          className="mb-4 flex items-start gap-2.5 rounded-[14px] border border-indigo-200 bg-indigo-50/70 px-4 py-3"
         >
-          <Card padded={false} className="overflow-hidden">
-            <div
-              onDragEnter={(e) => {
-                e.preventDefault();
-                setDragDepth((d) => d + 1);
-              }}
-              onDragOver={(e) => e.preventDefault()}
-              onDragLeave={(e) => {
-                e.preventDefault();
-                setDragDepth((d) => Math.max(0, d - 1));
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragDepth(0);
-                onSelect(e.dataTransfer.files?.[0] ?? null);
-              }}
-              onClick={() => inputRef.current?.click()}
-              className={`p-7 text-center cursor-pointer transition-colors ${
-                dragging ? 'bg-indigo-50' : 'bg-surface'
-              }`}
+          <Info size={16} className="text-indigo-700 shrink-0 mt-0.5" />
+          <p className="text-[12.5px] leading-relaxed text-indigo-900">
+            <span className="font-semibold">Demo build —</span> uploads aren't
+            parsed yet. Whatever file you pick, the results screen will show
+            our curated <span className="font-semibold">sample dataset</span>{' '}
+            so you can see what the product does end-to-end. Your file stays
+            on your device.
+          </p>
+        </div>
+
+        {/* The clinical error replaces the dropzone entirely — it's a
+            modal-style interruption, not a passing alert. The dropzone
+            re-appears once the user clicks "Try a different file". */}
+        <AnimatePresence mode="wait">
+          {isClinicalError && error.kind === 'unrecognized' ? (
+            <motion.div
+              key="clinical-error"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
             >
-              <motion.div
-                animate={{
-                  y: dragging ? -4 : 0,
-                  scale: dragging ? 1.05 : 1,
-                }}
-                className="mx-auto grid place-items-center w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-700"
-              >
-                <UploadCloud size={28} />
-              </motion.div>
-              <div className="mt-4 font-display text-[18px] text-ink">
-                {fileName ?? 'Tap to choose a file'}
-              </div>
-              <div className="mt-1 text-[13px] text-muted">
-                {fileName
-                  ? 'Looks good. Hit start when you’re ready.'
-                  : 'or drag and drop it here'}
-              </div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept="application/pdf,image/*"
-                className="hidden"
-                onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
-              />
-            </div>
-            <div className="grid grid-cols-2 border-t border-line">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  inputRef.current?.click();
-                }}
-                className="flex items-center justify-center gap-2 py-3 text-[13px] font-semibold text-indigo-700 hover:bg-indigo-50/60"
-              >
-                <FileText size={16} /> Pick PDF
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  inputRef.current?.click();
-                }}
-                className="flex items-center justify-center gap-2 py-3 text-[13px] font-semibold text-indigo-700 hover:bg-indigo-50/60 border-l border-line"
-              >
-                <ImageIcon size={16} /> Use photo
-              </button>
-            </div>
-          </Card>
-        </motion.div>
+              <Card padded={false} className="overflow-hidden">
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="p-6 border-b border-concern/20 bg-concern-soft/60"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="grid place-items-center w-11 h-11 rounded-2xl bg-concern/15 text-concern shrink-0">
+                      <AlertTriangle size={20} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-concern">
+                        Parsing failed
+                      </div>
+                      <h2 className="font-display text-[20px] leading-tight text-ink mt-1">
+                        We couldn’t read this as a lab report.
+                      </h2>
+                      <p className="mt-2 text-[13.5px] leading-relaxed text-ink-soft">
+                        {error.message}
+                      </p>
+                      <div className="mt-3 rounded-[10px] bg-surface border border-line/70 px-3 py-2 text-[12px] text-muted break-all">
+                        <span className="font-bold uppercase tracking-[0.12em] text-[10px] text-muted block mb-0.5">
+                          File
+                        </span>
+                        {error.filename}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5 grid sm:grid-cols-2 gap-2.5">
+                  <Button
+                    size="md"
+                    variant="primary"
+                    leading={<RotateCcw size={14} />}
+                    onClick={resetAndPickAgain}
+                    fullWidth
+                  >
+                    Try a different file
+                  </Button>
+                  <Button
+                    size="md"
+                    variant="secondary"
+                    leading={<Sparkles size={14} />}
+                    onClick={loadSampleFallback}
+                    fullWidth
+                  >
+                    Use sample report
+                  </Button>
+                </div>
+
+                <div className="px-5 pb-5 -mt-1">
+                  <p className="text-[11.5px] text-muted leading-relaxed">
+                    The parser scans filenames for lab-style words
+                    (report, blood, lab, hormone, test). If your file is a
+                    real lab document with a generic camera-roll name,
+                    just rename it (e.g. <em>blood-test.pdf</em>) and try
+                    again.
+                  </p>
+                </div>
+              </Card>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="dropzone"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.25 }}
+            >
+              <Card padded={false} className="overflow-hidden">
+                <div
+                  onDragEnter={(e) => {
+                    e.preventDefault();
+                    setDragDepth((d) => d + 1);
+                  }}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDragLeave={(e) => {
+                    e.preventDefault();
+                    setDragDepth((d) => Math.max(0, d - 1));
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragDepth(0);
+                    onSelect(e.dataTransfer.files?.[0] ?? null);
+                  }}
+                  onClick={() => inputRef.current?.click()}
+                  className={`p-7 text-center cursor-pointer transition-colors ${
+                    dragging ? 'bg-indigo-50' : 'bg-surface'
+                  }`}
+                >
+                  <motion.div
+                    animate={{
+                      y: dragging ? -4 : 0,
+                      scale: dragging ? 1.05 : 1,
+                    }}
+                    className="mx-auto grid place-items-center w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-700"
+                  >
+                    <UploadCloud size={28} />
+                  </motion.div>
+                  <div className="mt-4 font-display text-[18px] text-ink">
+                    {fileName ?? 'Tap to choose a file'}
+                  </div>
+                  <div className="mt-1 text-[13px] text-muted">
+                    {fileName
+                      ? 'Looks good. Hit start when you’re ready.'
+                      : 'or drag and drop it here'}
+                  </div>
+                  <input
+                    ref={inputRef}
+                    type="file"
+                    accept="application/pdf,image/*"
+                    className="hidden"
+                    onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
+                  />
+                </div>
+                <div className="grid grid-cols-2 border-t border-line">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      inputRef.current?.click();
+                    }}
+                    className="flex items-center justify-center gap-2 py-3 text-[13px] font-semibold text-indigo-700 hover:bg-indigo-50/60 min-h-12"
+                  >
+                    <FileText size={16} /> Pick PDF
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      inputRef.current?.click();
+                    }}
+                    className="flex items-center justify-center gap-2 py-3 text-[13px] font-semibold text-indigo-700 hover:bg-indigo-50/60 border-l border-line min-h-12"
+                  >
+                    <ImageIcon size={16} /> Use photo
+                  </button>
+                </div>
+              </Card>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Inline alert for type/size errors — keeps the dropzone in
+            place since these are usually one-character fixes the user
+            can apply by picking another file. */}
+        <AnimatePresence>
+          {isInlineError && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+              role="alert"
+              className="mt-3 flex items-start gap-2.5 rounded-[14px] border border-concern/30 bg-concern-soft px-4 py-3"
+            >
+              <AlertTriangle size={16} className="text-concern shrink-0 mt-0.5" />
+              <p className="text-[13px] text-concern leading-relaxed">
+                {error?.message}
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="mt-6 grid gap-3">
           <Card className="bg-surface">
@@ -169,7 +349,7 @@ export default function UploadPage() {
           <Button
             size="lg"
             fullWidth
-            disabled={!fileName}
+            disabled={!fileName || isClinicalError}
             onClick={startProcessing}
             trailing={<ArrowRight size={18} />}
           >

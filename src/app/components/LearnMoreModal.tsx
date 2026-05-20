@@ -18,7 +18,19 @@ type Props = {
  * Generic Learn-More modal used by the Recommended Tests page (and reusable
  * elsewhere). Renders as a bottom sheet on mobile, a centered card on desktop.
  *
- * Reuses the wrapper pattern from `QuizPage.ExitConfirm` for visual continuity.
+ * Accessibility guarantees this component owns end-to-end:
+ *   - role="dialog" + aria-modal="true" so AT treats it as a discrete
+ *     interactive layer
+ *   - aria-labelledby pointing at the heading inside the card
+ *   - Esc closes (and stops propagation so a parent listener can't
+ *     react to the same Escape)
+ *   - Tab/Shift+Tab focus-trap that wraps around the card boundary
+ *   - On open: focuses the close button (a stable, predictable
+ *     landing spot)
+ *   - On close: restores focus to whichever element had it before the
+ *     modal opened — the caller doesn't have to track the trigger.
+ *   - Body scroll lock (ref-counted via acquireBodyScrollLock so
+ *     stacked sheets remain consistent)
  */
 export default function LearnMoreModal({
   open,
@@ -30,6 +42,7 @@ export default function LearnMoreModal({
   const titleId = useId();
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
+
   /**
    * Keep onClose in a ref so the scroll-lock effect doesn't tear down + re-set
    * up on every parent re-render (onClose is usually a new arrow function each
@@ -42,9 +55,19 @@ export default function LearnMoreModal({
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  /* Close on Escape + focus-trap Tab + lock body scroll — depends ONLY on `open` */
+  /* Close on Escape + focus-trap Tab + lock body scroll + focus
+     management — depends ONLY on `open`. */
   useEffect(() => {
     if (!open) return;
+
+    // Capture whatever had focus before the modal opened so we can
+    // restore it on close. Skip <body> — restoring there is a no-op
+    // and we don't want to mistake it for a real trigger.
+    const previouslyFocused =
+      document.activeElement instanceof HTMLElement &&
+      document.activeElement !== document.body
+        ? document.activeElement
+        : null;
 
     const focusablesIn = (el: HTMLElement | null) => {
       if (!el) return [] as HTMLElement[];
@@ -80,12 +103,24 @@ export default function LearnMoreModal({
 
     document.addEventListener('keydown', onKey);
     const releaseScrollLock = acquireBodyScrollLock();
-    /* Focus the close button on open */
+    /* Focus the close button on open — a stable landing spot regardless
+       of what's inside the modal body. */
     const id = window.setTimeout(() => closeBtnRef.current?.focus(), 30);
+
     return () => {
       document.removeEventListener('keydown', onKey);
       releaseScrollLock();
       window.clearTimeout(id);
+      // Restore focus to the trigger. preventScroll so the page doesn't
+      // jump (we just released the body scroll lock; the page is
+      // already at the right Y). requestAnimationFrame waits for the
+      // exit animation's first frame so the focus move doesn't race
+      // with framer-motion's unmount.
+      if (previouslyFocused && document.body.contains(previouslyFocused)) {
+        requestAnimationFrame(() => {
+          previouslyFocused.focus({ preventScroll: true });
+        });
+      }
     };
   }, [open]);
 
@@ -111,7 +146,7 @@ export default function LearnMoreModal({
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="w-full sm:max-w-md md:max-w-lg bg-surface rounded-t-3xl sm:rounded-3xl shadow-pop border border-line flex flex-col max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
+            className="w-full sm:max-w-md md:max-w-lg bg-surface rounded-t-3xl sm:rounded-3xl shadow-pop border border-line flex flex-col max-h-[85dvh] sm:max-h-[80dvh] overflow-hidden"
           >
             {/* Header (sticky) */}
             <div className="flex items-start gap-3 px-6 pt-6 pb-4 border-b border-line/70">
@@ -132,7 +167,7 @@ export default function LearnMoreModal({
                 ref={closeBtnRef}
                 onClick={onClose}
                 aria-label="Close"
-                className="grid place-items-center w-9 h-9 -mr-1.5 -mt-1 rounded-full hover:bg-canvas text-muted hover:text-ink transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                className="grid place-items-center w-12 h-12 -mr-2 -mt-2 rounded-full hover:bg-canvas text-muted hover:text-ink transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
               >
                 <X size={18} />
               </button>

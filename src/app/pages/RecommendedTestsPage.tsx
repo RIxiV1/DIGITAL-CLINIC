@@ -19,14 +19,23 @@ import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
 import LearnMoreModal from '../components/LearnMoreModal';
 import { useNavigation, useQuiz } from '../AppContext';
+import type {
+  RiskAssessment,
+  RiskSystemResult,
+} from '../contexts/QuizContext';
 import { recommendTestsFor } from '../data/tests';
 import { getMarkerInfo } from '../data/markerInfo';
 import { getTestInfo } from '../data/testInfo';
 
 export default function RecommendedTestsPage() {
-  const { quiz } = useQuiz();
+  const { quiz, riskAssessment } = useQuiz();
   const { navigate } = useNavigation();
   const tests = useMemo(() => recommendTestsFor(quiz), [quiz]);
+
+  // Only surface the risk card when the user actually answered the
+  // symptoms question — empty symptoms means there's nothing to
+  // interpret and a "your symptoms suggest..." card would feel dishonest.
+  const showRiskCard = quiz.symptoms.length > 0;
   const [expanded, setExpanded] = useState<string | null>(tests[0]?.id ?? null);
 
   /* Learn More state — only one of these is non-null at a time. */
@@ -52,7 +61,7 @@ export default function RecommendedTestsPage() {
   };
 
   return (
-    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
       <Header variant="page" title="Your recommended tests" />
 
       <Container size="wide" className="pt-5 lg:pt-10">
@@ -70,6 +79,12 @@ export default function RecommendedTestsPage() {
             actually measured.
           </p>
         </div>
+
+        {showRiskCard && (
+          <div className="mt-6 lg:max-w-3xl">
+            <RiskSummaryCard assessment={riskAssessment} />
+          </div>
+        )}
 
         <div className="mt-7 grid gap-3 lg:max-w-3xl">
           {tests.map((t, i) => {
@@ -242,6 +257,87 @@ export default function RecommendedTestsPage() {
         info={modalInfo}
         onClose={closeModal}
       />
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Risk summary — visible expression of the QuizContext risk algorithm */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Renders the three-system risk assessment from the quiz answers as a
+ * short, ranked card. The lead copy adapts to the highest tier so that
+ * a low-signal assessment doesn't claim symptoms "strongly point to"
+ * anything.
+ *
+ * The card is intentionally framed as a *screening signal* — every
+ * surface that talks about risk in this product must do the same so we
+ * don't misrepresent the algorithm as a diagnosis.
+ */
+function RiskSummaryCard({ assessment }: { assessment: RiskAssessment }) {
+  const top = assessment.rankedSystems[0];
+
+  const lead =
+    top.tier === 'low'
+      ? "Your symptoms don't strongly implicate any of the systems we screen for — the tests below cover the usual ground."
+      : top.tier === 'moderate'
+        ? `Your symptoms point to ${top.label} with moderate signal strength.`
+        : `Your symptoms point strongly to ${top.label}.`;
+
+  return (
+    <Card className="border-indigo-100/80">
+      <div className="flex items-center gap-2">
+        <Pill tone="indigo" size="sm">
+          <Sparkles size={10} /> Why these tests
+        </Pill>
+      </div>
+      <p className="mt-2.5 text-[14px] leading-relaxed text-ink-soft">
+        {lead}{' '}
+        <span className="text-muted">
+          Scores combine your symptom checks with their known clinical weight.
+        </span>
+      </p>
+
+      <div className="mt-4 grid gap-1.5">
+        {assessment.rankedSystems.map((system) => (
+          <RiskRow key={system.id} system={system} />
+        ))}
+      </div>
+
+      <p className="mt-3.5 text-[11px] text-muted leading-relaxed">
+        This is a screening signal — not a diagnosis. The tests below cover
+        the markers that would confirm or rule out each system.
+      </p>
+    </Card>
+  );
+}
+
+/** One row of the risk card — a system label, raw score, and tier badge. */
+function RiskRow({ system }: { system: RiskSystemResult }) {
+  const tierStyles =
+    system.tier === 'high'
+      ? { badge: 'bg-concern text-white', label: 'High risk' }
+      : system.tier === 'moderate'
+        ? { badge: 'bg-attention text-white', label: 'Moderate risk' }
+        : { badge: 'bg-good-soft text-good', label: 'Low risk' };
+
+  return (
+    <div className="flex items-center justify-between gap-3 py-2 border-b border-line/60 last:border-0">
+      <div className="flex-1 min-w-0">
+        <div className="text-[13.5px] font-semibold text-ink truncate">
+          {system.label}
+        </div>
+        <div className="text-[11px] text-muted tabular-nums">
+          Score {system.score}
+        </div>
+      </div>
+      <div
+        className={`shrink-0 inline-flex items-center px-2.5 h-6 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] ${tierStyles.badge}`}
+        aria-label={`${system.label}: ${tierStyles.label}`}
+      >
+        {tierStyles.label}
+      </div>
     </div>
   );
 }
