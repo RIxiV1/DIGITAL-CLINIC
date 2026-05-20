@@ -150,6 +150,27 @@ html.theme-switching body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Modern browsers' default UA stylesheet doesn't set cursor:pointer on
+ * <button> elements, and Tailwind's preflight reset doesn't add it back.
+ * Result: every button on the page LOOKS clickable but the cursor stays
+ * as an arrow on hover, which makes the whole UI feel dead. Restore the
+ * finger cursor here for any enabled button-like element. Disabled
+ * buttons keep the default (or `not-allowed` if explicitly set). */
+button:not(:disabled),
+[role='button']:not([aria-disabled='true']),
+a[href],
+summary,
+label[for],
+[role='tab']:not([aria-disabled='true']),
+[role='menuitem']:not([aria-disabled='true']) {
+  cursor: pointer;
+}
+
+button:disabled,
+[role='button'][aria-disabled='true'] {
+  cursor: not-allowed;
+}
+
 @layer utilities {
   .font-display {
     font-family: var(--font-display);
