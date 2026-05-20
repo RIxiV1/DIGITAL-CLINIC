@@ -82,19 +82,19 @@ export default function ProfilePage() {
                 <div className="relative">
                   <div className="flex items-center gap-4">
                     <div className="relative shrink-0">
-                      <div className="w-16 h-16 rounded-2xl grid place-items-center bg-gold-500 text-indigo-900 font-display text-[26px] shadow-soft">
-                        S
+                      <div
+                        className="w-16 h-16 rounded-2xl grid place-items-center bg-gold-500 text-indigo-900 shadow-soft"
+                        aria-hidden
+                      >
+                        <Sparkles size={26} strokeWidth={2.2} />
                       </div>
-                      <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-white text-indigo-700 grid place-items-center shadow-soft">
-                        <Sparkles size={10} strokeWidth={3} />
-                      </span>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-display text-[22px] leading-tight">
-                        Suhaib
+                        Your account
                       </div>
                       <div className="text-[12px] text-indigo-100 mt-0.5">
-                        Member since Apr 2026
+                        Anonymous · stored in this browser
                       </div>
                       <div className="mt-2 flex items-center gap-1.5">
                         <Pill tone="gold" size="sm">

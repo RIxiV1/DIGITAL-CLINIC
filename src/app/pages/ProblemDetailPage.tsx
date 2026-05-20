@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   CalendarClock,
@@ -12,7 +13,7 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
-import { useNavigation } from '../AppContext';
+import { useNavigation, useReports } from '../AppContext';
 import { sampleBiomarkers } from '../data/biomarkers';
 import { getProblem } from '../data/problems';
 
@@ -22,7 +23,21 @@ export default function ProblemDetailPage({
   problemId: string;
 }) {
   const { back } = useNavigation();
+  const { reports } = useReports();
   const p = getProblem(problemId);
+
+  /**
+   * The deep-dive page used to hardcode `sampleBiomarkers` for its
+   * "Your numbers" visualisation — so a user who'd uploaded a real
+   * report would see the SAMPLE testosterone value (280 ng/dL), not
+   * their own. Now we source from the most recent ready report, and
+   * fall back to sample only when there isn't one (e.g., a user who
+   * came straight from the landing CTA without uploading anything).
+   */
+  const sourceMarkers = useMemo(() => {
+    const latestReady = reports.find((r) => r.status === 'ready');
+    return latestReady?.biomarkers ?? sampleBiomarkers;
+  }, [reports]);
 
   if (!p) {
     return (
@@ -39,7 +54,7 @@ export default function ProblemDetailPage({
     );
   }
 
-  const related = sampleBiomarkers.filter((m) =>
+  const related = sourceMarkers.filter((m) =>
     p.relatedMarkerIds.includes(m.id),
   );
 

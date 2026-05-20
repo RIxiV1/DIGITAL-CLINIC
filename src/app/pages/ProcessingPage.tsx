@@ -40,6 +40,19 @@ export default function ProcessingPage() {
   // idempotent, so the worst case is a no-op double-fire.
   const startedForRef = useRef<string | null>(null);
 
+  // Refresh / deep-link guard: someone lands on /?page=processing
+  // directly, but there's no pending processing report (refreshed
+  // mid-flow, or arrived via an old bookmark). Bounce home rather
+  // than leaving them staring at a perpetual "reading your report".
+  useEffect(() => {
+    if (reports.length === 0 || !reports.some((r) => r.status === 'processing')) {
+      replace({ type: 'home' });
+    }
+    // Only on mount — once we've started, we shouldn't bounce out
+    // because markReportReady flips the status mid-flight.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     if (!processingId) return;
     if (startedForRef.current === processingId) return;
