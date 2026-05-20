@@ -151,6 +151,15 @@ export default function QuizPage() {
   const swipeStartRef = useRef<{ x: number; y: number } | null>(null);
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.pointerType === 'mouse') return; // mouse uses keyboard / buttons
+    // Don't start a swipe gesture when the press lands on an interactive
+    // element — taps on buttons must select the option, not double-fire
+    // a navigation. A drag from a button that crosses SWIPE_THRESHOLD_PX
+    // would otherwise both select the option AND advance the step.
+    const target = e.target as HTMLElement | null;
+    if (target?.closest('button, a, input, select, textarea, [role="button"]')) {
+      swipeStartRef.current = null;
+      return;
+    }
     swipeStartRef.current = { x: e.clientX, y: e.clientY };
   };
   const onPointerUp = (e: React.PointerEvent) => {

@@ -202,7 +202,11 @@ export default function RecommendedTestsPage() {
                                         }}
                                         aria-label={`Learn more about ${m.name}`}
                                         title={`Learn more about ${m.name}`}
-                                        className="shrink-0 mt-0.5 grid place-items-center w-7 h-7 rounded-full text-muted hover:text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
+                                        // 48x48 hit area; visible glyph stays
+                                        // small via inner grid centering. -m-2
+                                        // pulls the larger target back into
+                                        // the row so it doesn't shove layout.
+                                        className="shrink-0 -m-3 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
                                       >
                                         <Info size={14} />
                                       </button>
@@ -323,17 +327,20 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
         : { badge: 'bg-good-soft text-good', label: 'Low risk' };
 
   return (
-    <div className="flex items-center justify-between gap-3 py-2 border-b border-line/60 last:border-0">
+    <div className="flex items-start justify-between gap-3 py-2 border-b border-line/60 last:border-0">
+      {/* No `truncate` — system labels (e.g. "Hypogonadism (low T)
+          indicators") are too long for ~320px viewports and chopping
+          them mid-word loses the meaning. Allow wrap to 2 lines. */}
       <div className="flex-1 min-w-0">
-        <div className="text-[13.5px] font-semibold text-ink truncate">
+        <div className="text-[13.5px] font-semibold text-ink leading-tight">
           {system.label}
         </div>
-        <div className="text-[11px] text-muted tabular-nums">
+        <div className="mt-0.5 text-[11px] text-muted tabular-nums">
           Score {system.score}
         </div>
       </div>
       <div
-        className={`shrink-0 inline-flex items-center px-2.5 h-6 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] ${tierStyles.badge}`}
+        className={`shrink-0 mt-0.5 inline-flex items-center px-2.5 h-6 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] ${tierStyles.badge}`}
         aria-label={`${system.label}: ${tierStyles.label}`}
       >
         {tierStyles.label}

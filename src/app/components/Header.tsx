@@ -83,7 +83,7 @@ export default function Header({
               <button
                 onClick={handleBack}
                 aria-label="Back"
-                className="grid place-items-center w-9 h-9 -ml-1.5 rounded-full hover:bg-indigo-50 text-indigo-700 transition-colors"
+                className="grid place-items-center w-12 h-12 -ml-3 rounded-full hover:bg-indigo-50 text-indigo-700 transition-colors"
               >
                 <ArrowLeft size={18} />
               </button>

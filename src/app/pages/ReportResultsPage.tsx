@@ -143,7 +143,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         rightSlot={
           <button
             onClick={handleDownload}
-            className="grid place-items-center w-9 h-9 rounded-full hover:bg-indigo-50 text-indigo-700 no-print"
+            className="grid place-items-center w-12 h-12 -mr-2 rounded-full hover:bg-indigo-50 text-indigo-700 no-print"
             aria-label="Download as PDF"
             title="Download as PDF"
           >
@@ -192,7 +192,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   <button
                     type="button"
                     onClick={handleShare}
-                    className="grid place-items-center w-9 h-9 rounded-[12px] bg-indigo-900/15 text-indigo-900 hover:bg-indigo-900/25 transition-colors"
+                    className="grid place-items-center w-12 h-12 rounded-[14px] bg-indigo-900/15 text-indigo-900 hover:bg-indigo-900/25 transition-colors"
                     aria-label="Share this report"
                     title="Share this report"
                   >
@@ -246,7 +246,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                       <button
                         key={f.id}
                         onClick={() => setFilter(f.id)}
-                        className={`px-3.5 h-9 rounded-full text-[12px] font-semibold whitespace-nowrap transition-colors ${
+                        className={`px-4 min-h-12 rounded-full text-[12.5px] font-semibold whitespace-nowrap transition-colors ${
                           active
                             ? 'bg-indigo-600 text-white shadow-soft'
                             : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'

@@ -106,7 +106,7 @@ export default function ProfilePage() {
                       onClick={() => navigate({ type: 'quiz' })}
                       aria-label="Edit profile via quiz"
                       title="Re-do the quiz to update"
-                      className="grid place-items-center w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0"
+                      className="grid place-items-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0"
                     >
                       <Pencil size={16} />
                     </button>

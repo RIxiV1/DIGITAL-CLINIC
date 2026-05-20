@@ -89,7 +89,7 @@ export default function LegalModal({ kind, onClose }: Props) {
                 type="button"
                 onClick={onClose}
                 aria-label="Close"
-                className="grid place-items-center w-9 h-9 -mr-1.5 -mt-1 rounded-full hover:bg-canvas text-muted hover:text-ink transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+                className="grid place-items-center w-12 h-12 -mr-2 -mt-2 rounded-full hover:bg-canvas text-muted hover:text-ink transition-colors shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
               >
                 <X size={18} />
               </button>

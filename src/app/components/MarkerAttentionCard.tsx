@@ -107,7 +107,9 @@ export default function MarkerAttentionCard({
               onClick={onLearnMore}
               aria-label={`Learn more about ${marker.name}`}
               title={`Learn more about ${marker.name}`}
-              className="-mr-1 -mt-1 grid place-items-center w-7 h-7 rounded-full text-muted hover:text-indigo-700 hover:bg-canvas/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
+              // 48x48 hit area; -mr-3 -mt-3 pulls the larger button into
+              // the corner so it doesn't push other card content around.
+              className="-mr-3 -mt-3 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-indigo-700 hover:bg-canvas/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
             >
               <Info size={14} />
             </button>
