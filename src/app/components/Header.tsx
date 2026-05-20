@@ -72,8 +72,8 @@ export default function Header({
           {variant === 'home' ? (
             <button
               type="button"
-              onClick={() => navigate({ type: 'home' })}
-              aria-label="Go home"
+              onClick={() => navigate({ type: 'landing' })}
+              aria-label="ForMen homepage"
               className="flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
             >
               <Logo size="md" />
@@ -112,9 +112,9 @@ export default function Header({
         {/* ---------- Desktop shell ---------- */}
         <div className="hidden lg:flex items-center gap-8 w-full">
           <button
-            onClick={() => navigate({ type: 'home' })}
+            onClick={() => navigate({ type: 'landing' })}
             className="flex items-center"
-            aria-label="Go home"
+            aria-label="ForMen homepage"
           >
             <Logo size="md" />
           </button>

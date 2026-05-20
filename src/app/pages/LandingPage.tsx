@@ -12,6 +12,7 @@ import {
   Droplet,
   FileText,
   FlaskConical,
+  House,
   Lock,
   Microscope,
   Sparkles,
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 import Logo from '../components/Logo';
 import LegalModal, { type LegalKind } from '../components/LegalModal';
-import { useNavigation } from '../AppContext';
+import { useNavigation, useQuiz, useReports } from '../AppContext';
 
 /* ------------------------------------------------------------------ */
 /* Motion helpers                                                      */
@@ -67,12 +68,32 @@ function Reveal({
 
 export default function LandingPage() {
   const { navigate } = useNavigation();
+  const { quiz } = useQuiz();
+  const { reports } = useReports();
   const startQuiz = () => navigate({ type: 'quiz' });
   const viewSample = () => navigate({ type: 'results', reportId: 'rep-001' });
 
+  // Only returning users (anyone who's started the quiz or uploaded a
+  // report) get the Dashboard shortcut. Brand-new visitors have nothing
+  // in the dashboard yet, so the link would just land them on the
+  // "Upload your first report" empty state.
+  const hasUserData =
+    quiz.symptoms.length > 0 ||
+    quiz.priorities.length > 0 ||
+    !!quiz.age ||
+    !!quiz.activity ||
+    reports.length > 0;
+  const goDashboard = hasUserData
+    ? () => navigate({ type: 'home' })
+    : undefined;
+
   return (
     <div className="min-h-dvh bg-white text-ink overflow-x-hidden">
-      <TopNav onStart={startQuiz} onSample={viewSample} />
+      <TopNav
+        onStart={startQuiz}
+        onSample={viewSample}
+        onDashboard={goDashboard}
+      />
       <Hero onStart={startQuiz} onSample={viewSample} />
       <ConnectionSection onStart={startQuiz} />
       <HowItWorks />
@@ -91,9 +112,14 @@ export default function LandingPage() {
 function TopNav({
   onStart,
   onSample,
+  onDashboard,
 }: {
   onStart: () => void;
   onSample: () => void;
+  /** Optional — only passed for returning users (have quiz answers
+   *  or reports). Renders a "Go to dashboard" button. New visitors
+   *  don't see it because there's nothing in the dashboard yet. */
+  onDashboard?: () => void;
 }) {
   return (
     <header className="sticky top-0 z-40 bg-white/85 backdrop-blur-md border-b border-line/70">
@@ -127,11 +153,30 @@ function TopNav({
           >
             See a sample report
           </button>
+          {/* Returning-user shortcut — only shown when there's actual
+              data to land on. On mobile we hide "Find out in 3 min"
+              when this button is present so the bar doesn't get crowded;
+              desktop has room for both. */}
+          {onDashboard && (
+            <button
+              onClick={onDashboard}
+              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold shadow-clinical transition-colors"
+            >
+              <House size={14} />
+              Go to dashboard
+            </button>
+          )}
           <button
             onClick={onStart}
-            className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold shadow-clinical transition-colors"
+            className={`items-center gap-1.5 h-10 px-4 rounded-full text-[13px] font-semibold transition-colors ${
+              onDashboard
+                ? // Returning users — secondary styling, hidden on mobile to leave room
+                  'hidden md:inline-flex border border-line text-ink-soft hover:text-ink hover:bg-blue-50'
+                : // New users — primary CTA, always visible
+                  'inline-flex bg-blue-600 hover:bg-blue-700 text-white shadow-clinical'
+            }`}
           >
-            Find out in 3 min
+            {onDashboard ? 'Retake the quiz' : 'Find out in 3 min'}
             <ArrowRight size={14} />
           </button>
         </div>
