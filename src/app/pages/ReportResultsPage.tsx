@@ -578,7 +578,7 @@ function BottomLineTile({
         ? 'bg-attention'
         : 'bg-concern';
   return (
-    <div className="rounded-[14px] bg-white/65 backdrop-blur p-3">
+    <div className="rounded-[14px] bg-white/80 p-3">
       <div className="flex items-center gap-1.5">
         <span className={`w-2 h-2 rounded-full ${dot}`} />
         <span className="text-[9px] uppercase tracking-[0.14em] font-bold text-indigo-900/80">

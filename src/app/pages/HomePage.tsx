@@ -306,7 +306,7 @@ export default function HomePage() {
                   {trendsByPathway.map((group) => (
                     <div
                       key={group.id}
-                      className="rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden backdrop-blur-sm"
+                      className="rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden"
                     >
                       <div className="px-5 pt-5 pb-2 flex items-center gap-2">
                         <Emoji

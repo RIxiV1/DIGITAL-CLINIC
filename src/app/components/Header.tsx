@@ -62,8 +62,14 @@ export default function Header({
       ? 'max-w-md md:max-w-3xl lg:max-w-5xl xl:max-w-6xl'
       : 'max-w-md';
 
+  // Solid bg-canvas (no backdrop-blur). The previous bg-canvas/85
+  // backdrop-blur-md forced the browser to repaint the entire header
+  // region on every scroll frame, which manifested as visible scroll
+  // lag on mid-tier devices. The visual difference between blurred-
+  // glass and solid is negligible since the header sits on the canvas
+  // (light gray) background anyway.
   return (
-    <header className="sticky top-0 z-30 bg-canvas/85 backdrop-blur-md border-b border-line/70 no-print">
+    <header className="sticky top-0 z-30 bg-canvas border-b border-line/70 no-print">
       <div
         className={`mx-auto w-full ${widthCls} px-4 sm:px-6 lg:px-8 h-14 lg:h-16 flex items-center gap-2`}
       >
