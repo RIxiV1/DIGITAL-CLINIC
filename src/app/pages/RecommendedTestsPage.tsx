@@ -56,7 +56,7 @@ export default function RecommendedTestsPage() {
       <Header variant="page" title="Your recommended tests" />
 
       <Container size="wide" className="pt-5 lg:pt-10">
-        <div className="lg:max-w-3xl">
+        <div className="lg:max-w-3xl lg:mx-auto">
           <Pill tone="gold" size="md">
             <Sparkles size={11} />
             Personalised for you
@@ -132,7 +132,11 @@ export default function RecommendedTestsPage() {
                             <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-gold-800">
                               Why this for you
                             </div>
-                            <p className="mt-1.5 text-[14px] leading-relaxed text-ink">
+                            {/* Hardcoded ink so the body stays dark on the
+                                gold background in BOTH themes. text-ink
+                                would invert to light in dark mode and the
+                                copy would vanish into the gold tile. */}
+                            <p className="mt-1.5 text-[14px] leading-relaxed text-[#0F1422]">
                               {t.whyTemplate(quiz)}
                             </p>
                           </div>

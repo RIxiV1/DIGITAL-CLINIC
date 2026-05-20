@@ -21,8 +21,12 @@ type Props = Omit<HTMLMotionProps<'button'>, 'children'> & {
 const variantClasses: Record<Variant, string> = {
   primary:
     'bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 shadow-indigo',
+  /* Hardcoded near-black so the button stays dark with white text in
+     BOTH themes — used on top of the gold Bottom Line card where the
+     gold background never changes. Theme tokens would invert ink to
+     light in dark mode and break the contrast. */
   dark:
-    'bg-ink text-white hover:bg-ink-soft active:bg-black shadow-soft',
+    'bg-[#0F1422] text-white hover:bg-[#1F2433] active:bg-black shadow-soft',
   secondary:
     'bg-surface text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 border border-line shadow-soft',
   gold:

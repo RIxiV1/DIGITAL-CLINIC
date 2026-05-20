@@ -510,7 +510,7 @@ function PillOptions({
             whileTap={{ scale: 0.95 }}
             whileHover={{ y: -1 }}
             onClick={() => toggle(opt.id)}
-            className={`relative inline-flex items-center justify-center gap-2 h-12 px-4 rounded-full font-semibold text-[13.5px] border transition-all ${
+            className={`relative inline-flex items-center justify-center gap-2 min-h-12 h-auto py-2.5 px-4 rounded-full font-semibold text-[13.5px] border transition-all text-center ${
               selected
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
                 : 'bg-surface border-line text-ink-soft hover:border-indigo-300 hover:text-indigo-700 shadow-soft'
