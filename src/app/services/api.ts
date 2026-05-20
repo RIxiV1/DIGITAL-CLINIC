@@ -197,9 +197,13 @@ export async function parseUploadedReport(
   }) => void,
 ): Promise<ParsedReport> {
   // Kick off real extraction immediately, in parallel with the stages.
-  // We don't await it yet — the visual stages run regardless.
+  // The parser internally routes to a PDF-text path, a PDF-OCR fallback,
+  // or image OCR depending on file.type. We don't await it yet — the
+  // visual stages run regardless so the UX is paced.
   const extractionPromise: Promise<Biomarker[] | null> =
-    input.file && input.file.type === 'application/pdf'
+    input.file &&
+    (input.file.type === 'application/pdf' ||
+      input.file.type.startsWith('image/'))
       ? parsePdfFile(input.file)
           .then((r) => (r.biomarkers.length > 0 ? r.biomarkers : null))
           .catch(() => null)

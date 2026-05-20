@@ -117,22 +117,22 @@ export default function UploadPage() {
       />
 
       <Container size="narrow" className="pt-5">
-        {/* Honest disclaimer about what the parser actually does.
-            PDFs run through real text extraction (pdfjs) + a catalog
-            matcher in your browser — no upload, no server. If the
-            extractor can't find any known biomarker shapes in the
-            file, we fall back to the curated demo dataset so the
-            results screen has something to render. Images aren't
-            parsed yet — they always show demo data. */}
+        {/* Honest disclaimer about what the parser actually does. All
+            work happens locally — pdfjs extracts text from PDFs,
+            tesseract.js runs OCR on images (and PDFs with no text
+            layer). The catalog matcher then pulls known biomarker
+            shapes out of the resulting text. If extraction yields
+            zero matches we fall back to the curated demo dataset so
+            the results screen has something to render. */}
         <div
           role="note"
           className="mb-4 flex items-start gap-2.5 rounded-[14px] border border-indigo-200 bg-indigo-50/70 px-4 py-3"
         >
           <Info size={16} className="text-indigo-700 shrink-0 mt-0.5" />
           <p className="text-[12.5px] leading-relaxed text-indigo-900">
-            <span className="font-semibold">PDFs are parsed in your browser</span> —
-            text extraction + biomarker matching, all locally. If we can't
-            recognise anything in your file (or you uploaded an image), the
+            <span className="font-semibold">PDFs and photos are parsed in your browser</span> —
+            text extraction or OCR, all locally. OCR can take 10–30 seconds
+            on a phone. If we can't recognise anything in your file, the
             results screen falls back to our sample dataset. Your file never
             leaves your device.
           </p>
