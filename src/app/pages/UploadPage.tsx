@@ -18,6 +18,7 @@ import Header from '../components/Header';
 import { useNavigation, useReports } from '../AppContext';
 import { makeReport, sampleReports } from '../data/reports';
 import {
+  setPendingUpload,
   validateUpload,
   type FileValidationError,
 } from '../services/api';
@@ -41,6 +42,9 @@ export default function UploadPage() {
   const { reports, addReport } = useReports();
   const { replace, navigate } = useNavigation();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  /** Keep the validated File around so we can hand it to the parser
+   *  via setPendingUpload(...) when the user hits "Start analysing". */
+  const fileRef = useRef<File | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
   const [error, setError] = useState<FileValidationError | null>(null);
 
@@ -57,10 +61,12 @@ export default function UploadPage() {
     if (!result.ok) {
       setError(result.error);
       setFileName(null);
+      fileRef.current = null;
       return;
     }
     setError(null);
     setFileName(result.file.name);
+    fileRef.current = result.file;
   };
 
   const startProcessing = () => {
@@ -68,6 +74,10 @@ export default function UploadPage() {
     const cleaned = name.replace(/\.[^.]+$/, '');
     const report = makeReport(cleaned || 'My lab report');
     addReport(report);
+    // Hand the File over to the parser via the module-level bridge —
+    // ProcessingPage will consume it on mount. Persisted state can't
+    // hold a File so this is the lightest-weight handoff that works.
+    setPendingUpload(fileRef.current);
     replace({ type: 'processing' });
   };
 
@@ -107,23 +117,24 @@ export default function UploadPage() {
       />
 
       <Container size="narrow" className="pt-5">
-        {/* Honest disclaimer — the parsing pipeline is a UI simulation,
-            not a real OCR/extraction engine. Without this notice, users
-            who upload a real report (e.g. a semen analysis) get the
-            sample hormone dataset and reasonably assume that's what
-            their file contained. Position above the dropzone so it's
-            read before the user commits. */}
+        {/* Honest disclaimer about what the parser actually does.
+            PDFs run through real text extraction (pdfjs) + a catalog
+            matcher in your browser — no upload, no server. If the
+            extractor can't find any known biomarker shapes in the
+            file, we fall back to the curated demo dataset so the
+            results screen has something to render. Images aren't
+            parsed yet — they always show demo data. */}
         <div
           role="note"
           className="mb-4 flex items-start gap-2.5 rounded-[14px] border border-indigo-200 bg-indigo-50/70 px-4 py-3"
         >
           <Info size={16} className="text-indigo-700 shrink-0 mt-0.5" />
           <p className="text-[12.5px] leading-relaxed text-indigo-900">
-            <span className="font-semibold">Demo build —</span> uploads aren't
-            parsed yet. Whatever file you pick, the results screen will show
-            our curated <span className="font-semibold">sample dataset</span>{' '}
-            so you can see what the product does end-to-end. Your file stays
-            on your device.
+            <span className="font-semibold">PDFs are parsed in your browser</span> —
+            text extraction + biomarker matching, all locally. If we can't
+            recognise anything in your file (or you uploaded an image), the
+            results screen falls back to our sample dataset. Your file never
+            leaves your device.
           </p>
         </div>
 

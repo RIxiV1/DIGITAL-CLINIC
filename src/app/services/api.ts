@@ -28,6 +28,31 @@ import {
   type Report,
 } from '../data/reports';
 import { formatDate } from '../utils/uiUtils';
+import { parsePdfFile } from './pdfParser';
+
+/* ------------------------------------------------------------------ */
+/* Pending-upload bridge                                                */
+/*                                                                      */
+/* Files can't ride through the in-memory navigation flow as state      */
+/* (Reports persist to localStorage, which doesn't store File objects). */
+/* Instead, UploadPage stashes the validated File here BEFORE it        */
+/* navigates, and ProcessingPage consumes it on mount. If the page is   */
+/* hard-refreshed between those points, consumePendingUpload() returns  */
+/* null and the pipeline falls back to demo data — graceful degradation */
+/* rather than a hang.                                                  */
+/* ------------------------------------------------------------------ */
+
+let pendingUpload: File | null = null;
+
+export function setPendingUpload(file: File | null): void {
+  pendingUpload = file;
+}
+
+export function consumePendingUpload(): File | null {
+  const f = pendingUpload;
+  pendingUpload = null;
+  return f;
+}
 
 /* ------------------------------------------------------------------ */
 /* Latency simulation                                                  */
@@ -133,22 +158,35 @@ export type UploadInput = {
   /** Display name shown in the locker. Caller should pass the file's
    *  basename (without extension) — services don't try to be clever. */
   name: string;
+  /** The actual File to parse, if available. Without this the pipeline
+   *  falls back to the demo dataset (the "you refreshed mid-flow" path). */
+  file?: File | null;
 };
 
 export type ParsedReport = {
   report: Report;
   biomarkers: Biomarker[];
+  /** True when the biomarkers came from real PDF extraction; false
+   *  when we fell back to the demo dataset (no File, non-PDF, or zero
+   *  markers extracted). The UI uses this to decide whether to keep
+   *  the "demo data shown" disclaimer up. */
+  parsedFromFile: boolean;
 };
 
 /**
- * Run the upload through the parsing pipeline. Each step resolves with
- * a {step, progress} stream, then the final {report} payload. Used by
- * ProcessingPage so the UI can render real progress per stage rather
- * than the previous single-timer fade.
+ * Run the upload through the parsing pipeline. Streams per-stage
+ * progress to `onProgress` while the visual stages run, AND in parallel
+ * (when a real PDF File is passed) runs the actual pdfjs extractor +
+ * catalog matcher. The final result combines the two:
  *
- * Implementation note: yields by calling onProgress() while the work
- * "happens" — the UI doesn't have to own its own timers, and a future
- * real backend can stream the same shape over Server-Sent Events.
+ *   - If extraction yielded ≥1 biomarker → use those (parsedFromFile = true)
+ *   - Otherwise                          → fall back to sampleBiomarkers
+ *                                          (parsedFromFile = false)
+ *
+ * The visual stages always take their full duration so the user gets a
+ * coherent "we're parsing your file" experience even when extraction is
+ * fast. Parsing kicks off concurrently with the first stage so by the
+ * time the last stage finishes, the result is usually ready.
  */
 export async function parseUploadedReport(
   input: UploadInput,
@@ -158,6 +196,15 @@ export async function parseUploadedReport(
     overall: number;      // 0..1 across the whole pipeline
   }) => void,
 ): Promise<ParsedReport> {
+  // Kick off real extraction immediately, in parallel with the stages.
+  // We don't await it yet — the visual stages run regardless.
+  const extractionPromise: Promise<Biomarker[] | null> =
+    input.file && input.file.type === 'application/pdf'
+      ? parsePdfFile(input.file)
+          .then((r) => (r.biomarkers.length > 0 ? r.biomarkers : null))
+          .catch(() => null)
+      : Promise.resolve(null);
+
   const totalMs = parseSteps.reduce((sum, s) => sum + s.durationMs, 0);
   let elapsed = 0;
 
@@ -174,16 +221,20 @@ export async function parseUploadedReport(
     elapsed += step.durationMs;
   }
 
+  const extractedBiomarkers = await extractionPromise;
+  const biomarkers = extractedBiomarkers ?? sampleBiomarkers;
+  const parsedFromFile = extractedBiomarkers !== null;
+
   const report: Report = {
     id: `rep-${Math.random().toString(36).slice(2, 8)}`,
     name: input.name,
-    lab: 'New upload',
+    lab: parsedFromFile ? 'Parsed from upload' : 'New upload',
     uploadedOn: formatDate(new Date()),
     status: 'ready',
     badge: 'analyzed',
-    biomarkers: sampleBiomarkers,
+    biomarkers,
   };
-  return { report, biomarkers: sampleBiomarkers };
+  return { report, biomarkers, parsedFromFile };
 }
 
 /* ------------------------------------------------------------------ */

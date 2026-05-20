@@ -19,7 +19,12 @@ import {
 type ReportsValue = {
   reports: Report[];
   addReport: (report: Report) => void;
-  markReportReady: (id: string) => void;
+  /** Mark a processing report as ready. The optional `patch` lets the
+   *  parser swap in extracted biomarkers (and any other fields that
+   *  weren't known when the placeholder report was created in
+   *  UploadPage). status + badge are always set to ready/analyzed
+   *  regardless of patch contents. */
+  markReportReady: (id: string, patch?: Partial<Report>) => void;
 };
 
 const ReportsContext = createContext<ReportsValue | null>(null);
@@ -54,13 +59,18 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     setReports((prev) => [report, ...prev]);
   }, []);
 
-  const markReportReady = useCallback((id: string) => {
-    setReports((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, status: 'ready', badge: 'analyzed' } : r,
-      ),
-    );
-  }, []);
+  const markReportReady = useCallback(
+    (id: string, patch?: Partial<Report>) => {
+      setReports((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? { ...r, ...patch, status: 'ready', badge: 'analyzed' }
+            : r,
+        ),
+      );
+    },
+    [],
+  );
 
   const value = useMemo<ReportsValue>(
     () => ({ reports, addReport, markReportReady }),

@@ -46,7 +46,8 @@ export type BiomarkerCategoryId =
   | 'vitamins'
   | 'liver'
   | 'kidney'
-  | 'blood';
+  | 'blood'
+  | 'fertility';
 
 export type BiomarkerCategory = {
   id: BiomarkerCategoryId;
@@ -103,6 +104,12 @@ export const categories: BiomarkerCategory[] = [
     name: 'Blood',
     description: 'Red cells, oxygen, and immunity basics.',
     icon: '🩸',
+  },
+  {
+    id: 'fertility',
+    name: 'Fertility & Andrology',
+    description: 'Sperm production, motility, and shape.',
+    icon: '🧬',
   },
 ];
 
@@ -539,4 +546,385 @@ export function formatDelta(marker: Biomarker): string | null {
   const rounded = Math.abs(delta) < 1 ? delta.toFixed(1) : Math.round(delta).toString();
   if (delta > 0) return `+${rounded}`;
   return rounded;
+}
+
+/* ================================================================== */
+/* Biomarker catalog — reference shapes the parser extracts INTO        */
+/*                                                                      */
+/* `sampleBiomarkers` above is for the demo. This catalog is the list   */
+/* of biomarker SHAPES the upload parser knows about. Each entry holds  */
+/* the clinical metadata (unit, healthy range, optimal sub-band,        */
+/* direction, plain-English explanation) plus an `aliases` array of     */
+/* lab-report strings the parser will match against extracted text.     */
+/*                                                                      */
+/* When the parser finds a match in a PDF, it calls                     */
+/* `markerFromTemplate(template, extractedValue)` to construct a fully- */
+/* typed Biomarker (with computed status) for the results screen.       */
+/* ================================================================== */
+
+export type BiomarkerTemplate = {
+  id: string;
+  /** Canonical name shown in the UI. */
+  name: string;
+  /** Lab-report strings the parser will match against extracted text.
+   *  Include every spelling/casing variant likely to appear in real
+   *  reports — the parser does a case-insensitive contains() over each. */
+  aliases: readonly string[];
+  unit: string;
+  /** Optional unit-spelling variants (e.g. 'mg/dl', 'mg/dL', 'MG/DL').
+   *  Useful for confirming a numeric match isn't from an unrelated
+   *  line — the parser cross-checks the unit token near the value. */
+  unitAliases?: readonly string[];
+  min: number;
+  max: number;
+  optimalMin?: number;
+  optimalMax?: number;
+  category: BiomarkerCategoryId;
+  direction?: GradientDirection;
+  simpleName?: string;
+  plain: string;
+  problemId?: string;
+};
+
+/**
+ * Derive a status from a measured value against a template's healthy
+ * range + optional optimal sub-band.
+ *
+ *   value outside [min, max]          → 'concern'
+ *   value inside [min, max] but
+ *     outside [optimalMin, optimalMax] → 'attention'
+ *   value inside the optimal band     → 'good'
+ *
+ * For templates without an optimal sub-band, anything inside the
+ * healthy range is 'good'.
+ */
+export function statusForValue(
+  template: BiomarkerTemplate,
+  value: number,
+): BiomarkerStatus {
+  if (value < template.min || value > template.max) return 'concern';
+  if (
+    typeof template.optimalMin === 'number' &&
+    typeof template.optimalMax === 'number' &&
+    (value < template.optimalMin || value > template.optimalMax)
+  ) {
+    return 'attention';
+  }
+  return 'good';
+}
+
+/**
+ * Construct a fully-typed Biomarker from a catalog template plus a
+ * measured value. Used by the parser when it pulls a value out of an
+ * uploaded report.
+ */
+export function markerFromTemplate(
+  template: BiomarkerTemplate,
+  value: number,
+): Biomarker {
+  return {
+    id: template.id,
+    name: template.name,
+    simpleName: template.simpleName,
+    value,
+    unit: template.unit,
+    min: template.min,
+    max: template.max,
+    optimalMin: template.optimalMin,
+    optimalMax: template.optimalMax,
+    status: statusForValue(template, value),
+    category: template.category,
+    direction: template.direction,
+    plain: template.plain,
+    problemId: template.problemId,
+  };
+}
+
+/**
+ * The catalog itself. Order matters only for tie-breaking: when a PDF
+ * line could match multiple templates (e.g. "Testosterone" matches both
+ * Total T and Free T), the parser picks the first hit. List the more-
+ * specific aliases ("Total Testosterone") before the broader ones
+ * inside each template, AND order the templates so the more-specific
+ * marker appears first.
+ */
+export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
+  /* ---- Hormones ------------------------------------------------- */
+  {
+    id: 'testosterone',
+    name: 'Total Testosterone',
+    aliases: ['Total Testosterone', 'Testosterone Total', 'Testosterone, Total', 'Testosterone'],
+    unit: 'ng/dL',
+    unitAliases: ['ng/dl', 'ng / dL'],
+    min: 300, max: 1000, optimalMin: 600, optimalMax: 900,
+    category: 'hormones', direction: 'up',
+    simpleName: 'Your main male hormone',
+    plain: 'Below the healthy range often shows up as low drive, less stamina, and slower recovery. Very responsive to sleep, training, and Vitamin D.',
+    problemId: 'low-testosterone',
+  },
+  {
+    id: 'free-t',
+    name: 'Free Testosterone',
+    aliases: ['Free Testosterone', 'Testosterone Free', 'Free T'],
+    unit: 'pg/mL',
+    unitAliases: ['pg/ml'],
+    min: 8.7, max: 25.1,
+    category: 'hormones', direction: 'up',
+    simpleName: 'Testosterone your body can actually use',
+    plain: 'The testosterone your body can actually use. Even a small lift here makes a noticeable daily difference.',
+  },
+  {
+    id: 'estradiol',
+    name: 'Estradiol',
+    aliases: ['Estradiol', 'E2', 'Estradiol (E2)'],
+    unit: 'pg/mL', unitAliases: ['pg/ml'],
+    min: 11, max: 44,
+    category: 'hormones', direction: 'band',
+    simpleName: 'Estrogen (yes, men have it too)',
+    plain: 'A healthy amount of estrogen for a man keeps mood and joints steady.',
+  },
+
+  /* ---- Metabolic ----------------------------------------------- */
+  {
+    id: 'hba1c',
+    name: 'HbA1c',
+    aliases: ['HbA1c', 'A1c', 'Hemoglobin A1c', 'Glycated Hemoglobin', 'Glycohemoglobin'],
+    unit: '%',
+    min: 4, max: 5.7, optimalMin: 4.5, optimalMax: 5.3,
+    category: 'metabolic', direction: 'down',
+    simpleName: '3-month sugar average',
+    plain: 'Your average blood sugar over 3 months. Below 5.7% is healthy; the optimal band is tighter still.',
+  },
+  {
+    id: 'glucose',
+    name: 'Fasting Glucose',
+    aliases: ['Fasting Glucose', 'Glucose Fasting', 'Glucose, Fasting', 'Fasting Blood Sugar', 'FBS'],
+    unit: 'mg/dL', unitAliases: ['mg/dl'],
+    min: 70, max: 99, optimalMin: 75, optimalMax: 90,
+    category: 'metabolic', direction: 'down',
+    simpleName: 'Blood sugar this morning',
+    plain: 'A walk after every meal pulls a borderline reading comfortably back down.',
+  },
+  {
+    id: 'insulin',
+    name: 'Fasting Insulin',
+    aliases: ['Fasting Insulin', 'Insulin Fasting', 'Insulin, Fasting'],
+    unit: 'µIU/mL', unitAliases: ['uIU/mL', 'mIU/L', 'µIU/ml'],
+    min: 2, max: 25, optimalMin: 2, optimalMax: 8,
+    category: 'metabolic', direction: 'down',
+    simpleName: 'How hard your pancreas is working',
+    plain: 'Higher than ideal means the pancreas is working overtime — an early sign worth addressing while it’s still easy.',
+    problemId: 'insulin-resistance',
+  },
+
+  /* ---- Heart --------------------------------------------------- */
+  {
+    id: 'total-chol',
+    name: 'Total Cholesterol',
+    aliases: ['Total Cholesterol', 'Cholesterol Total', 'Cholesterol, Total', 'Cholesterol'],
+    unit: 'mg/dL', unitAliases: ['mg/dl'],
+    min: 0, max: 200,
+    category: 'heart', direction: 'down',
+    simpleName: 'All your cholesterol added together',
+    plain: 'The number to focus on inside total cholesterol is LDL below.',
+  },
+  {
+    id: 'ldl',
+    name: 'LDL Cholesterol',
+    aliases: ['LDL Cholesterol', 'LDL-C', 'LDL', 'Cholesterol LDL'],
+    unit: 'mg/dL', unitAliases: ['mg/dl'],
+    min: 0, max: 100,
+    category: 'heart', direction: 'down',
+    simpleName: 'The bad cholesterol',
+    plain: 'The cholesterol that builds up in artery walls. Meaningfully above ideal is worth a 12-week plan.',
+    problemId: 'high-ldl',
+  },
+  {
+    id: 'hdl',
+    name: 'HDL Cholesterol',
+    aliases: ['HDL Cholesterol', 'HDL-C', 'HDL', 'Cholesterol HDL'],
+    unit: 'mg/dL', unitAliases: ['mg/dl'],
+    min: 40, max: 100, optimalMin: 50, optimalMax: 80,
+    category: 'heart', direction: 'up',
+    simpleName: 'The good cholesterol',
+    plain: 'Your “good” cholesterol — clears the bad kind.',
+  },
+  {
+    id: 'tg',
+    name: 'Triglycerides',
+    aliases: ['Triglycerides', 'TG'],
+    unit: 'mg/dL', unitAliases: ['mg/dl'],
+    min: 0, max: 150,
+    category: 'heart', direction: 'down',
+    simpleName: 'Fat in your blood',
+    plain: 'Usually tied to sugar, refined carbs, or alcohol — very responsive to small changes.',
+  },
+
+  /* ---- Thyroid ------------------------------------------------- */
+  {
+    id: 'tsh',
+    name: 'TSH',
+    aliases: ['TSH', 'Thyroid Stimulating Hormone', 'Thyrotropin'],
+    unit: 'µIU/mL', unitAliases: ['uIU/mL', 'mIU/L'],
+    min: 0.4, max: 4.5,
+    category: 'thyroid', direction: 'band',
+    simpleName: 'Thyroid signal from your brain',
+    plain: 'Thyroid signal — both ends carry meaning, so the band shape matters here.',
+  },
+
+  /* ---- Vitamins & Minerals ------------------------------------- */
+  {
+    id: 'vit-d',
+    name: 'Vitamin D (25-OH)',
+    aliases: ['Vitamin D', '25-OH Vitamin D', '25-Hydroxyvitamin D', 'Vitamin D 25-OH', 'Vitamin D, 25-OH', '25(OH)D'],
+    unit: 'ng/mL', unitAliases: ['ng/ml'],
+    min: 30, max: 100, optimalMin: 40, optimalMax: 80,
+    category: 'vitamins', direction: 'up',
+    simpleName: 'Vitamin D',
+    plain: 'Affects mood, energy, immunity, bone health — and is the single easiest thing to fix on most reports.',
+    problemId: 'low-vit-d',
+  },
+  {
+    id: 'b12',
+    name: 'Vitamin B12',
+    aliases: ['Vitamin B12', 'B12', 'Cobalamin'],
+    unit: 'pg/mL', unitAliases: ['pg/ml'],
+    min: 200, max: 900, optimalMin: 500, optimalMax: 900,
+    category: 'vitamins', direction: 'up',
+    simpleName: 'Brain and nerve fuel',
+    plain: 'Technically in range below the optimum, but lower than ideal for sharp thinking and steady energy.',
+  },
+  {
+    id: 'ferritin',
+    name: 'Ferritin',
+    aliases: ['Ferritin'],
+    unit: 'ng/mL', unitAliases: ['ng/ml'],
+    min: 30, max: 400,
+    category: 'vitamins', direction: 'band',
+    simpleName: 'Your iron stores',
+    plain: 'Iron stores — band-shaped because both deficiency and overload carry risk.',
+  },
+
+  /* ---- Liver / Kidney / Blood ---------------------------------- */
+  {
+    id: 'alt',
+    name: 'ALT',
+    aliases: ['ALT', 'SGPT', 'Alanine Aminotransferase'],
+    unit: 'U/L', unitAliases: ['u/l', 'IU/L'],
+    min: 7, max: 56,
+    category: 'liver', direction: 'down',
+    simpleName: 'A liver enzyme',
+    plain: 'Elevated ALT usually means the liver is stressed — sometimes by alcohol, sometimes by metabolic load.',
+  },
+  {
+    id: 'creatinine',
+    name: 'Creatinine',
+    aliases: ['Creatinine', 'Serum Creatinine'],
+    unit: 'mg/dL', unitAliases: ['mg/dl'],
+    min: 0.7, max: 1.3,
+    category: 'kidney', direction: 'band',
+    simpleName: 'How well your kidneys are filtering',
+    plain: 'Kidney filtering measure — both extremes carry meaning.',
+  },
+  {
+    id: 'hb',
+    name: 'Hemoglobin',
+    aliases: ['Hemoglobin', 'Haemoglobin', 'Hb'],
+    unit: 'g/dL', unitAliases: ['g/dl', 'gm/dL', 'gm/dl'],
+    min: 13.5, max: 17.5,
+    category: 'blood', direction: 'band',
+    simpleName: 'Your blood’s oxygen carrier',
+    plain: 'Oxygen-carrying capacity. Both anaemia and very high counts matter clinically.',
+  },
+
+  /* ---- Fertility & Andrology (semen analysis) ------------------ */
+  {
+    id: 'semen-volume',
+    name: 'Semen volume',
+    aliases: ['Sample volume', 'Semen volume', 'Volume', 'Ejaculate volume'],
+    unit: 'ml', unitAliases: ['mL', 'ML'],
+    min: 1.5, max: 6,
+    category: 'fertility', direction: 'up',
+    simpleName: 'How much semen per sample',
+    plain: 'Below 1.5 ml may suggest a blockage or hormonal issue. Most samples land between 2–5 ml.',
+  },
+  {
+    id: 'semen-ph',
+    name: 'pH',
+    aliases: ['pH', 'Semen pH', 'pH value'],
+    unit: '',
+    min: 7.2, max: 8.0,
+    category: 'fertility', direction: 'band',
+    simpleName: 'How acidic/alkaline the sample is',
+    plain: 'Healthy semen is slightly alkaline (7.2–8.0). Values outside the band can suggest infection or blocked ducts.',
+  },
+  {
+    id: 'sperm-density',
+    name: 'Sperm density',
+    aliases: ['Density (million per ml)', 'Sperm concentration', 'Sperm density', 'Concentration'],
+    unit: 'million/ml', unitAliases: ['M/ml', 'million per ml', '10^6/ml', 'x10^6/mL'],
+    min: 15, max: 200,
+    category: 'fertility', direction: 'up',
+    simpleName: 'Sperm per milliliter of semen',
+    plain: 'Below 15 million/ml is considered low (oligospermia). Most fertile men show 40–200 million/ml.',
+  },
+  {
+    id: 'sperm-total-count',
+    name: 'Total sperm count',
+    aliases: ['Total count (million)', 'Total sperm count', 'Total count'],
+    unit: 'million', unitAliases: ['M', '10^6'],
+    min: 39, max: 500,
+    category: 'fertility', direction: 'up',
+    simpleName: 'Total sperm in the whole sample',
+    plain: 'Below 39 million is below the WHO 2010 reference. Higher counts give more swimmers per shot.',
+  },
+  {
+    id: 'sperm-motility-total',
+    name: 'Total motility',
+    aliases: ['Total motility %', 'Total motility', 'Motility'],
+    unit: '%',
+    min: 40, max: 100,
+    category: 'fertility', direction: 'up',
+    simpleName: '% of sperm that move at all',
+    plain: 'Below 40% motility is asthenospermia — sperm need to move enough to reach an egg.',
+  },
+  {
+    id: 'sperm-motility-progressive',
+    name: 'Progressive motility',
+    aliases: ['Progressive', 'Progressive motility', 'Forward motility'],
+    unit: '%',
+    min: 32, max: 100,
+    category: 'fertility', direction: 'up',
+    simpleName: '% of sperm swimming forward',
+    plain: 'Sperm need to swim forward, not in circles. Below 32% is below the reference threshold.',
+  },
+  {
+    id: 'sperm-immotile',
+    name: 'Immotile',
+    aliases: ['Immotile', 'Immotile %', 'Non-motile'],
+    unit: '%',
+    min: 0, max: 60,
+    category: 'fertility', direction: 'down',
+    simpleName: '% of sperm not moving at all',
+    plain: 'Up to 60% can be immotile in a healthy sample. Above that suggests motility problems.',
+  },
+  {
+    id: 'sperm-morphology',
+    name: 'Morphology',
+    aliases: ['Morphology %', 'Morphology', 'Normal forms', 'Normal morphology'],
+    unit: '%',
+    min: 4, max: 100,
+    category: 'fertility', direction: 'up',
+    simpleName: '% of sperm with normal shape',
+    plain: 'WHO reference is ≥4% normal forms. Sperm shape matters for successful fertilization.',
+  },
+];
+
+/**
+ * Find a template by id. Used by tests, the parser fallback, and any
+ * surface that wants to render a known marker shape without a value
+ * (e.g. "here's what we'd test").
+ */
+export function getTemplateById(id: string): BiomarkerTemplate | undefined {
+  return biomarkerCatalog.find((t) => t.id === id);
 }

@@ -4,7 +4,11 @@ import { Check, ScanLine, Sparkles } from 'lucide-react';
 import Container from '../components/Container';
 import Logo from '../components/Logo';
 import { useNavigation, useReports } from '../AppContext';
-import { parseSteps, parseUploadedReport } from '../services/api';
+import {
+  consumePendingUpload,
+  parseSteps,
+  parseUploadedReport,
+} from '../services/api';
 
 /**
  * Multi-stage parsing UI for the upload pipeline.
@@ -41,15 +45,29 @@ export default function ProcessingPage() {
     if (startedForRef.current === processingId) return;
     startedForRef.current = processingId;
 
+    // Drain the pending upload once per processingId. If the user
+    // refreshed mid-flow, this returns null and the parser falls back
+    // to the demo dataset — graceful degradation rather than a hang.
+    const file = consumePendingUpload();
+
     void parseUploadedReport(
-      { name: latestProcessing?.name ?? 'My lab report' },
+      {
+        name: latestProcessing?.name ?? 'My lab report',
+        file,
+      },
       ({ stepIndex, stepProgress, overall }) => {
         setStepIndex(stepIndex);
         setStepProgress(stepProgress);
         setOverall(overall);
       },
-    ).then(() => {
-      markReportReady(processingId);
+    ).then((result) => {
+      // If real extraction yielded biomarkers, swap them into the
+      // placeholder report. Otherwise leave the (sample) biomarkers
+      // that makeReport() seeded.
+      markReportReady(processingId, {
+        biomarkers: result.biomarkers,
+        lab: result.report.lab,
+      });
       replace({ type: 'results', reportId: processingId });
     });
   }, [processingId, latestProcessing?.name, markReportReady, replace]);
