@@ -16,7 +16,7 @@ export default function Card({
   className = '',
   ...rest
 }: Props) {
-  const base = `bg-white border border-line/70 rounded-[20px] ${raised ? 'shadow-pop' : 'shadow-soft'} ${padded ? 'p-5' : ''} ${className}`;
+  const base = `bg-surface border border-line/70 rounded-[20px] ${raised ? 'shadow-pop' : 'shadow-soft'} ${padded ? 'p-5' : ''} ${className}`;
 
   if (interactive) {
     const isButton = typeof rest.onClick === 'function';

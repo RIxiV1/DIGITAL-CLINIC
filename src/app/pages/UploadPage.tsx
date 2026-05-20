@@ -70,7 +70,7 @@ export default function UploadPage() {
               }}
               onClick={() => inputRef.current?.click()}
               className={`p-7 text-center cursor-pointer transition-colors ${
-                dragging ? 'bg-indigo-50' : 'bg-white'
+                dragging ? 'bg-indigo-50' : 'bg-surface'
               }`}
             >
               <motion.div
@@ -122,7 +122,7 @@ export default function UploadPage() {
         </motion.div>
 
         <div className="mt-6 grid gap-3">
-          <Card className="bg-white">
+          <Card className="bg-surface">
             <div className="flex items-start gap-3">
               <div className="grid place-items-center w-10 h-10 rounded-xl bg-good-soft text-good shrink-0">
                 <ShieldCheck size={18} />
@@ -154,7 +154,7 @@ export default function UploadPage() {
               ].map((l) => (
                 <span
                   key={l}
-                  className="px-2.5 py-1 rounded-full bg-white border border-line text-[11px] text-ink-soft"
+                  className="px-2.5 py-1 rounded-full bg-surface border border-line text-[11px] text-ink-soft"
                 >
                   {l}
                 </span>

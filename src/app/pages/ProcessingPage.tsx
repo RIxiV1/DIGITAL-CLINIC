@@ -112,7 +112,7 @@ export default function ProcessingPage() {
                 <motion.div
                   key={s.id}
                   animate={{ opacity: state === 'idle' ? 0.45 : 1 }}
-                  className="flex items-center gap-3 p-3.5 rounded-[16px] bg-white border border-line shadow-soft text-left"
+                  className="flex items-center gap-3 p-3.5 rounded-[16px] bg-surface border border-line shadow-soft text-left"
                 >
                   <div
                     className={`grid place-items-center w-8 h-8 rounded-full ${

@@ -248,7 +248,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                         className={`px-3.5 h-9 rounded-full text-[12px] font-semibold whitespace-nowrap transition-colors ${
                           active
                             ? 'bg-indigo-600 text-white shadow-soft'
-                            : 'bg-white border border-line text-ink-soft hover:border-indigo-300'
+                            : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
                         }`}
                       >
                         {f.label}
@@ -338,7 +338,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             )}
 
             {/* Disclaimer */}
-            <div className="mt-8 rounded-[16px] bg-white border border-line p-4 flex gap-3 print-shadow-none">
+            <div className="mt-8 rounded-[16px] bg-surface border border-line p-4 flex gap-3 print-shadow-none">
               <Info size={16} className="text-muted shrink-0 mt-0.5" />
               <p className="text-[12px] text-ink-soft leading-relaxed">
                 Digital Clinic translates and contextualises your report — it
@@ -587,7 +587,7 @@ function CategoryChip({
       className={`px-3 h-8 rounded-full text-[11px] font-semibold whitespace-nowrap transition-colors ${
         active
           ? 'bg-gold-500 text-indigo-900 border border-gold-500'
-          : 'bg-white border border-line text-ink-soft'
+          : 'bg-surface border border-line text-ink-soft'
       }`}
     >
       {label}

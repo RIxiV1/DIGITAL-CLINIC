@@ -87,7 +87,7 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
             role="dialog"
             aria-modal="true"
             aria-labelledby={titleId}
-            className="w-full sm:max-w-md bg-white rounded-t-3xl sm:rounded-3xl shadow-pop border border-line flex flex-col max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
+            className="w-full sm:max-w-md bg-surface rounded-t-3xl sm:rounded-3xl shadow-pop border border-line flex flex-col max-h-[85vh] sm:max-h-[80vh] overflow-hidden"
           >
             {/* Header */}
             <div className="flex items-start gap-3 px-6 pt-6 pb-4 border-b border-line/70">

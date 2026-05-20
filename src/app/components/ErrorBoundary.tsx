@@ -53,7 +53,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               clean state — if it keeps happening on the same page, the
               message below is the clue to send back.
             </p>
-            <pre className="mt-5 text-left text-[11.5px] leading-relaxed font-mono bg-white border border-line rounded-2xl p-4 overflow-auto max-h-48">
+            <pre className="mt-5 text-left text-[11.5px] leading-relaxed font-mono bg-surface border border-line rounded-2xl p-4 overflow-auto max-h-48">
               {msg}
             </pre>
             <button

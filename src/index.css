@@ -140,12 +140,11 @@ body {
   color: var(--color-ink);
 }
 
-/* When the user flips the theme, fade colors instead of snapping.
-   Scoped to the html element so it doesn't make every hover state
-   feel laggy — only the variable changes animate. */
-html.theme-switching * {
-  transition: background-color 0.22s ease, border-color 0.22s ease,
-    color 0.22s ease, fill 0.22s ease, stroke 0.22s ease !important;
+/* Brief fade on the body when the theme flips. Scoped to body only so
+   hover/active transitions on individual elements stay snappy. */
+html.theme-switching,
+html.theme-switching body {
+  transition: background-color 0.22s ease, color 0.22s ease;
 }
 
 * {

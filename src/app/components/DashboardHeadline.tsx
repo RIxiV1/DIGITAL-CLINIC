@@ -66,14 +66,9 @@ export default function DashboardHeadline({
       className="relative overflow-hidden rounded-[24px] text-white p-6 lg:p-8 shadow-pop"
       style={{ background: gradient }}
     >
-      {/* Soft halo bloom in the top-right — sits inside overflow-hidden
-          so it stays on the card edge */}
-      <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-white/15 blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-16 w-56 h-56 rounded-full bg-white/8 blur-3xl pointer-events-none" />
-
       <div className="relative grid lg:grid-cols-[1fr_auto] gap-5 lg:gap-8 lg:items-center">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-bold text-white/80">
+          <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-bold text-indigo-100">
             <Sparkles size={11} />
             {eyebrow}
           </div>
@@ -81,7 +76,7 @@ export default function DashboardHeadline({
             {headline}
           </h1>
           {sub && (
-            <p className="mt-2 text-[13.5px] lg:text-[14.5px] text-white/85 leading-relaxed max-w-[60ch]">
+            <p className="mt-2 text-[13.5px] lg:text-[14.5px] text-indigo-100 leading-relaxed max-w-[60ch]">
               {sub}
             </p>
           )}
@@ -97,21 +92,14 @@ export default function DashboardHeadline({
 
         {summary && (
           <div className="flex justify-center lg:justify-end">
-            {/* The ring sits inside a glass disc so it pops on any
-                background gradient */}
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full bg-white/8 backdrop-blur-md" />
-              <div className="relative p-4">
-                <HealthRing
-                  good={summary.good}
-                  attention={summary.attention}
-                  concern={summary.concern}
-                  size={170}
-                  thickness={14}
-                  tone="onDark"
-                />
-              </div>
-            </div>
+            <HealthRing
+              good={summary.good}
+              attention={summary.attention}
+              concern={summary.concern}
+              size={160}
+              thickness={12}
+              tone="onDark"
+            />
           </div>
         )}
       </div>

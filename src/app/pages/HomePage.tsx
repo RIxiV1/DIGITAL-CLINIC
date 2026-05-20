@@ -105,17 +105,7 @@ export default function HomePage() {
       : undefined;
 
   return (
-    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas relative">
-      {/* Soft ambient mesh — only visible behind the hero, fades to canvas */}
-      <div
-        aria-hidden
-        className="absolute inset-x-0 top-0 h-[420px] pointer-events-none -z-0"
-        style={{
-          background:
-            'radial-gradient(80% 100% at 50% 0%, rgba(45, 59, 142, 0.10) 0%, transparent 70%)',
-        }}
-      />
-
+    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
       <Header variant="home" />
 
       {/* ZONE 1 · Dynamic headline (with embedded health ring) */}
@@ -149,6 +139,7 @@ export default function HomePage() {
                       initial={{ opacity: 0, y: 8 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04, duration: 0.35 }}
+                      className="h-full"
                     >
                       <MarkerAttentionCard
                         marker={m}

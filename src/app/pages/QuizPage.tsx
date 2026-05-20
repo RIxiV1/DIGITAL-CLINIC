@@ -110,7 +110,7 @@ export default function QuizPage() {
   ];
 
   return (
-    <div className="min-h-screen pb-36 bg-canvas">
+    <div className="min-h-screen pb-44 bg-canvas">
       {/* Top */}
       <Container size="narrow" className="pt-5">
         <div className="flex items-center justify-between">
@@ -364,7 +364,7 @@ function ExitConfirm({
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 20, opacity: 0 }}
         transition={{ type: 'spring', stiffness: 360, damping: 30 }}
-        className="w-full sm:max-w-sm bg-white rounded-t-3xl sm:rounded-3xl shadow-pop border border-line p-6"
+        className="w-full sm:max-w-sm bg-surface rounded-t-3xl sm:rounded-3xl shadow-pop border border-line p-6"
       >
         <div className="font-display text-[20px] leading-tight text-ink">
           Exit the quiz?
@@ -499,7 +499,7 @@ function PillOptions({
   multi: boolean;
 }) {
   return (
-    <div className="flex flex-wrap gap-2.5">
+    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
       {options.map((opt) => {
         const selected = isSelected(opt.id);
         return (
@@ -510,10 +510,10 @@ function PillOptions({
             whileTap={{ scale: 0.95 }}
             whileHover={{ y: -1 }}
             onClick={() => toggle(opt.id)}
-            className={`relative inline-flex items-center gap-2 h-12 px-5 rounded-full font-semibold text-[14px] border transition-all ${
+            className={`relative inline-flex items-center justify-center gap-2 h-12 px-4 rounded-full font-semibold text-[13.5px] border transition-all ${
               selected
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
-                : 'bg-white border-line text-ink-soft hover:border-indigo-300 hover:text-indigo-700 shadow-soft'
+                : 'bg-surface border-line text-ink-soft hover:border-indigo-300 hover:text-indigo-700 shadow-soft'
             }`}
           >
             {multi && (
@@ -558,7 +558,7 @@ function CardOptions({
             className={`relative w-full text-left px-4 py-3.5 rounded-[16px] border transition-all ${
               selected
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
-                : 'bg-white border-line text-ink hover:border-indigo-300 shadow-soft'
+                : 'bg-surface border-line text-ink hover:border-indigo-300 shadow-soft'
             }`}
           >
             <div className="flex items-center gap-3">
@@ -587,7 +587,7 @@ function CardOptions({
                 className={`w-6 h-6 rounded-full grid place-items-center border ${
                   selected
                     ? 'bg-gold-500 border-gold-500 text-indigo-900'
-                    : 'border-line bg-white'
+                    : 'border-line bg-surface'
                 }`}
               >
                 {selected && <Check size={14} strokeWidth={3} />}
