@@ -92,7 +92,11 @@ export default function QuizPage() {
       !!quiz.activity ||
       quiz.priorities.length > 0 ||
       quiz.symptoms.length > 0;
-    if (touched && stepIndex > 0) {
+    // Confirm if the user has touched anything — even on step 0.
+    // Previous logic also required stepIndex > 0, which meant selecting
+    // four symptoms on screen 1 and then tapping the logo silently
+    // discarded the work. `touched` alone is the right signal.
+    if (touched) {
       setConfirmExit(true);
     } else {
       doExit();
