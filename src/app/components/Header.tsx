@@ -1,6 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import type { ReactNode } from 'react';
 import Logo from './Logo';
+import ThemeToggle from './ThemeToggle';
 import { useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
 
@@ -104,9 +105,10 @@ export default function Header({
 
           {variant === 'home' && <div className="flex-1" />}
 
-          {rightSlot && (
-            <div className="flex items-center gap-1.5">{rightSlot}</div>
-          )}
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            {rightSlot}
+          </div>
         </div>
 
         {/* ---------- Desktop shell ---------- */}
@@ -162,15 +164,14 @@ export default function Header({
             </div>
           )}
 
-          {rightSlot && (
-            <div
-              className={`flex items-center gap-2 ${
-                variant === 'page' && title ? '' : 'ml-auto'
-              }`}
-            >
-              {rightSlot}
-            </div>
-          )}
+          <div
+            className={`flex items-center gap-1 ${
+              variant === 'page' && title ? '' : 'ml-auto'
+            }`}
+          >
+            <ThemeToggle />
+            {rightSlot}
+          </div>
         </div>
       </div>
     </header>

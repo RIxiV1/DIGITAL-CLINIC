@@ -1,3 +1,5 @@
+import { motion } from 'framer-motion';
+import { useId } from 'react';
 import type { Biomarker } from '../data/biomarkers';
 
 type Props = {
@@ -54,6 +56,8 @@ export default function Sparkline({
   const lastX = (points.length - 1) * stepX;
   const lastY = scaleY(points[points.length - 1]);
 
+  const gradientId = useId();
+
   return (
     <svg
       role="img"
@@ -63,8 +67,16 @@ export default function Sparkline({
       height={height}
       className={className}
     >
-      {/* Healthy range band — slightly stronger green tint so it reads as
-          "in this zone is good" without overwhelming the trend line. */}
+      <defs>
+        {/* Area-fill gradient under the polyline — same hue as the
+            stroke, fading to transparent at the bottom. */}
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={stroke} stopOpacity="0.22" />
+          <stop offset="100%" stopColor={stroke} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+
+      {/* Healthy range band */}
       <rect
         x={0}
         y={bandTop}
@@ -72,19 +84,48 @@ export default function Sparkline({
         height={Math.max(0, bandBottom - bandTop)}
         fill="rgb(22 163 74 / 0.14)"
       />
-      {/* Trend line */}
-      <polyline
+
+      {/* Area fill under the trend line — fades in after the line draws. */}
+      <motion.polygon
+        points={`0,${height} ${polyline} ${width},${height}`}
+        fill={`url(#${gradientId})`}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.4, delay: 0.45 }}
+      />
+
+      {/* Trend line — draws itself in on mount via pathLength. */}
+      <motion.polyline
         points={polyline}
         fill="none"
         stroke={stroke}
         strokeWidth={2}
         strokeLinecap="round"
         strokeLinejoin="round"
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: 1 }}
+        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
       />
-      {/* End-point dot (current reading) — white halo + filled core so
-          it reads even when the dot lands inside the band. */}
-      <circle cx={lastX} cy={lastY} r={4} fill="#FFFFFF" />
-      <circle cx={lastX} cy={lastY} r={3} fill={stroke} />
+
+      {/* End-point dot pops in after the line lands. */}
+      <motion.circle
+        cx={lastX}
+        cy={lastY}
+        r={4}
+        fill="var(--color-surface)"
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.25, delay: 0.6 }}
+      />
+      <motion.circle
+        cx={lastX}
+        cy={lastY}
+        r={3}
+        fill={stroke}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.25, delay: 0.65 }}
+      />
     </svg>
   );
 }

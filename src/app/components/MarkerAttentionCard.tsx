@@ -8,6 +8,7 @@ import {
   statusColor,
   type Biomarker,
 } from '../data/biomarkers';
+import { useCountUp } from '../utils/useCountUp';
 
 type Props = {
   marker: Biomarker;
@@ -18,16 +19,12 @@ type Props = {
 };
 
 /**
- * The card for Zone 2 ("Markers that need attention") on the dashboard.
- * Shows the value, the trend vs the previous reading, one short
- * action label, and a Learn-More info button (when marker info exists).
- *
- * Action labels are picked per the brief's rules:
- *   - concern + declining → "See an endocrinologist"
- *   - concern + stable    → "Retest in 90 days"
- *   - attention + any     → "Retest in 90 days"
- *   - improving           → "Keep doing what you're doing"
- *   - has problemId       → links to the action plan (overrides above)
+ * The Zone 2 attention card on the dashboard. Visual upgrades:
+ *  - Coloured edge bar on the left (status colour) so the card's status
+ *    reads at a glance without parsing the pill.
+ *  - Pulsing status dot replaces the static badge.
+ *  - Animated count-up on the value (450ms, respects reduced motion).
+ *  - Subtle hover lift + a soft glow tinted by the marker status.
  */
 export default function MarkerAttentionCard({
   marker,
@@ -39,6 +36,11 @@ export default function MarkerAttentionCard({
   const tone = getTrendTone(marker);
   const prev = getPreviousValue(marker);
   const delta = formatDelta(marker);
+
+  // Whole numbers count up as ints; decimal markers (e.g. 8.4 free T)
+  // animate at one decimal.
+  const decimals = Number.isInteger(marker.value) ? 0 : 1;
+  const animatedValue = useCountUp(marker.value, { decimals, duration: 500 });
 
   const trendIcon =
     trend === 'up' ? (
@@ -53,6 +55,14 @@ export default function MarkerAttentionCard({
       : tone === 'declining'
         ? 'text-concern'
         : 'text-muted';
+
+  // Edge bar colour mirrors the status — concern red, attention amber, etc.
+  const edgeBarColor =
+    marker.status === 'concern'
+      ? 'bg-concern'
+      : marker.status === 'attention'
+        ? 'bg-attention'
+        : 'bg-good';
 
   // Build the action label. problemId always wins if present — it points
   // at a real action plan inside the app.
@@ -72,82 +82,94 @@ export default function MarkerAttentionCard({
 
   return (
     <motion.div
-      whileHover={{ y: -2 }}
+      whileHover={{ y: -3 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className="bg-white border border-line/70 rounded-[18px] shadow-soft p-5 h-full flex flex-col"
+      className="relative bg-surface border border-line/70 rounded-[18px] shadow-soft h-full flex overflow-hidden group"
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-muted truncate">
-            {marker.name}
-          </div>
-          {marker.simpleName && (
-            <div className="text-[11.5px] text-ink-soft mt-0.5 truncate">
-              {marker.simpleName}
+      {/* Status edge bar */}
+      <div className={`w-1 ${edgeBarColor} shrink-0`} aria-hidden />
+
+      <div className="flex-1 p-5 flex flex-col min-w-0">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-muted truncate">
+              {marker.name}
             </div>
+            {marker.simpleName && (
+              <div className="text-[11.5px] text-ink-soft mt-0.5 truncate">
+                {marker.simpleName}
+              </div>
+            )}
+          </div>
+          {onLearnMore && (
+            <button
+              type="button"
+              onClick={onLearnMore}
+              aria-label={`Learn more about ${marker.name}`}
+              title={`Learn more about ${marker.name}`}
+              className="-mr-1 -mt-1 grid place-items-center w-7 h-7 rounded-full text-muted hover:text-indigo-700 hover:bg-canvas/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
+            >
+              <Info size={14} />
+            </button>
           )}
         </div>
-        {onLearnMore && (
-          <button
-            type="button"
-            onClick={onLearnMore}
-            aria-label={`Learn more about ${marker.name}`}
-            title={`Learn more about ${marker.name}`}
-            className="-mr-1 -mt-1 grid place-items-center w-7 h-7 rounded-full text-muted hover:text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
-          >
-            <Info size={14} />
-          </button>
-        )}
-      </div>
 
-      <div className="mt-2 flex items-baseline gap-2">
-        <span className="font-display text-[28px] leading-none text-ink">
-          {marker.value}
-        </span>
-        <span className="text-[12.5px] text-muted font-medium">
-          {marker.unit}
-        </span>
-        {trendIcon && delta && (
-          <span
-            className={`inline-flex items-center gap-0.5 text-[12px] font-bold tabular-nums ${trendToneCls}`}
-            title={prev !== undefined ? `Previously ${prev} ${marker.unit}` : undefined}
-          >
-            {trendIcon}
-            {delta}
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="font-display text-[28px] leading-none text-ink tabular-nums">
+            {animatedValue}
           </span>
-        )}
+          <span className="text-[12.5px] text-muted font-medium">
+            {marker.unit}
+          </span>
+          {trendIcon && delta && (
+            <span
+              className={`inline-flex items-center gap-0.5 text-[12px] font-bold tabular-nums ${trendToneCls}`}
+              title={
+                prev !== undefined
+                  ? `Previously ${prev} ${marker.unit}`
+                  : undefined
+              }
+            >
+              {trendIcon}
+              {delta}
+            </span>
+          )}
+        </div>
+
+        {/* Pulsing status indicator + label */}
+        <div
+          className={`mt-2 inline-flex self-start items-center gap-1.5 px-2 h-5 rounded-full text-[9px] font-bold uppercase tracking-[0.1em] ${c.bg} ${c.text}`}
+        >
+          <span className="relative grid place-items-center w-1.5 h-1.5">
+            <span
+              className={`absolute inset-0 rounded-full ${c.dot} opacity-60 motion-safe:animate-ping`}
+            />
+            <span className={`relative w-1.5 h-1.5 rounded-full ${c.dot}`} />
+          </span>
+          {c.label}
+        </div>
+
+        <p className="mt-3 text-[12.5px] text-ink-soft leading-relaxed line-clamp-3">
+          {marker.plain}
+        </p>
+
+        {actionLabel &&
+          (onAction ? (
+            <button
+              type="button"
+              onClick={onAction}
+              className="mt-4 inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-700 hover:text-indigo-800 self-start"
+            >
+              {actionLabel}
+              <ArrowRight size={12} />
+            </button>
+          ) : (
+            <div className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-muted self-start">
+              <span aria-hidden>·</span>
+              {actionLabel}
+            </div>
+          ))}
       </div>
-
-      <div
-        className={`mt-2 inline-flex self-start items-center gap-1 px-1.5 h-4 rounded-full text-[9px] font-bold uppercase tracking-[0.1em] ${c.bg} ${c.text}`}
-      >
-        <span className={`w-1 h-1 rounded-full ${c.dot}`} />
-        {c.label}
-      </div>
-
-      <p className="mt-3 text-[12.5px] text-ink-soft leading-relaxed line-clamp-3">
-        {marker.plain}
-      </p>
-
-      {actionLabel &&
-        (onAction ? (
-          <button
-            type="button"
-            onClick={onAction}
-            className="mt-4 inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-700 hover:text-indigo-800 self-start"
-          >
-            {actionLabel}
-            <ArrowRight size={12} />
-          </button>
-        ) : (
-          // No action plan exists for this marker — render the label as
-          // informational guidance, not as a button. Honesty over fake
-          // affordance.
-          <div className="mt-4 inline-flex items-center gap-1 text-[12px] font-medium text-muted self-start">
-            <span aria-hidden>·</span>
-            {actionLabel}
-          </div>
-        ))}
     </motion.div>
   );
 }

@@ -1,5 +1,6 @@
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useMemo } from 'react';
 import {
   formatDelta,
   getPreviousValue,
@@ -8,6 +9,7 @@ import {
   summarizeStatuses,
   type Biomarker,
 } from '../data/biomarkers';
+import HealthRing from './HealthRing';
 
 type Props = {
   /** Markers from the latest analyzed report, or null/[] if none. */
@@ -16,6 +18,26 @@ type Props = {
   hasReport: boolean;
   onPrimaryCTA: () => void;
 };
+
+/** Time-of-day-aware gradient. Morning warms toward gold; afternoon is
+ *  pure brand indigo; evening cools toward deep blue. The user gets a
+ *  subtle "this is a different time of day" feel each visit without
+ *  any explicit messaging. */
+function useGradientForTimeOfDay() {
+  return useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) {
+      // Morning — warm sunrise edge
+      return 'linear-gradient(135deg, var(--color-indigo-700) 0%, var(--color-indigo-600) 45%, var(--color-gold-700) 100%)';
+    }
+    if (h < 18) {
+      // Afternoon — confident brand indigo
+      return 'linear-gradient(135deg, var(--color-indigo-700) 0%, var(--color-indigo-600) 60%, var(--color-blue-700) 100%)';
+    }
+    // Evening — cool, deep
+    return 'linear-gradient(135deg, var(--color-indigo-900) 0%, var(--color-indigo-700) 55%, var(--color-blue-800) 100%)';
+  }, []);
+}
 
 /**
  * Top-of-page headline per the dashboard brief.
@@ -33,38 +55,65 @@ export default function DashboardHeadline({
   onPrimaryCTA,
 }: Props) {
   const { eyebrow, headline, sub, ctaLabel } = pickCopy(markers, hasReport);
+  const gradient = useGradientForTimeOfDay();
+  const summary = markers && markers.length > 0 ? summarizeStatuses(markers) : null;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-[20px] bg-indigo-600 text-white p-5 lg:p-6 shadow-pop"
+      className="relative overflow-hidden rounded-[24px] text-white p-6 lg:p-8 shadow-pop"
+      style={{ background: gradient }}
     >
-      <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-indigo-400/25 blur-3xl pointer-events-none" />
-      <div className="relative grid lg:grid-cols-[1fr_auto] gap-4 lg:gap-6 lg:items-center">
+      {/* Soft halo bloom in the top-right — sits inside overflow-hidden
+          so it stays on the card edge */}
+      <div className="absolute -top-20 -right-20 w-56 h-56 rounded-full bg-white/15 blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 -left-16 w-56 h-56 rounded-full bg-white/8 blur-3xl pointer-events-none" />
+
+      <div className="relative grid lg:grid-cols-[1fr_auto] gap-5 lg:gap-8 lg:items-center">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-bold text-indigo-100">
+          <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-bold text-white/80">
             <Sparkles size={11} />
             {eyebrow}
           </div>
-          <h1 className="mt-2 font-display text-[20px] sm:text-[22px] lg:text-[26px] leading-[1.2] text-balance">
+          <h1 className="mt-2.5 font-display text-[22px] sm:text-[26px] lg:text-[32px] leading-[1.15] text-balance">
             {headline}
           </h1>
           {sub && (
-            <p className="mt-1.5 text-[13px] lg:text-[13.5px] text-indigo-100 leading-relaxed max-w-[60ch]">
+            <p className="mt-2 text-[13.5px] lg:text-[14.5px] text-white/85 leading-relaxed max-w-[60ch]">
               {sub}
             </p>
           )}
+          <button
+            type="button"
+            onClick={onPrimaryCTA}
+            className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-[13.5px] font-semibold shadow-soft transition-colors whitespace-nowrap"
+          >
+            {ctaLabel}
+            <ArrowRight size={14} />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={onPrimaryCTA}
-          className="inline-flex items-center justify-center gap-2 h-10 lg:h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-[13px] lg:text-[13.5px] font-semibold shadow-soft transition-colors whitespace-nowrap self-start lg:self-center"
-        >
-          {ctaLabel}
-          <ArrowRight size={14} />
-        </button>
+
+        {summary && (
+          <div className="flex justify-center lg:justify-end">
+            {/* The ring sits inside a glass disc so it pops on any
+                background gradient */}
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full bg-white/8 backdrop-blur-md" />
+              <div className="relative p-4">
+                <HealthRing
+                  good={summary.good}
+                  attention={summary.attention}
+                  concern={summary.concern}
+                  size={170}
+                  thickness={14}
+                  tone="onDark"
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </motion.div>
   );

@@ -105,11 +105,21 @@ export default function HomePage() {
       : undefined;
 
   return (
-    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-screen pb-28 lg:pb-12 bg-canvas relative">
+      {/* Soft ambient mesh — only visible behind the hero, fades to canvas */}
+      <div
+        aria-hidden
+        className="absolute inset-x-0 top-0 h-[420px] pointer-events-none -z-0"
+        style={{
+          background:
+            'radial-gradient(80% 100% at 50% 0%, rgba(45, 59, 142, 0.10) 0%, transparent 70%)',
+        }}
+      />
+
       <Header variant="home" />
 
-      {/* ZONE 1 · Dynamic headline insight */}
-      <Container size="wide" className="pt-5 lg:pt-8">
+      {/* ZONE 1 · Dynamic headline (with embedded health ring) */}
+      <Container size="wide" className="pt-5 lg:pt-8 relative">
         <DashboardHeadline
           markers={ready ? biomarkers : null}
           hasReport={!!ready}
@@ -117,64 +127,85 @@ export default function HomePage() {
         />
       </Container>
 
-      {/* ZONE 2 · Markers that need attention */}
-      {attentionMarkers.length > 0 && (
+      {/* BENTO ROW · Attention markers (left) + Trends (right) on lg+ */}
+      {(attentionMarkers.length > 0 || trendsByPathway.length > 0) && (
         <Container size="wide" className="mt-6 lg:mt-8">
-          <SectionHeading
-            eyebrow="Needs attention"
-            title="Markers to act on first"
-          />
-          <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {attentionMarkers.map((m, i) => (
-              <motion.div
-                key={m.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.35 }}
+          <div className="grid lg:grid-cols-12 gap-4 lg:gap-5">
+            {/* Attention block — col-span-7 on lg, full width otherwise */}
+            {attentionMarkers.length > 0 && (
+              <section
+                className={`${
+                  trendsByPathway.length > 0 ? 'lg:col-span-7' : 'lg:col-span-12'
+                }`}
               >
-                <MarkerAttentionCard
-                  marker={m}
-                  onAction={onMarkerAction(m)}
-                  onLearnMore={
-                    getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
-                  }
+                <SectionHeading
+                  eyebrow="Needs attention"
+                  title="Markers to act on first"
                 />
-              </motion.div>
-            ))}
-          </div>
-        </Container>
-      )}
-
-      {/* ZONE 3 · Trends over time */}
-      {trendsByPathway.length > 0 && (
-        <Container size="wide" className="mt-6 lg:mt-8">
-          <SectionHeading
-            eyebrow="Your trends"
-            title="How your numbers have moved"
-            subtitle="Compared to your previous test results."
-          />
-          <div className="mt-4 grid md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {trendsByPathway.map((group) => (
-              <Card key={group.id} padded={false} className="overflow-hidden">
-                <div className="px-5 pt-5 pb-2 flex items-center gap-2">
-                  <span className="text-[18px] leading-none">{group.icon}</span>
-                  <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-indigo-700">
-                    {group.name}
-                  </div>
-                </div>
-                <div className="px-5 pb-2">
-                  {group.markers.map((m) => (
-                    <TrendRow
+                <div className="mt-4 grid sm:grid-cols-2 gap-3">
+                  {attentionMarkers.map((m, i) => (
+                    <motion.div
                       key={m.id}
-                      marker={m}
-                      onLearnMore={
-                        getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
-                      }
-                    />
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.04, duration: 0.35 }}
+                    >
+                      <MarkerAttentionCard
+                        marker={m}
+                        onAction={onMarkerAction(m)}
+                        onLearnMore={
+                          getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
+                        }
+                      />
+                    </motion.div>
                   ))}
                 </div>
-              </Card>
-            ))}
+              </section>
+            )}
+
+            {/* Trends block — col-span-5 on lg, stacks below on mobile */}
+            {trendsByPathway.length > 0 && (
+              <section
+                className={`${
+                  attentionMarkers.length > 0 ? 'lg:col-span-5' : 'lg:col-span-12'
+                }`}
+              >
+                <SectionHeading
+                  eyebrow="Your trends"
+                  title="How your numbers have moved"
+                />
+                <div className="mt-4 grid gap-3">
+                  {trendsByPathway.map((group) => (
+                    <div
+                      key={group.id}
+                      className="rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden backdrop-blur-sm"
+                    >
+                      <div className="px-5 pt-5 pb-2 flex items-center gap-2">
+                        <span className="text-[18px] leading-none">
+                          {group.icon}
+                        </span>
+                        <div className="text-[10px] uppercase tracking-[0.16em] font-bold text-indigo-700">
+                          {group.name}
+                        </div>
+                      </div>
+                      <div className="px-5 pb-2">
+                        {group.markers.map((m) => (
+                          <TrendRow
+                            key={m.id}
+                            marker={m}
+                            onLearnMore={
+                              getMarkerInfo(m.name)
+                                ? openLearnMore(m.name)
+                                : undefined
+                            }
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
         </Container>
       )}

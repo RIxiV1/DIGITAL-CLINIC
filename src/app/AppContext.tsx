@@ -16,18 +16,22 @@ import type { ReactNode } from 'react';
 import { NavigationProvider } from './contexts/NavigationContext';
 import { QuizProvider } from './contexts/QuizContext';
 import { ReportsProvider } from './contexts/ReportsContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 
 export type { Page, QuizAnswers } from './contexts/types';
 export { useNavigation } from './contexts/NavigationContext';
 export { useQuiz } from './contexts/QuizContext';
 export { useReports } from './contexts/ReportsContext';
+export { useTheme, type ThemeMode } from './contexts/ThemeContext';
 
 export function AppProvider({ children }: { children: ReactNode }) {
   return (
-    <NavigationProvider>
-      <QuizProvider>
-        <ReportsProvider>{children}</ReportsProvider>
-      </QuizProvider>
-    </NavigationProvider>
+    <ThemeProvider>
+      <NavigationProvider>
+        <QuizProvider>
+          <ReportsProvider>{children}</ReportsProvider>
+        </QuizProvider>
+      </NavigationProvider>
+    </ThemeProvider>
   );
 }

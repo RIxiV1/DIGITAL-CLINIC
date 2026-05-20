@@ -84,6 +84,7 @@ body,
 #root {
   height: 100%;
   background: var(--color-canvas);
+  transition: background-color 0.25s ease;
 }
 
 body {
@@ -93,6 +94,58 @@ body {
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   font-feature-settings: 'cv11', 'ss01', 'ss03';
+}
+
+/* ============================================================== */
+/* Dark theme — overrides the neutral + status tokens, keeps the   */
+/* brand indigo/gold the same. Activated by [data-theme='dark']    */
+/* on <html>, set by the ThemeContext.                              */
+/* ============================================================== */
+
+[data-theme='dark'] {
+  --color-canvas: #0B0D14;
+  --color-surface: #14171F;
+  --color-ink: #F1F2F5;
+  --color-ink-soft: #B8BDC9;
+  --color-muted: #8089A0;
+  --color-line: rgba(255, 255, 255, 0.08);
+  --color-line-strong: rgba(255, 255, 255, 0.18);
+
+  /* Status — slightly lighter so they pop on a dark surface */
+  --color-good: #4ADE80;
+  --color-good-soft: rgba(74, 222, 128, 0.16);
+  --color-attention: #FBBF24;
+  --color-attention-soft: rgba(251, 191, 36, 0.16);
+  --color-concern: #FB7185;
+  --color-concern-soft: rgba(251, 113, 133, 0.18);
+
+  /* Lift the indigo for accessible contrast on dark surfaces */
+  --color-indigo-50: rgba(94, 108, 180, 0.14);
+  --color-indigo-100: rgba(94, 108, 180, 0.20);
+  --color-indigo-600: #6E7DD8;
+  --color-indigo-700: #8997EB;
+
+  --color-blue-50: rgba(61, 149, 255, 0.12);
+  --color-blue-600: #5BA3FF;
+  --color-blue-700: #7AB8FF;
+
+  /* Shadows: replace the dark-on-light shadows with a subtle glow */
+  --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.25);
+  --shadow-pop: 0 6px 14px rgba(0, 0, 0, 0.45), 0 24px 48px rgba(0, 0, 0, 0.35);
+  --shadow-clinical: 0 4px 30px rgba(0, 0, 0, 0.4);
+  --shadow-clinical-lg: 0 6px 40px rgba(0, 0, 0, 0.5), 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme='dark'] body {
+  color: var(--color-ink);
+}
+
+/* When the user flips the theme, fade colors instead of snapping.
+   Scoped to the html element so it doesn't make every hover state
+   feel laggy — only the variable changes animate. */
+html.theme-switching * {
+  transition: background-color 0.22s ease, border-color 0.22s ease,
+    color 0.22s ease, fill 0.22s ease, stroke 0.22s ease !important;
 }
 
 * {
