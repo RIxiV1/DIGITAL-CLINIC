@@ -4,6 +4,7 @@ import {
   Bell,
   CreditCard,
   FileLock2,
+  Home,
   Lock,
   LogOut,
   Pencil,
@@ -191,6 +192,12 @@ export default function ProfilePage() {
               <Card padded={false} className="mt-4 overflow-hidden">
                 {(
                   [
+                    {
+                      Icon: Home,
+                      label: 'Visit homepage',
+                      hint: 'See the marketing intro — no sign out',
+                      onClick: () => navigate({ type: 'landing' }),
+                    },
                     {
                       Icon: Bell,
                       label: 'Notifications',
