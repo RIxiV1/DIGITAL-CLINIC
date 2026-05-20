@@ -319,18 +319,121 @@ input:focus-visible {
 /* Print — Save as PDF flow */
 @media print {
   @page {
-    margin: 16mm;
+    margin: 14mm 12mm;
   }
+
   html,
   body,
   #root {
     background: #fff !important;
+    color: #0F1422 !important;
   }
+
+  /* Honor color backgrounds (the gold hero card, gradient bars, status
+   * pills) when the user prints. By default, browsers strip background
+   * fills to save ink. */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
   .no-print {
     display: none !important;
   }
+
   .print-shadow-none {
     box-shadow: none !important;
     border: 1px solid #e5e7eb !important;
+  }
+
+  /* Strip soft drop shadows everywhere — they print as washed grey
+   * boxes around every card, which makes the page look noisy. */
+  .shadow-soft,
+  .shadow-pop,
+  .shadow-clinical,
+  .shadow-clinical-lg,
+  .shadow-indigo,
+  .shadow-blue {
+    box-shadow: none !important;
+  }
+
+  /* ---- Container width override ----
+   * The app's Container component uses responsive max-w-md / 3xl / 5xl /
+   * 6xl and centers via mx-auto. When the browser prints, it uses the
+   * SCREEN layout and scales down to fit the page — so a 1280px-wide
+   * container centered on a 1920px screen prints with the same gutter
+   * ratio, leaving ~30% blank on each side of the page. Force every
+   * max-width utility to fill the print page. */
+  [class*='max-w-'] {
+    max-width: 100% !important;
+  }
+
+  /* ---- Two-column grid collapse ----
+   * ReportResultsPage uses lg:grid-cols-12 with a col-span-8 main + a
+   * col-span-4 sidebar. The sidebar carries `no-print` so it's hidden,
+   * but the grid still allocates its column space — leaving an empty
+   * band on the right of every page. Collapse to a single column so
+   * the main content fills the page width. Same for the hero card's
+   * lg:grid-cols-3 (text on left, status tiles on right). */
+  [class*='grid-cols-'] {
+    grid-template-columns: 1fr !important;
+  }
+  [class*='col-span-'] {
+    grid-column: 1 / -1 !important;
+  }
+
+  /* Restore the status-summary tiles inside the gold hero — those three
+   * (On track / Needs attention / Needs care) are explicitly grid-cols-3
+   * and SHOULD stay side-by-side because they're a compact summary. */
+  .grid-cols-3:has(> div.rounded-\[14px\]) {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+
+  /* Keep individual cards together rather than splitting them across
+   * pages mid-marker. `break-inside: avoid` works in Chromium and
+   * recent Firefox; older engines ignore it gracefully. */
+  .rounded-\[16px\],
+  .rounded-\[18px\],
+  .rounded-\[20px\],
+  .rounded-\[24px\],
+  section,
+  article {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Headlines that lead a section should stay with the content below. */
+  h1, h2, h3 {
+    break-after: avoid-page;
+    page-break-after: avoid;
+  }
+
+  /* ---- BiomarkerBar visibility ----
+   * The bar's background is set inline via style={{ background:
+   * linear-gradient(...) }}. Some print engines drop linear-gradient
+   * even with print-color-adjust:exact. Bump the track height so the
+   * gradient bands are clearly visible, and give the track a visible
+   * border as a fallback in case the gradient really does get stripped.
+   * Also make the pin larger and add a high-contrast ring so it
+   * survives any color adjustment. */
+  [role='progressbar'] > div:first-child {
+    height: 14px !important;
+    border: 1px solid #d1d5db !important;
+  }
+  [role='progressbar'] > div[class*='w-4 h-4'] {
+    width: 16px !important;
+    height: 16px !important;
+    border-width: 3px !important;
+  }
+
+  /* Show full URLs after links so the printed page still gives the
+   * user something to type into a browser. */
+  a[href^='http']::after {
+    content: ' (' attr(href) ')';
+    font-size: 9pt;
+    color: #6B7280;
   }
 }
