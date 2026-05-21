@@ -178,6 +178,11 @@ export type ParsedReport = {
   /** Specific error string from the parser (e.g. "password-protected
    *  PDF") when failureReason === 'parser-error'. */
   errorMessage?: string;
+  /** Raw extracted text — surfaced in the confirm step as a
+   *  "show what we read" diagnostic so the user can sanity-check
+   *  what came out of pdfjs/Tesseract before we mark it as their
+   *  report. Never persisted (may contain PII). */
+  rawText?: string;
 };
 
 /**
@@ -208,8 +213,8 @@ export async function parseUploadedReport(
   // or image OCR depending on file.type. We don't await it yet — the
   // visual stages run regardless so the UX is paced.
   type ExtractionOutcome =
-    | { biomarkers: Biomarker[] }
-    | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error'; message?: string };
+    | { biomarkers: Biomarker[]; rawText: string }
+    | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error'; message?: string; rawText?: string };
 
   const extractionPromise: Promise<ExtractionOutcome> =
     input.file &&
@@ -218,8 +223,8 @@ export async function parseUploadedReport(
       ? parsePdfFile(input.file)
           .then((r): ExtractionOutcome =>
             r.biomarkers.length > 0
-              ? { biomarkers: r.biomarkers }
-              : { biomarkers: null, reason: 'no-matches' },
+              ? { biomarkers: r.biomarkers, rawText: r.rawText }
+              : { biomarkers: null, reason: 'no-matches', rawText: r.rawText },
           )
           .catch((err: unknown): ExtractionOutcome => ({
             biomarkers: null,
@@ -262,8 +267,8 @@ export async function parseUploadedReport(
     badge: 'analyzed',
     biomarkers,
   };
-  if (parsedFromFile) {
-    return { report, biomarkers, parsedFromFile: true };
+  if (parsedFromFile && 'rawText' in outcome) {
+    return { report, biomarkers, parsedFromFile: true, rawText: outcome.rawText };
   }
   // outcome.biomarkers === null branch — narrow to the failure variant
   // so reason/message are visible to TS.
@@ -276,6 +281,7 @@ export async function parseUploadedReport(
     parsedFromFile: false,
     failureReason: outcome.reason,
     errorMessage: outcome.message,
+    rawText: outcome.rawText,
   };
 }
 

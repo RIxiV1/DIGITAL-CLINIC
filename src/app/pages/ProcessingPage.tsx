@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   AlertTriangle,
+  ArrowRight,
   Check,
+  ChevronDown,
+  ChevronUp,
   RotateCcw,
   ScanLine,
   Sparkles,
@@ -11,6 +14,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
 import Logo from '../components/Logo';
+import Pill from '../components/Pill';
 import { useNavigation, useReports } from '../AppContext';
 import {
   consumePendingUpload,
@@ -18,6 +22,11 @@ import {
   parseUploadedReport,
   type ParsedReport,
 } from '../services/api';
+import {
+  categories as biomarkerCategories,
+  statusColor,
+  type Biomarker,
+} from '../data/biomarkers';
 import { sampleReports } from '../data/reports';
 
 /**
@@ -41,6 +50,14 @@ type FailureState = {
   fileName: string;
 };
 
+/** Success-but-unconfirmed: the parser produced N markers and we're
+ *  waiting on the user to verify before committing the report. */
+type ConfirmState = {
+  biomarkers: Biomarker[];
+  fileName: string;
+  rawText?: string;
+};
+
 export default function ProcessingPage() {
   const { reports, markReportReady, removeReport, addReport } = useReports();
   const { replace, navigate } = useNavigation();
@@ -53,6 +70,11 @@ export default function ProcessingPage() {
   const [stepProgress, setStepProgress] = useState(0);
   const [overall, setOverall] = useState(0);
   const [failure, setFailure] = useState<FailureState | null>(null);
+  /** Holds the parsed result after a successful extraction. We DON'T
+   *  navigate to /results until the user confirms — previously the
+   *  app auto-routed and the user had no chance to verify what was
+   *  extracted before being shown a "your report" dashboard. */
+  const [pendingConfirm, setPendingConfirm] = useState<ConfirmState | null>(null);
 
   // StrictMode in dev double-mounts every effect. We track which
   // processingId we've *already started* parsing for, so the second
@@ -96,13 +118,16 @@ export default function ProcessingPage() {
       },
     ).then((result) => {
       if (result.parsedFromFile) {
-        // Real extraction. Patch the placeholder report and route to
-        // its results page.
-        markReportReady(processingId, {
+        // Real extraction succeeded — hand control to the user to
+        // verify what was extracted before we commit the report.
+        // The placeholder report stays in 'processing' state during
+        // the confirm step (so the locker doesn't show a half-baked
+        // entry); it's only marked ready when the user confirms.
+        setPendingConfirm({
           biomarkers: result.biomarkers,
-          lab: result.report.lab,
+          fileName,
+          rawText: result.rawText,
         });
-        replace({ type: 'results', reportId: processingId });
         return;
       }
       // Extraction failed. Roll back the placeholder report so we
@@ -139,12 +164,42 @@ export default function ProcessingPage() {
     navigate({ type: 'results', reportId: sample.id });
   };
 
+  /* ---- Confirm-step actions ---- */
+
+  const confirmExtractedValues = () => {
+    if (!processingId || !pendingConfirm) return;
+    markReportReady(processingId, {
+      biomarkers: pendingConfirm.biomarkers,
+      lab: 'Parsed from upload',
+    });
+    setPendingConfirm(null);
+    replace({ type: 'results', reportId: processingId });
+  };
+
+  const rejectAndRetry = () => {
+    if (processingId) removeReport(processingId);
+    setPendingConfirm(null);
+    replace({ type: 'upload' });
+  };
+
   /* ================================================================ */
   /* Render                                                             */
   /* ================================================================ */
 
   if (failure) {
     return <ParseFailedView failure={failure} onRetry={retryUpload} onSample={useSampleReport} />;
+  }
+
+  if (pendingConfirm) {
+    return (
+      <ConfirmExtractedValuesView
+        biomarkers={pendingConfirm.biomarkers}
+        fileName={pendingConfirm.fileName}
+        rawText={pendingConfirm.rawText}
+        onConfirm={confirmExtractedValues}
+        onReject={rejectAndRetry}
+      />
+    );
   }
 
   return (
@@ -397,13 +452,183 @@ function ParseFailedView({
           <div className="px-5 pb-5 -mt-1">
             <p className="text-[11.5px] text-muted leading-relaxed">
               Our parser currently recognises hormone, metabolic, heart, thyroid,
-              vitamin, liver, kidney, blood, and fertility markers from
-              text-layer PDFs and clear photos. Older scanned PDFs or
-              non-standard lab layouts may not parse — we don’t guess.
+              vitamin, liver, kidney, blood, electrolyte, inflammation, and
+              fertility markers from text-layer PDFs and clear photos. Older
+              scanned PDFs or non-standard lab layouts may not parse —
+              we don’t guess.
             </p>
           </div>
         </Card>
       </Container>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Inline confirm state — parser succeeded, user verifies before commit */
+/* ================================================================== */
+
+function ConfirmExtractedValuesView({
+  biomarkers,
+  fileName,
+  rawText,
+  onConfirm,
+  onReject,
+}: {
+  biomarkers: Biomarker[];
+  fileName: string;
+  rawText?: string;
+  onConfirm: () => void;
+  onReject: () => void;
+}) {
+  const [showRaw, setShowRaw] = useState(false);
+
+  // Group by category in canonical order so the user reads the values
+  // in the same sequence as the eventual report.
+  const grouped = useMemo(() => {
+    const byCategory = new Map<string, Biomarker[]>();
+    for (const m of biomarkers) {
+      const list = byCategory.get(m.category) ?? [];
+      list.push(m);
+      byCategory.set(m.category, list);
+    }
+    return biomarkerCategories
+      .filter((c) => byCategory.has(c.id))
+      .map((c) => ({ category: c, markers: byCategory.get(c.id) ?? [] }));
+  }, [biomarkers]);
+
+  return (
+    <div className="min-h-dvh bg-canvas flex flex-col pb-32">
+      <Container size="narrow" className="pt-6">
+        <Logo />
+      </Container>
+
+      <Container size="wide" className="flex-1 mt-4 lg:mt-8">
+        <div className="lg:max-w-3xl lg:mx-auto">
+          <Pill tone="gold" size="sm">
+            <Check size={11} strokeWidth={3} /> Extraction complete
+          </Pill>
+          <h1 className="font-display text-[26px] lg:text-[32px] leading-tight mt-3 text-balance text-ink">
+            We found {biomarkers.length}{' '}
+            {biomarkers.length === 1 ? 'value' : 'values'} in your report.
+          </h1>
+          <p className="mt-2 text-[14px] lg:text-[15px] text-ink-soft text-pretty">
+            Check each number against your report before continuing. We
+            deliberately only show what we could pull out — if a marker
+            you expected isn’t listed, it wasn’t in our catalog or our
+            parser couldn’t find a match.
+          </p>
+          <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-muted">
+            <span className="font-semibold uppercase tracking-[0.12em] text-[10px]">
+              File
+            </span>
+            <span className="break-all">{fileName}</span>
+          </div>
+        </div>
+
+        <div className="mt-6 lg:max-w-3xl lg:mx-auto grid gap-4">
+          {grouped.map(({ category, markers }) => (
+            <Card key={category.id} padded={false} className="overflow-hidden">
+              <div className="px-5 pt-4 pb-3 border-b border-line/70 flex items-center gap-2">
+                <span
+                  aria-label={category.name}
+                  role="img"
+                  className="text-[16px] leading-none"
+                >
+                  {category.icon}
+                </span>
+                <div className="font-display text-[15px] leading-tight">
+                  {category.name}
+                </div>
+                <Pill tone="neutral" size="sm" className="ml-auto">
+                  {markers.length}
+                </Pill>
+              </div>
+              <ul className="divide-y divide-line/60">
+                {markers.map((m) => {
+                  const c = statusColor(m.status);
+                  return (
+                    <li
+                      key={m.id}
+                      className="px-5 py-3 flex items-center gap-3"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-[13.5px] font-semibold text-ink leading-tight">
+                          {m.name}
+                        </div>
+                        <div className="text-[11.5px] text-muted mt-0.5">
+                          Reference {m.min}–{m.max}{m.unit ? ` ${m.unit}` : ''}
+                        </div>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="font-display text-[18px] leading-none text-ink tabular-nums">
+                          {m.value}
+                          {m.unit && (
+                            <span className="text-[11px] ml-1 text-muted font-sans font-medium">
+                              {m.unit}
+                            </span>
+                          )}
+                        </div>
+                        <div
+                          className={`mt-1 inline-flex items-center px-1.5 h-4 rounded-full text-[9px] font-bold uppercase tracking-[0.1em] ${c.bg} ${c.text}`}
+                        >
+                          {c.label}
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </Card>
+          ))}
+
+          {/* "Show what we read" diagnostic — useful for both the user
+              (seeing whether OCR garbled values they care about) and
+              for us debugging an off-by-one parse. Hidden by default so
+              the success state stays tidy. */}
+          {rawText && (
+            <details
+              className="mt-2 group"
+              onToggle={(e) => setShowRaw(e.currentTarget.open)}
+            >
+              <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted hover:text-ink transition-colors w-fit">
+                {showRaw ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                Show what we read from the file
+              </summary>
+              <pre className="mt-3 p-3 bg-surface border border-line rounded-[12px] text-[11px] text-ink-soft leading-relaxed whitespace-pre-wrap max-h-[280px] overflow-y-auto font-mono">
+                {rawText.slice(0, 8000)}
+                {rawText.length > 8000 && '\n…(truncated)'}
+              </pre>
+            </details>
+          )}
+        </div>
+      </Container>
+
+      {/* Sticky bottom CTAs — fixed so they stay visible on long lists. */}
+      <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-4 pb-4 safe-bottom border-t border-line/70">
+        <Container size="narrow">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch gap-2">
+            <Button
+              size="lg"
+              variant="secondary"
+              leading={<RotateCcw size={14} />}
+              onClick={onReject}
+              responsiveFullWidth
+            >
+              Wrong file — start over
+            </Button>
+            <Button
+              size="lg"
+              variant="primary"
+              trailing={<ArrowRight size={18} />}
+              onClick={onConfirm}
+              fullWidth
+            >
+              Looks right — see my report
+            </Button>
+          </div>
+        </Container>
+      </div>
     </div>
   );
 }
