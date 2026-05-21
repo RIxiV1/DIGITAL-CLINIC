@@ -292,46 +292,14 @@ export async function parseUploadedReport(
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB — generous for lab PDFs
 const ACCEPTED_MIME_PREFIXES = ['application/pdf', 'image/'];
 
-/**
- * Substrings we expect to find in any genuine lab-report filename. The
- * heuristic is intentionally permissive — "pdf" alone qualifies every
- * PDF file, so most legitimate uploads pass. Where it fails is on
- * camera-roll names like "IMG_1234.jpg" or "screenshot.png" that give
- * us no signal at all that the user is uploading a lab document.
- *
- * Used by `validateUpload` to short-circuit before the (expensive,
- * simulated) parsing pipeline runs.
- */
-export const LAB_FILENAME_INDICATORS = [
-  'report',
-  'blood',
-  'formen',
-  'lab',
-  'test',
-  'pdf',
-  'hormone',
-] as const;
-
 export type FileValidationError =
   | { kind: 'empty'; message: string }
   | { kind: 'type'; message: string }
-  | { kind: 'size'; message: string }
-  | {
-      kind: 'unrecognized';
-      message: string;
-      /** Display-only filename, lowercased for the error copy. */
-      filename: string;
-    };
+  | { kind: 'size'; message: string };
 
 export type FileValidationResult =
   | { ok: true; file: File }
   | { ok: false; error: FileValidationError };
-
-/** True if the filename contains at least one indicator string. */
-export function isLikelyLabReport(filename: string): boolean {
-  const lower = filename.toLowerCase();
-  return LAB_FILENAME_INDICATORS.some((needle) => lower.includes(needle));
-}
 
 /**
  * Synchronous validation — runs the moment a file is selected, so the
@@ -339,10 +307,14 @@ export function isLikelyLabReport(filename: string): boolean {
  * there's no network involved; pretending there is would just add
  * pointless delay before the error message renders.
  *
- * Order matters: empty → type → size → filename heuristic. The
- * heuristic is the LAST gate so the user sees a coherent reason rather
- * than e.g. "your image was rejected for being an image AND for not
- * looking like a report."
+ * Previously this gate also ran a "filename looks like a lab report"
+ * heuristic (rejected anything not containing one of "report / blood /
+ * lab / test / hormone / pdf" in the filename). That was hostile UX —
+ * iOS camera-roll uploads (IMG_4421.jpg) and screenshots were all
+ * pre-rejected before the parser ever saw them. The parser now self-
+ * validates by reporting `no-matches` when it extracts zero markers,
+ * which gives the user a real error grounded in actual content — not
+ * a guess at the filename. The filename heuristic is gone.
  */
 export function validateUpload(file: File | null): FileValidationResult {
   if (!file) {
@@ -367,19 +339,6 @@ export function validateUpload(file: File | null): FileValidationResult {
       error: {
         kind: 'size',
         message: 'That file is over 20 MB — please pick a smaller one.',
-      },
-    };
-  }
-  if (!isLikelyLabReport(file.name)) {
-    return {
-      ok: false,
-      error: {
-        kind: 'unrecognized',
-        filename: file.name,
-        message:
-          "We couldn’t identify this file as a lab or hormone report. " +
-          'The parser looks for lab-style filenames containing words like ' +
-          '"report", "blood", "lab", "hormone", or "test".',
       },
     };
   }

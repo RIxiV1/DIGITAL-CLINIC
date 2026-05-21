@@ -6,9 +6,7 @@ import {
   FileText,
   Image as ImageIcon,
   Info,
-  RotateCcw,
   ShieldCheck,
-  Sparkles,
   UploadCloud,
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -16,7 +14,7 @@ import Card from '../components/Card';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import { useNavigation, useReports } from '../AppContext';
-import { makeReport, sampleReports } from '../data/reports';
+import { makeReport } from '../data/reports';
 import {
   setPendingUpload,
   validateUpload,
@@ -27,19 +25,20 @@ import {
  * Selecting + validating a lab report before handing it off to the
  * processing pipeline.
  *
- * Failure modes the user can hit, in order of likelihood:
- *   - type   → tried to upload .docx, .heic, etc.
- *   - size   → file > 20 MB
- *   - unrecognized → filename doesn't look like a lab report (camera-
- *                    roll names like IMG_1234.jpg fall here)
+ * Validation is mime-type + size only — we used to also run a
+ * "filename looks like a lab report" heuristic and reject IMG_4421.jpg
+ * before parsing, but that was hostile UX for users uploading a photo
+ * of a real report with a camera-roll name. The parser itself now
+ * reports zero-match cases via the ProcessingPage error state, which
+ * is grounded in actual content rather than a guess at the filename.
  *
- * "type" and "size" surface as a thin inline alert above the dropzone.
- * "unrecognized" surfaces as a full clinical-error card with two recovery
- * paths — try a different file, or jump straight to a sample report so
- * the user can keep exploring the product without finding a real one.
+ * Remaining failure modes both surface as a thin inline alert above
+ * the dropzone:
+ *   - type → tried to upload .docx / .heic / anything not PDF or image
+ *   - size → file > 20 MB
  */
 export default function UploadPage() {
-  const { reports, addReport } = useReports();
+  const { addReport } = useReports();
   const { replace, navigate } = useNavigation();
   const inputRef = useRef<HTMLInputElement | null>(null);
   /** Keep the validated File around so we can hand it to the parser
@@ -81,30 +80,6 @@ export default function UploadPage() {
     replace({ type: 'processing' });
   };
 
-  /**
-   * Recovery path when the filename heuristic rejects the upload. Loads
-   * the first curated sample into the user's locker (if not already
-   * there) and routes them to its results page, so they don't dead-end
-   * on the error screen.
-   */
-  const loadSampleFallback = () => {
-    const sample = sampleReports[0];
-    if (!reports.some((r) => r.id === sample.id)) {
-      addReport(sample);
-    }
-    setError(null);
-    navigate({ type: 'results', reportId: sample.id });
-  };
-
-  const resetAndPickAgain = () => {
-    setError(null);
-    setFileName(null);
-    // Open the file picker once the error card has dismounted so the
-    // OS dialog feels like a continuation of the user's action.
-    requestAnimationFrame(() => inputRef.current?.click());
-  };
-
-  const isClinicalError = error?.kind === 'unrecognized';
   const isInlineError =
     error?.kind === 'type' || error?.kind === 'size' || error?.kind === 'empty';
 
@@ -139,89 +114,17 @@ export default function UploadPage() {
           </p>
         </div>
 
-        {/* The clinical error replaces the dropzone entirely — it's a
-            modal-style interruption, not a passing alert. The dropzone
-            re-appears once the user clicks "Try a different file". */}
-        <AnimatePresence mode="wait">
-          {isClinicalError && error.kind === 'unrecognized' ? (
-            <motion.div
-              key="clinical-error"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25 }}
-            >
-              <Card padded={false} className="overflow-hidden">
-                <div
-                  role="alert"
-                  aria-live="assertive"
-                  className="p-6 border-b border-concern/20 bg-concern-soft/60"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="grid place-items-center w-11 h-11 rounded-2xl bg-concern/15 text-concern shrink-0">
-                      <AlertTriangle size={20} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-concern">
-                        Parsing failed
-                      </div>
-                      <h2 className="font-display text-[20px] leading-tight text-ink mt-1">
-                        We couldn’t read this as a lab report.
-                      </h2>
-                      <p className="mt-2 text-[13.5px] leading-relaxed text-ink-soft">
-                        {error.message}
-                      </p>
-                      <div className="mt-3 rounded-[10px] bg-surface border border-line/70 px-3 py-2 text-[12px] text-muted break-all">
-                        <span className="font-bold uppercase tracking-[0.12em] text-[10px] text-muted block mb-0.5">
-                          File
-                        </span>
-                        {error.filename}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-5 grid sm:grid-cols-2 gap-2.5">
-                  <Button
-                    size="md"
-                    variant="primary"
-                    leading={<RotateCcw size={14} />}
-                    onClick={resetAndPickAgain}
-                    fullWidth
-                  >
-                    Try a different file
-                  </Button>
-                  <Button
-                    size="md"
-                    variant="secondary"
-                    leading={<Sparkles size={14} />}
-                    onClick={loadSampleFallback}
-                    fullWidth
-                  >
-                    Use sample report
-                  </Button>
-                </div>
-
-                <div className="px-5 pb-5 -mt-1">
-                  <p className="text-[11.5px] text-muted leading-relaxed">
-                    The parser scans filenames for lab-style words
-                    (report, blood, lab, hormone, test). If your file is a
-                    real lab document with a generic camera-roll name,
-                    just rename it (e.g. <em>blood-test.pdf</em>) and try
-                    again.
-                  </p>
-                </div>
-              </Card>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="dropzone"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ duration: 0.25 }}
-            >
-              <Card padded={false} className="overflow-hidden">
+        {/* Single dropzone — filename-heuristic gate removed, so we
+            no longer swap in a clinical-error card pre-parse. Any
+            "we couldn't read this" message now lives in
+            ProcessingPage's ParseFailedView, grounded in actual
+            extraction results rather than a filename guess. */}
+        <motion.div
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25 }}
+        >
+          <Card padded={false} className="overflow-hidden">
                 <div
                   onDragEnter={(e) => {
                     e.preventDefault();
@@ -288,9 +191,7 @@ export default function UploadPage() {
                   </button>
                 </div>
               </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        </motion.div>
 
         {/* Inline alert for type/size errors — keeps the dropzone in
             place since these are usually one-character fixes the user
@@ -374,7 +275,7 @@ export default function UploadPage() {
           <Button
             size="lg"
             fullWidth
-            disabled={!fileName || isClinicalError}
+            disabled={!fileName}
             onClick={startProcessing}
             trailing={<ArrowRight size={18} />}
           >
