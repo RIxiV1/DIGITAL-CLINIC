@@ -373,7 +373,7 @@ function whyForNutritional(q: QuizAnswers): string {
   return 'Cheap to test, easy to fix. Many fatigue and mood complaints have a nutritional cause underneath.';
 }
 
-function whyForScreening(q: QuizAnswers, triggered: Marker[]): string {
+function whyForScreening(_q: QuizAnswers, triggered: Marker[]): string {
   if (triggered.includes(M.PSA)) {
     return 'PSA is a routine prostate check from 40 onward — a simple blood marker, good to have a baseline.';
   }

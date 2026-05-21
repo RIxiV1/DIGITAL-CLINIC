@@ -1,32 +1,18 @@
 /**
- * Mock async data layer.
+ * Upload-pipeline plumbing.
  *
- * This file is the seam between the UI and "the network". Pages and
- * contexts that need data should import from here rather than from
- * `../data/*` directly, so the day we point at a real REST/GraphQL
- * endpoint, only this file changes.
+ * This file owns the bridge between the UploadPage's File handoff and
+ * the ProcessingPage's parser invocation, plus the staged-progress
+ * choreography that paces the UI while parsing runs.
  *
- * What lives here:
- *   - async fetchers that simulate realistic clinical-network latency
- *   - mutation helpers (createReport, deleteReport, ...) with the same
- *     shape a real backend would offer
- *   - the multi-step parsing pipeline used by the upload flow
- *
- * What does NOT live here:
- *   - pure presentational helpers (statusColor, summarizeStatuses,
- *     bottomLineFor, etc.) — those don't hit a network and there's no
- *     value in making them async.
+ * Pure data lives in ../data/*, presentational helpers (statusColor,
+ * summarizeStatuses, bottomLineFor, …) live with the biomarkers they
+ * describe. This file is the only one that needs to know about parsing
+ * lifecycle.
  */
 
-import {
-  sampleBiomarkers,
-  type Biomarker,
-} from '../data/biomarkers';
-import {
-  initialReports,
-  sampleReports,
-  type Report,
-} from '../data/reports';
+import { type Biomarker } from '../data/biomarkers';
+import { type Report } from '../data/reports';
 import { formatDate } from '../utils/uiUtils';
 import { parsePdfFile } from './pdfParser';
 
@@ -55,54 +41,10 @@ export function consumePendingUpload(): File | null {
 }
 
 /* ------------------------------------------------------------------ */
-/* Latency simulation                                                  */
-/* ------------------------------------------------------------------ */
-
-/**
- * Realistic-feeling jitter for any single "request". A flat constant
- * delay feels fake — real APIs have variance. We sample uniformly in a
- * tight band so most calls feel snappy but not instant.
- */
-function jitter(min: number, max: number): number {
-  return min + Math.random() * (max - min);
-}
-
-/** Wrap a value in a promise that resolves after a randomized delay. */
-function withLatency<T>(value: T, min = 220, max = 460): Promise<T> {
-  return new Promise((resolve) => {
-    setTimeout(() => resolve(value), jitter(min, max));
-  });
-}
-
-/* ------------------------------------------------------------------ */
-/* Reports                                                             */
-/* ------------------------------------------------------------------ */
-
-export async function listReports(): Promise<Report[]> {
-  return withLatency([...initialReports]);
-}
-
-export async function listSampleReports(): Promise<Report[]> {
-  return withLatency([...sampleReports]);
-}
-
-export async function getReport(id: string): Promise<Report | null> {
-  const found =
-    initialReports.find((r) => r.id === id) ??
-    sampleReports.find((r) => r.id === id) ??
-    null;
-  return withLatency(found);
-}
-
-export async function getSampleReport(): Promise<Report> {
-  return withLatency(sampleReports[0]);
-}
-
-/* ------------------------------------------------------------------ */
 /* Upload pipeline                                                     */
 /* ------------------------------------------------------------------ */
 
-export type ParseStepId = 'metadata' | 'bounds' | 'ocr' | 'align';
+type ParseStepId = 'metadata' | 'bounds' | 'ocr' | 'align';
 
 export type ParseStep = {
   id: ParseStepId;

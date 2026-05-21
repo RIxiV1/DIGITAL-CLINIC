@@ -1,5 +1,5 @@
 export type BiomarkerStatus = 'good' | 'attention' | 'concern';
-export type GradientDirection = 'band' | 'up' | 'down';
+type GradientDirection = 'band' | 'up' | 'down';
 
 /** A single prior reading for a marker — ordered earliest → latest, NOT
  *  including the current `value`. Lets the dashboard render trends and
@@ -480,7 +480,7 @@ export function bottomLineFor(markers: Biomarker[] = sampleBiomarkers) {
 /* Trend helpers — power the dashboard's headline + sparklines         */
 /* ------------------------------------------------------------------ */
 
-export type TrendDirection = 'up' | 'down' | 'stable';
+type TrendDirection = 'up' | 'down' | 'stable';
 
 /** Returns the trend of `value` vs the most recent historical reading,
  *  or null if there's no history. Threshold below is intentionally

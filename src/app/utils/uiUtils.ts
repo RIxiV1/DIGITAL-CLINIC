@@ -23,34 +23,6 @@ export function formatDate(date: Date | string | null | undefined): string {
   return d.toLocaleDateString('en-IN', DATE_OPTS);
 }
 
-/** "Today" in the same format. */
-export function todayLabel(): string {
-  return formatDate(new Date());
-}
-
-/**
- * Rounds clinical numbers to one decimal place to suppress OCR
- * artefacts like "7.707" while preserving meaningful precision.
- * Integers pass through untouched.
- */
-export function displayValue(
-  value: number | string | null | undefined,
-): number | string {
-  if (value === null || value === undefined) return '—';
-  let n: number;
-  if (typeof value === 'number') {
-    n = value;
-  } else {
-    const parsed = parseFloat(value);
-    if (Number.isNaN(parsed)) return value;
-    n = parsed;
-  }
-  if (Number.isInteger(n)) return n;
-  const decimalsStr = String(n).split('.')[1];
-  const decimals = decimalsStr?.length ?? 0;
-  return decimals > 1 ? Math.round(n * 10) / 10 : n;
-}
-
 /**
  * Human-friendly KB / MB rendering for the Profile "My data" panel.
  */

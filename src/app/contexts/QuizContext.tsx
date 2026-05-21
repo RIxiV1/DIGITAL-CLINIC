@@ -43,7 +43,7 @@ export type RiskTier = 'low' | 'moderate' | 'high';
 
 /** Human-facing label for each clinical system. Kept in code (not the
  *  data files) because it's tied to the algorithm, not the quiz copy. */
-export const SYSTEM_LABELS: Record<RiskSystemId, string> = {
+const SYSTEM_LABELS: Record<RiskSystemId, string> = {
   hypogonadism: 'Hypogonadism (low T) indicators',
   erectileDysfunction: 'Erectile-function indicators',
   cardiovascular: 'Cardiovascular risk indicators',
