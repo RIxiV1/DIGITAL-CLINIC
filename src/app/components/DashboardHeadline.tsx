@@ -1,6 +1,6 @@
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   formatDelta,
   getPreviousValue,
@@ -19,24 +19,40 @@ type Props = {
   onPrimaryCTA: () => void;
 };
 
+function gradientForHour(h: number): string {
+  if (h < 12) {
+    // Morning — warm sunrise edge
+    return 'linear-gradient(135deg, var(--color-indigo-700) 0%, var(--color-indigo-600) 45%, var(--color-gold-700) 100%)';
+  }
+  if (h < 18) {
+    // Afternoon — confident brand indigo
+    return 'linear-gradient(135deg, var(--color-indigo-700) 0%, var(--color-indigo-600) 60%, var(--color-blue-700) 100%)';
+  }
+  // Evening — cool, deep
+  return 'linear-gradient(135deg, var(--color-indigo-900) 0%, var(--color-indigo-700) 55%, var(--color-blue-800) 100%)';
+}
+
 /** Time-of-day-aware gradient. Morning warms toward gold; afternoon is
- *  pure brand indigo; evening cools toward deep blue. The user gets a
- *  subtle "this is a different time of day" feel each visit without
- *  any explicit messaging. */
+ *  pure brand indigo; evening cools toward deep blue.
+ *
+ *  Recomputes once per hour while the page is open — without this, a
+ *  user who opens the dashboard at 11:55am sees morning warmth past
+ *  noon. The interval is light (one Date.getHours() check, ~no work)
+ *  and is registered against the tab's wall clock so DST / sleep-wake
+ *  don't desync it. */
 function useGradientForTimeOfDay() {
-  return useMemo(() => {
-    const h = new Date().getHours();
-    if (h < 12) {
-      // Morning — warm sunrise edge
-      return 'linear-gradient(135deg, var(--color-indigo-700) 0%, var(--color-indigo-600) 45%, var(--color-gold-700) 100%)';
-    }
-    if (h < 18) {
-      // Afternoon — confident brand indigo
-      return 'linear-gradient(135deg, var(--color-indigo-700) 0%, var(--color-indigo-600) 60%, var(--color-blue-700) 100%)';
-    }
-    // Evening — cool, deep
-    return 'linear-gradient(135deg, var(--color-indigo-900) 0%, var(--color-indigo-700) 55%, var(--color-blue-800) 100%)';
+  const [hour, setHour] = useState(() => new Date().getHours());
+  useEffect(() => {
+    // Check once a minute — cheap, and avoids the "user crossed an
+    // hour boundary 59 minutes ago and the gradient is stale" race
+    // that a longer interval would introduce.
+    const id = window.setInterval(() => {
+      const h = new Date().getHours();
+      setHour((prev) => (prev === h ? prev : h));
+    }, 60_000);
+    return () => window.clearInterval(id);
   }, []);
+  return useMemo(() => gradientForHour(hour), [hour]);
 }
 
 /**
