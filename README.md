@@ -43,49 +43,9 @@ A premium, medical-grade patient health dashboard designed with clinical clarity
 | **Tesseract.js** | Optical Character Recognition | In-browser OCR to scan, extract, and parse text from images of paper lab documents. |
 | **pdfjs-dist** | PDF Parsing | Extract text directly from digital PDF lab reports. |
 
----
-
-## Project Architecture
-
-The codebase follows a structured, modular design pattern for separation of concerns:
-
-```
-DIGITAL CLINIC/
-├── public/                 # Static assets
-├── src/
-│   ├── main.tsx            # Main application entrypoint
-│   ├── index.css           # Global stylesheet containing core design tokens & styles
-│   └── app/
-│       ├── App.tsx         # Root component containing base layout and page router
-│       ├── AppContext.tsx  # Global configuration state
-│       ├── components/     # Reusable UI & presentation components
-│       │   ├── BiomarkerBar.tsx      # Color-coded biomarker ranges
-│       │   ├── HealthRing.tsx        # Interactive circular health score SVG
-│       │   ├── Sparkline.tsx         # Miniature historical charts
-│       │   └── ...
-│       ├── contexts/       # React Contexts for global state management
-│       │   ├── NavigationContext.tsx # Application routing & navigation state
-│       │   ├── QuizContext.tsx       # Symptom quiz state machine
-│       │   └── ReportsContext.tsx    # Parsed and manual lab reports state
-│       ├── data/           # Reference datasets, medical ranges, and quiz models
-│       │   ├── biomarkers.ts         # Clinical ranges, thresholds, & text descriptions
-│       │   ├── quiz.ts               # Diagnostic questions & scoring logic
-│       │   └── ...
-│       ├── pages/          # Full page layouts and container components
-│       │   ├── LandingPage.tsx       # Hero dashboard entry
-│       │   ├── UploadPage.tsx        # Drag-and-drop file uploader
-│       │   ├── ProcessingPage.tsx    # OCR/Parsing progress indicator
-│       │   ├── ReportResultsPage.tsx # Tabbed breakdown of biomarker reports
-│       │   ├── QuizPage.tsx          # Symptom assessment step-by-step
-│       │   └── ...
-│       ├── services/       # Core business logic and integrations
-│       │   ├── pdfParser.ts          # Core engine for OCR/PDF text extraction
-│       │   └── api.ts                # API client helpers & mock backend
-│       └── utils/          # Shared utility helper methods
-└── tsconfig.json           # TypeScript configuration details
-```
 
 ---
+
 
 ## Getting Started
 
