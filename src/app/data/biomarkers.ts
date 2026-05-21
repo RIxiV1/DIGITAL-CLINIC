@@ -735,7 +735,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'total-chol',
     name: 'Total Cholesterol',
-    aliases: ['Total Cholesterol', 'Cholesterol Total', 'Cholesterol, Total', 'Cholesterol'],
+    // Note: bare 'Cholesterol' is intentionally NOT in this list —
+    // it's a substring of 'LDL Cholesterol' and 'HDL Cholesterol',
+    // and the matcher's first-match-wins logic would otherwise
+    // capture LDL's value as the total-cholesterol value.
+    aliases: ['Total Cholesterol', 'Cholesterol Total', 'Cholesterol, Total', 'Cholesterol - Total'],
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 0, max: 200,
     category: 'heart', direction: 'down',
@@ -790,7 +794,13 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'vit-d',
     name: 'Vitamin D (25-OH)',
-    aliases: ['Vitamin D', '25-OH Vitamin D', '25-Hydroxyvitamin D', 'Vitamin D 25-OH', 'Vitamin D, 25-OH', '25(OH)D'],
+    // More-specific aliases listed first so the matcher prefers them.
+    // Bare 'Vitamin D' is kept last and intentionally — most lab
+    // reports include the "25-OH" qualifier, so the parenthesised
+    // forms should win. Tightened the unit gate (disallowing digits
+    // between value and unit) prevents 'Vitamin D' from capturing
+    // the '25' inside '(25-OH)' as the value.
+    aliases: ['Vitamin D (25-OH)', 'Vitamin D, 25-OH', 'Vitamin D 25-OH', '25-OH Vitamin D', '25-Hydroxyvitamin D', '25(OH)D', 'Vitamin D'],
     unit: 'ng/mL', unitAliases: ['ng/ml'],
     min: 30, max: 100, optimalMin: 40, optimalMax: 80,
     category: 'vitamins', direction: 'up',

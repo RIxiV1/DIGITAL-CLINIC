@@ -383,7 +383,13 @@ function extractMarkerValue(
 ): number | null {
   const between = '[\\s\\S]{0,80}?';
   const numPattern = '(-?\\d+(?:\\.\\d+)?)';
-  const tail = '[\\s\\S]{0,30}?';
+  // Between number and unit: no digits or newlines allowed. Without this
+  // restriction, "Vitamin D (25-OH)    28      ng/mL" matched by the bare
+  // 'Vitamin D' alias would capture '25' (from '25-OH') as the value
+  // because 'ng/mL' appears within 30 chars later. Disallowing digits
+  // in the tail forces the regex to either bind to the value
+  // immediately or fail this alias and move on.
+  const tail = '[^\\d\\n]{0,30}?';
 
   const unitTokens = template.unit
     ? [template.unit, ...(template.unitAliases ?? [])]
