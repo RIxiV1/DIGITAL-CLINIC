@@ -155,29 +155,36 @@ const CONTENT: Record<LegalKind, Doc> = {
     updated: 'May 2026',
     sections: [
       {
-        heading: 'What we collect',
+        heading: 'Nothing leaves your device',
         paragraphs: [
-          'Quiz answers (age band, activity, symptoms, priorities) and uploaded lab reports. That is all.',
-          'We do not require an email or phone number for the quiz. Your session is identified by an anonymous local ID stored in your browser.',
+          'Everything you enter — quiz answers, uploaded lab reports, the markers we extract — stays in your browser. There is no server, no cloud sync, and no telemetry. We do not have a database of users because we do not run one.',
+          'The parser (PDF text + OCR) runs entirely in your browser using WebAssembly. Your lab reports are never uploaded anywhere.',
         ],
       },
       {
-        heading: 'What we do with it',
+        heading: 'What we store, and where',
         paragraphs: [
-          'We use your quiz answers to recommend the right tests, and your lab results to translate the numbers into plain English and surface trends over time. Nothing else.',
-          'We never sell your data. We never share it with insurers, employers, or advertisers.',
+          'Quiz answers, uploaded report metadata, extracted biomarker values, and the anonymous local ID that identifies your session — all kept in your browser\'s localStorage under keys prefixed dc_*.',
+          'Because storage is per-browser-per-device, your data does not sync across phones, laptops, or browsers. Clearing your browser data (or using private/incognito mode) will wipe it.',
         ],
       },
       {
-        heading: 'How long we keep it',
+        heading: 'What this protects against (and what it doesn\'t)',
         paragraphs: [
-          'Lab reports stay in your locker until you delete them. You can delete any upload — and your entire account — at any time from Profile › My data & exports.',
+          'Because there is no server, there is nothing for us — or anyone breaching us — to leak. We cannot sell, share, or accidentally expose data we never received.',
+          'However: anyone with access to your unlocked device can open the app and read your data, and any browser extension you have installed can read localStorage on this site. We do not encrypt the values. Use this product on a device you trust.',
         ],
       },
       {
-        heading: 'Who you can ask',
+        heading: 'Deletion',
         paragraphs: [
-          'For deletion, data export, or any privacy question, write to hello@formen.co.in. We respond within 7 business days.',
+          'Profile › My data & exports clears every dc_* key from your browser in one tap. There is nothing for us to delete on our end — see above.',
+        ],
+      },
+      {
+        heading: 'Questions',
+        paragraphs: [
+          'Write to hello@formen.co.in. We reply within 7 business days.',
         ],
       },
     ],
