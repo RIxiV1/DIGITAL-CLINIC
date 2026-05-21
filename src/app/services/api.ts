@@ -183,6 +183,12 @@ export type ParsedReport = {
    *  what came out of pdfjs/Tesseract before we mark it as their
    *  report. Never persisted (may contain PII). */
   rawText?: string;
+  /** Label-value-unit rows the parser saw but couldn't match against
+   *  the catalog. Empty when extraction failed or yielded a complete
+   *  match. Surfaced in the confirm step so the user knows whether a
+   *  short list reflects an unusual report or a parser gap. Never
+   *  persisted. */
+  unrecognizedRows?: string[];
 };
 
 /**
@@ -213,8 +219,8 @@ export async function parseUploadedReport(
   // or image OCR depending on file.type. We don't await it yet — the
   // visual stages run regardless so the UX is paced.
   type ExtractionOutcome =
-    | { biomarkers: Biomarker[]; rawText: string }
-    | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error'; message?: string; rawText?: string };
+    | { biomarkers: Biomarker[]; rawText: string; unrecognizedRows: string[] }
+    | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error'; message?: string; rawText?: string; unrecognizedRows?: string[] };
 
   let extractionDone = false;
   const extractionPromise: Promise<ExtractionOutcome> =
@@ -224,8 +230,8 @@ export async function parseUploadedReport(
       ? parsePdfFile(input.file)
           .then((r): ExtractionOutcome =>
             r.biomarkers.length > 0
-              ? { biomarkers: r.biomarkers, rawText: r.rawText }
-              : { biomarkers: null, reason: 'no-matches', rawText: r.rawText },
+              ? { biomarkers: r.biomarkers, rawText: r.rawText, unrecognizedRows: r.unrecognizedRows }
+              : { biomarkers: null, reason: 'no-matches', rawText: r.rawText, unrecognizedRows: r.unrecognizedRows },
           )
           .catch((err: unknown): ExtractionOutcome => ({
             biomarkers: null,
@@ -311,7 +317,13 @@ export async function parseUploadedReport(
     biomarkers,
   };
   if (parsedFromFile && 'rawText' in outcome) {
-    return { report, biomarkers, parsedFromFile: true, rawText: outcome.rawText };
+    return {
+      report,
+      biomarkers,
+      parsedFromFile: true,
+      rawText: outcome.rawText,
+      unrecognizedRows: outcome.unrecognizedRows,
+    };
   }
   // outcome.biomarkers === null branch — narrow to the failure variant
   // so reason/message are visible to TS.
@@ -325,6 +337,7 @@ export async function parseUploadedReport(
     failureReason: outcome.reason,
     errorMessage: outcome.message,
     rawText: outcome.rawText,
+    unrecognizedRows: outcome.unrecognizedRows,
   };
 }
 

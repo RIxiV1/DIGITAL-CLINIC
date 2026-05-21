@@ -57,6 +57,10 @@ type ConfirmState = {
   biomarkers: Biomarker[];
   fileName: string;
   rawText?: string;
+  /** Value-shaped rows the parser saw but couldn't map to the catalog.
+   *  Surfaced in the confirm step so a short extracted list reads as
+   *  "your lab uses unusual markers" rather than "the parser is bad". */
+  unrecognizedRows?: string[];
 };
 
 export default function ProcessingPage() {
@@ -137,6 +141,7 @@ export default function ProcessingPage() {
           biomarkers: result.biomarkers,
           fileName,
           rawText: result.rawText,
+          unrecognizedRows: result.unrecognizedRows,
         });
         return;
       }
@@ -218,6 +223,7 @@ export default function ProcessingPage() {
         biomarkers={pendingConfirm.biomarkers}
         fileName={pendingConfirm.fileName}
         rawText={pendingConfirm.rawText}
+        unrecognizedRows={pendingConfirm.unrecognizedRows}
         onConfirm={confirmExtractedValues}
         onReject={rejectAndRetry}
       />
@@ -507,12 +513,14 @@ function ConfirmExtractedValuesView({
   biomarkers,
   fileName,
   rawText,
+  unrecognizedRows,
   onConfirm,
   onReject,
 }: {
   biomarkers: Biomarker[];
   fileName: string;
   rawText?: string;
+  unrecognizedRows?: string[];
   onConfirm: () => void;
   onReject: () => void;
 }) {
@@ -616,6 +624,42 @@ function ConfirmExtractedValuesView({
               </ul>
             </Card>
           ))}
+
+          {/* Unrecognized-rows notice — lab values we detected (label +
+              number + recognized unit) but didn't have in the catalog.
+              This is the difference between "your parser missed things"
+              and "your lab uses markers we don't cover yet". Only shown
+              when there's at least one such row. */}
+          {unrecognizedRows && unrecognizedRows.length > 0 && (
+            <Card padded={false} className="overflow-hidden border-amber-200/70">
+              <div className="px-5 pt-4 pb-3 border-b border-amber-100 bg-amber-50/40 flex items-center gap-2">
+                <span aria-hidden role="img" className="text-[15px] leading-none">
+                  🔍
+                </span>
+                <div className="font-display text-[14px] leading-tight">
+                  We saw these rows but couldn’t map them
+                </div>
+                <Pill tone="neutral" size="sm" className="ml-auto">
+                  {unrecognizedRows.length}
+                </Pill>
+              </div>
+              <div className="px-5 py-3">
+                <p className="text-[12.5px] text-ink-soft leading-relaxed mb-2">
+                  Your report mentioned these values, but they aren’t in
+                  our catalog yet. Nothing was discarded — they just won’t
+                  appear in the dashboard. If any of these look important
+                  to you, let us know and we’ll add them.
+                </p>
+                <ul className="text-[12.5px] font-mono text-ink-soft space-y-1">
+                  {unrecognizedRows.map((row, i) => (
+                    <li key={`${row}-${i}`} className="break-words">
+                      · {row}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </Card>
+          )}
 
           {/* "Show what we read" diagnostic — useful for both the user
               (seeing whether OCR garbled values they care about) and

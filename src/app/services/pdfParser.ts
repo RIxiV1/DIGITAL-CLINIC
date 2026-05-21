@@ -436,6 +436,89 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
 }
 
 /**
+ * Lazy-built regex that matches a single label-value-unit triplet
+ * anchored by a unit token that appears anywhere in the catalog.
+ *
+ * Why anchor on the unit: lab metadata rows ("Patient ID: 12345",
+ * "Age: 35 yrs", "Page 2 of 5") rarely carry a clinical unit, so
+ * gating on known units kills almost all the false positives without
+ * needing a more sophisticated layout parser.
+ */
+let unknownRowRegex: RegExp | null = null;
+function getUnknownRowRegex(): RegExp {
+  if (unknownRowRegex) return unknownRowRegex;
+  const units = new Set<string>();
+  for (const t of biomarkerCatalog) {
+    if (t.unit) units.add(t.unit);
+    for (const u of t.unitAliases ?? []) {
+      if (u.length > 0) units.add(u);
+    }
+  }
+  // Sort longer first so e.g. "ng/dL" wins over a substring "g/dL"
+  // when both could match.
+  const unitPattern = [...units]
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegex)
+    .join('|');
+  unknownRowRegex = new RegExp(
+    `([A-Za-z][\\w\\s\\(\\)\\-\\/\\.,'#]{2,50}?)\\s+(-?\\d+(?:\\.\\d+)?)\\s*(${unitPattern})\\b`,
+    'gi',
+  );
+  return unknownRowRegex;
+}
+
+/**
+ * Find label-value-unit rows in the text that the catalog didn't
+ * extract. Two-step heuristic:
+ *
+ *   1. Match every `<label> <number> <unit>` triplet where the unit is
+ *      known to the catalog. The unit gate kills most metadata rows.
+ *   2. Drop triplets whose (value, unit) pair already appears in the
+ *      extracted markers — we assume one numeric+unit pair per lab row.
+ *
+ * Returns up to 10 deduped rows. Surfaced in the confirm step so the
+ * user knows whether a short extraction list reflects an unusual report
+ * or a parser gap.
+ */
+export function findUnrecognizedRows(
+  text: string,
+  extracted: Biomarker[],
+): string[] {
+  const normalized = normalize(text);
+  const extractedByUnit = new Map<string, Set<number>>();
+  for (const m of extracted) {
+    const unit = (m.unit || '').toLowerCase();
+    if (!extractedByUnit.has(unit)) extractedByUnit.set(unit, new Set());
+    extractedByUnit.get(unit)!.add(m.value);
+  }
+
+  const seen = new Set<string>();
+  const out: string[] = [];
+  const re = getUnknownRowRegex();
+  // matchAll needs a fresh lastIndex on each call when reused.
+  re.lastIndex = 0;
+  for (const match of normalized.matchAll(re)) {
+    const label = match[1].trim().replace(/\s+/g, ' ');
+    const value = parseFloat(match[2]);
+    const unit = match[3];
+
+    if (extractedByUnit.get(unit.toLowerCase())?.has(value)) continue;
+    // Skip labels that are obviously not biomarker names — numeric
+    // prefixes, all-caps single words (likely section headers).
+    if (/^\d/.test(label)) continue;
+    if (label.length < 3) continue;
+
+    const key = `${label.toLowerCase()}::${value}::${unit.toLowerCase()}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+
+    out.push(`${label} ${value} ${unit}`);
+    if (out.length >= 10) break;
+  }
+  return out;
+}
+
+/**
  * Internal helpers exposed solely for unit testing. The three
  * reconstruction strategies and the normalize step are the most fragile
  * pieces of this file, but they shouldn't be part of the public API —
@@ -461,12 +544,17 @@ export type PdfParseResult = {
   /** Raw text we extracted — kept so the UI can surface a "what we
    *  read" diagnostic when extraction yields zero matches. */
   rawText: string;
+  /** Label-value-unit rows the parser saw but couldn't match to the
+   *  catalog. Surface in the confirm step so the user knows whether a
+   *  short list reflects an unusual report or a parser gap. */
+  unrecognizedRows: string[];
 };
 
 const EMPTY_RESULT: PdfParseResult = {
   biomarkers: [],
   source: 'pdf-text',
   rawText: '',
+  unrecognizedRows: [],
 };
 
 /**
@@ -537,10 +625,12 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // straight to OCR. Scanned PDFs hit this path.
     if (totalCharCount < MIN_USABLE_TEXT_LENGTH) {
       const ocrText = await runPdfOcr(pdf);
+      const ocrBiomarkers = extractBiomarkersFromText(ocrText);
       return {
-        biomarkers: extractBiomarkersFromText(ocrText),
+        biomarkers: ocrBiomarkers,
         source: 'pdf-ocr',
         rawText: ocrText,
+        unrecognizedRows: findUnrecognizedRows(ocrText, ocrBiomarkers),
       };
     }
 
@@ -579,6 +669,7 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
         source: 'pdf-text',
         strategy: winner.name,
         rawText: winner.text,
+        unrecognizedRows: findUnrecognizedRows(winner.text, winner.biomarkers),
       };
     }
 
@@ -586,10 +677,12 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // into-PDF reports with a thin text layer of metadata sometimes
     // hit this path.
     const ocrText = await runPdfOcr(pdf);
+    const ocrBiomarkers = extractBiomarkersFromText(ocrText);
     return {
-      biomarkers: extractBiomarkersFromText(ocrText),
+      biomarkers: ocrBiomarkers,
       source: 'pdf-ocr',
       rawText: ocrText,
+      unrecognizedRows: findUnrecognizedRows(ocrText, ocrBiomarkers),
     };
   } finally {
     // Release pdfjs worker buffers. Without this, repeated uploads on
@@ -600,9 +693,11 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
 
 async function parseImage(file: File): Promise<PdfParseResult> {
   const text = await runImageOcr(file);
+  const biomarkers = extractBiomarkersFromText(text);
   return {
-    biomarkers: extractBiomarkersFromText(text),
+    biomarkers,
     source: 'image-ocr',
     rawText: text,
+    unrecognizedRows: findUnrecognizedRows(text, biomarkers),
   };
 }

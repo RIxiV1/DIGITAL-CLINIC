@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractBiomarkersFromText } from './pdfParser';
+import { extractBiomarkersFromText, findUnrecognizedRows } from './pdfParser';
 
 /* ------------------------------------------------------------------ */
 /* Basic extraction                                                    */
@@ -275,5 +275,78 @@ describe('extractBiomarkersFromText — realistic lab fixture', () => {
     expect(byId.get('hba1c')?.status).toBe('good');
     // Triglycerides 145 < max of 150 → good
     expect(byId.get('tg')?.status).toBe('good');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* findUnrecognizedRows                                                */
+/* ------------------------------------------------------------------ */
+
+describe('findUnrecognizedRows', () => {
+  it('returns empty when the text has no value-like rows', () => {
+    expect(findUnrecognizedRows('This is just narrative text.', [])).toEqual([]);
+  });
+
+  it('surfaces a value-like row with a known unit but no catalog match', () => {
+    // Apolipoprotein B isn't in the catalog, but the unit mg/dL is.
+    // The row should surface as unrecognized.
+    const text = 'Apolipoprotein B 95 mg/dL';
+    const rows = findUnrecognizedRows(text, []);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toContain('Apolipoprotein B');
+    expect(rows[0]).toContain('95');
+    expect(rows[0]).toContain('mg/dL');
+  });
+
+  it('does not surface a row whose (value, unit) pair was extracted', () => {
+    // We extracted Hemoglobin 14.5 g/dL. The text contains the same
+    // value+unit pair, so it should not appear as unrecognized.
+    const text = 'Hemoglobin 14.5 g/dL';
+    const extracted = extractBiomarkersFromText(text);
+    expect(extracted).toHaveLength(1);
+    expect(findUnrecognizedRows(text, extracted)).toEqual([]);
+  });
+
+  it('ignores rows without a known unit (typical metadata)', () => {
+    const text = `
+      Patient ID: 12345
+      Age: 35 yrs
+      Page 2 of 5
+      Sample collected on 12 Apr 2026
+    `;
+    expect(findUnrecognizedRows(text, [])).toEqual([]);
+  });
+
+  it('surfaces unmatched rows alongside matched ones', () => {
+    // Mixed report: we catch Hemoglobin + LDL; Apolipoprotein B and
+    // Lipoprotein(a) should surface as unrecognized.
+    const text = `
+      Hemoglobin 14.5 g/dL
+      LDL Cholesterol 120 mg/dL
+      Apolipoprotein B 95 mg/dL
+      Lipoprotein(a) 32 mg/dL
+    `;
+    const extracted = extractBiomarkersFromText(text);
+    const rows = findUnrecognizedRows(text, extracted);
+    const joined = rows.join('\n');
+    expect(joined).toContain('Apolipoprotein B');
+    expect(joined).toContain('Lipoprotein');
+    expect(joined).not.toMatch(/Hemoglobin/);
+    expect(joined).not.toMatch(/LDL/);
+  });
+
+  it('dedupes when the same label-value-unit appears twice', () => {
+    const text = `
+      Apolipoprotein B 95 mg/dL
+      Apolipoprotein B 95 mg/dL
+    `;
+    const rows = findUnrecognizedRows(text, []);
+    expect(rows).toHaveLength(1);
+  });
+
+  it('caps output at 10 rows', () => {
+    const text = Array.from({ length: 25 }, (_, i) => `Marker${i} ${10 + i} mg/dL`).join('\n');
+    const rows = findUnrecognizedRows(text, []);
+    expect(rows.length).toBeLessThanOrEqual(10);
   });
 });
