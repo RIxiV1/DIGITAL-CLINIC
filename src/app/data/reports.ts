@@ -1,4 +1,8 @@
-import { sampleBiomarkers, type Biomarker } from './biomarkers';
+import {
+  sampleBiomarkers,
+  type Biomarker,
+  type BiomarkerReading,
+} from './biomarkers';
 import type { ReportBadge } from '../components/StatusBadge';
 import { formatDate } from '../utils/uiUtils';
 
@@ -8,7 +12,13 @@ export type Report = {
   id: string;
   name: string;
   lab: string;
+  /** Display-formatted upload date (e.g. "12 Apr 2026"). */
   uploadedOn: string;
+  /** ISO yyyy-mm-dd upload date — used for history-merge sorting and as
+   *  the BiomarkerReading.date when this report's values become history
+   *  for a future upload. Optional for legacy sample reports that
+   *  predate the field. */
+  uploadedAt?: string;
   status: ReportStatus;
   /** Optional override — defaults to derived from status. */
   badge?: ReportBadge;
@@ -72,20 +82,93 @@ export function getSampleReportForDashboard(): Report {
   return sampleReports[0];
 }
 
+/**
+ * Returns the user's most recent ready report — by uploadedAt when
+ * available, falling back to array position (newest-first per addReport).
+ * Use this anywhere the UI wants "the user's current data" rather than
+ * relying on `reports.find((r) => r.status === 'ready')`, which silently
+ * depends on addReport's prepend behaviour and breaks if anyone
+ * refactors to append.
+ */
+export function getLatestReadyReport(reports: Report[]): Report | undefined {
+  const ready = reports.filter((r) => r.status === 'ready');
+  if (ready.length === 0) return undefined;
+  // Prefer ISO-date sort when available, fall back to array order for
+  // legacy reports that predate the uploadedAt field.
+  const withDate = ready.filter((r) => r.uploadedAt);
+  if (withDate.length === ready.length) {
+    return withDate.reduce((latest, r) =>
+      (latest.uploadedAt ?? '') >= (r.uploadedAt ?? '') ? latest : r,
+    );
+  }
+  return ready[0];
+}
+
 export function badgeFor(r: Report): ReportBadge {
   if (r.badge) return r.badge;
   if (r.status === 'processing') return 'processing';
   return 'analyzed';
 }
 
+/**
+ * Placeholder Report shown in the locker while parsing runs. Biomarkers
+ * start as an empty array — NOT sampleBiomarkers. Seeding sample data
+ * here was a real leak: any UI surface that renders the locker between
+ * upload and confirm (or after a tab close mid-parse) would show the
+ * user fake testosterone, fake LDL, etc. under their filename.
+ *
+ * markReportReady replaces these with real extracted biomarkers when the
+ * user confirms; if extraction fails, the placeholder is removed
+ * entirely (see ProcessingPage's failure path).
+ */
 export function makeReport(name: string): Report {
+  const now = new Date();
   return {
     id: `rep-${Math.random().toString(36).slice(2, 8)}`,
     name,
     lab: 'New upload',
-    uploadedOn: formatDate(new Date()),
+    uploadedOn: formatDate(now),
+    uploadedAt: now.toISOString().slice(0, 10),
     status: 'processing',
     badge: 'processing',
-    biomarkers: sampleBiomarkers,
+    biomarkers: [],
   };
+}
+
+/**
+ * Build per-biomarker history arrays by walking the user's prior ready
+ * reports. For each new biomarker, find every prior report that had the
+ * same template id, sort earliest → latest, and assign as `history`.
+ *
+ * Without this, every uploaded report renders in isolation: trend
+ * sections and "down X since March" headlines are unreachable for users
+ * who only have their own data (they previously worked only for the
+ * curated sample report, where history is hardcoded).
+ *
+ * Pure function — doesn't mutate inputs. Returns a new array of
+ * Biomarker objects with `history` populated where applicable.
+ */
+export function mergeHistoryFromPriorReports(
+  newBiomarkers: Biomarker[],
+  priorReports: Report[],
+): Biomarker[] {
+  // Only consider ready reports with an ISO date — drafts and legacy
+  // sample reports (no uploadedAt) get skipped.
+  const priorChrono = priorReports
+    .filter((r) => r.status === 'ready' && r.uploadedAt)
+    .slice()
+    .sort((a, b) => (a.uploadedAt ?? '').localeCompare(b.uploadedAt ?? ''));
+
+  if (priorChrono.length === 0) return newBiomarkers;
+
+  return newBiomarkers.map((m) => {
+    const history: BiomarkerReading[] = [];
+    for (const r of priorChrono) {
+      const prior = r.biomarkers.find((b) => b.id === m.id);
+      if (prior && r.uploadedAt) {
+        history.push({ date: r.uploadedAt, value: prior.value });
+      }
+    }
+    return history.length > 0 ? { ...m, history } : m;
+  });
 }

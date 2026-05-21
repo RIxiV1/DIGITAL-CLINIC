@@ -8,7 +8,11 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { initialReports, type Report } from '../data/reports';
+import {
+  initialReports,
+  mergeHistoryFromPriorReports,
+  type Report,
+} from '../data/reports';
 import {
   cleanupExpiredReports,
   loadReports,
@@ -65,13 +69,26 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
 
   const markReportReady = useCallback(
     (id: string, patch?: Partial<Report>) => {
-      setReports((prev) =>
-        prev.map((r) =>
+      setReports((prev) => {
+        // Merge history from prior ready reports into the new
+        // biomarkers, if we're committing new biomarkers. Without this,
+        // trend/delta surfaces are dark for users with only their own
+        // data — see mergeHistoryFromPriorReports.
+        const otherReady = prev.filter(
+          (r) => r.id !== id && r.status === 'ready',
+        );
+        const mergedBiomarkers = patch?.biomarkers
+          ? mergeHistoryFromPriorReports(patch.biomarkers, otherReady)
+          : undefined;
+        const effectivePatch: Partial<Report> = mergedBiomarkers
+          ? { ...patch, biomarkers: mergedBiomarkers }
+          : (patch ?? {});
+        return prev.map((r) =>
           r.id === id
-            ? { ...r, ...patch, status: 'ready', badge: 'analyzed' }
+            ? { ...r, ...effectivePatch, status: 'ready', badge: 'analyzed' }
             : r,
-        ),
-      );
+        );
+      });
     },
     [],
   );

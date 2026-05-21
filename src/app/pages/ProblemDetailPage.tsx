@@ -15,6 +15,7 @@ import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
 import { useNavigation, useReports } from '../AppContext';
 import { sampleBiomarkers } from '../data/biomarkers';
+import { getLatestReadyReport } from '../data/reports';
 import { getProblem } from '../data/problems';
 
 export default function ProblemDetailPage({
@@ -35,8 +36,7 @@ export default function ProblemDetailPage({
    * came straight from the landing CTA without uploading anything).
    */
   const sourceMarkers = useMemo(() => {
-    const latestReady = reports.find((r) => r.status === 'ready');
-    return latestReady?.biomarkers ?? sampleBiomarkers;
+    return getLatestReadyReport(reports)?.biomarkers ?? sampleBiomarkers;
   }, [reports]);
 
   if (!p) {
