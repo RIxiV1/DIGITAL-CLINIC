@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
+  AlertCircle,
+  AlertTriangle,
   ArrowRight,
   CheckCircle2,
   ChevronDown,
@@ -9,7 +11,9 @@ import {
   Clock,
   Coffee,
   Info,
+  Printer,
   Sparkles,
+  Upload,
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -226,28 +230,73 @@ export default function RecommendedTestsPage() {
           })}
         </div>
 
-        <Card className="mt-8 bg-indigo-50 border-indigo-100 lg:max-w-3xl">
-          <div className="font-semibold text-indigo-800">
-            Already done your blood work?
-          </div>
-          <p className="mt-1 text-[13px] text-indigo-700">
-            Skip booking and go straight to your home dashboard. You can upload
-            an existing report from there.
-          </p>
-        </Card>
+        {/* "What now?" — two clear paths forward. Most users haven't
+            done their bloods at this point, so the previous single
+            "Go to dashboard" CTA confused new visitors who hadn't
+            uploaded anything yet. Two cards: one for each state. */}
+        <div className="mt-8 grid sm:grid-cols-2 gap-3 lg:max-w-3xl">
+          <Card className="bg-indigo-50 border-indigo-100">
+            <div className="flex items-start gap-3">
+              <div className="grid place-items-center w-10 h-10 rounded-xl bg-indigo-600 text-white shrink-0">
+                <Upload size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-indigo-900 text-[14px]">
+                  Done at the lab?
+                </div>
+                <p className="mt-1 text-[12.5px] text-indigo-700 leading-relaxed">
+                  Upload your report and we’ll translate it into plain English.
+                </p>
+                <Button
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => navigate({ type: 'upload' })}
+                  trailing={<ArrowRight size={14} />}
+                >
+                  Upload report
+                </Button>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="bg-canvas border-line">
+            <div className="flex items-start gap-3">
+              <div className="grid place-items-center w-10 h-10 rounded-xl bg-surface text-ink border border-line shrink-0">
+                <Printer size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-semibold text-ink text-[14px]">
+                  Not yet?
+                </div>
+                <p className="mt-1 text-[12.5px] text-ink-soft leading-relaxed">
+                  Save this list to take to a lab — print it or screenshot it.
+                </p>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="mt-3"
+                  onClick={() => window.print()}
+                >
+                  Print this list
+                </Button>
+              </div>
+            </div>
+          </Card>
+        </div>
       </Container>
 
-      {/* Inline CTA visible on every viewport — no more sticky-bottom takeover
-          that competed with the BottomNav on mobile. */}
-      <Container size="wide" className="mt-6 lg:mt-8">
+      {/* Secondary action — go to dashboard. Less prominent now that
+          the two "next" cards above carry the primary intent. */}
+      <Container size="wide" className="mt-5 lg:mt-6">
         <div className="lg:max-w-3xl">
           <Button
-            size="lg"
+            size="md"
+            variant="ghost"
             responsiveFullWidth
             onClick={() => navigate({ type: 'home' })}
-            trailing={<ArrowRight size={18} />}
+            trailing={<ArrowRight size={16} />}
           >
-            Go to my dashboard
+            Skip — go to my dashboard
           </Button>
         </div>
       </Container>
@@ -317,26 +366,61 @@ function RiskSummaryCard({ assessment }: { assessment: RiskAssessment }) {
   );
 }
 
-/** One row of the risk card — a system label, raw score, and tier badge. */
+/**
+ * One row of the risk card — system label, raw score, tier badge.
+ *
+ * Visual weight scales with tier: HIGH gets a soft red row tint + an
+ * alert-circle icon next to the badge; MODERATE gets a soft yellow
+ * tint + warning triangle; LOW stays flat with a check icon. The user
+ * should feel the urgency without having to read the score number.
+ */
 function RiskRow({ system }: { system: RiskSystemResult }) {
   const tierStyles =
     system.tier === 'high'
-      ? { badge: 'bg-concern text-white', label: 'High risk' }
+      ? {
+          row: 'bg-concern-soft/40 -mx-3 px-3 rounded-lg',
+          badge: 'bg-concern text-white shadow-sm',
+          label: 'High risk',
+          Icon: AlertCircle,
+          iconClass: 'text-concern',
+        }
       : system.tier === 'moderate'
-        ? { badge: 'bg-attention text-white', label: 'Moderate risk' }
-        : { badge: 'bg-good-soft text-good', label: 'Low risk' };
+        ? {
+            row: 'bg-attention-soft/40 -mx-3 px-3 rounded-lg',
+            badge: 'bg-attention text-white shadow-sm',
+            label: 'Moderate risk',
+            Icon: AlertTriangle,
+            iconClass: 'text-attention',
+          }
+        : {
+            row: '',
+            badge: 'bg-good-soft text-good',
+            label: 'Low risk',
+            Icon: CheckCircle2,
+            iconClass: 'text-good',
+          };
+  const { Icon } = tierStyles;
 
   return (
-    <div className="flex items-start justify-between gap-3 py-2 border-b border-line/60 last:border-0">
+    <div
+      className={`flex items-start justify-between gap-3 py-2.5 border-b border-line/60 last:border-0 ${tierStyles.row}`}
+    >
       {/* No `truncate` — system labels (e.g. "Hypogonadism (low T)
           indicators") are too long for ~320px viewports and chopping
           them mid-word loses the meaning. Allow wrap to 2 lines. */}
-      <div className="flex-1 min-w-0">
-        <div className="text-[13.5px] font-semibold text-ink leading-tight">
-          {system.label}
-        </div>
-        <div className="mt-0.5 text-[11px] text-muted tabular-nums">
-          Score {system.score}
+      <div className="flex-1 min-w-0 flex items-start gap-2">
+        <Icon
+          size={15}
+          className={`${tierStyles.iconClass} shrink-0 mt-0.5`}
+          aria-hidden
+        />
+        <div className="min-w-0">
+          <div className="text-[13.5px] font-semibold text-ink leading-tight">
+            {system.label}
+          </div>
+          <div className="mt-0.5 text-[11px] text-muted tabular-nums">
+            Score {system.score}
+          </div>
         </div>
       </div>
       <div

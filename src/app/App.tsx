@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppProvider, useNavigation, type Page } from './AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import { PageSkeleton } from './components/Skeleton';
 import LandingPage from './pages/LandingPage';
 import { assertNever } from './utils/assertNever';
 
@@ -63,13 +64,20 @@ function pageKey(p: Page): string {
   }
 }
 
-/** Suspense fallback shown while a page chunk is being fetched. Matches
- *  the page background so there's no white flash; AnimatePresence's
- *  enter animation takes over the moment the chunk lands. Intentionally
- *  empty (no spinner) — the chunks are small enough that an indicator
- *  would render for ~30ms and just add visual noise. */
-function PageFallback() {
-  return <div className="min-h-dvh bg-canvas" aria-busy="true" />;
+/** Pick the right skeleton variant for the page being loaded. Each
+ *  variant approximates the destination's layout so users see "loading
+ *  the dashboard" / "loading the results" instead of a generic gray
+ *  block. Chunks are 5-25 KB, fallback typically shows for 30-150ms on
+ *  a real connection. */
+function fallbackForPage(p: Page) {
+  switch (p.type) {
+    case 'home':
+      return <PageSkeleton variant="dashboard" />;
+    case 'results':
+      return <PageSkeleton variant="results" />;
+    default:
+      return <PageSkeleton />;
+  }
 }
 
 function PageHost() {
@@ -122,7 +130,7 @@ function PageHost() {
           transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           className="min-h-dvh w-full"
         >
-          <Suspense fallback={<PageFallback />}>{node}</Suspense>
+          <Suspense fallback={fallbackForPage(page)}>{node}</Suspense>
         </motion.div>
       </AnimatePresence>
     </div>

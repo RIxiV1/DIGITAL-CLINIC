@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import Logo from './Logo';
 import { useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
+import { useIsLgUp } from '../utils/useMediaQuery';
 
 type Props = {
   variant?: 'home' | 'page';
@@ -57,6 +58,10 @@ export default function Header({
   const { back, navigate, page } = useNavigation();
   const handleBack = onBack ?? back;
   const active = activeNavId(page);
+  // Only one shell renders at a time — the previous `flex lg:hidden`
+  // / `hidden lg:flex` pattern mounted both DOM trees and paid the
+  // event-listener + framer-motion cost for the invisible one.
+  const isLgUp = useIsLgUp();
 
   const widthCls =
     size === 'wide'
@@ -75,7 +80,8 @@ export default function Header({
         className={`mx-auto w-full ${widthCls} px-4 sm:px-6 lg:px-8 h-14 lg:h-16 flex items-center gap-2`}
       >
         {/* ---------- Mobile / tablet shell ---------- */}
-        <div className="flex lg:hidden items-center gap-2 w-full">
+        {!isLgUp && (
+        <div className="flex items-center gap-2 w-full">
           {variant === 'home' ? (
             <button
               type="button"
@@ -115,9 +121,11 @@ export default function Header({
             <div className="flex items-center gap-1.5">{rightSlot}</div>
           )}
         </div>
+        )}
 
         {/* ---------- Desktop shell ---------- */}
-        <div className="hidden lg:flex items-center gap-8 w-full">
+        {isLgUp && (
+        <div className="flex items-center gap-8 w-full">
           <button
             onClick={() => navigate({ type: 'landing' })}
             className="flex items-center"
@@ -179,6 +187,7 @@ export default function Header({
             </div>
           )}
         </div>
+        )}
       </div>
     </header>
   );

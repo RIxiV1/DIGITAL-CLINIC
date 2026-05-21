@@ -42,6 +42,8 @@ const STATUS_FILTERS: Array<{ id: StatusFilter; label: string }> = [
  *   4. Trends over time (sparklines grouped by pathway)
  *   5. The locker (upload + stored reports)
  */
+type LockerSort = 'newest' | 'oldest' | 'lab';
+
 export default function HomePage() {
   const { reports, addReport } = useReports();
   const { navigate } = useNavigation();
@@ -57,6 +59,35 @@ export default function HomePage() {
 
   const ready = useMemo(() => reports.find((r) => r.status === 'ready'), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
+
+  /* ---- Locker controls — surfaced only when the user has 3+ reports.
+   *      For a handful of reports the controls would be visual noise;
+   *      once the locker starts feeling like a list, finding a specific
+   *      one needs real affordance. ---- */
+  const [lockerQuery, setLockerQuery] = useState('');
+  const [lockerSort, setLockerSort] = useState<LockerSort>('newest');
+  const showLockerControls = reports.length >= 3;
+  const displayedReports = useMemo(() => {
+    const q = lockerQuery.trim().toLowerCase();
+    const filtered = q
+      ? reports.filter(
+          (r) =>
+            r.name.toLowerCase().includes(q) ||
+            r.lab.toLowerCase().includes(q),
+        )
+      : reports;
+    const sorted = [...filtered].sort((a, b) => {
+      if (lockerSort === 'lab') return a.lab.localeCompare(b.lab);
+      // For newest/oldest, prefer uploadedAt (ISO) when present, fall
+      // back to original array position (newest-first per addReport).
+      const aKey = a.uploadedAt ?? '';
+      const bKey = b.uploadedAt ?? '';
+      if (!aKey && !bKey) return 0;
+      const cmp = aKey.localeCompare(bKey);
+      return lockerSort === 'newest' ? -cmp : cmp;
+    });
+    return sorted;
+  }, [reports, lockerQuery, lockerSort]);
 
   /* ---- Search + status filter ---- */
   const [query, setQuery] = useState('');
@@ -386,6 +417,64 @@ export default function HomePage() {
           }
         />
 
+        {showLockerControls && (
+          <div className="mt-4 flex flex-col sm:flex-row gap-2.5">
+            <div className="relative flex-1 min-w-0">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+                aria-hidden
+              />
+              <input
+                type="search"
+                value={lockerQuery}
+                onChange={(e) => setLockerQuery(e.target.value)}
+                placeholder="Search by filename or lab…"
+                aria-label="Filter reports"
+                className="w-full h-10 pl-9 pr-9 rounded-full bg-surface border border-line text-[13.5px] placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+              />
+              {lockerQuery && (
+                <button
+                  type="button"
+                  onClick={() => setLockerQuery('')}
+                  aria-label="Clear search"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 grid place-items-center w-6 h-6 rounded-full text-muted hover:text-ink hover:bg-canvas"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+            <div
+              role="radiogroup"
+              aria-label="Sort reports"
+              className="inline-flex p-0.5 rounded-full bg-surface border border-line text-[12px] font-semibold shrink-0"
+            >
+              {(
+                [
+                  { id: 'newest', label: 'Newest' },
+                  { id: 'oldest', label: 'Oldest' },
+                  { id: 'lab', label: 'Lab' },
+                ] as Array<{ id: LockerSort; label: string }>
+              ).map((opt) => (
+                <button
+                  key={opt.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={lockerSort === opt.id}
+                  onClick={() => setLockerSort(opt.id)}
+                  className={`h-9 px-3.5 rounded-full transition-colors ${
+                    lockerSort === opt.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-ink-soft hover:text-ink'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
           {reports.length === 0 ? (
             <Card className="text-center !py-10 sm:col-span-2 lg:col-span-3">
@@ -414,8 +503,22 @@ export default function HomePage() {
                 </Button>
               </div>
             </Card>
+          ) : displayedReports.length === 0 ? (
+            <Card className="text-center !py-8 sm:col-span-2 lg:col-span-3">
+              <div className="text-[13.5px] text-ink-soft">
+                No reports match <span className="font-semibold text-ink">"{lockerQuery}"</span>.
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="mt-3"
+                onClick={() => setLockerQuery('')}
+              >
+                Clear search
+              </Button>
+            </Card>
           ) : (
-            reports.map((r, i) => (
+            displayedReports.map((r, i) => (
               <motion.div
                 key={r.id}
                 initial={{ opacity: 0, y: 8 }}
