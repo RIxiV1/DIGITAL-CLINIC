@@ -90,14 +90,23 @@ export default function ProcessingPage() {
   // directly, but there's no pending processing report (refreshed
   // mid-flow, or arrived via an old bookmark). Bounce home rather
   // than leaving them staring at a perpetual "reading your report".
+  //
+  // Captured via useState initializer so the decision is frozen at
+  // mount time — without this, markReportReady flipping a report's
+  // status from 'processing' to 'ready' mid-parse would later look
+  // like "no processing reports exist" and bounce the user home in
+  // the middle of their own success path.
+  //
+  // This pattern also kills the `eslint-disable-next-line
+  // react-hooks/exhaustive-deps` the previous version needed: the
+  // effect's only dep (`replace`) is stable, and the initial flag is
+  // a useState seed that's reactive-deps clean.
+  const [needsRedirectHome] = useState(
+    () => !reports.some((r) => r.status === 'processing'),
+  );
   useEffect(() => {
-    if (reports.length === 0 || !reports.some((r) => r.status === 'processing')) {
-      replace({ type: 'home' });
-    }
-    // Only on mount — once we've started, we shouldn't bounce out
-    // because markReportReady flips the status mid-flight.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (needsRedirectHome) replace({ type: 'home' });
+  }, [needsRedirectHome, replace]);
 
   useEffect(() => {
     if (!processingId) return;
