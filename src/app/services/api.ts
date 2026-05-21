@@ -216,6 +216,7 @@ export async function parseUploadedReport(
     | { biomarkers: Biomarker[]; rawText: string }
     | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error'; message?: string; rawText?: string };
 
+  let extractionDone = false;
   const extractionPromise: Promise<ExtractionOutcome> =
     input.file &&
     (input.file.type === 'application/pdf' ||
@@ -232,21 +233,63 @@ export async function parseUploadedReport(
             message: err instanceof Error ? err.message : String(err),
           }))
       : Promise.resolve<ExtractionOutcome>({ biomarkers: null, reason: 'no-file' });
+  void extractionPromise.then(() => {
+    extractionDone = true;
+  });
 
+  // The visual stages provide pacing for the UI but DO NOT gate the
+  // result — actual progress is driven by the parser. Two adaptive
+  // behaviours:
+  //   1. If the parser finishes mid-stage, skip the rest of the
+  //      animation and jump to 100%. The user doesn't wait on a fake
+  //      timer when the work is already done.
+  //   2. If the parser is still running when the visual stages would
+  //      otherwise hit 100%, cap the last stage at 90% so the bar
+  //      doesn't sit at full while we're actually still waiting. The
+  //      stage spinner keeps animating, signalling "still working."
   const totalMs = parseSteps.reduce((sum, s) => sum + s.durationMs, 0);
+  const lastIdx = parseSteps.length - 1;
   let elapsed = 0;
 
-  for (let i = 0; i < parseSteps.length; i++) {
+  stages: for (let i = 0; i < parseSteps.length; i++) {
     const step = parseSteps[i];
     const ticks = 24; // smoothness — 24 frames per stage feels fluid
     const tickMs = step.durationMs / ticks;
+    const isLastStage = i === lastIdx;
     for (let t = 1; t <= ticks; t++) {
       await new Promise((r) => setTimeout(r, tickMs));
-      const stepProgress = t / ticks;
-      const overall = (elapsed + step.durationMs * stepProgress) / totalMs;
+      if (extractionDone) {
+        // Parser finished — snap to 100% on the last visible stage
+        // and exit the stages loop without burning the remaining
+        // visual budget.
+        onProgress({ stepIndex: lastIdx, stepProgress: 1, overall: 1 });
+        break stages;
+      }
+      const rawProgress = t / ticks;
+      const rawOverall = (elapsed + step.durationMs * rawProgress) / totalMs;
+      // Cap the LAST stage at 90% while extraction is still pending —
+      // the user shouldn't see "100% complete" if we're actually still
+      // waiting on Tesseract.
+      const stepProgress = isLastStage ? Math.min(rawProgress, 0.9) : rawProgress;
+      const overall = isLastStage ? Math.min(rawOverall, 0.95) : rawOverall;
       onProgress({ stepIndex: i, stepProgress, overall });
     }
     elapsed += step.durationMs;
+  }
+
+  // If the visual loop exited normally (without break) but the parser
+  // is still running, hold the user on the last stage with the spinner
+  // animating. Without this, an OCR pass that takes 30s would leave
+  // them staring at a static "100%" indicator.
+  if (!extractionDone) {
+    // Polite poll — render a heartbeat tick so framer-motion has
+    // something to bind to even though the progress number isn't
+    // moving. The UI's spinner is the actual "still working" cue.
+    while (!extractionDone) {
+      await new Promise((r) => setTimeout(r, 250));
+      onProgress({ stepIndex: lastIdx, stepProgress: 0.9, overall: 0.95 });
+    }
+    onProgress({ stepIndex: lastIdx, stepProgress: 1, overall: 1 });
   }
 
   const outcome = await extractionPromise;
