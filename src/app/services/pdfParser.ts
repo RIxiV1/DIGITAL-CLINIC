@@ -435,6 +435,19 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
   return found;
 }
 
+/**
+ * Internal helpers exposed solely for unit testing. The three
+ * reconstruction strategies and the normalize step are the most fragile
+ * pieces of this file, but they shouldn't be part of the public API —
+ * consumers should call `parsePdfFile` or `extractBiomarkersFromText`.
+ */
+export const __testInternals = {
+  normalize,
+  reconstructByPosition,
+  reconstructByEOL,
+  reconstructByStream,
+};
+
 /* ------------------------------------------------------------------ */
 /* Public entry point                                                   */
 /* ------------------------------------------------------------------ */
