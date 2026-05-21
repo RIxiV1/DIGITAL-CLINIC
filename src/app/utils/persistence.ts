@@ -118,6 +118,26 @@ export function cleanupExpiredReports(now: number = Date.now()): number {
   return 0;
 }
 
+/**
+ * Removes any persisted reports stuck in `status: 'processing'`. The
+ * parser's File handoff lives in module state, so a tab close mid-flow
+ * leaves the placeholder report in localStorage but the File gone —
+ * which would render as "There was nothing to parse" on next visit.
+ * Called once on app boot, BEFORE loadReports, so orphans never reach
+ * UI state. Returns the count of reports cleaned up.
+ */
+export function cleanupOrphanProcessing(): number {
+  const stored = readJSON<StoredReports<{ status?: string }> | null>(
+    REPORTS_KEY,
+    null,
+  );
+  if (!stored || !Array.isArray(stored.reports)) return 0;
+  const kept = stored.reports.filter((r) => r?.status !== 'processing');
+  if (kept.length === stored.reports.length) return 0;
+  writeJSON(REPORTS_KEY, { savedAt: stored.savedAt, reports: kept });
+  return stored.reports.length - kept.length;
+}
+
 /** Per-prefix summary for the Profile "My data" panel. */
 export function getStorageStats() {
   if (typeof window === 'undefined') {

@@ -15,6 +15,7 @@ import {
 } from '../data/reports';
 import {
   cleanupExpiredReports,
+  cleanupOrphanProcessing,
   loadReports,
   requestStoragePersistence,
   saveReports,
@@ -44,6 +45,10 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   const [reports, setReports] = useState<Report[]>(() => {
     if (typeof window === 'undefined') return initialReports;
     cleanupExpiredReports();
+    // Drop reports stuck in 'processing' from a previous tab — the File
+    // handle behind them is gone, so they'd render as a "nothing to parse"
+    // error on first visit. See cleanupOrphanProcessing for the full story.
+    cleanupOrphanProcessing();
     const persisted = loadReports<Report>();
     if (persisted.length > 0) return persisted;
     return initialReports;

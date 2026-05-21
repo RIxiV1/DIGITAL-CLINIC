@@ -391,4 +391,28 @@ describe('findUnrecognizedRows', () => {
     const rows = findUnrecognizedRows(text, []);
     expect(rows.length).toBeLessThanOrEqual(10);
   });
+
+  it('skips reference-range printout rows (not real markers)', () => {
+    // Real-world false positive: Indian labs sometimes print rows like
+    // "Normal Range 200 mg/dL" or "Biological Reference 100 mg/dL"
+    // next to each marker. These match the label+number+unit regex
+    // shape, so without the keyword filter they'd surface in the
+    // confirm panel as noise — even though they're printed metadata,
+    // not measurements. Each fixture line here DOES match the regex
+    // (single number + recognised unit, no colon, no dash range); the
+    // filter is what suppresses them.
+    const text = `
+      Reference 13.5 g/dL
+      Normal Range 200 mg/dL
+      Biological Reference 100 mg/dL
+      Apolipoprotein B 95 mg/dL
+    `;
+    const rows = findUnrecognizedRows(text, []);
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toContain('Apolipoprotein B');
+    const joined = rows.join('\n');
+    expect(joined).not.toMatch(/Reference/i);
+    expect(joined).not.toMatch(/Normal Range/i);
+    expect(joined).not.toMatch(/Biological/i);
+  });
 });

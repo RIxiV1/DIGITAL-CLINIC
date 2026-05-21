@@ -38,7 +38,7 @@ import {
  *   - size → file > 20 MB
  */
 export default function UploadPage() {
-  const { addReport } = useReports();
+  const { reports, addReport, removeReport } = useReports();
   const { replace, navigate } = useNavigation();
   const inputRef = useRef<HTMLInputElement | null>(null);
   /** Keep the validated File around so we can hand it to the parser
@@ -69,6 +69,17 @@ export default function UploadPage() {
   };
 
   const startProcessing = () => {
+    // Sweep any existing 'processing' placeholder reports before adding
+    // a new one. Scenario: user starts upload A → navigates away mid-
+    // parse → starts upload B. Without this sweep, A's placeholder
+    // stays orphaned forever (its File handle was overwritten by
+    // setPendingUpload below). ProcessingPage picks the newest
+    // 'processing' report and parses against B's File, so A is
+    // unrecoverable. Removing A here cancels it cleanly.
+    for (const r of reports) {
+      if (r.status === 'processing') removeReport(r.id);
+    }
+
     const name = fileName ?? 'My lab report';
     const cleaned = name.replace(/\.[^.]+$/, '');
     const report = makeReport(cleaned || 'My lab report');

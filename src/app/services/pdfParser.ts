@@ -523,6 +523,17 @@ export function findUnrecognizedRows(
     // prefixes, all-caps single words (likely section headers).
     if (/^\d/.test(label)) continue;
     if (label.length < 3) continue;
+    // Skip rows that are clearly part of a reference-range printout
+    // rather than a marker measurement. Indian labs often include
+    // explanatory rows like "Normal Range 200 mg/dL" or
+    // "Biological Reference 100 mg/dL" next to a marker — these match
+    // the label+number+unit shape but they're metadata, not
+    // measurements, and surface as noise in the "we saw these rows
+    // but couldn't map them" panel. (Range-style rows like
+    // "Reference Range: 70-100 mg/dL" don't match the regex at all
+    // because the colon isn't in the label char class and the dash
+    // breaks the number-then-unit shape — those don't need filtering.)
+    if (REF_ROW_KEYWORDS.test(label)) continue;
 
     const key = `${label.toLowerCase()}::${value}::${unit.toLowerCase()}`;
     if (seen.has(key)) continue;
@@ -533,6 +544,11 @@ export function findUnrecognizedRows(
   }
   return out;
 }
+
+/** Words that mark a row as printed reference-range metadata rather
+ *  than a marker measurement. Case-insensitive substring match. */
+const REF_ROW_KEYWORDS =
+  /\b(reference|ref\s*range|normal\s*range|biological\s*reference|bio\s*ref|desirable|optimal\s*range)\b/i;
 
 /**
  * Internal helpers exposed solely for unit testing. The three

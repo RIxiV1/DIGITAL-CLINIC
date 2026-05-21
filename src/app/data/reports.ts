@@ -37,6 +37,12 @@ export const sampleReports: Report[] = [
     name: 'Comprehensive Health Check',
     lab: 'Thyrocare · Mumbai',
     uploadedOn: '12 Apr 2026',
+    // ISO date matches the display string above. Lets the sample
+    // report contribute to history merging when a user loads sample
+    // data then uploads a real report — without this, the sample
+    // is invisible to mergeHistoryFromPriorReports (which filters
+    // out reports missing uploadedAt as legacy/non-historical).
+    uploadedAt: '2026-04-12',
     status: 'ready',
     badge: 'analyzed',
     biomarkers: sampleBiomarkers,
@@ -46,6 +52,7 @@ export const sampleReports: Report[] = [
     name: 'Hormone Panel',
     lab: 'SRL Diagnostics',
     uploadedOn: '04 Mar 2026',
+    uploadedAt: '2026-03-04',
     status: 'ready',
     badge: 'ready',
     biomarkers: sampleBiomarkers.filter((m) => m.category === 'hormones'),
