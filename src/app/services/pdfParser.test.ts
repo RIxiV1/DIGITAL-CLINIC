@@ -279,6 +279,48 @@ describe('extractBiomarkersFromText — realistic lab fixture', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Vitamin D (25-OH) — the regex+alias-ordering trap                   */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — Vitamin D (25-OH) value capture', () => {
+  // The classic Indian-lab format prints "VITAMIN D (25-OH)    28      ng/mL".
+  // Two distinct mechanisms protect against the value being parsed as 25:
+  //
+  //   1. Regex tightening — the tail between value and unit disallows
+  //      digits (`tail = [^\d\n]{0,30}?`). So once a candidate alias
+  //      binds, "25" can't be followed by anything until ng/mL appears.
+  //   2. Alias ordering — the catalog lists the specific
+  //      "Vitamin D (25-OH)" alias BEFORE the bare "Vitamin D" alias.
+  //      The specific alias matches first against the literal label and
+  //      captures "28" cleanly.
+  //
+  // This test pins both — if anyone removes the digit prohibition AND
+  // reorders aliases (or removes the specific one), the value drifts
+  // back to 25 silently.
+
+  it('captures 28 (not 25) for the real "Vitamin D (25-OH) 28 ng/mL" format', () => {
+    const text = 'VITAMIN D (25-OH)    28      ng/mL';
+    const result = extractBiomarkersFromText(text);
+    const vitD = result.find((m) => m.id === 'vit-d');
+    expect(vitD?.value).toBe(28);
+  });
+
+  it('captures the value even when the label uses different separators', () => {
+    // Variations seen in real reports — same payload, different glue.
+    const variants = [
+      'Vitamin D (25-OH): 28 ng/mL',
+      'Vitamin D, 25-Hydroxy   28   ng/mL',
+      '25-OH Vitamin D    28    ng/mL',
+    ];
+    for (const text of variants) {
+      const result = extractBiomarkersFromText(text);
+      const vitD = result.find((m) => m.id === 'vit-d');
+      expect(vitD?.value).toBe(28);
+    }
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* findUnrecognizedRows                                                */
 /* ------------------------------------------------------------------ */
 

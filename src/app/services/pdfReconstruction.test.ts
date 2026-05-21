@@ -228,6 +228,33 @@ describe('reconstructByPosition', () => {
     expect(result.split('\n')).toHaveLength(2);
   });
 
+  it('clusters items that drift across MULTIPLE buckets but stay within tolerance', () => {
+    // Regression: the previous version only registered the line under
+    // its first bucket. With height=10 → tolerance=6, three items at
+    // y=700, y=703, y=706 sit in buckets 117, 117, 118 — the ±1 fanout
+    // was fine. But pull them further apart: y=702, y=706, y=710 sit in
+    // buckets 117, 118, 118 — and the ±1 fanout from 118 finds 117 OK,
+    // but only if we registered the line under bucket 118 when item B
+    // merged. Without the always-register fix, item C sees buckets 117
+    // and 119 (118 ±1), neither has the line, and creates a fresh line.
+    //
+    // Adversarial choice: heights so tolerance = ~6, items spaced ~4
+    // apart so a string of 4 items drifts across 3 buckets while still
+    // being within tolerance of any one neighbor.
+    const result = reconstructByPosition({
+      items: [
+        item('A', { x: 50, y: 712, height: 10 }),
+        item('B', { x: 60, y: 708, height: 10 }),
+        item('C', { x: 70, y: 704, height: 10 }),
+        item('D', { x: 80, y: 700, height: 10 }),
+      ],
+    });
+    // All four are within ~4 of their immediate neighbor (well under
+    // tolerance of 6) so they should land on a single line.
+    expect(result.split('\n')).toHaveLength(1);
+    expect(result).toBe('A B C D');
+  });
+
   it('handles a realistic dense-table fixture end to end', () => {
     // Mimics what pdfjs emits for a single row of a tightly-packed
     // Indian-lab table: label, value, unit, ref range — all in one Y

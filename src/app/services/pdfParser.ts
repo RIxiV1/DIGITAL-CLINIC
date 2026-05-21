@@ -175,6 +175,10 @@ function reconstructByPosition(content: TextContentLike): string {
     const bucket = Math.round(y / yTolerance);
 
     // Look at this bucket and ±1 to handle items straddling boundaries.
+    // Match against the line's MOST RECENT y (line.y is updated below),
+    // not its first y — this lets a long horizontal row of items drift
+    // smoothly even if cumulative drift across the row would exceed
+    // yTolerance from the first item.
     let line: Line | undefined;
     for (const b of [bucket, bucket - 1, bucket + 1]) {
       const existing = lineMap.get(b);
@@ -185,12 +189,24 @@ function reconstructByPosition(content: TextContentLike): string {
     }
     if (!line) {
       line = { y, runs: [] };
-      lineMap.set(bucket, line);
+    } else {
+      // Drift the line's y anchor to the joining item so the next
+      // neighbour matches against the most recent y, not the (possibly
+      // stale) first y. Without this, a long row spanning 3+ buckets
+      // would have its tail items rejected by the tolerance check.
+      line.y = y;
     }
+    // Always register the line under THIS item's bucket too — without
+    // this, the ±1 fanout from a later bucket can't find a line that
+    // was first registered three buckets back, even when the items are
+    // all within tolerance of their immediate neighbour.
+    lineMap.set(bucket, line);
     line.runs.push({ x, width, str: item.str });
   }
 
-  const lines = [...lineMap.values()].sort((a, b) => b.y - a.y); // PDF Y up
+  // Multiple buckets can now point to the same Line (the always-register
+  // step above), so dedupe by reference before sorting.
+  const lines = [...new Set(lineMap.values())].sort((a, b) => b.y - a.y); // PDF Y up
 
   return lines
     .map((line) => {
