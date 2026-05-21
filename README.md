@@ -1,81 +1,160 @@
-# Digital Clinic - Health Dashboard
+# 🩺 Digital Clinic — High-Fidelity Health Dashboard
 
-A high-fidelity health dashboard designed for medical clarity and user empathy. This project translates complex lab data into actionable health insights, providing a seamless and intuitive user experience for managing personal health information.
+[![React](https://img.shields.io/badge/React-18.3-blue?style=flat-square&logo=react)](https://react.dev/)
+[![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.6-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
+[![Vitest](https://img.shields.io/badge/Vitest-4.1-7E9B4E?style=flat-square&logo=vitest)](https://vitest.dev/)
 
-## Overview
+A premium, medical-grade patient health dashboard designed with clinical clarity, visual excellence, and user empathy. This application simplifies personal health management by translating complex lab results into plain-English insights, providing diagnostic quizzes, and offering interactive visualizations.
 
-The Digital Clinic application serves as a comprehensive portal for patients to track their health metrics, understand their medical reports, and interact with diagnostic tools. It focuses on presenting complex medical information in a clear, digestible format.
+---
 
-## Key Features
+## 🌟 Key Features
 
-- Health Locker: Securely track, store, and manage your lab reports and medical history in one centralized location.
-- Symptom Quiz: An interactive diagnostic flow designed to help users identify potential health concerns based on their symptoms.
-- Translated Insights: Complex medical markers and lab results are translated into plain-English explanations, empowering users with understandable health data.
-- Data Visualization: Intuitive, color-coded progress bars and charts for tracking biomarker levels and overall health progress over time.
-- Responsive Design: A fully responsive interface that works seamlessly across desktop, tablet, and mobile devices.
+### 📁 Health Locker & Report Upload
+- **Smart PDF Parser & OCR:** Upload digital lab reports or scanned images. The dashboard parses text directly using `pdfjs-dist` and applies OCR using `Tesseract.js` for image-based uploads.
+- **Biomarker Extraction:** Automatic identification of key health indicators (such as Cholesterol, Testosterone, Vitamin D, HbA1c) and extraction of their values, units, and reference ranges.
+- **Manual Data Entry:** Provides a fallback interface allowing patients to manually input or fine-tune biomarker metrics when automated extraction is not used.
 
-## Tech Stack
+### 🧠 Symptom Quiz & Diagnostics
+- **Interactive Scoring Flow:** An evidence-based questionnaire assessing dynamic symptoms across physical, cognitive, and metabolic indicators.
+- **Context-Aware Recommendations:** Automatically cross-references quiz results with user lab reports to pinpoint potential health concerns and recommend target lab panels.
 
-- Frontend Framework: React 18
-- Build Tool: Vite
-- Language: TypeScript
-- Styling: Tailwind CSS v4
-- Animations: Framer Motion
-- Icons: Lucide React
+### 📊 Medical Translation & Visualization
+- **Plain-English Explanations:** Demystifies complex medical jargon. Every biomarker includes tooltips, normal ranges, and explanations of what high or low levels mean for general health.
+- **Dynamic UI Elements:**
+  - **Health Rings:** Interactive SVG visualization showcasing overall metabolic/hormonal score.
+  - **Biomarker Bars:** Color-coded status bars detailing where a user falls in the clinical range (Low, Optimal, High).
+  - **Sparklines & Trends:** Inline mini-charts that display historical changes of biomarkers over time.
 
-## Getting Started
+---
 
-Follow these instructions to set up the project locally for development and testing purposes.
+## ⚙️ Tech Stack
+
+| Technology | Purpose | Key Benefits |
+| :--- | :--- | :--- |
+| **React 18.3** | Frontend Library | Component-driven UI architecture, fast rendering via Virtual DOM. |
+| **Vite 6.0** | Build Tool & Dev Server | Lightning-fast Hot Module Replacement (HMR) and optimized production bundles. |
+| **TypeScript 5.6** | Programming Language | Strong compile-time typing, reducing runtime errors and improving code reliability. |
+| **Tailwind CSS v4** | CSS Framework | Modern styling engine with native CSS variable integration and high-performance builds. |
+| **Framer Motion** | Animation Library | Smooth micro-animations, slide-ins, and modal transitions for a premium feel. |
+| **Vitest** | Testing Framework | High-performance unit testing matching Vite's bundling pipeline. |
+| **Tesseract.js** | Optical Character Recognition | In-browser OCR to scan, extract, and parse text from images of paper lab documents. |
+| **pdfjs-dist** | PDF Parsing | Extract text directly from digital PDF lab reports. |
+
+---
+
+## 📂 Project Architecture
+
+The codebase follows a structured, modular design pattern for separation of concerns:
+
+```
+DIGITAL CLINIC/
+├── public/                 # Static assets
+├── src/
+│   ├── main.tsx            # Main application entrypoint
+│   ├── index.css           # Global stylesheet containing core design tokens & styles
+│   └── app/
+│       ├── App.tsx         # Root component containing base layout and page router
+│       ├── AppContext.tsx  # Global configuration state
+│       ├── components/     # Reusable UI & presentation components
+│       │   ├── BiomarkerBar.tsx      # Color-coded biomarker ranges
+│       │   ├── HealthRing.tsx        # Interactive circular health score SVG
+│       │   ├── Sparkline.tsx         # Miniature historical charts
+│       │   └── ...
+│       ├── contexts/       # React Contexts for global state management
+│       │   ├── NavigationContext.tsx # Application routing & navigation state
+│       │   ├── QuizContext.tsx       # Symptom quiz state machine
+│       │   └── ReportsContext.tsx    # Parsed and manual lab reports state
+│       ├── data/           # Reference datasets, medical ranges, and quiz models
+│       │   ├── biomarkers.ts         # Clinical ranges, thresholds, & text descriptions
+│       │   ├── quiz.ts               # Diagnostic questions & scoring logic
+│       │   └── ...
+│       ├── pages/          # Full page layouts and container components
+│       │   ├── LandingPage.tsx       # Hero dashboard entry
+│       │   ├── UploadPage.tsx        # Drag-and-drop file uploader
+│       │   ├── ProcessingPage.tsx    # OCR/Parsing progress indicator
+│       │   ├── ReportResultsPage.tsx # Tabbed breakdown of biomarker reports
+│       │   ├── QuizPage.tsx          # Symptom assessment step-by-step
+│       │   └── ...
+│       ├── services/       # Core business logic and integrations
+│       │   ├── pdfParser.ts          # Core engine for OCR/PDF text extraction
+│       │   └── api.ts                # API client helpers & mock backend
+│       └── utils/          # Shared utility helper methods
+└── tsconfig.json           # TypeScript configuration details
+```
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
 
-Ensure you have Node.js installed on your machine. The project requires:
-- Node.js (version 20.11.0 or higher, less than version 23.0.0)
-- npm (usually comes with Node.js)
+Ensure you have Node.js installed.
+- **Node.js**: `>=20.11.0 <23.0.0`
+- **npm**: Compatibility is bundled with Node.js
 
 ### Installation
 
-1. Clone the repository to your local machine:
+1. **Clone the repository:**
    ```bash
    git clone <repository-url>
-   ```
-
-2. Navigate into the project directory:
-   ```bash
    cd "DIGITAL CLINIC"
    ```
 
-3. Install the required dependencies:
+2. **Install dependencies:**
    ```bash
    npm install
    ```
 
-## Available Scripts
+### Running Locally
 
-In the project directory, you can run the following commands:
+To launch the project in development mode:
+```bash
+npm run dev
+```
+The server will boot at [http://localhost:5173](http://localhost:5173). The interface supports HMR (Hot Module Replacement)—any code changes will update in the browser instantly.
 
-### `npm run dev`
+### Running Tests
 
-Runs the app in the development mode using Vite.
-Open [http://localhost:5173](http://localhost:5173) to view it in the browser. The page will reload if you make edits.
+To run the unit tests suite (Vitest):
+```bash
+npm run test
+```
 
-### `npm run build`
+To run the tests in interactive watch mode:
+```bash
+npm run test:watch
+```
 
-Builds the app for production to the `dist` folder.
-It compiles TypeScript and bundles React in production mode, optimizing the build for the best performance.
+### Production Build
 
-### `npm run preview`
+To compile TypeScript, run unit tests, and bundle the React code into optimized, production-ready static assets:
+```bash
+npm run build
+```
+This generates the output files inside the `dist` directory.
 
-Bootstraps a local static web server that serves the files from the `dist` folder. This is useful for testing the production build locally before deployment.
+### Preview Production Build
 
-## Project Structure
+To preview the generated production files locally:
+```bash
+npm run preview
+```
 
-The core application code is located in the `src` directory. Key structural elements include:
+---
 
-- `src/`: Contains the React components, styles, and application logic.
-- `public/`: Static assets that are served directly.
-- `index.html`: The main HTML entry point for the Vite application.
+## 🧪 Testing Strategy
 
-## License
+The application leverages **Vitest** for unit and integration testing. Key areas covered by tests:
+1. **PDF Parser (`pdfParser.test.ts`):** Validates text extraction, regex parsing, and confidence scoring rules on sample document shapes.
+2. **Biomarkers Data (`biomarkers.test.ts`):** Verifies correct classification (high/low/optimal) against various clinical test inputs.
+
+Run tests regularly during development using `npm run test` to verify your changes.
+
+---
+
+## 🔒 License
 
 This project is proprietary and confidential. All rights reserved.
