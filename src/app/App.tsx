@@ -1,17 +1,47 @@
+import { lazy, Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppProvider, useNavigation, type Page } from './AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import LandingPage from './pages/LandingPage';
-import QuizPage from './pages/QuizPage';
-import RecommendedTestsPage from './pages/RecommendedTestsPage';
-import HomePage from './pages/HomePage';
-import UploadPage from './pages/UploadPage';
-import ProcessingPage from './pages/ProcessingPage';
-import ManualEntryPage from './pages/ManualEntryPage';
-import ReportResultsPage from './pages/ReportResultsPage';
-import ProblemDetailPage from './pages/ProblemDetailPage';
-import ProfilePage from './pages/ProfilePage';
 import { assertNever } from './utils/assertNever';
+
+/* Lazy-loaded pages.
+ *
+ * LandingPage stays eager — it's the entry point for new visitors and
+ * loading it from a chunk would add a visible flicker before the hero
+ * paints. Everything else is route-split so first paint only ships the
+ * landing surface + React + framer-motion. Each page becomes its own
+ * Vite chunk fetched the first time a user navigates to it.
+ *
+ * The chunkNames are stable so Vite produces predictable filenames
+ * (helps with CDN cache hits across deploys). */
+const QuizPage = lazy(() =>
+  import(/* webpackChunkName: "p-quiz" */ './pages/QuizPage'),
+);
+const RecommendedTestsPage = lazy(() =>
+  import(/* webpackChunkName: "p-recommended" */ './pages/RecommendedTestsPage'),
+);
+const HomePage = lazy(() =>
+  import(/* webpackChunkName: "p-home" */ './pages/HomePage'),
+);
+const UploadPage = lazy(() =>
+  import(/* webpackChunkName: "p-upload" */ './pages/UploadPage'),
+);
+const ProcessingPage = lazy(() =>
+  import(/* webpackChunkName: "p-processing" */ './pages/ProcessingPage'),
+);
+const ManualEntryPage = lazy(() =>
+  import(/* webpackChunkName: "p-manual" */ './pages/ManualEntryPage'),
+);
+const ReportResultsPage = lazy(() =>
+  import(/* webpackChunkName: "p-results" */ './pages/ReportResultsPage'),
+);
+const ProblemDetailPage = lazy(() =>
+  import(/* webpackChunkName: "p-problem" */ './pages/ProblemDetailPage'),
+);
+const ProfilePage = lazy(() =>
+  import(/* webpackChunkName: "p-profile" */ './pages/ProfilePage'),
+);
 
 function pageKey(p: Page): string {
   switch (p.type) {
@@ -31,6 +61,15 @@ function pageKey(p: Page): string {
     default:
       return assertNever(p);
   }
+}
+
+/** Suspense fallback shown while a page chunk is being fetched. Matches
+ *  the page background so there's no white flash; AnimatePresence's
+ *  enter animation takes over the moment the chunk lands. Intentionally
+ *  empty (no spinner) — the chunks are small enough that an indicator
+ *  would render for ~30ms and just add visual noise. */
+function PageFallback() {
+  return <div className="min-h-dvh bg-canvas" aria-busy="true" />;
 }
 
 function PageHost() {
@@ -83,7 +122,7 @@ function PageHost() {
           transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           className="min-h-dvh w-full"
         >
-          {node}
+          <Suspense fallback={<PageFallback />}>{node}</Suspense>
         </motion.div>
       </AnimatePresence>
     </div>
