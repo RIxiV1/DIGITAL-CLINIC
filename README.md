@@ -1,4 +1,4 @@
-# 🩺 Digital Clinic — High-Fidelity Health Dashboard
+# Digital Clinic — High-Fidelity Health Dashboard
 
 [![React](https://img.shields.io/badge/React-18.3-blue?style=flat-square&logo=react)](https://react.dev/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
@@ -10,27 +10,27 @@ A premium, medical-grade patient health dashboard designed with clinical clarity
 
 ---
 
-## 🌟 Key Features
+## Key Features
 
-### 📁 Health Locker & Report Upload
-- **Smart PDF Parser & OCR:** Upload digital lab reports or scanned images. The dashboard parses text directly using `pdfjs-dist` and applies OCR using `Tesseract.js` for image-based uploads.
+### Health Locker and Report Upload
+- **Smart PDF Parser and OCR:** Upload digital lab reports or scanned images. The dashboard parses text directly using `pdfjs-dist` and applies OCR using `Tesseract.js` for image-based uploads.
 - **Biomarker Extraction:** Automatic identification of key health indicators (such as Cholesterol, Testosterone, Vitamin D, HbA1c) and extraction of their values, units, and reference ranges.
 - **Manual Data Entry:** Provides a fallback interface allowing patients to manually input or fine-tune biomarker metrics when automated extraction is not used.
 
-### 🧠 Symptom Quiz & Diagnostics
+### Symptom Quiz and Diagnostics
 - **Interactive Scoring Flow:** An evidence-based questionnaire assessing dynamic symptoms across physical, cognitive, and metabolic indicators.
 - **Context-Aware Recommendations:** Automatically cross-references quiz results with user lab reports to pinpoint potential health concerns and recommend target lab panels.
 
-### 📊 Medical Translation & Visualization
+### Medical Translation and Visualization
 - **Plain-English Explanations:** Demystifies complex medical jargon. Every biomarker includes tooltips, normal ranges, and explanations of what high or low levels mean for general health.
 - **Dynamic UI Elements:**
   - **Health Rings:** Interactive SVG visualization showcasing overall metabolic/hormonal score.
   - **Biomarker Bars:** Color-coded status bars detailing where a user falls in the clinical range (Low, Optimal, High).
-  - **Sparklines & Trends:** Inline mini-charts that display historical changes of biomarkers over time.
+  - **Sparklines and Trends:** Inline mini-charts that display historical changes of biomarkers over time.
 
 ---
 
-## ⚙️ Tech Stack
+## Tech Stack
 
 | Technology | Purpose | Key Benefits |
 | :--- | :--- | :--- |
@@ -45,7 +45,7 @@ A premium, medical-grade patient health dashboard designed with clinical clarity
 
 ---
 
-## 📂 Project Architecture
+## Project Architecture
 
 The codebase follows a structured, modular design pattern for separation of concerns:
 
@@ -87,7 +87,7 @@ DIGITAL CLINIC/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -145,7 +145,7 @@ npm run preview
 
 ---
 
-## 🧪 Testing Strategy
+## Testing Strategy
 
 The application leverages **Vitest** for unit and integration testing. Key areas covered by tests:
 1. **PDF Parser (`pdfParser.test.ts`):** Validates text extraction, regex parsing, and confidence scoring rules on sample document shapes.
@@ -155,6 +155,6 @@ Run tests regularly during development using `npm run test` to verify your chang
 
 ---
 
-## 🔒 License
+## License
 
 This project is proprietary and confidential. All rights reserved.
