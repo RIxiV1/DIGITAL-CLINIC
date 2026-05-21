@@ -118,6 +118,14 @@ function normalize(text: string): string {
   t = t.replace(/(\d) \./g, '$1.');               // "5 ." -> "5."
   t = t.replace(/\. (\d)/g, '.$1');               // ". 5" -> ".5"
   t = t.replace(/(\d) %/g, '$1%');                // "5 %" -> "5%"
+  // Strip number-internal commas — handles both US "240,000" and
+  // Indian "2,40,000" notation. Without this, "Platelets 2,40,000"
+  // parses as 2 (the regex only captures up to the first comma).
+  // Multiple passes because a single replace doesn't catch repeated
+  // matches like "2,40,000" (overlapping captures).
+  for (let i = 0; i < 3; i++) {
+    t = t.replace(/(\d),(\d)/g, '$1$2');
+  }
   return t;
 }
 
