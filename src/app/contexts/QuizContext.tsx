@@ -54,13 +54,44 @@ export const SYSTEM_LABELS: Record<RiskSystemId, string> = {
  * heavily it implicates each clinical system. Weights are 0–5 with 5 =
  * primary signal. Missing entries are treated as 0.
  *
+ * Clinical basis (this is a screening heuristic, not a diagnostic
+ * instrument — the table is informed by, not lifted from, these sources):
+ *
+ *   • Morley et al., ADAM Questionnaire (Aging Males' Symptoms screen,
+ *     Saint Louis University, 2000): the canonical 10-item screen for
+ *     androgen deficiency in aging men. Items #1 (low libido), #7 (sad
+ *     / grumpy), #8 (erections less strong), #9 (deterioration in
+ *     ability to play sports / endurance), and #10 (falling asleep
+ *     after dinner) drove the weights on 'low-libido', 'low-mood',
+ *     'difficulty-in-bed', 'low-energy', and 'poor-sleep' here.
+ *   • Endocrine Society Clinical Practice Guideline — "Testosterone
+ *     Therapy in Men With Hypogonadism" (Bhasin et al., J Clin
+ *     Endocrinol Metab, 2018): identifies decreased libido, erectile
+ *     dysfunction, and low mood / fatigue as the most specific
+ *     symptoms, with reduced energy and reduced muscle/bone health as
+ *     less specific signals — hence the asymmetric weighting (5/4 on
+ *     the specific signals, 2–3 on the less specific ones).
+ *   • Corona et al., "Body Weight Loss Reverts Obesity-Associated
+ *     Hypogonadism" (Eur J Endocrinol, 2013) and Wittert, "Relationship
+ *     between sleep disorders and testosterone" (Curr Opin Endocrinol
+ *     Diabetes Obes, 2014): central adiposity and disordered sleep are
+ *     independent, bidirectional contributors to low T and CV risk.
+ *     This is why we weight 'belly-fat' and 'poor-sleep' across both
+ *     hypogonadism and cardiovascular — they're commonly under-weighted
+ *     in lay screens despite the evidence.
+ *   • Gandaglia et al., "A systematic review of the association between
+ *     erectile dysfunction and cardiovascular disease" (Eur Urol, 2014):
+ *     ED is an independent predictor of CV events — basis for the
+ *     cardiovascular weight on 'difficulty-in-bed'.
+ *
  * Notes on the picks:
  *   - "difficulty-in-bed" is the strongest ED signal but also a known
  *     comorbidity with cardiovascular disease and low T — weighted on
- *     all three.
+ *     all three (see Gandaglia 2014 + Endocrine Society 2018).
  *   - "belly-fat" and "poor-sleep" are the most under-weighted clinical
  *     signals in lay screening — both are independent risk multipliers
- *     for low T AND cardiovascular events, so we weight them assertively.
+ *     for low T AND cardiovascular events, so we weight them assertively
+ *     (see Corona 2013, Wittert 2014).
  *   - "proactive" carries no risk weight; the user is symptom-free.
  */
 export const SYMPTOM_WEIGHTS: Record<
