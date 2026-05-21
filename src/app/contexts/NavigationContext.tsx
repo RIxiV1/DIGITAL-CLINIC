@@ -83,6 +83,7 @@ function pageToSearch(page: Page): string {
     case 'home':
     case 'upload':
     case 'processing':
+    case 'manualEntry':
     case 'profile':
       return `?page=${page.type}`;
     default:
@@ -112,6 +113,8 @@ function searchToPage(search: string): Page | null {
       return { type: 'upload' };
     case 'processing':
       return { type: 'processing' };
+    case 'manualEntry':
+      return { type: 'manualEntry' };
     case 'profile':
       return { type: 'profile' };
     case 'results':

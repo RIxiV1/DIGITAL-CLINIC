@@ -7,6 +7,7 @@ import RecommendedTestsPage from './pages/RecommendedTestsPage';
 import HomePage from './pages/HomePage';
 import UploadPage from './pages/UploadPage';
 import ProcessingPage from './pages/ProcessingPage';
+import ManualEntryPage from './pages/ManualEntryPage';
 import ReportResultsPage from './pages/ReportResultsPage';
 import ProblemDetailPage from './pages/ProblemDetailPage';
 import ProfilePage from './pages/ProfilePage';
@@ -24,6 +25,7 @@ function pageKey(p: Page): string {
     case 'home':
     case 'upload':
     case 'processing':
+    case 'manualEntry':
     case 'profile':
       return p.type;
     default:
@@ -53,6 +55,9 @@ function PageHost() {
       break;
     case 'processing':
       node = <ProcessingPage />;
+      break;
+    case 'manualEntry':
+      node = <ManualEntryPage />;
       break;
     case 'results':
       node = <ReportResultsPage reportId={page.reportId} />;

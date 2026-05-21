@@ -23,6 +23,7 @@ function navIdFor(page: Page): ItemId {
     case 'home':
     case 'upload':
     case 'processing':
+    case 'manualEntry':
     case 'results':
     case 'problem':
       return 'home';

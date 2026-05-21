@@ -11,6 +11,7 @@ export type Page =
   | { type: 'home' }
   | { type: 'upload' }
   | { type: 'processing' }
+  | { type: 'manualEntry' }
   | { type: 'results'; reportId: string }
   | { type: 'problem'; problemId: string }
   | { type: 'profile' };

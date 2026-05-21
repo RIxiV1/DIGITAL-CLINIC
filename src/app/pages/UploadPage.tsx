@@ -353,6 +353,19 @@ export default function UploadPage() {
               ))}
             </div>
           </div>
+
+          {/* Manual-entry escape hatch — for users who'd rather type
+              the values they care about than upload a PDF, or whose
+              report layout the parser can't handle. */}
+          <div className="mt-3 px-1 text-center">
+            <button
+              type="button"
+              onClick={() => navigate({ type: 'manualEntry' })}
+              className="text-[12.5px] text-indigo-700 hover:text-indigo-900 font-semibold underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors"
+            >
+              Or enter values manually instead →
+            </button>
+          </div>
         </div>
       </Container>
 

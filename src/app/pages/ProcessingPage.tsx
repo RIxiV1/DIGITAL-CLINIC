@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  Pencil,
   RotateCcw,
   ScanLine,
   Sparkles,
@@ -164,6 +165,11 @@ export default function ProcessingPage() {
     navigate({ type: 'results', reportId: sample.id });
   };
 
+  const enterManually = () => {
+    setFailure(null);
+    replace({ type: 'manualEntry' });
+  };
+
   /* ---- Confirm-step actions ---- */
 
   const confirmExtractedValues = () => {
@@ -187,7 +193,14 @@ export default function ProcessingPage() {
   /* ================================================================ */
 
   if (failure) {
-    return <ParseFailedView failure={failure} onRetry={retryUpload} onSample={useSampleReport} />;
+    return (
+      <ParseFailedView
+        failure={failure}
+        onRetry={retryUpload}
+        onSample={useSampleReport}
+        onManualEntry={enterManually}
+      />
+    );
   }
 
   if (pendingConfirm) {
@@ -354,10 +367,12 @@ function ParseFailedView({
   failure,
   onRetry,
   onSample,
+  onManualEntry,
 }: {
   failure: FailureState;
   onRetry: () => void;
   onSample: () => void;
+  onManualEntry: () => void;
 }) {
   // Reason-specific headline so the user knows what actually happened
   // (parser-error from pdfjs/tesseract is different from "we read it
@@ -428,25 +443,36 @@ function ParseFailedView({
             </div>
           </div>
 
-          <div className="p-5 grid sm:grid-cols-2 gap-2.5">
+          <div className="p-5 grid gap-2.5">
             <Button
               size="md"
               variant="primary"
-              leading={<RotateCcw size={14} />}
-              onClick={onRetry}
+              leading={<Pencil size={14} />}
+              onClick={onManualEntry}
               fullWidth
             >
-              Try a different file
+              Enter values manually
             </Button>
-            <Button
-              size="md"
-              variant="secondary"
-              leading={<Sparkles size={14} />}
-              onClick={onSample}
-              fullWidth
-            >
-              Use sample report
-            </Button>
+            <div className="grid sm:grid-cols-2 gap-2.5">
+              <Button
+                size="md"
+                variant="secondary"
+                leading={<RotateCcw size={14} />}
+                onClick={onRetry}
+                fullWidth
+              >
+                Try a different file
+              </Button>
+              <Button
+                size="md"
+                variant="secondary"
+                leading={<Sparkles size={14} />}
+                onClick={onSample}
+                fullWidth
+              >
+                Use sample report
+              </Button>
+            </div>
           </div>
 
           <div className="px-5 pb-5 -mt-1">
