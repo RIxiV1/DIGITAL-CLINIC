@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, ScanLine, Sparkles } from 'lucide-react';
+import {
+  AlertTriangle,
+  Check,
+  RotateCcw,
+  ScanLine,
+  Sparkles,
+} from 'lucide-react';
+import Button from '../components/Button';
+import Card from '../components/Card';
 import Container from '../components/Container';
 import Logo from '../components/Logo';
 import { useNavigation, useReports } from '../AppContext';
@@ -8,20 +16,34 @@ import {
   consumePendingUpload,
   parseSteps,
   parseUploadedReport,
+  type ParsedReport,
 } from '../services/api';
+import { sampleReports } from '../data/reports';
 
 /**
  * Multi-stage parsing UI for the upload pipeline.
  *
- * Stages (defined in services/api.ts so the simulation isn't owned by
- * the view): OCR → Classify → Validate → Translate. The page subscribes
- * to the parser's onProgress stream so each stage's inner progress bar
- * reflects real work-units, not a fixed timer. When the real backend
- * lands, this view doesn't change — only the service does.
+ * Two terminal states:
+ *   - success: extractor produced ≥1 biomarker → patch the placeholder
+ *              report with the real biomarkers and navigate to /results
+ *   - failure: extractor produced 0 biomarkers (or threw) → roll back
+ *              the placeholder report (so the locker doesn't carry a
+ *              ghost "processing" entry) and render an inline error
+ *              state. Previously we silently swapped in sampleBiomarkers
+ *              and navigated as if everything was fine, which let the
+ *              user see demo data and assume it was their report — the
+ *              trust-killer bug behind the "hallucinated values"
+ *              complaint.
  */
+type FailureState = {
+  reason: NonNullable<ParsedReport['failureReason']>;
+  errorMessage?: string;
+  fileName: string;
+};
+
 export default function ProcessingPage() {
-  const { reports, markReportReady } = useReports();
-  const { replace } = useNavigation();
+  const { reports, markReportReady, removeReport, addReport } = useReports();
+  const { replace, navigate } = useNavigation();
 
   const latestProcessing =
     reports.find((r) => r.status === 'processing') ?? reports[0];
@@ -30,6 +52,7 @@ export default function ProcessingPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [stepProgress, setStepProgress] = useState(0);
   const [overall, setOverall] = useState(0);
+  const [failure, setFailure] = useState<FailureState | null>(null);
 
   // StrictMode in dev double-mounts every effect. We track which
   // processingId we've *already started* parsing for, so the second
@@ -59,39 +82,77 @@ export default function ProcessingPage() {
     startedForRef.current = processingId;
 
     // Drain the pending upload once per processingId. If the user
-    // refreshed mid-flow, this returns null and the parser falls back
-    // to the demo dataset — graceful degradation rather than a hang.
+    // refreshed mid-flow, this returns null and parseUploadedReport
+    // resolves with failureReason='no-file'.
     const file = consumePendingUpload();
+    const fileName = latestProcessing?.name ?? 'My lab report';
 
     void parseUploadedReport(
-      {
-        name: latestProcessing?.name ?? 'My lab report',
-        file,
-      },
+      { name: fileName, file },
       ({ stepIndex, stepProgress, overall }) => {
         setStepIndex(stepIndex);
         setStepProgress(stepProgress);
         setOverall(overall);
       },
     ).then((result) => {
-      // If real extraction yielded biomarkers, swap them into the
-      // placeholder report. Otherwise leave the (sample) biomarkers
-      // that makeReport() seeded.
-      markReportReady(processingId, {
-        biomarkers: result.biomarkers,
-        lab: result.report.lab,
+      if (result.parsedFromFile) {
+        // Real extraction. Patch the placeholder report and route to
+        // its results page.
+        markReportReady(processingId, {
+          biomarkers: result.biomarkers,
+          lab: result.report.lab,
+        });
+        replace({ type: 'results', reportId: processingId });
+        return;
+      }
+      // Extraction failed. Roll back the placeholder report so we
+      // don't leave a forever-"processing" ghost in the locker, then
+      // render the inline error state.
+      removeReport(processingId);
+      setFailure({
+        reason: result.failureReason ?? 'no-matches',
+        errorMessage: result.errorMessage,
+        fileName,
       });
-      replace({ type: 'results', reportId: processingId });
     });
-  }, [processingId, latestProcessing?.name, markReportReady, replace]);
+  }, [
+    processingId,
+    latestProcessing?.name,
+    markReportReady,
+    removeReport,
+    replace,
+  ]);
+
+  /* ---- Error state recovery actions ---- */
+
+  const retryUpload = () => {
+    setFailure(null);
+    replace({ type: 'upload' });
+  };
+
+  const useSampleReport = () => {
+    const sample = sampleReports[0];
+    if (!reports.some((r) => r.id === sample.id)) {
+      addReport(sample);
+    }
+    setFailure(null);
+    navigate({ type: 'results', reportId: sample.id });
+  };
+
+  /* ================================================================ */
+  /* Render                                                             */
+  /* ================================================================ */
+
+  if (failure) {
+    return <ParseFailedView failure={failure} onRetry={retryUpload} onSample={useSampleReport} />;
+  }
 
   return (
     <div className="min-h-dvh bg-canvas flex flex-col">
       <Container size="narrow" className="pt-6">
         {/* Logo is a real button — clicking it bails out of processing
             and goes home. Without this, if the parse stalls there's
-            no way out except browser back / refresh, which was the
-            "page is static" complaint. */}
+            no way out except browser back / refresh. */}
         <button
           type="button"
           onClick={() => replace({ type: 'home' })}
@@ -143,9 +204,7 @@ export default function ProcessingPage() {
             'Almost done — getting your insights ready.'}
         </p>
 
-        {/* Overall progress strip — a single number that tracks the four
-            stages as one continuous arc. Useful for users who'd rather
-            see "how close are we" than four parallel rows. */}
+        {/* Overall progress strip */}
         <div className="mt-7 w-full max-w-sm">
           <div
             className="h-1.5 rounded-full bg-indigo-100 overflow-hidden"
@@ -207,9 +266,6 @@ export default function ProcessingPage() {
                     <div className="text-[14px] font-semibold text-ink leading-tight">
                       {s.label}
                     </div>
-                    {/* Inner progress bar — only renders for the active
-                        stage. Tracks the parser's stepProgress so users
-                        get continuous feedback inside a long stage. */}
                     {state === 'active' && (
                       <div className="mt-2 h-1 rounded-full bg-indigo-50 overflow-hidden">
                         <motion.div
@@ -230,6 +286,123 @@ export default function ProcessingPage() {
         <p className="mt-7 text-[11px] uppercase tracking-[0.14em] font-bold text-muted">
           Usually under 60 seconds
         </p>
+      </Container>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* Inline error state — parser yielded zero usable markers              */
+/* ================================================================== */
+
+function ParseFailedView({
+  failure,
+  onRetry,
+  onSample,
+}: {
+  failure: FailureState;
+  onRetry: () => void;
+  onSample: () => void;
+}) {
+  // Reason-specific headline so the user knows what actually happened
+  // (parser-error from pdfjs/tesseract is different from "we read it
+  // but nothing in the catalog matched", which is different from
+  // "no file was attached").
+  const copy = (() => {
+    switch (failure.reason) {
+      case 'parser-error':
+        return {
+          title: 'We couldn’t open this file.',
+          detail:
+            failure.errorMessage ??
+            'The file may be corrupted, password-protected, or in an unexpected format.',
+        };
+      case 'no-file':
+        return {
+          title: 'There was nothing to parse.',
+          detail:
+            'It looks like the upload didn’t carry through — try uploading the file again from the Upload page.',
+        };
+      case 'no-matches':
+      default:
+        return {
+          title: 'We read the file, but didn’t recognise any lab values.',
+          detail:
+            'Either the report’s layout is outside what our parser supports yet, or the file is something other than a lab report. We deliberately don’t make up values to fill in — you’d see numbers that weren’t in your report.',
+        };
+    }
+  })();
+
+  return (
+    <div className="min-h-dvh bg-canvas flex flex-col">
+      <Container size="narrow" className="pt-6">
+        <Logo />
+      </Container>
+
+      <Container
+        size="narrow"
+        className="flex-1 flex flex-col items-center justify-center pb-16"
+      >
+        <Card padded={false} className="w-full overflow-hidden">
+          <div
+            role="alert"
+            aria-live="assertive"
+            className="p-6 border-b border-concern/20 bg-concern-soft/60"
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid place-items-center w-11 h-11 rounded-2xl bg-concern/15 text-concern shrink-0">
+                <AlertTriangle size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-concern">
+                  Parsing failed
+                </div>
+                <h2 className="font-display text-[22px] leading-tight text-ink mt-1">
+                  {copy.title}
+                </h2>
+                <p className="mt-2 text-[13.5px] leading-relaxed text-ink-soft">
+                  {copy.detail}
+                </p>
+                <div className="mt-3 rounded-[10px] bg-surface border border-line/70 px-3 py-2 text-[12px] text-muted break-all">
+                  <span className="font-bold uppercase tracking-[0.12em] text-[10px] text-muted block mb-0.5">
+                    File
+                  </span>
+                  {failure.fileName}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-5 grid sm:grid-cols-2 gap-2.5">
+            <Button
+              size="md"
+              variant="primary"
+              leading={<RotateCcw size={14} />}
+              onClick={onRetry}
+              fullWidth
+            >
+              Try a different file
+            </Button>
+            <Button
+              size="md"
+              variant="secondary"
+              leading={<Sparkles size={14} />}
+              onClick={onSample}
+              fullWidth
+            >
+              Use sample report
+            </Button>
+          </div>
+
+          <div className="px-5 pb-5 -mt-1">
+            <p className="text-[11.5px] text-muted leading-relaxed">
+              Our parser currently recognises hormone, metabolic, heart, thyroid,
+              vitamin, liver, kidney, blood, and fertility markers from
+              text-layer PDFs and clear photos. Older scanned PDFs or
+              non-standard lab layouts may not parse — we don’t guess.
+            </p>
+          </div>
+        </Card>
       </Container>
     </div>
   );

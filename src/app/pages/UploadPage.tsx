@@ -122,8 +122,9 @@ export default function UploadPage() {
             tesseract.js runs OCR on images (and PDFs with no text
             layer). The catalog matcher then pulls known biomarker
             shapes out of the resulting text. If extraction yields
-            zero matches we fall back to the curated demo dataset so
-            the results screen has something to render. */}
+            zero matches, the next screen shows a clear error rather
+            than silently substituting sample data (the previous
+            behaviour hallucinated values that weren't in the file). */}
         <div
           role="note"
           className="mb-4 flex items-start gap-2.5 rounded-[14px] border border-indigo-200 bg-indigo-50/70 px-4 py-3"
@@ -132,9 +133,9 @@ export default function UploadPage() {
           <p className="text-[12.5px] leading-relaxed text-indigo-900">
             <span className="font-semibold">PDFs and photos are parsed in your browser</span> —
             text extraction or OCR, all locally. OCR can take 10–30 seconds
-            on a phone. If we can't recognise anything in your file, the
-            results screen falls back to our sample dataset. Your file never
-            leaves your device.
+            on a phone. If we can’t recognise anything in your file, you’ll
+            see a clear error — we don’t make up values to fill in. Your
+            file never leaves your device.
           </p>
         </div>
 

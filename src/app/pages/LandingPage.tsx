@@ -299,12 +299,11 @@ function HeroVisual() {
         draggable={false}
       />
 
-      {/* Floating Hormonal Health Map card — overlaps the photo */}
-      <motion.div
-        animate={{ y: [0, -5, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-        className="absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden"
-      >
+      {/* Hormonal Health Map card — overlaps the photo. Previously had
+          a y: [0, -5, 0] / 6s infinite float animation; removed because
+          it read as "drifting / off-anchor" rather than the intended
+          "gently floating overlay" cue. */}
+      <div className="absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden">
         {/* Mac-style window chrome */}
         <div className="px-3.5 py-2 border-b border-line/70 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
@@ -345,7 +344,7 @@ function HeroVisual() {
             One system. Eight signals.
           </p>
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }

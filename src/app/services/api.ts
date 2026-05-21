@@ -168,9 +168,16 @@ export type ParsedReport = {
   biomarkers: Biomarker[];
   /** True when the biomarkers came from real PDF extraction; false
    *  when we fell back to the demo dataset (no File, non-PDF, or zero
-   *  markers extracted). The UI uses this to decide whether to keep
-   *  the "demo data shown" disclaimer up. */
+   *  markers extracted). The UI uses this to decide whether to render
+   *  the success path or the parse-failed error state. */
   parsedFromFile: boolean;
+  /** Why parsing didn't yield real markers — surfaced in the
+   *  ProcessingPage error state so the user knows whether it was a
+   *  format issue, an empty extraction, or a real parser error. */
+  failureReason?: 'no-file' | 'no-matches' | 'parser-error';
+  /** Specific error string from the parser (e.g. "password-protected
+   *  PDF") when failureReason === 'parser-error'. */
+  errorMessage?: string;
 };
 
 /**
@@ -200,14 +207,26 @@ export async function parseUploadedReport(
   // The parser internally routes to a PDF-text path, a PDF-OCR fallback,
   // or image OCR depending on file.type. We don't await it yet — the
   // visual stages run regardless so the UX is paced.
-  const extractionPromise: Promise<Biomarker[] | null> =
+  type ExtractionOutcome =
+    | { biomarkers: Biomarker[] }
+    | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error'; message?: string };
+
+  const extractionPromise: Promise<ExtractionOutcome> =
     input.file &&
     (input.file.type === 'application/pdf' ||
       input.file.type.startsWith('image/'))
       ? parsePdfFile(input.file)
-          .then((r) => (r.biomarkers.length > 0 ? r.biomarkers : null))
-          .catch(() => null)
-      : Promise.resolve(null);
+          .then((r): ExtractionOutcome =>
+            r.biomarkers.length > 0
+              ? { biomarkers: r.biomarkers }
+              : { biomarkers: null, reason: 'no-matches' },
+          )
+          .catch((err: unknown): ExtractionOutcome => ({
+            biomarkers: null,
+            reason: 'parser-error',
+            message: err instanceof Error ? err.message : String(err),
+          }))
+      : Promise.resolve<ExtractionOutcome>({ biomarkers: null, reason: 'no-file' });
 
   const totalMs = parseSteps.reduce((sum, s) => sum + s.durationMs, 0);
   let elapsed = 0;
@@ -225,9 +244,14 @@ export async function parseUploadedReport(
     elapsed += step.durationMs;
   }
 
-  const extractedBiomarkers = await extractionPromise;
-  const biomarkers = extractedBiomarkers ?? sampleBiomarkers;
-  const parsedFromFile = extractedBiomarkers !== null;
+  const outcome = await extractionPromise;
+  const parsedFromFile = outcome.biomarkers !== null;
+  // When extraction failed, we still build a Report shape so the
+  // ProcessingPage caller has a consistent object to read from — but
+  // we DO NOT silently swap in sampleBiomarkers anymore. The caller
+  // checks parsedFromFile and routes to an error state (no auto-
+  // fallback to demo data, which was the trust-killer bug).
+  const biomarkers = outcome.biomarkers ?? [];
 
   const report: Report = {
     id: `rep-${Math.random().toString(36).slice(2, 8)}`,
@@ -238,7 +262,21 @@ export async function parseUploadedReport(
     badge: 'analyzed',
     biomarkers,
   };
-  return { report, biomarkers, parsedFromFile };
+  if (parsedFromFile) {
+    return { report, biomarkers, parsedFromFile: true };
+  }
+  // outcome.biomarkers === null branch — narrow to the failure variant
+  // so reason/message are visible to TS.
+  if (!('reason' in outcome)) {
+    return { report, biomarkers, parsedFromFile: false };
+  }
+  return {
+    report,
+    biomarkers,
+    parsedFromFile: false,
+    failureReason: outcome.reason,
+    errorMessage: outcome.message,
+  };
 }
 
 /* ------------------------------------------------------------------ */

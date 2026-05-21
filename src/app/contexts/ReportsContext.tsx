@@ -25,6 +25,10 @@ type ReportsValue = {
    *  UploadPage). status + badge are always set to ready/analyzed
    *  regardless of patch contents. */
   markReportReady: (id: string, patch?: Partial<Report>) => void;
+  /** Delete a report by id. Used by ProcessingPage to roll back the
+   *  placeholder report when extraction fails — without this, a failed
+   *  upload would leave a forever-"processing" entry in the locker. */
+  removeReport: (id: string) => void;
 };
 
 const ReportsContext = createContext<ReportsValue | null>(null);
@@ -72,9 +76,13 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  const removeReport = useCallback((id: string) => {
+    setReports((prev) => prev.filter((r) => r.id !== id));
+  }, []);
+
   const value = useMemo<ReportsValue>(
-    () => ({ reports, addReport, markReportReady }),
-    [reports, addReport, markReportReady],
+    () => ({ reports, addReport, markReportReady, removeReport }),
+    [reports, addReport, markReportReady, removeReport],
   );
 
   return (
