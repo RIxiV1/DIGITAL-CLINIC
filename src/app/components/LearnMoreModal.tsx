@@ -1,9 +1,9 @@
-import { useEffect, useId, useRef } from 'react';
+import { useId, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, X } from 'lucide-react';
 import Button from './Button';
 import type { LearnMore } from '../data/markerInfo';
-import { acquireBodyScrollLock } from '../utils/bodyScrollLock';
+import { useModalA11y } from '../utils/useModalA11y';
 
 type Props = {
   open: boolean;
@@ -43,86 +43,11 @@ export default function LearnMoreModal({
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  /**
-   * Keep onClose in a ref so the scroll-lock effect doesn't tear down + re-set
-   * up on every parent re-render (onClose is usually a new arrow function each
-   * time). If we depended on onClose, repeated mount/unmount of the keydown
-   * listener + repeated body.style mutations are needless churn — and on rare
-   * timing edge-cases can leave body.overflow stuck at 'hidden'.
-   */
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
-
-  /* Close on Escape + focus-trap Tab + lock body scroll + focus
-     management — depends ONLY on `open`. */
-  useEffect(() => {
-    if (!open) return;
-
-    // Capture whatever had focus before the modal opened so we can
-    // restore it on close. Skip <body> — restoring there is a no-op
-    // and we don't want to mistake it for a real trigger.
-    const previouslyFocused =
-      document.activeElement instanceof HTMLElement &&
-      document.activeElement !== document.body
-        ? document.activeElement
-        : null;
-
-    const focusablesIn = (el: HTMLElement | null) => {
-      if (!el) return [] as HTMLElement[];
-      return Array.from(
-        el.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((node) => !node.hasAttribute('aria-hidden'));
-    };
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onCloseRef.current();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-      const nodes = focusablesIn(cardRef.current);
-      if (nodes.length === 0) return;
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      // Wrap focus around the card so keyboard users can't tab into the
-      // (visually hidden) page underneath the modal.
-      if (e.shiftKey && (active === first || !cardRef.current?.contains(active))) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', onKey);
-    const releaseScrollLock = acquireBodyScrollLock();
-    /* Focus the close button on open — a stable landing spot regardless
-       of what's inside the modal body. */
-    const id = window.setTimeout(() => closeBtnRef.current?.focus(), 30);
-
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      releaseScrollLock();
-      window.clearTimeout(id);
-      // Restore focus to the trigger. preventScroll so the page doesn't
-      // jump (we just released the body scroll lock; the page is
-      // already at the right Y). requestAnimationFrame waits for the
-      // exit animation's first frame so the focus move doesn't race
-      // with framer-motion's unmount.
-      if (previouslyFocused && document.body.contains(previouslyFocused)) {
-        requestAnimationFrame(() => {
-          previouslyFocused.focus({ preventScroll: true });
-        });
-      }
-    };
-  }, [open]);
+  // Esc + focus-trap + scroll lock + restore-focus, all shared with the
+  // other modals via useModalA11y. The close button is the preferred
+  // initial-focus target — a stable landing spot regardless of what's
+  // inside the modal body.
+  useModalA11y({ open, cardRef, onClose, initialFocusRef: closeBtnRef });
 
   return (
     <AnimatePresence>

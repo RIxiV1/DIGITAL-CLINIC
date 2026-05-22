@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Database, Trash2, X } from 'lucide-react';
 import Button from './Button';
-import { acquireBodyScrollLock } from '../utils/bodyScrollLock';
+import { useModalA11y } from '../utils/useModalA11y';
 import { getStorageStats, wipeAllData } from '../utils/persistence';
 import { formatBytes, formatDate } from '../utils/uiUtils';
 
@@ -41,74 +41,21 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
   // Stats are computed on every open — quick, no need to cache.
   const stats = open ? getStorageStats() : null;
 
-  const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
+  // Esc + focus-trap + scroll lock + restore-focus, shared via useModalA11y.
+  // Close button is the preferred landing spot (same as LearnMoreModal) so
+  // Shift+Tab from the very first focusable wraps to the wipe button at
+  // the end of the panel rather than escaping into the page beneath.
+  useModalA11y({ open, cardRef, onClose, initialFocusRef: closeBtnRef });
 
+  // Component-specific state reset when the modal closes — not part of
+  // the shared a11y contract. Keeps the wipe-confirmation flow from
+  // surviving across open cycles (you'd otherwise see the "are you sure"
+  // step pre-armed the next time you opened the panel).
   useEffect(() => {
     if (!open) {
       setConfirming(false);
       setWiped(false);
-      return;
     }
-
-    // Capture pre-open focus owner so we can return focus on close.
-    // Skip <body> for the same reason as in LearnMoreModal.
-    const previouslyFocused =
-      document.activeElement instanceof HTMLElement &&
-      document.activeElement !== document.body
-        ? document.activeElement
-        : null;
-
-    // Mirror the focus-trap pattern from LearnMoreModal so keyboard
-    // users can't tab out of the wipe-confirmation flow into the
-    // (visually hidden) page beneath. Without this, Shift+Tab from the
-    // close button jumps focus to the bottom-nav links underneath.
-    const focusablesIn = (el: HTMLElement | null) => {
-      if (!el) return [] as HTMLElement[];
-      return Array.from(
-        el.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((node) => !node.hasAttribute('aria-hidden'));
-    };
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onCloseRef.current();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-      const nodes = focusablesIn(cardRef.current);
-      if (nodes.length === 0) return;
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && (active === first || !cardRef.current?.contains(active))) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', onKey);
-    const release = acquireBodyScrollLock();
-    const id = window.setTimeout(() => closeBtnRef.current?.focus(), 30);
-
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      release();
-      window.clearTimeout(id);
-      if (previouslyFocused && document.body.contains(previouslyFocused)) {
-        requestAnimationFrame(() => {
-          previouslyFocused.focus({ preventScroll: true });
-        });
-      }
-    };
   }, [open]);
 
   const handleWipe = () => {

@@ -7,7 +7,7 @@ import Emoji from '../components/Emoji';
 import Logo from '../components/Logo';
 import { useNavigation, useQuiz, type QuizAnswers } from '../AppContext';
 import { quizSteps, totalQuizSteps, type QuizStep } from '../data/quiz';
-import { acquireBodyScrollLock } from '../utils/bodyScrollLock';
+import { useModalA11y } from '../utils/useModalA11y';
 
 type Field = 'age' | 'activity' | 'priorities' | 'symptoms';
 
@@ -463,73 +463,12 @@ function ExitConfirm({
   const titleId = useId();
   const cardRef = useRef<HTMLDivElement | null>(null);
 
-  // Stash callbacks in refs so the focus/Esc effect below depends on
-  // nothing and doesn't tear down + re-setup on parent re-renders. See
-  // the same pattern in LearnMoreModal.
-  const onCancelRef = useRef(onCancel);
-  useEffect(() => {
-    onCancelRef.current = onCancel;
-  }, [onCancel]);
-
-  // Esc-to-close, Tab focus-trap, body scroll-lock, focus management,
-  // restore-focus-on-close — same a11y contract as LearnMoreModal.
-  useEffect(() => {
-    const previouslyFocused =
-      document.activeElement instanceof HTMLElement &&
-      document.activeElement !== document.body
-        ? document.activeElement
-        : null;
-
-    const focusablesIn = (el: HTMLElement | null) => {
-      if (!el) return [] as HTMLElement[];
-      return Array.from(
-        el.querySelectorAll<HTMLElement>(
-          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-        ),
-      ).filter((node) => !node.hasAttribute('aria-hidden'));
-    };
-
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        onCancelRef.current();
-        return;
-      }
-      if (e.key !== 'Tab') return;
-      const nodes = focusablesIn(cardRef.current);
-      if (nodes.length === 0) return;
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
-      const active = document.activeElement as HTMLElement | null;
-      if (e.shiftKey && (active === first || !cardRef.current?.contains(active))) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && active === last) {
-        e.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener('keydown', onKey);
-    const releaseScrollLock = acquireBodyScrollLock();
-    // Focus the first focusable in the card on open — that's the
-    // "Keep going" button (the safe option), easier for a keyboard
-    // user to back out of an accidental Esc/swipe trigger.
-    const id = window.setTimeout(() => {
-      cardRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
-    }, 30);
-
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      releaseScrollLock();
-      window.clearTimeout(id);
-      if (previouslyFocused && document.body.contains(previouslyFocused)) {
-        requestAnimationFrame(() => {
-          previouslyFocused.focus({ preventScroll: true });
-        });
-      }
-    };
-  }, []);
+  // Esc + focus-trap + scroll lock + restore-focus, shared via
+  // useModalA11y. No initialFocusRef — the hook's default (first
+  // focusable in the card) IS the "Keep going" button here, which is
+  // the safe option for a keyboard user backing out of an accidental
+  // Esc / swipe trigger.
+  useModalA11y({ open: true, cardRef, onClose: onCancel });
 
   return (
     <motion.div
