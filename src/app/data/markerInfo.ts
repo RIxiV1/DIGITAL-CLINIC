@@ -589,6 +589,30 @@ export const markerInfo: Record<string, LearnMore> = {
   },
 };
 
+/**
+ * Aliases for common name variants. The biomarker catalog uses fuller
+ * names ("LDL Cholesterol") while markerInfo's keys are sometimes the
+ * shorthand ("LDL") because that's how clinicians say them, and the
+ * combined entries ("ALT, AST") cover two markers under one key. This
+ * map keeps both sides honest without duplicating content.
+ */
+const KEY_ALIASES: Record<string, string> = {
+  'LDL Cholesterol': 'LDL',
+  'HDL Cholesterol': 'HDL',
+  'Total Cholesterol': 'Total Cholesterol', // identity — listed for grep-ability
+  ALT: 'ALT, AST',
+  AST: 'ALT, AST',
+  Creatinine: 'Creatinine, eGFR',
+  eGFR: 'Creatinine, eGFR',
+  'Iron / Ferritin': 'Ferritin',
+  'T3 / T4': 'Free T3',
+  LH: 'LH', // explicit — keeps the LH & FSH combined entry as dead code
+  FSH: 'FSH',
+};
+
 export function getMarkerInfo(name: string): LearnMore | undefined {
-  return markerInfo[name];
+  // Direct hit first, then aliased lookup. Lets the catalog use whatever
+  // name is most natural at the call site without forcing markerInfo to
+  // mirror every variant.
+  return markerInfo[name] ?? markerInfo[KEY_ALIASES[name] ?? ''];
 }

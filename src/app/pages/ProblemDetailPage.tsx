@@ -41,14 +41,16 @@ export default function ProblemDetailPage({
 
   if (!p) {
     return (
-      <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
+      <div className="min-h-dvh flex flex-col bg-canvas">
         <Header variant="page" title="Not found" />
-        <Container size="wide" className="pt-10 text-center">
-          <p className="text-ink-soft">We couldn’t find that topic.</p>
-          <Button className="mt-4" onClick={back}>
-            Go back
-          </Button>
-        </Container>
+        <div className="flex-1 grid place-items-center px-6 py-10">
+          <div className="text-center max-w-md">
+            <p className="text-ink-soft">We couldn’t find that topic.</p>
+            <Button className="mt-4" onClick={back}>
+              Go back
+            </Button>
+          </div>
+        </div>
         <BottomNav />
       </div>
     );

@@ -22,6 +22,11 @@ export type Report = {
   status: ReportStatus;
   /** Optional override — defaults to derived from status. */
   badge?: ReportBadge;
+  /** True for curated demo reports that ship with the app. Filters them
+   *  out of history merging (otherwise a user who "Loads sample data"
+   *  then uploads a real report would see the sample's values labeled as
+   *  their own past history — a trust-killer). */
+  isSample?: boolean;
   biomarkers: Biomarker[];
 };
 
@@ -37,14 +42,10 @@ export const sampleReports: Report[] = [
     name: 'Comprehensive Health Check',
     lab: 'Thyrocare · Mumbai',
     uploadedOn: '12 Apr 2026',
-    // ISO date matches the display string above. Lets the sample
-    // report contribute to history merging when a user loads sample
-    // data then uploads a real report — without this, the sample
-    // is invisible to mergeHistoryFromPriorReports (which filters
-    // out reports missing uploadedAt as legacy/non-historical).
     uploadedAt: '2026-04-12',
     status: 'ready',
     badge: 'analyzed',
+    isSample: true,
     biomarkers: sampleBiomarkers,
   },
   {
@@ -55,6 +56,7 @@ export const sampleReports: Report[] = [
     uploadedAt: '2026-03-04',
     status: 'ready',
     badge: 'ready',
+    isSample: true,
     biomarkers: sampleBiomarkers.filter((m) => m.category === 'hormones'),
   },
 ];
@@ -154,10 +156,13 @@ export function mergeHistoryFromPriorReports(
   newBiomarkers: Biomarker[],
   priorReports: Report[],
 ): Biomarker[] {
-  // Only consider ready reports with an ISO date — drafts and legacy
-  // sample reports (no uploadedAt) get skipped.
+  // Only consider real, ready, dated reports. Curated demo reports
+  // (isSample) are excluded — their values are illustrative, not the
+  // user's actual past history, and labeling them as such would
+  // produce a fake "Testosterone is up 50 since March" trend on the
+  // user's first real upload after a "Load sample data" demo.
   const priorChrono = priorReports
-    .filter((r) => r.status === 'ready' && r.uploadedAt)
+    .filter((r) => r.status === 'ready' && r.uploadedAt && !r.isSample)
     .slice()
     .sort((a, b) => (a.uploadedAt ?? '').localeCompare(b.uploadedAt ?? ''));
 

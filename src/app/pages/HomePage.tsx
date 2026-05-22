@@ -20,7 +20,11 @@ import {
   type BiomarkerCategoryId,
   type BiomarkerStatus,
 } from '../data/biomarkers';
-import { badgeFor, getSampleReportForDashboard } from '../data/reports';
+import {
+  badgeFor,
+  getLatestReadyReport,
+  getSampleReportForDashboard,
+} from '../data/reports';
 import { getMarkerInfo } from '../data/markerInfo';
 
 type StatusFilter = 'all' | BiomarkerStatus;
@@ -57,7 +61,12 @@ export default function HomePage() {
     addReport(getSampleReportForDashboard());
   };
 
-  const ready = useMemo(() => reports.find((r) => r.status === 'ready'), [reports]);
+  // Use the uploadedAt-sorted helper so we agree with ProblemDetailPage
+  // on "the user's latest report". Plain `find()` relies on array order,
+  // which breaks when ProcessingPage's failure path prepends a sample
+  // report to a locker that already has real uploads — the dashboard
+  // would then show sample numbers labelled as the latest.
+  const ready = useMemo(() => getLatestReadyReport(reports), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
 
   /* ---- Locker controls — surfaced only when the user has 3+ reports.

@@ -124,10 +124,13 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
   if (!report) {
     return (
-      <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
+      <div className="min-h-dvh flex flex-col bg-canvas">
         <Header variant="page" title="Report not found" />
-        <Container size="wide" className="pt-10 lg:pt-16 text-center">
-          <div className="mx-auto max-w-md">
+        {/* Centered in the available viewport — without flex-1, this short
+            "not found" message floats near the top of a tall screen with
+            empty grey scroll below. */}
+        <div className="flex-1 grid place-items-center px-6 py-10">
+          <div className="text-center max-w-md">
             <h1 className="font-display text-[24px] leading-tight">
               We couldn’t find that report.
             </h1>
@@ -142,7 +145,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               Back to dashboard
             </Button>
           </div>
-        </Container>
+        </div>
         <BottomNav />
       </div>
     );

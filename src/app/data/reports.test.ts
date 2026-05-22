@@ -153,4 +153,44 @@ describe('mergeHistoryFromPriorReports', () => {
     const result = mergeHistoryFromPriorReports([newOnlyMarker], [r1]);
     expect(result[0].history).toBeUndefined();
   });
+
+  it('skips sample reports (isSample=true) so demo data does not become fake history', () => {
+    // Real bug: when sampleReports got uploadedAt for sort-by-date
+    // purposes, they started passing through mergeHistoryFromPriorReports
+    // and labelling their illustrative values as the user's prior
+    // history — producing fake "Testosterone is up 50 since March"
+    // trends on a user's first real upload. The isSample flag fixes that.
+    const sample: Report = {
+      id: 'rep-001',
+      name: 'Sample comprehensive',
+      lab: 'Thyrocare · Mumbai',
+      uploadedOn: '12 Apr 2026',
+      uploadedAt: '2026-04-12',
+      status: 'ready',
+      badge: 'analyzed',
+      isSample: true,
+      biomarkers: [hb(15.2)],
+    };
+    const result = mergeHistoryFromPriorReports([hb(14.0)], [sample]);
+    expect(result[0].history).toBeUndefined();
+  });
+
+  it('still merges real (non-sample) reports alongside a sample report', () => {
+    // Mixed locker: one sample + one real prior. Only the real one
+    // should contribute history.
+    const sample: Report = {
+      id: 'rep-001',
+      name: 'Sample',
+      lab: 'Sample lab',
+      uploadedOn: '12 Apr 2026',
+      uploadedAt: '2026-04-12',
+      status: 'ready',
+      badge: 'analyzed',
+      isSample: true,
+      biomarkers: [hb(15.2)],
+    };
+    const real = readyReport('2026-02-20', [hb(13.9)]);
+    const result = mergeHistoryFromPriorReports([hb(14.0)], [sample, real]);
+    expect(result[0].history).toEqual([{ date: '2026-02-20', value: 13.9 }]);
+  });
 });
