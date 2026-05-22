@@ -417,9 +417,3 @@ export function generateReportPdf(report: Report): void {
       .replace(/^-+|-+$/g, '') || 'report';
   ctx.doc.save(`formen-${slug}.pdf`);
 }
-
-export const __testInternals = {
-  asciize,
-  tierForMarker,
-};
-
