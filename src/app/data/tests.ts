@@ -451,7 +451,7 @@ function collectMarkers(q: QuizAnswers): Set<Marker> {
 }
 
 /* ------------------------------------------------------------------ */
-/* Public API — keeps the RecommendedTest shape so the UI doesn't change */
+/* Public API                                                            */
 /* ------------------------------------------------------------------ */
 
 export type RecommendedTest = {
@@ -462,10 +462,6 @@ export type RecommendedTest = {
   includes: { name: string; about: string }[];
   fasting: boolean;
   turnaround: string;
-  /** Kept for type compatibility with the previous engine — no longer used. */
-  priorityKeys: string[];
-  symptomKeys: string[];
-  alwaysRecommend?: boolean;
 };
 
 export function recommendTestsFor(q: QuizAnswers): RecommendedTest[] {
@@ -489,8 +485,6 @@ export function recommendTestsFor(q: QuizAnswers): RecommendedTest[] {
         })),
         fasting: cat.fasting,
         turnaround: cat.turnaround,
-        priorityKeys: [],
-        symptomKeys: [],
       },
     ];
   });
@@ -512,6 +506,3 @@ export function recommendTestsFor(q: QuizAnswers): RecommendedTest[] {
 
   return panels;
 }
-
-/** Exposed for any future consumer (e.g. a complete-panel page). */
-export const allMarkers: Marker[] = ALL_MARKERS;

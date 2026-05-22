@@ -14,6 +14,7 @@ import {
   type Report,
 } from '../data/reports';
 import {
+  REPORTS_KEY,
   cleanupExpiredReports,
   cleanupOrphanProcessing,
   loadReports,
@@ -34,6 +35,14 @@ type ReportsValue = {
    *  placeholder report when extraction fails — without this, a failed
    *  upload would leave a forever-"processing" entry in the locker. */
   removeReport: (id: string) => void;
+  /** Non-null when the last write to localStorage failed (quota
+   *  exceeded, storage disabled, private mode). UI surfaces should
+   *  show a persistent warning while set, because the user's reports
+   *  only live in memory until this clears. */
+  saveError: 'quota' | null;
+  /** Manually dismisses the saveError banner. The user may want to
+   *  acknowledge the warning without freeing space immediately. */
+  dismissSaveError: () => void;
 };
 
 const ReportsContext = createContext<ReportsValue | null>(null);
@@ -54,9 +63,17 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     return initialReports;
   });
 
+  const [saveError, setSaveError] = useState<'quota' | null>(null);
+  const dismissSaveError = useCallback(() => setSaveError(null), []);
+
   // Skip persistence on the initial render (which would overwrite the
   // localStorage we just loaded). Save on every subsequent change.
   const isFirstRender = useRef(true);
+  // Set true when we're applying a cross-tab update so the resulting
+  // setReports doesn't re-trigger the writeback effect and clobber the
+  // other tab's value. Without this guard, every storage event would
+  // ping-pong between tabs forever.
+  const skipNextPersistRef = useRef(false);
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
@@ -65,8 +82,47 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
       void requestStoragePersistence();
       return;
     }
-    saveReports(reports);
-  }, [reports]);
+    if (skipNextPersistRef.current) {
+      skipNextPersistRef.current = false;
+      return;
+    }
+    const ok = saveReports(reports);
+    if (!ok) {
+      // Quota exceeded / storage disabled / private mode. The reports
+      // list is intact in memory, but the next tab close wipes it
+      // unless the user frees space. Surface this via the saveError
+      // flag — a banner in HomePage reads it and warns the user.
+      setSaveError('quota');
+    } else if (saveError) {
+      // Storage came back (user deleted some old reports / closed
+      // private mode). Clear the banner.
+      setSaveError(null);
+    }
+  }, [reports, saveError]);
+
+  /* Cross-tab sync.
+   *
+   * Without this, two open tabs each hold their own in-memory copy of
+   * reports[] and the second-to-write wins — silently overwriting any
+   * upload made in the other tab. Listen for `storage` events on
+   * dc_reports (only fires from OTHER tabs in the same origin), reload
+   * from localStorage, and update state.
+   *
+   * `skipNextPersistRef` prevents the resulting state update from
+   * writing back and re-emitting the event in a loop. */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== REPORTS_KEY) return;
+      // newValue is null when the key was removed (e.g. wipeAllData
+      // from another tab) — treat that as "load empty".
+      const fresh = loadReports<Report>();
+      skipNextPersistRef.current = true;
+      setReports(fresh);
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const addReport = useCallback((report: Report) => {
     setReports((prev) => [report, ...prev]);
@@ -103,8 +159,15 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<ReportsValue>(
-    () => ({ reports, addReport, markReportReady, removeReport }),
-    [reports, addReport, markReportReady, removeReport],
+    () => ({
+      reports,
+      addReport,
+      markReportReady,
+      removeReport,
+      saveError,
+      dismissSaveError,
+    }),
+    [reports, addReport, markReportReady, removeReport, saveError, dismissSaveError],
   );
 
   return (

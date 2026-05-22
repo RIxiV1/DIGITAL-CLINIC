@@ -14,6 +14,7 @@
 import { type Biomarker } from '../data/biomarkers';
 import { type Report } from '../data/reports';
 import { formatDate } from '../utils/uiUtils';
+import { sanitizeFilename } from '../utils/sanitizeFilename';
 import { parsePdfFile } from './pdfParser';
 
 /* ------------------------------------------------------------------ */
@@ -46,7 +47,7 @@ export function consumePendingUpload(): File | null {
 
 type ParseStepId = 'metadata' | 'bounds' | 'ocr' | 'align';
 
-export type ParseStep = {
+type ParseStep = {
   id: ParseStepId;
   /** Headline label shown next to the active spinner. Copy matches the
    *  diagnostic-log strings the Directive specifies verbatim. */
@@ -97,7 +98,7 @@ export const parseSteps: ParseStep[] = [
   },
 ];
 
-export type UploadInput = {
+type UploadInput = {
   /** Display name shown in the locker. Caller should pass the file's
    *  basename (without extension) — services don't try to be clever. */
   name: string;
@@ -124,13 +125,22 @@ export type ParsedReport = {
   /** Raw extracted text — surfaced in the confirm step as a
    *  "show what we read" diagnostic so the user can sanity-check
    *  what came out of pdfjs/Tesseract before we mark it as their
-   *  report. Never persisted (may contain PII). */
+   *  report.
+   *
+   *  Persistence note: this DOES get persisted to localStorage under
+   *  dc_pendingConfirm while the user is mid-confirm-step, so navigate-
+   *  away-then-back restores the confirm view without re-parsing. The
+   *  record is cleared on confirm OR reject — but a user who closes
+   *  the tab during the confirm step will leave it in storage until
+   *  the next clearPendingConfirm fires. May contain PII. */
   rawText?: string;
   /** Label-value-unit rows the parser saw but couldn't match against
    *  the catalog. Empty when extraction failed or yielded a complete
    *  match. Surfaced in the confirm step so the user knows whether a
-   *  short list reflects an unusual report or a parser gap. Never
-   *  persisted. */
+   *  short list reflects an unusual report or a parser gap.
+   *
+   *  Same persistence caveat as rawText — sits in dc_pendingConfirm
+   *  between upload and confirm. Cleared on confirm/reject. */
   unrecognizedRows?: string[];
 };
 
@@ -289,15 +299,25 @@ export async function parseUploadedReport(
 /* ------------------------------------------------------------------ */
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB — generous for lab PDFs
+const MAX_FILENAME_LENGTH = 200; // keep filenames under 200 chars in localStorage
 const ACCEPTED_MIME_PREFIXES = ['application/pdf', 'image/'];
+
 
 export type FileValidationError =
   | { kind: 'empty'; message: string }
   | { kind: 'type'; message: string }
   | { kind: 'size'; message: string };
 
-export type FileValidationResult =
-  | { ok: true; file: File }
+type FileValidationResult =
+  | {
+      ok: true;
+      file: File;
+      /** Filename with control chars + bidi overrides stripped and
+       *  length capped at MAX_FILENAME_LENGTH. The original file.name
+       *  is read-only; consumers should display + persist this version
+       *  instead. */
+      safeName: string;
+    }
   | { ok: false; error: FileValidationError };
 
 /**
@@ -367,5 +387,15 @@ export function validateUpload(file: File | null): FileValidationResult {
       },
     };
   }
-  return { ok: true, file };
+  // Sanitize the filename HERE (at the gate) so every downstream
+  // surface — UploadPage display, Report.name, PDF export — sees the
+  // cleaned version. Without this a filename packed with bidi
+  // overrides or control chars would render misleadingly in the
+  // locker, and a 10 MB filename would chew through localStorage
+  // quota. See utils/sanitizeFilename for the strip rules.
+  return {
+    ok: true,
+    file,
+    safeName: sanitizeFilename(file.name, MAX_FILENAME_LENGTH),
+  };
 }

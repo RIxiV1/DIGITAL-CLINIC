@@ -1,6 +1,6 @@
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { FileText, Plus, Search, Upload, X } from 'lucide-react';
+import { AlertTriangle, FileText, Plus, Search, Upload, X } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
@@ -50,7 +50,7 @@ const STATUS_FILTERS: Array<{ id: StatusFilter; label: string }> = [
 type LockerSort = 'newest' | 'oldest' | 'lab';
 
 export default function HomePage() {
-  const { reports, addReport } = useReports();
+  const { reports, addReport, saveError, dismissSaveError } = useReports();
   const { navigate } = useNavigation();
 
   /** Loads the curated sample report into the user's locker so the
@@ -208,6 +208,44 @@ export default function HomePage() {
   return (
     <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
       <Header variant="home" />
+
+      {/* Storage-quota warning. Set by ReportsContext when localStorage
+          fails to persist (quota exceeded, private mode, storage
+          disabled). The reports list still works in memory, but a tab
+          close wipes everything — telling the user upfront is the only
+          honest move. */}
+      {saveError === 'quota' && (
+        <Container size="wide" className="pt-4">
+          <div
+            role="alert"
+            className="flex items-start gap-3 rounded-2xl bg-concern-soft border border-concern/30 px-4 py-3"
+          >
+            <AlertTriangle
+              size={18}
+              className="text-concern shrink-0 mt-0.5"
+              aria-hidden
+            />
+            <div className="flex-1 min-w-0 text-[13px] leading-relaxed text-ink">
+              <div className="font-semibold text-concern">
+                Your browser ran out of storage space.
+              </div>
+              <p className="mt-0.5 text-ink-soft">
+                Your reports are still here for now, but closing this tab
+                will lose them. Delete some old reports or download them
+                as PDFs to free up space.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissSaveError}
+              aria-label="Dismiss warning"
+              className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-concern hover:bg-concern/10"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </Container>
+      )}
 
       {/* ZONE 1 · Dynamic headline (with embedded health ring) */}
       <Container size="wide" className="pt-5 lg:pt-8 relative">

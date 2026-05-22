@@ -502,7 +502,7 @@ function getUnknownRowRegex(): RegExp {
     .map(escapeRegex)
     .join('|');
   unknownRowRegex = new RegExp(
-    `([A-Za-z][\\w\\s\\(\\)\\-\\/\\.,'#]{2,50}?)\\s+(-?\\d+(?:\\.\\d+)?)\\s*(${unitPattern})\\b`,
+    `([A-Za-z][\\w\\s\\(\\)\\-\\/\\.,'#]{2,50}?)(?:\\s*[:\\-=\\u2013\\u2212]\\s*|\\s+)(-?\\d+(?:\\.\\d+)?)\\s*(${unitPattern})(?![A-Za-z0-9])`,
     'gi',
   );
   return unknownRowRegex;

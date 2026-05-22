@@ -65,7 +65,10 @@ export default function UploadPage() {
       return;
     }
     setError(null);
-    setFileName(result.file.name);
+    // Use the validator's sanitized name — file.name can carry bidi
+    // overrides / control chars / multi-megabyte garbage. See
+    // utils/sanitizeFilename.
+    setFileName(result.safeName);
     fileRef.current = result.file;
   };
 

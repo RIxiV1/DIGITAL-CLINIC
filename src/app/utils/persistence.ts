@@ -10,10 +10,9 @@
  */
 
 const KEY_PREFIX = 'dc_';
-const REPORTS_KEY = `${KEY_PREFIX}reports`;
+export const REPORTS_KEY = `${KEY_PREFIX}reports`;
 const QUIZ_KEY = `${KEY_PREFIX}quiz`;
 const QUIZ_COMPLETE_KEY = `${KEY_PREFIX}quizComplete`;
-const HISTORY_KEY = `${KEY_PREFIX}navHistory`;
 const PENDING_CONFIRM_KEY = `${KEY_PREFIX}pendingConfirm`;
 
 /** Reports older than this get cleaned up on next app load. 6 months. */
@@ -58,8 +57,14 @@ export function loadReports<T>(): T[] {
   return stored.reports;
 }
 
-export function saveReports<T>(reports: T[]): void {
-  writeJSON(REPORTS_KEY, {
+/**
+ * Persist the reports list. Returns true on success, false when
+ * localStorage is unavailable / disabled / out of quota. Callers should
+ * treat `false` as "your changes only live in memory" and surface a
+ * warning — silent loss on tab-close is the worst failure mode.
+ */
+export function saveReports<T>(reports: T[]): boolean {
+  return writeJSON(REPORTS_KEY, {
     savedAt: new Date().toISOString(),
     reports,
   });
@@ -81,13 +86,6 @@ export function saveQuizComplete(complete: boolean): void {
   writeJSON(QUIZ_COMPLETE_KEY, complete);
 }
 
-export function loadNavHistory<T>(): T[] {
-  return readJSON<T[]>(HISTORY_KEY, []);
-}
-
-export function saveNavHistory<T>(history: T[]): void {
-  writeJSON(HISTORY_KEY, history);
-}
 
 /* ------------------------------------------------------------------ */
 /* Pending-confirm record                                              */

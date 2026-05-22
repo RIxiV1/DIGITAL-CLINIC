@@ -377,6 +377,25 @@ describe('findUnrecognizedRows', () => {
     expect(rows[0]).toContain('mg/dL');
   });
 
+  it('surfaces value-like rows when separated by punctuation (colons, hyphens, en-dashes, equals)', () => {
+    const text = `
+      Apolipoprotein B: 95 mg/dL
+      Lipoprotein(a) - 32 mg/dL
+      Lipoprotein B = 45 mg/dL
+      HDL-Ratio – 5.2 %
+    `;
+    const rows = findUnrecognizedRows(text, []);
+    expect(rows).toHaveLength(4);
+    expect(rows[0]).toContain('Apolipoprotein B');
+    expect(rows[0]).toContain('95');
+    expect(rows[1]).toContain('Lipoprotein(a)');
+    expect(rows[1]).toContain('32');
+    expect(rows[2]).toContain('Lipoprotein B');
+    expect(rows[2]).toContain('45');
+    expect(rows[3]).toContain('HDL-Ratio');
+    expect(rows[3]).toContain('5.2');
+  });
+
   it('does not surface a row whose (value, unit) pair was extracted', () => {
     // We extracted Hemoglobin 14.5 g/dL. The text contains the same
     // value+unit pair, so it should not appear as unrecognized.

@@ -106,7 +106,7 @@ export default function ManualEntryPage() {
   // Convert the typed values into a Biomarker[]. Skips empty / NaN /
   // wildly-out-of-range entries silently — typos get dropped rather
   // than producing a "Hemoglobin 1500 g/dL" tier=critical card.
-  const buildBiomarkers = (): Biomarker[] => {
+  const validBiomarkers = useMemo((): Biomarker[] => {
     const out: Biomarker[] = [];
     for (const t of biomarkerCatalog) {
       const raw = values[t.id]?.trim();
@@ -118,13 +118,13 @@ export default function ManualEntryPage() {
       out.push(markerFromTemplate(t, num));
     }
     return out;
-  };
+  }, [values]);
 
+  const validCount = validBiomarkers.length;
   const filledCount = Object.values(values).filter((v) => v.trim() !== '').length;
 
   const save = () => {
-    const biomarkers = buildBiomarkers();
-    if (biomarkers.length === 0) {
+    if (validBiomarkers.length === 0) {
       // Were any non-empty values typed at all? If yes, every one was
       // dropped by the sanity bound — tell the user instead of letting
       // the disabled-button heuristic silently swallow the click.
@@ -150,7 +150,7 @@ export default function ManualEntryPage() {
       uploadedAt: now.toISOString().slice(0, 10),
       status: 'ready',
       badge: 'analyzed',
-      biomarkers,
+      biomarkers: validBiomarkers,
     };
     addReport(report);
     replace({ type: 'results', reportId: report.id });
@@ -287,7 +287,7 @@ export default function ManualEntryPage() {
             >
               {filledCount === 0
                 ? 'Enter at least one value'
-                : `See my report (${filledCount} value${filledCount === 1 ? '' : 's'})`}
+                : `See my report (${validCount} value${validCount === 1 ? '' : 's'})`}
             </Button>
           </div>
         </Container>

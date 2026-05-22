@@ -1,4 +1,4 @@
-export type Problem = {
+type Problem = {
   id: string;
   title: string;
   summary: string;

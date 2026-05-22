@@ -94,6 +94,14 @@ export default function ProcessingPage() {
   // forever in StrictMode. markReportReady + replace are both
   // idempotent, so the worst case is a no-op double-fire.
   const startedForRef = useRef<string | null>(null);
+  // Tracks which processingId the most recent parse was started for.
+  // When parse-A's .then fires AFTER the user has started parse-B
+  // (rapid re-upload), the captured processingId no longer matches
+  // this ref — we then suppress the side-effects (savePendingConfirm
+  // / removeReport / setFailure) that would otherwise pollute B's
+  // state or leave an orphan pendingConfirm record tagged with the
+  // dead processingId.
+  const activeProcessingIdRef = useRef<string | null>(null);
 
   // Refresh / deep-link guard: someone lands on /?page=processing
   // directly, but there's no pending processing report (refreshed
@@ -121,6 +129,7 @@ export default function ProcessingPage() {
     if (!processingId) return;
     if (startedForRef.current === processingId) return;
     startedForRef.current = processingId;
+    activeProcessingIdRef.current = processingId;
 
     // Restore-from-localStorage path. The previous flow held the confirm
     // state in component-local state only — so navigating away from the
@@ -155,6 +164,13 @@ export default function ProcessingPage() {
         setOverall(overall);
       },
     ).then((result) => {
+      // Race guard: if a new upload superseded this one while we were
+      // parsing, the activeProcessingIdRef now points to the newer
+      // placeholder. Suppress all side-effects to avoid polluting the
+      // new flow's state and leaking an orphan pendingConfirm record
+      // tagged with the abandoned processingId.
+      if (activeProcessingIdRef.current !== processingId) return;
+
       if (result.parsedFromFile) {
         // Real extraction succeeded — hand control to the user to
         // verify what was extracted before we commit the report.

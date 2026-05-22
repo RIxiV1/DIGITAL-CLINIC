@@ -507,7 +507,7 @@ export function getPreviousValue(marker: Biomarker): number | undefined {
  * for a "down-is-better" marker (LDL, Glucose), going down = improving.
  * For a "band" marker we don't make a value judgment — return 'neutral'.
  */
-export type TrendTone = 'improving' | 'declining' | 'stable' | 'neutral';
+type TrendTone = 'improving' | 'declining' | 'stable' | 'neutral';
 
 export function getTrendTone(marker: Biomarker): TrendTone {
   const trend = getTrend(marker);

@@ -55,6 +55,7 @@ export default function LandingPage() {
     return (
       <div className="min-h-dvh bg-white text-ink overflow-x-hidden">
         <TopNav
+          variant="minimal"
           onStart={startQuiz}
           onSample={viewSample}
           onDashboard={goDashboard}

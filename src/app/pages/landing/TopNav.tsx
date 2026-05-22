@@ -5,6 +5,7 @@ export default function TopNav({
   onStart,
   onSample,
   onDashboard,
+  variant = 'full',
 }: {
   onStart: () => void;
   onSample: () => void;
@@ -12,6 +13,12 @@ export default function TopNav({
    *  or reports). Renders a "Go to dashboard" button. New visitors
    *  don't see it because there's nothing in the dashboard yet. */
   onDashboard?: () => void;
+  /** 'full' (default) shows the four hash anchors (#connection, #how,
+   *  #report, #science). 'minimal' hides them because the minimal
+   *  LandingPage variant doesn't have those sections — clicking a
+   *  hash anchor that doesn't exist silently no-ops, which is a
+   *  small but real UX hole. */
+  variant?: 'full' | 'minimal';
 }) {
   return (
     <header className="sticky top-0 z-40 bg-white border-b border-line/70">
@@ -24,20 +31,22 @@ export default function TopNav({
         >
           <Logo />
         </button>
-        <nav className="hidden md:flex items-center gap-7 text-[13.5px] text-ink-soft">
-          <a href="#connection" className="hover:text-ink transition-colors">
-            The connection
-          </a>
-          <a href="#how" className="hover:text-ink transition-colors">
-            How it works
-          </a>
-          <a href="#report" className="hover:text-ink transition-colors">
-            What you’ll get
-          </a>
-          <a href="#science" className="hover:text-ink transition-colors">
-            Science
-          </a>
-        </nav>
+        {variant === 'full' && (
+          <nav className="hidden md:flex items-center gap-7 text-[13.5px] text-ink-soft">
+            <a href="#connection" className="hover:text-ink transition-colors">
+              The connection
+            </a>
+            <a href="#how" className="hover:text-ink transition-colors">
+              How it works
+            </a>
+            <a href="#report" className="hover:text-ink transition-colors">
+              What you’ll get
+            </a>
+            <a href="#science" className="hover:text-ink transition-colors">
+              Science
+            </a>
+          </nav>
+        )}
         <div className="flex items-center gap-2">
           <button
             onClick={onSample}
