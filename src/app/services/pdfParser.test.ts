@@ -588,4 +588,106 @@ describe('classifyOutOfScope', () => {
     `;
     expect(classifyOutOfScope(text)).toBeNull();
   });
+
+  it('does NOT trigger out-of-scope when there is only one match in a category', () => {
+    // 1 hit for 'viral' category (e.g. malaria) should not trigger out-of-scope.
+    const text = `
+      Routine Blood Check
+      Fasting Glucose 92 mg/dL
+      Note: patient has history of malaria in childhood.
+    `;
+    expect(classifyOutOfScope(text)).toBeNull();
+  });
+
+  it('triggers out-of-scope when there are exactly two matches in a category', () => {
+    // 2 hits for 'viral' category (e.g. malaria, dengue) should trigger.
+    const text = `
+      Patient report
+      Malaria check: negative
+      Dengue antibody: not found
+    `;
+    expect(classifyOutOfScope(text)).toBe('viral');
+  });
+
+  it('breaks ties towards the category with the most hits', () => {
+    // 2 hits for 'viral' ('dengue', 'syphilis') and 3 hits for 'imaging' ('x-ray', 'ct scan', 'mri brain')
+    // Should return 'imaging' since it has more hits (3 vs 2).
+    const text = `
+      Report of the patient:
+      Had dengue in past, syphilis negative.
+      We took x-ray, ct scan, and mri brain.
+    `;
+    expect(classifyOutOfScope(text)).toBe('imaging');
+  });
+
+  it('does NOT trigger when each category has only one hit (per-category threshold)', () => {
+    // The 2-hit threshold is per-category, not total. A document with
+    // ONE viral mention + ONE imaging mention + ONE physical-exam
+    // mention should NOT trigger — each category sits at hits=1.
+    // Without the per-category gate, a future refactor could
+    // accidentally sum hits across categories and start rejecting
+    // routine reports that happen to mention multiple ad-hoc things.
+    const text = `
+      Annual Physical
+      Notes: malaria history negative.
+      Recommend chest x-ray follow-up if symptoms persist.
+      Patient reports vision changes; refer for visual acuity check.
+      Glucose 92 mg/dL
+    `;
+    expect(classifyOutOfScope(text)).toBeNull();
+  });
 });
+
+/* ------------------------------------------------------------------ */
+/* Vigorous Edge Cases for Value Parsing                              */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — vigorous edge cases', () => {
+  it('handles immediate attached units without space like "92mg/dL"', () => {
+    const text = 'Fasting Glucose 92mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe('glucose');
+    expect(result[0].value).toBe(92);
+  });
+
+  it('handles attached % units with spacing in template', () => {
+    // Template might have ' %' or '%'. Normalization collapses spaces before '%'
+    const text = 'HbA1c 5.4%';
+    const result = extractBiomarkersFromText(text);
+    expect(result).toHaveLength(1);
+    expect(result[0].value).toBe(5.4);
+  });
+
+  it('ignores invalid numbers like multiple decimal points when they violate sanity limits', () => {
+    const text = 'Fasting Glucose 999.999.999 mg/dL';
+    const result = extractBiomarkersFromText(text);
+    // The parser might match a substring like 999.999 which violates the Fasting Glucose sanity bounds (max 99 + 5*29 = 244)
+    expect(result.find(m => m.id === 'glucose')).toBeUndefined();
+  });
+
+  it('rejects values exactly at the negative sanity boundary limit', () => {
+    // Glucose healthy range 70-99 (span = 29).
+    // Min sanity bound = 70 - (5 * 29) = -75.
+    // Let's test a value below -75 (e.g. -76), it should be rejected.
+    const text = 'Fasting Glucose -76 mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find(m => m.id === 'glucose')).toBeUndefined();
+  });
+
+  it('handles extremely long spaces, tabs, and carriage returns in text', () => {
+    const text = 'Fasting\t\t\tGlucose\r\r\n\n\n\n   92   \t\t   mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result).toHaveLength(1);
+    expect(result[0].value).toBe(92);
+  });
+
+  it('handles trailing punctuation attached to numbers', () => {
+    // Fasting Glucose 92. mg/dL -> should still extract 92
+    const text = 'Fasting Glucose 92. mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result).toHaveLength(1);
+    expect(result[0].value).toBe(92);
+  });
+});
+
