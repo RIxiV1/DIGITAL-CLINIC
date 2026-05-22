@@ -16,6 +16,7 @@ import Card from '../components/Card';
 import Container from '../components/Container';
 import Logo from '../components/Logo';
 import Pill from '../components/Pill';
+import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useReports } from '../AppContext';
 import {
   consumePendingUpload,
@@ -735,7 +736,7 @@ function ConfirmExtractedValuesView({
       </Container>
 
       {/* Sticky bottom CTAs — fixed so they stay visible on long lists. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-4 pb-4 safe-bottom border-t border-line/70">
+      <StickyBottomBar bordered>
         <Container size="narrow">
           <div className="flex flex-col-reverse sm:flex-row items-stretch gap-2">
             <Button
@@ -758,7 +759,7 @@ function ConfirmExtractedValuesView({
             </Button>
           </div>
         </Container>
-      </div>
+      </StickyBottomBar>
     </div>
   );
 }

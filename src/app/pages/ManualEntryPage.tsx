@@ -5,6 +5,7 @@ import Card from '../components/Card';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import Pill from '../components/Pill';
+import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useReports } from '../AppContext';
 import {
   biomarkerCatalog,
@@ -257,7 +258,7 @@ export default function ManualEntryPage() {
       {/* Sticky bottom CTA — counts entered values so the user knows
           what the save will produce. Disabled until they've typed at
           least one. */}
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-4 pb-4 safe-bottom border-t border-line/70">
+      <StickyBottomBar bordered>
         <Container size="narrow">
           {saveError && (
             <div
@@ -291,7 +292,7 @@ export default function ManualEntryPage() {
             </Button>
           </div>
         </Container>
-      </div>
+      </StickyBottomBar>
     </div>
   );
 }

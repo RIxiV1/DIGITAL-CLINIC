@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import Container from '../components/Container';
 import Emoji from '../components/Emoji';
 import Logo from '../components/Logo';
+import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useQuiz, type QuizAnswers } from '../AppContext';
 import { quizSteps, totalQuizSteps, type QuizStep } from '../data/quiz';
 import { useModalA11y } from '../utils/useModalA11y';
@@ -349,8 +350,9 @@ export default function QuizPage() {
         </div>
       </Container>
 
-      {/* Sticky bottom CTA */}
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-5 pb-5 safe-bottom">
+      {/* Sticky bottom CTA — "tall" padding for the row that can wrap
+          into Back + Skip + Continue on small screens. */}
+      <StickyBottomBar padding="tall">
         <Container size="narrow">
           <div className="flex items-center gap-2">
             {stepIndex > 0 && (
@@ -375,7 +377,7 @@ export default function QuizPage() {
             </Button>
           </div>
         </Container>
-      </div>
+      </StickyBottomBar>
 
       {/* Exit confirmation */}
       <AnimatePresence>

@@ -13,6 +13,7 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
 import Header from '../components/Header';
+import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useReports } from '../AppContext';
 import { makeReport } from '../data/reports';
 import {
@@ -290,7 +291,7 @@ export default function UploadPage() {
         </div>
       </Container>
 
-      <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-4 pb-4 safe-bottom">
+      <StickyBottomBar>
         <Container size="narrow">
           <Button
             size="lg"
@@ -302,7 +303,7 @@ export default function UploadPage() {
             Start analysing
           </Button>
         </Container>
-      </div>
+      </StickyBottomBar>
     </div>
   );
 }
