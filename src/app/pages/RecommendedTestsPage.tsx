@@ -23,9 +23,10 @@ import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
 import LearnMoreModal from '../components/LearnMoreModal';
 import { useNavigation, useQuiz } from '../AppContext';
-import type {
-  RiskAssessment,
-  RiskSystemResult,
+import {
+  SYSTEM_MAX_SCORES,
+  type RiskAssessment,
+  type RiskSystemResult,
 } from '../contexts/QuizContext';
 import { recommendTestsFor } from '../data/tests';
 import { getMarkerInfo } from '../data/markerInfo';
@@ -84,6 +85,34 @@ export default function RecommendedTestsPage() {
           </p>
         </div>
 
+        {/* High-tier intercept — when the symptom cluster is strong, the
+            user shouldn't move to "let me self-test and decide" without
+            seeing the recommendation to talk to a clinician first. Not a
+            blocking modal (paternalistic), but the first content card
+            below the headline so it can't be missed. */}
+        {showRiskCard && riskAssessment.highestTier === 'high' && (
+          <div className="mt-6 lg:max-w-3xl">
+            <Card className="!bg-concern-soft border-concern/30">
+              <div className="flex items-start gap-3">
+                <div className="grid place-items-center w-10 h-10 rounded-2xl bg-concern text-white shrink-0">
+                  <AlertCircle size={18} />
+                </div>
+                <div className="min-w-0">
+                  <div className="font-display text-[16px] lg:text-[17px] text-ink leading-tight">
+                    Talk to a doctor before acting on this.
+                  </div>
+                  <p className="mt-1.5 text-[13.5px] text-ink-soft leading-relaxed">
+                    Your answers cluster strongly toward at least one
+                    system. The tests below help confirm or rule it out —
+                    but the interpretation belongs in a consultation,
+                    not a self-diagnosis from a screener.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+
         {showRiskCard && (
           <div className="mt-6 lg:max-w-3xl">
             <RiskSummaryCard assessment={riskAssessment} />
@@ -94,12 +123,12 @@ export default function RecommendedTestsPage() {
           {tests.map((t, i) => {
             const open = expanded === t.id;
             return (
-              <motion.div
-                key={t.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.4 }}
-              >
+              // Per-row entrance animation removed — see #6.7. With 4-6
+              // tests in the list, stagger added ~250ms of perceived
+              // wait on mid-tier devices without conveying useful
+              // information. The section-level Reveal on the heading
+              // still anchors the page transition.
+              <div key={t.id}>
                 <Card padded={false} className="overflow-hidden">
                   <button
                     onClick={() => setExpanded(open ? null : t.id)}
@@ -225,7 +254,7 @@ export default function RecommendedTestsPage() {
                     )}
                   </AnimatePresence>
                 </Card>
-              </motion.div>
+              </div>
             );
           })}
         </div>
@@ -333,10 +362,10 @@ function RiskSummaryCard({ assessment }: { assessment: RiskAssessment }) {
 
   const lead =
     top.tier === 'low'
-      ? "Your symptoms don't strongly implicate any of the systems we screen for — the tests below cover the usual ground."
+      ? `Your symptoms don't cluster strongly around any one system — the tests below cover the usual ground.`
       : top.tier === 'moderate'
-        ? `Your symptoms point to ${top.label} with moderate signal strength.`
-        : `Your symptoms point strongly to ${top.label}.`;
+        ? `Your symptoms cluster moderately around ${top.label.toLowerCase()}.`
+        : `Your symptoms cluster strongly around ${top.label.toLowerCase()}. Worth bringing this to a doctor before assuming what it means.`;
 
   return (
     <Card className="border-indigo-100/80">
@@ -367,12 +396,20 @@ function RiskSummaryCard({ assessment }: { assessment: RiskAssessment }) {
 }
 
 /**
- * One row of the risk card — system label, raw score, tier badge.
+ * One row of the risk card — system label, score density, tier badge.
  *
- * Visual weight scales with tier: HIGH gets a soft red row tint + an
- * alert-circle icon next to the badge; MODERATE gets a soft yellow
- * tint + warning triangle; LOW stays flat with a check icon. The user
- * should feel the urgency without having to read the score number.
+ * Reframed for honesty:
+ *   - "High Risk" → "Strong signal" (and friends). The product emits a
+ *     symptom-cluster strength, not a diagnostic risk score, so the
+ *     label should match the math.
+ *   - "Score 9" → "Score 9 / 19 — screening only". The denominator
+ *     bounds the metric so it can't be misread as a clinical scale,
+ *     and the trailing clause repeats the disclaimer in line with the
+ *     badge (not just at the bottom of the card).
+ *
+ * Visual weight still scales with tier: HIGH gets a soft red row tint
+ * + alert-circle, MODERATE gets soft yellow + warning triangle, LOW
+ * stays flat with a check icon.
  */
 function RiskRow({ system }: { system: RiskSystemResult }) {
   const tierStyles =
@@ -380,7 +417,7 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
       ? {
           row: 'bg-concern-soft/40 -mx-3 px-3 rounded-lg',
           badge: 'bg-concern text-white shadow-sm',
-          label: 'High risk',
+          label: 'Strong signal',
           Icon: AlertCircle,
           iconClass: 'text-concern',
         }
@@ -388,26 +425,26 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
         ? {
             row: 'bg-attention-soft/40 -mx-3 px-3 rounded-lg',
             badge: 'bg-attention text-white shadow-sm',
-            label: 'Moderate risk',
+            label: 'Moderate signal',
             Icon: AlertTriangle,
             iconClass: 'text-attention',
           }
         : {
             row: '',
             badge: 'bg-good-soft text-good',
-            label: 'Low risk',
+            label: 'Weak signal',
             Icon: CheckCircle2,
             iconClass: 'text-good',
           };
   const { Icon } = tierStyles;
+  const maxScore = SYSTEM_MAX_SCORES[system.id];
 
   return (
     <div
       className={`flex items-start justify-between gap-3 py-2.5 border-b border-line/60 last:border-0 ${tierStyles.row}`}
     >
-      {/* No `truncate` — system labels (e.g. "Hypogonadism (low T)
-          indicators") are too long for ~320px viewports and chopping
-          them mid-word loses the meaning. Allow wrap to 2 lines. */}
+      {/* No `truncate` — system labels can run long and chopping them
+          mid-word loses the meaning. Allow wrap to 2 lines. */}
       <div className="flex-1 min-w-0 flex items-start gap-2">
         <Icon
           size={15}
@@ -419,7 +456,8 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
             {system.label}
           </div>
           <div className="mt-0.5 text-[11px] text-muted tabular-nums">
-            Score {system.score}
+            Score {system.score} / {maxScore}{' '}
+            <span className="not-italic">·</span> screening only
           </div>
         </div>
       </div>

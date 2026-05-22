@@ -538,7 +538,7 @@ function ExitConfirm({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.2 }}
       onClick={onCancel}
-      className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-ink/40 backdrop-blur-sm p-0 sm:p-6"
+      className="fixed inset-0 z-50 grid place-items-end sm:place-items-center bg-ink/40 backdrop-blur-md p-0 sm:p-6"
       role="presentation"
     >
       <motion.div
@@ -694,7 +694,7 @@ function PillOptions({
   multi: boolean;
 }) {
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+    <div className="grid grid-cols-1 min-[370px]:grid-cols-2 sm:grid-cols-3 gap-2.5">
       {options.map((opt) => {
         const selected = isSelected(opt.id);
         return (
@@ -703,7 +703,8 @@ function PillOptions({
             type="button"
             aria-pressed={multi ? selected : undefined}
             whileTap={{ scale: 0.95 }}
-            whileHover={{ y: -1 }}
+            whileHover={{ y: -1.5, scale: 1.01 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
             onClick={() => toggle(opt.id)}
             className={`relative inline-flex items-center justify-center gap-2 min-h-12 h-auto py-2.5 px-4 rounded-full font-semibold text-[13.5px] border transition-all text-center ${
               selected
@@ -749,6 +750,8 @@ function CardOptions({
             type="button"
             aria-pressed={selected}
             whileTap={{ scale: 0.985 }}
+            whileHover={{ y: -1, scale: 1.005 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
             onClick={() => toggle(opt.id)}
             className={`relative w-full text-left px-4 py-3.5 rounded-[16px] border transition-all min-h-[52px] ${
               selected

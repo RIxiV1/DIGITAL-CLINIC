@@ -23,6 +23,7 @@ export default function Card({
     return (
       <motion.div
         whileHover={{ y: -2, boxShadow: 'var(--shadow-pop)' }}
+        whileTap={{ scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 320, damping: 26 }}
         className={`${base} ${isButton ? 'cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60' : ''}`}
         role={isButton ? 'button' : undefined}

@@ -1,17 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  /* Deep Indigo — brand authority */
-  --color-indigo-50: #EEF0F7;
-  --color-indigo-100: #D9DDEE;
-  --color-indigo-200: #B4BCDF;
-  --color-indigo-300: #8E99CE;
-  --color-indigo-400: #5E6CB4;
-  --color-indigo-500: #4252A1;
-  --color-indigo-600: #2D3B8E;
-  --color-indigo-700: #232E73;
-  --color-indigo-800: #1A2358;
-  --color-indigo-900: #11173B;
+  /* Deep Indigo — brand authority (mapped to Clinical Blue to execute system-wide theme shift) */
+  --color-indigo-50: #EBF5FF;
+  --color-indigo-100: #D6EBFF;
+  --color-indigo-200: #ADD6FF;
+  --color-indigo-300: #7AB8FF;
+  --color-indigo-400: #3D95FF;
+  --color-indigo-500: #0F7AEB;
+  --color-indigo-600: #0066CC;
+  --color-indigo-700: #0052A3;
+  --color-indigo-800: #003D7A;
+  --color-indigo-900: #002852;
 
   /* Clinical Blue — Digital Clinic primary (deep, authoritative, calm) */
   --color-blue-50: #EBF5FF;
@@ -67,7 +67,7 @@
     0 6px 18px rgba(15, 20, 34, 0.05);
   --shadow-pop: 0 4px 8px rgba(15, 20, 34, 0.04),
     0 16px 36px rgba(15, 20, 34, 0.10);
-  --shadow-indigo: 0 8px 24px rgba(45, 59, 142, 0.22);
+  --shadow-indigo: 0 8px 24px rgba(0, 102, 204, 0.22);
   /* Ultra-subtle premium SaaS card shadow */
   --shadow-clinical: 0 4px 30px rgba(0, 0, 0, 0.03);
   --shadow-clinical-lg: 0 6px 40px rgba(0, 0, 0, 0.05),
@@ -215,7 +215,7 @@ button:disabled,
   /* Subtle dotted grid for premium hero */
   .bg-dot-grid {
     background-image: radial-gradient(
-      rgba(45, 59, 142, 0.08) 1px,
+      rgba(0, 102, 204, 0.08) 1px,
       transparent 1px
     );
     background-size: 18px 18px;
@@ -267,7 +267,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(45, 59, 142, 0.18);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.18);
 }
 
 /* Print — Save as PDF flow */

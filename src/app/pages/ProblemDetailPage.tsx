@@ -10,7 +10,6 @@ import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
 import Header from '../components/Header';
-import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
 import { useNavigation, useReports } from '../AppContext';
@@ -64,7 +63,10 @@ export default function ProblemDetailPage({
     <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
       <Header variant="page" title="Deep dive" subtitle={p.title} />
 
-      {/* Hero */}
+      {/* Hero. "Personalised for you" pill removed — this is a generic
+          deep-dive article (same copy for every visitor with the same
+          condition), not personalised content. The pill belonged on
+          RecommendedTestsPage where the page is genuinely per-quiz. */}
       <Container size="wide" className="pt-5 lg:pt-10">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -72,9 +74,6 @@ export default function ProblemDetailPage({
           transition={{ duration: 0.4 }}
           className="lg:max-w-3xl"
         >
-          <Pill tone="gold" size="md">
-            Personalised for you
-          </Pill>
           <h1 className="font-display text-[30px] lg:text-[40px] leading-tight mt-3 text-balance">
             {p.title}
           </h1>
@@ -156,12 +155,9 @@ export default function ProblemDetailPage({
 
         <div className="mt-4 grid sm:grid-cols-2 gap-3 lg:max-w-3xl">
           {p.actions.map((a, i) => (
-            <motion.div
-              key={a.title}
-              initial={{ opacity: 0, x: -8 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: i * 0.06, duration: 0.35 }}
-            >
+            // Per-row stagger removed — see #6.7. Action lists rarely
+            // exceed 4 items so the stagger was pure cost.
+            <div key={a.title}>
               <Card>
                 <div className="flex items-start gap-3">
                   <div className="font-display text-indigo-700 text-[18px] shrink-0 w-7">
@@ -179,7 +175,7 @@ export default function ProblemDetailPage({
                   />
                 </div>
               </Card>
-            </motion.div>
+            </div>
           ))}
         </div>
       </Container>

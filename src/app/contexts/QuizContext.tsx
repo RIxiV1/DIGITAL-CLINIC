@@ -41,12 +41,17 @@ export type RiskSystemId =
 
 export type RiskTier = 'low' | 'moderate' | 'high';
 
-/** Human-facing label for each clinical system. Kept in code (not the
- *  data files) because it's tied to the algorithm, not the quiz copy. */
+/** Human-facing label for each clinical system. Phrased as "signals
+ *  for X" rather than "X risk indicators" — the algorithm outputs a
+ *  symptom-cluster strength, not a diagnostic risk score. Putting
+ *  "Hypogonadism: High Risk" on screen reads as a result; the actual
+ *  signal is "you ticked enough boxes that weight toward hypogonadism."
+ *  The reframe keeps the diagnostic vocabulary (clinicians need it)
+ *  but drops the prescriptive framing. */
 const SYSTEM_LABELS: Record<RiskSystemId, string> = {
-  hypogonadism: 'Hypogonadism (low T) indicators',
-  erectileDysfunction: 'Erectile-function indicators',
-  cardiovascular: 'Cardiovascular risk indicators',
+  hypogonadism: 'Signals for low testosterone',
+  erectileDysfunction: 'Signals for erectile-function issues',
+  cardiovascular: 'Signals for cardiovascular risk',
 };
 
 /**
@@ -117,6 +122,30 @@ const ALL_SYSTEMS: readonly RiskSystemId[] = [
   'erectileDysfunction',
   'cardiovascular',
 ] as const;
+
+/**
+ * Maximum possible score per system — sum of every symptom's weight
+ * for that system if the user ticked everything. Computed once from
+ * SYMPTOM_WEIGHTS so we can show "Score 9/19" instead of bare
+ * "Score 9". The denominator helps the user understand the signal as
+ * bounded rather than a free-floating number.
+ */
+export const SYSTEM_MAX_SCORES: Record<RiskSystemId, number> = ALL_SYSTEMS
+  .reduce(
+    (acc, sysId) => {
+      let total = 0;
+      for (const weights of Object.values(SYMPTOM_WEIGHTS)) {
+        const w = weights[sysId];
+        if (typeof w === 'number') total += w;
+      }
+      acc[sysId] = total;
+      return acc;
+    },
+    { hypogonadism: 0, erectileDysfunction: 0, cardiovascular: 0 } as Record<
+      RiskSystemId,
+      number
+    >,
+  );
 
 function tierFor(score: number): RiskTier {
   if (score >= 15) return 'high';

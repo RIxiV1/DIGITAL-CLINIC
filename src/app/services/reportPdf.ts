@@ -42,8 +42,8 @@ const CONTENT_W = PAGE_W - MARGIN_L - MARGIN_R;
 
 // Colors — RGB triples matching the app's design tokens.
 const COLOR = {
-  indigoBrand: [45, 59, 142] as const,
-  indigoDeep: [35, 46, 115] as const,
+  indigoBrand: [0, 102, 204] as const,
+  indigoDeep: [0, 82, 163] as const,
   ink: [15, 20, 34] as const,
   inkSoft: [44, 51, 68] as const,
   muted: [107, 114, 128] as const,

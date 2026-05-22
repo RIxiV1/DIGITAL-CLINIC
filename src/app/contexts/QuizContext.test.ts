@@ -1,6 +1,6 @@
 /**
  * Tests for calculateRisk — the function that turns a quiz symptom
- * selection into the user-facing "Hypogonadism: High Risk" tier emitted
+ * selection into the user-facing "Strong signal" tier emitted
  * by the dashboard. This is a clinical-adjacent output, so the test
  * pins:
  *

@@ -58,40 +58,41 @@ export type ParseStep = {
 };
 
 /**
- * The four diagnostic stages the UI surfaces while a report is being
- * "parsed". The order is deliberate — metadata has to be read before
- * we can locate the value bounds, which has to finish before OCR is
- * meaningful, etc.
+ * Visible stages while a report is being parsed.
  *
- * Copy is intentionally clinical-sounding (talks about reference ranges,
- * panels, alignment) so the user has a credible picture of what the
- * pipeline is doing — even though, today, the pipeline is a UI
- * simulation. When the real backend lands, these labels stay; only the
- * underlying work changes.
+ * Honest labels: each one corresponds to a real step the pipeline
+ * actually takes. The previous copy ("Locating reference marker bounds",
+ * "OCR Text extraction: found hormone & metabolic panels") was theatre
+ * — those weren't real stages, they were credibility props. If a user
+ * ever paid close attention they'd realise the loading screen was
+ * lying and trust would drop further than if we'd just shown a spinner.
+ *
+ * The new labels describe what the pipeline does in plain terms:
+ * extract text → run OCR if needed → match markers → score them.
  */
 export const parseSteps: ParseStep[] = [
   {
     id: 'metadata',
-    label: 'Reading PDF metadata',
-    detail: 'Reading file headers, page count, and document fingerprint.',
+    label: 'Reading your file',
+    detail: 'Opening the PDF and pulling out the text layer.',
     durationMs: 900,
   },
   {
     id: 'bounds',
-    label: 'Locating reference marker bounds',
-    detail: 'Finding the table boundaries that contain reference ranges and lab values.',
+    label: 'Finding the values',
+    detail: 'Scanning the document for marker names, numbers, and units.',
     durationMs: 950,
   },
   {
     id: 'ocr',
-    label: 'OCR Text extraction: found hormone & metabolic panels',
-    detail: 'Extracting biomarker names, values, and units from each panel.',
+    label: 'Matching against our catalog',
+    detail: 'Lining each row up against the markers we know how to read.',
     durationMs: 1100,
   },
   {
     id: 'align',
-    label: "Aligning values with ForMen Men's Reference ranges",
-    detail: 'Cross-referencing each value against the clinical band library.',
+    label: 'Scoring against healthy ranges',
+    detail: 'Flagging anything outside the normal band so we can highlight it.',
     durationMs: 800,
   },
 ];

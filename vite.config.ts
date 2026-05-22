@@ -26,8 +26,10 @@ export default defineConfig({
     host: true,
   },
   test: {
-    // Tests don't touch the DOM (yet) — they exercise pure parsing
-    // logic against text fixtures. Node env keeps startup fast.
+    // Default environment is 'node' for fast pure-logic tests.
+    // Files that need DOM rendering opt in via the file-level pragma:
+    //   // @vitest-environment jsdom
+    // at the top of the test file. See pages.smoke.test.tsx.
     environment: 'node',
     globals: true,
     include: ['src/**/*.test.{ts,tsx}'],

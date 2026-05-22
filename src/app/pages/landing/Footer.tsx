@@ -3,7 +3,7 @@ import { FlaskConical, Lock } from 'lucide-react';
 import Logo from '../../components/Logo';
 import LegalModal, { type LegalKind } from '../../components/LegalModal';
 
-export default function Footer({ onSample }: { onSample: () => void }) {
+export default function Footer() {
   const [legal, setLegal] = useState<LegalKind | null>(null);
   return (
     <footer className="border-t border-line/70 bg-white">
@@ -40,15 +40,6 @@ export default function Footer({ onSample }: { onSample: () => void }) {
               <a href="#report" className="hover:text-ink">
                 What you’ll get
               </a>
-            </li>
-            <li>
-              <button
-                type="button"
-                onClick={onSample}
-                className="hover:text-ink"
-              >
-                See a sample report
-              </button>
             </li>
           </ul>
         </div>

@@ -39,10 +39,10 @@ export default function LandingPage() {
       <Hero onStart={startQuiz} onSample={viewSample} />
       <ConnectionSection onStart={startQuiz} />
       <HowItWorks />
-      <WhatYoullGet onSample={viewSample} />
+      <WhatYoullGet />
       <Credibility />
       <FinalCta onStart={startQuiz} />
-      <Footer onSample={viewSample} />
+      <Footer />
     </div>
   );
 }

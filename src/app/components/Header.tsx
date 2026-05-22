@@ -75,7 +75,7 @@ export default function Header({
   // glass and solid is negligible since the header sits on the canvas
   // (light gray) background anyway.
   return (
-    <header className="sticky top-0 z-30 bg-canvas border-b border-line/70 no-print">
+    <header className="sticky top-0 z-30 bg-canvas/80 backdrop-blur-md border-b border-line/70 no-print">
       <div
         className={`mx-auto w-full ${widthCls} px-4 sm:px-6 lg:px-8 h-14 lg:h-16 flex items-center gap-2`}
       >
