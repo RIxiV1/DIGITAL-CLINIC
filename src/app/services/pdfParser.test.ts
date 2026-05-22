@@ -279,6 +279,43 @@ describe('extractBiomarkersFromText — realistic lab fixture', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* µ vs μ — Micro Sign (U+00B5) and Greek mu (U+03BC) normalization    */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — mu normalization', () => {
+  // The catalog uses Greek mu (U+03BC) in template units like 'µIU/mL'.
+  // Real lab PDFs use both code points inconsistently. Without
+  // normalizeMu both sides of the unit gate, units that differ only in
+  // code point silently fail to match — silent missing extractions.
+
+  it('extracts TSH whether the input uses U+00B5 (Micro Sign)', () => {
+    // µ is the Micro Sign (most common in Windows-encoded PDFs).
+    const text = 'TSH 2.1 µIU/mL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'tsh')?.value).toBe(2.1);
+  });
+
+  it('extracts TSH whether the input uses U+03BC (Greek mu)', () => {
+    // μ is the Greek small letter mu (common in OCR output).
+    const text = 'TSH 2.1 μIU/mL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'tsh')?.value).toBe(2.1);
+  });
+
+  it('handles a mixed mu in the same document', () => {
+    // Stress-test the normalization: two markers, two different code
+    // points for µ in the input. Both should match.
+    const text = `
+      TSH 2.1 µIU/mL
+      Fasting Insulin 8 μIU/mL
+    `;
+    const ids = extractBiomarkersFromText(text).map((m) => m.id);
+    expect(ids).toContain('tsh');
+    expect(ids).toContain('insulin');
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* Vitamin D (25-OH) — the regex+alias-ordering trap                   */
 /* ------------------------------------------------------------------ */
 

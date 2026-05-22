@@ -314,11 +314,37 @@ export type FileValidationResult =
  * which gives the user a real error grounded in actual content — not
  * a guess at the filename. The filename heuristic is gone.
  */
+/**
+ * iPhone defaults to HEIC for camera photos. Tesseract.js can't decode
+ * HEIC in-browser (no native canvas support, no JS HEIC decoder bundled
+ * here), so blocking is preferable to a silent OCR failure. The error
+ * message points users at the conversion they can do themselves.
+ *
+ * Some iOS browsers report HEIC files as `image/heic`; some report
+ * empty string. Check the filename extension too as a defense.
+ */
+function isHeic(file: File): boolean {
+  const t = file.type.toLowerCase();
+  if (t === 'image/heic' || t === 'image/heif') return true;
+  const name = file.name.toLowerCase();
+  return name.endsWith('.heic') || name.endsWith('.heif');
+}
+
 export function validateUpload(file: File | null): FileValidationResult {
   if (!file) {
     return {
       ok: false,
       error: { kind: 'empty', message: 'Pick a file to continue.' },
+    };
+  }
+  if (isHeic(file)) {
+    return {
+      ok: false,
+      error: {
+        kind: 'type',
+        message:
+          'HEIC photos aren’t supported yet. Convert to JPEG or PNG (iOS: Photos → Share → Save as JPEG), or upload a PDF.',
+      },
     };
   }
   const okType = ACCEPTED_MIME_PREFIXES.some((p) => file.type.startsWith(p));

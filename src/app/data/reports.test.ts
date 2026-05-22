@@ -7,6 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { mergeHistoryFromPriorReports, type Report } from './reports';
+import { pruneExpiredReports } from '../utils/persistence';
 import type { Biomarker } from './biomarkers';
 
 function hb(value: number): Biomarker {
@@ -192,5 +193,113 @@ describe('mergeHistoryFromPriorReports', () => {
     const real = readyReport('2026-02-20', [hb(13.9)]);
     const result = mergeHistoryFromPriorReports([hb(14.0)], [sample, real]);
     expect(result[0].history).toEqual([{ date: '2026-02-20', value: 13.9 }]);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* pruneExpiredReports — pure TTL filter                                */
+/* ------------------------------------------------------------------ */
+
+describe('pruneExpiredReports', () => {
+  // Fixed "now" so the tests don't depend on wall-clock time. Picked
+  // 2026-08-01 so the 180-day boundary cleanly straddles "Jan 2026" vs
+  // "Apr 2026" vs "Jul 2026".
+  const NOW = Date.parse('2026-08-01T00:00:00Z');
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const dateNDaysAgo = (n: number) =>
+    new Date(NOW - n * DAY_MS).toISOString().slice(0, 10);
+
+  it('returns input unchanged when no report is over the TTL', () => {
+    const reports = [
+      readyReport(dateNDaysAgo(10), [hb(14)]),
+      readyReport(dateNDaysAgo(90), [hb(14)]),
+      readyReport(dateNDaysAgo(170), [hb(14)]),
+    ];
+    const { kept, pruned } = pruneExpiredReports(reports, NOW);
+    expect(pruned).toBe(0);
+    expect(kept).toEqual(reports);
+  });
+
+  it('prunes reports older than the 180-day TTL by uploadedAt', () => {
+    const reports = [
+      readyReport(dateNDaysAgo(10), [hb(14)]),
+      readyReport(dateNDaysAgo(200), [hb(14)]), // expired
+      readyReport(dateNDaysAgo(365), [hb(14)]), // expired
+    ];
+    const { kept, pruned } = pruneExpiredReports(reports, NOW);
+    expect(pruned).toBe(2);
+    expect(kept).toHaveLength(1);
+    expect(kept[0].uploadedAt).toBe(dateNDaysAgo(10));
+  });
+
+  it('never prunes isSample reports, even when older than the TTL', () => {
+    const sample: Report = {
+      id: 'rep-001',
+      name: 'Sample',
+      lab: 'Sample',
+      uploadedOn: 'old',
+      uploadedAt: dateNDaysAgo(365),
+      status: 'ready',
+      badge: 'analyzed',
+      isSample: true,
+      biomarkers: [hb(14)],
+    };
+    const { kept, pruned } = pruneExpiredReports([sample], NOW);
+    expect(pruned).toBe(0);
+    expect(kept).toEqual([sample]);
+  });
+
+  it('keeps reports without uploadedAt (legacy data, do not risk loss)', () => {
+    const legacy: Report = {
+      id: 'r-x',
+      name: 'Legacy',
+      lab: 'Legacy lab',
+      uploadedOn: 'unknown',
+      // no uploadedAt
+      status: 'ready',
+      badge: 'analyzed',
+      biomarkers: [hb(14)],
+    };
+    const { kept, pruned } = pruneExpiredReports([legacy], NOW);
+    expect(pruned).toBe(0);
+    expect(kept).toEqual([legacy]);
+  });
+
+  it('keeps reports with a malformed uploadedAt (do not risk loss)', () => {
+    const bad: Report = {
+      id: 'r-x',
+      name: 'Bad date',
+      lab: 'Lab',
+      uploadedOn: 'whenever',
+      uploadedAt: 'not-a-date',
+      status: 'ready',
+      badge: 'analyzed',
+      biomarkers: [hb(14)],
+    };
+    const { kept, pruned } = pruneExpiredReports([bad], NOW);
+    expect(pruned).toBe(0);
+    expect(kept).toEqual([bad]);
+  });
+
+  it('mixes correctly — old real expires, fresh real and old sample survive', () => {
+    const freshReal = readyReport(dateNDaysAgo(30), [hb(14)]);
+    const oldReal = readyReport(dateNDaysAgo(250), [hb(14)]);
+    const oldSample: Report = {
+      id: 'rep-001',
+      name: 'Sample',
+      lab: 'Sample',
+      uploadedOn: 'old',
+      uploadedAt: dateNDaysAgo(500),
+      status: 'ready',
+      badge: 'analyzed',
+      isSample: true,
+      biomarkers: [hb(14)],
+    };
+    const { kept, pruned } = pruneExpiredReports(
+      [freshReal, oldReal, oldSample],
+      NOW,
+    );
+    expect(pruned).toBe(1);
+    expect(kept.map((r) => r.id)).toEqual([freshReal.id, oldSample.id]);
   });
 });

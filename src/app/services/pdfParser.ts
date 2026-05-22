@@ -112,12 +112,30 @@ function isPdfTextItem(item: unknown): item is PdfTextItemLike {
 /* Text normalisation — decimal repair + whitespace cleanup             */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Collapse Micro Sign (U+00B5, "µ") into Greek small letter mu
+ * (U+03BC, "μ"). Visually identical, but distinct code points — lab
+ * PDFs use both inconsistently (some labs emit U+00B5, OCR engines
+ * often emit U+03BC). Without this collapse, "µIU/mL" in a report
+ * never matches a catalog template whose unit string is "μIU/mL"
+ * (or vice versa), and the marker silently doesn't extract.
+ *
+ * Canonical form is U+03BC because it's what the catalog tends to be
+ * authored in and what most fonts render identically. The PDF export
+ * path (reportPdf.ts) flips back to U+00B5 because that's the only
+ * one in Helvetica's WinAnsiEncoding.
+ */
+export function normalizeMu(s: string): string {
+  return s.replace(/µ/g, 'μ');
+}
+
 function normalize(text: string): string {
-  let t = text.replace(/[ \t\r\f\v]+/g, ' ');     // collapse horizontal ws
-  t = t.replace(/ *\n+ */g, '\n');                // clean newlines
-  t = t.replace(/(\d) \./g, '$1.');               // "5 ." -> "5."
-  t = t.replace(/\. (\d)/g, '.$1');               // ". 5" -> ".5"
-  t = t.replace(/(\d) %/g, '$1%');                // "5 %" -> "5%"
+  let t = normalizeMu(text);
+  t = t.replace(/[ \t\r\f\v]+/g, ' ');             // collapse horizontal ws
+  t = t.replace(/ *\n+ */g, '\n');                 // clean newlines
+  t = t.replace(/(\d) \./g, '$1.');                // "5 ." -> "5."
+  t = t.replace(/\. (\d)/g, '.$1');                // ". 5" -> ".5"
+  t = t.replace(/(\d) %/g, '$1%');                 // "5 %" -> "5%"
   // Strip number-internal commas — handles both US "240,000" and
   // Indian "2,40,000" notation. Without this, "Platelets 2,40,000"
   // parses as 2 (the regex only captures up to the first comma).
@@ -407,10 +425,13 @@ function extractMarkerValue(
   // immediately or fail this alias and move on.
   const tail = '[^\\d\\n]{0,30}?';
 
+  // normalizeMu on the catalog side mirrors the call inside normalize()
+  // for the input text — without both sides agreeing on µ vs μ, units
+  // that differ only in code point silently fail to match.
   const unitTokens = template.unit
     ? [template.unit, ...(template.unitAliases ?? [])]
         .filter((u) => u.length > 0)
-        .map(escapeRegex)
+        .map((u) => escapeRegex(normalizeMu(u)))
     : [];
   const unitGate = unitTokens.length > 0 ? `(?:${unitTokens.join('|')})` : '';
 
@@ -460,14 +481,18 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
  * gating on known units kills almost all the false positives without
  * needing a more sophisticated layout parser.
  */
+// Caches the unit-anchored row regex once per module load. Built from
+// the *normalized* (U+03BC) form of every catalog unit so it agrees
+// with the text returned from normalize(). If you ever start mutating
+// biomarkerCatalog at runtime, invalidate this cache too.
 let unknownRowRegex: RegExp | null = null;
 function getUnknownRowRegex(): RegExp {
   if (unknownRowRegex) return unknownRowRegex;
   const units = new Set<string>();
   for (const t of biomarkerCatalog) {
-    if (t.unit) units.add(t.unit);
+    if (t.unit) units.add(normalizeMu(t.unit));
     for (const u of t.unitAliases ?? []) {
-      if (u.length > 0) units.add(u);
+      if (u.length > 0) units.add(normalizeMu(u));
     }
   }
   // Sort longer first so e.g. "ng/dL" wins over a substring "g/dL"

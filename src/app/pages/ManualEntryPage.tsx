@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, Pencil, Plus } from 'lucide-react';
+import { AlertTriangle, ArrowRight, Pencil, Plus } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
@@ -16,6 +16,24 @@ import {
 } from '../data/biomarkers';
 import type { Report } from '../data/reports';
 import { formatDate } from '../utils/uiUtils';
+
+/**
+ * Returns 'out-of-range' when the typed value is beyond the parser's
+ * 5x sanity span (and would silently be dropped by buildBiomarkers),
+ * 'empty' for blank or non-numeric input, 'ok' otherwise. The 5x
+ * threshold mirrors extractMarkerValue in pdfParser.ts so the manual
+ * path enforces the same correctness floor.
+ */
+type EntryState = 'ok' | 'empty' | 'out-of-range';
+function entryState(t: BiomarkerTemplate, raw: string): EntryState {
+  const trimmed = raw.trim();
+  if (!trimmed) return 'empty';
+  const num = parseFloat(trimmed);
+  if (Number.isNaN(num)) return 'empty';
+  const span = t.max - t.min || 1;
+  if (num < t.min - 5 * span || num > t.max + 5 * span) return 'out-of-range';
+  return 'ok';
+}
 
 /**
  * Manual entry — the typing-it-in fallback for users whose lab PDF the
@@ -49,6 +67,11 @@ export default function ManualEntryPage() {
   const [expanded, setExpanded] = useState<Set<BiomarkerCategoryId>>(
     new Set(INITIALLY_EXPANDED),
   );
+  /** Set on save() when the user typed values but every one of them was
+   *  out of range — cleared when they edit any input. Prevents the
+   *  silent-drop confusion where the save button does nothing because
+   *  buildBiomarkers returned []. */
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   // Group catalog by category, in canonical category order.
   const grouped = useMemo(() => {
@@ -65,6 +88,10 @@ export default function ManualEntryPage() {
 
   const updateValue = (id: string, v: string) => {
     setValues((prev) => ({ ...prev, [id]: v }));
+    // Editing any input means the previous "everything was out of
+    // range" verdict is stale — clear it so the user isn't yelled at
+    // for a number they're currently fixing.
+    if (saveError) setSaveError(null);
   };
 
   const toggleCategory = (id: BiomarkerCategoryId) => {
@@ -97,12 +124,30 @@ export default function ManualEntryPage() {
 
   const save = () => {
     const biomarkers = buildBiomarkers();
-    if (biomarkers.length === 0) return;
+    if (biomarkers.length === 0) {
+      // Were any non-empty values typed at all? If yes, every one was
+      // dropped by the sanity bound — tell the user instead of letting
+      // the disabled-button heuristic silently swallow the click.
+      const typedAny = Object.values(values).some((v) => v.trim() !== '');
+      if (typedAny) {
+        setSaveError(
+          'Every value you entered is outside reasonable clinical bounds. Please check for typos before continuing.',
+        );
+      }
+      return;
+    }
+    // uploadedAt makes the manual report a first-class citizen of the
+    // history-merge pipeline — without it, a user who manually enters
+    // values then later uploads a real PDF wouldn't see any trend
+    // because mergeHistoryFromPriorReports skips reports without an
+    // ISO date.
+    const now = new Date();
     const report: Report = {
       id: `rep-${Math.random().toString(36).slice(2, 8)}`,
       name: reportName.trim() || 'My lab report',
       lab: 'Manual entry',
-      uploadedOn: formatDate(new Date()),
+      uploadedOn: formatDate(now),
+      uploadedAt: now.toISOString().slice(0, 10),
       status: 'ready',
       badge: 'analyzed',
       biomarkers,
@@ -197,6 +242,7 @@ export default function ManualEntryPage() {
                         key={t.id}
                         template={t}
                         value={values[t.id] ?? ''}
+                        state={entryState(t, values[t.id] ?? '')}
                         onChange={(v) => updateValue(t.id, v)}
                       />
                     ))}
@@ -213,6 +259,15 @@ export default function ManualEntryPage() {
           least one. */}
       <div className="fixed inset-x-0 bottom-0 z-30 bg-gradient-to-t from-canvas via-canvas/95 to-transparent pt-4 pb-4 safe-bottom border-t border-line/70">
         <Container size="narrow">
+          {saveError && (
+            <div
+              role="alert"
+              className="mb-3 flex items-start gap-2 rounded-[14px] bg-concern-soft border border-concern/30 px-3.5 py-2.5 text-[12.5px] text-concern leading-relaxed"
+            >
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" aria-hidden />
+              <span>{saveError}</span>
+            </div>
+          )}
           <div className="flex flex-col-reverse sm:flex-row items-stretch gap-2">
             <Button
               size="lg"
@@ -248,15 +303,30 @@ export default function ManualEntryPage() {
 function MarkerInputRow({
   template,
   value,
+  state,
   onChange,
 }: {
   template: BiomarkerTemplate;
   value: string;
+  state: EntryState;
   onChange: (next: string) => void;
 }) {
   const id = `entry-${template.id}`;
+  const isOOR = state === 'out-of-range';
+  // Cheap helper text — the user often doesn't remember the unit if
+  // they're typing from a screenshot, so showing the expected band
+  // closes the loop without us having to compute a "did you mean".
+  const oorHint = isOOR
+    ? `Outside the plausible range (${template.min}-${template.max}${
+        template.unit ? ' ' + template.unit : ''
+      }). Check for a typo or wrong unit.`
+    : null;
   return (
-    <div className="px-5 py-3 flex items-start gap-3">
+    <div
+      className={`px-5 py-3 flex items-start gap-3 ${
+        isOOR ? 'bg-concern-soft/30' : ''
+      }`}
+    >
       <div className="flex-1 min-w-0">
         <label
           htmlFor={id}
@@ -268,6 +338,14 @@ function MarkerInputRow({
           Reference {template.min}–{template.max}
           {template.unit ? ` ${template.unit}` : ''}
         </div>
+        {oorHint && (
+          <div
+            id={`${id}-error`}
+            className="mt-1 text-[11.5px] text-concern font-medium leading-snug"
+          >
+            {oorHint}
+          </div>
+        )}
       </div>
       <div className="shrink-0 flex items-center gap-2">
         <input
@@ -279,7 +357,13 @@ function MarkerInputRow({
           onChange={(e) => onChange(e.target.value)}
           placeholder="—"
           aria-label={`${template.name}${template.unit ? ' in ' + template.unit : ''}`}
-          className="w-24 h-11 px-3 text-right text-[14px] tabular-nums rounded-[12px] bg-surface border border-line focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400"
+          aria-invalid={isOOR ? true : undefined}
+          aria-describedby={isOOR ? `${id}-error` : undefined}
+          className={`w-24 h-11 px-3 text-right text-[14px] tabular-nums rounded-[12px] focus:outline-none focus:ring-2 ${
+            isOOR
+              ? 'bg-concern-soft border border-concern/60 text-concern focus:ring-concern/40 focus:border-concern'
+              : 'bg-surface border border-line focus:ring-indigo-400/60 focus:border-indigo-400'
+          }`}
         />
         {template.unit && (
           <span className="text-[11.5px] text-muted w-14 shrink-0">

@@ -95,15 +95,23 @@ function ensureSpace(ctx: Ctx, neededMm: number): void {
  * with ASCII equivalents. Without this, em-dashes appear as garbled
  * boxes and curly quotes vanish entirely.
  *
- * Mu (µ) IS in Latin-1, so unit strings like µIU/mL render fine.
+ * Mu: Micro Sign (U+00B5) IS in Latin-1 and renders as µ. Greek small
+ * letter mu (U+03BC) is NOT — the parser normalizes incoming text to
+ * U+03BC for matching, so we have to flip back to U+00B5 here for the
+ * PDF output. Without this, μIU/mL on screen becomes a blank box in
+ * the downloaded PDF.
  */
 function asciize(text: string): string {
   return text
     .replace(/[‘’]/g, "'") // curly single quotes
     .replace(/[“”]/g, '"') // curly double quotes
-    .replace(/[–—]/g, '-') // en-dash, em-dash
+    .replace(/[–—]/g, '-') // en-dash (U+2013), em-dash (U+2014)
+    .replace(/−/g, '-') // math minus sign (U+2212) — common in copy
     .replace(/…/g, '...') // ellipsis
-    .replace(/×/g, 'x'); // multiplication sign (e.g. x10^6)
+    .replace(/×/g, 'x') // multiplication sign (e.g. x10^6)
+    .replace(/≥/g, '>=') // greater-or-equal — not in WinAnsi
+    .replace(/≤/g, '<=') // less-or-equal — not in WinAnsi
+    .replace(/μ/g, 'µ'); // Greek mu (U+03BC) → Micro Sign (U+00B5)
 }
 
 type FontWeight = 'normal' | 'bold' | 'italic' | 'bolditalic';

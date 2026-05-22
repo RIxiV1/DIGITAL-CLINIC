@@ -45,15 +45,6 @@ function writeJSON(key: string, value: unknown): boolean {
   }
 }
 
-function removeKey(key: string): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.removeItem(key);
-  } catch {
-    // no-op
-  }
-}
-
 /* ------------------------------------------------------------------ */
 /* Typed per-domain accessors                                          */
 /* ------------------------------------------------------------------ */
@@ -102,20 +93,63 @@ export function saveNavHistory<T>(history: T[]): void {
 /* ------------------------------------------------------------------ */
 
 /**
- * Removes saved reports older than the TTL. Called once on app boot.
+ * Structural shape used by the per-report TTL filter. Real Reports
+ * carry more fields; we only need these to decide expiry, so a narrow
+ * type keeps the persistence layer decoupled from the Report type.
+ */
+type ExpirableReport = {
+  uploadedAt?: string;
+  isSample?: boolean;
+};
+
+/**
+ * Pure filter: returns the subset of reports that haven't aged past
+ * REPORT_TTL_MS, plus the count pruned. Exposed for testing without
+ * touching localStorage.
+ *
+ * Rules:
+ *   - Sample reports (isSample) never expire — they're shipped with
+ *     the app, not user data.
+ *   - Reports without an ISO uploadedAt are kept. The display-only
+ *     uploadedOn string is intentionally not parsed (fragile across
+ *     locales). Legacy reports predating the uploadedAt field are a
+ *     closed set; we err on "keep" rather than risk silent data loss.
+ *   - Reports with a malformed uploadedAt are kept for the same reason.
+ */
+export function pruneExpiredReports<T extends ExpirableReport>(
+  reports: T[],
+  now: number = Date.now(),
+): { kept: T[]; pruned: number } {
+  const kept = reports.filter((r) => {
+    if (r.isSample) return true;
+    if (!r.uploadedAt) return true;
+    const ts = Date.parse(r.uploadedAt);
+    if (Number.isNaN(ts)) return true;
+    return now - ts <= REPORT_TTL_MS;
+  });
+  return { kept, pruned: reports.length - kept.length };
+}
+
+/**
+ * Prunes expired reports from localStorage in place. Per-report TTL,
+ * not whole-blob — touching one report no longer extends every other
+ * report's lifetime by rewriting savedAt. Called once on app boot.
  * Failures are swallowed silently so a corrupt entry can't brick the
  * app on launch.
+ *
+ * Returns the count of pruned reports.
  */
 export function cleanupExpiredReports(now: number = Date.now()): number {
-  const stored = readJSON<StoredReports<unknown> | null>(REPORTS_KEY, null);
-  if (!stored?.savedAt) return 0;
-  const savedAt = Date.parse(stored.savedAt);
-  if (Number.isNaN(savedAt)) return 0;
-  if (now - savedAt > REPORT_TTL_MS) {
-    removeKey(REPORTS_KEY);
-    return 1;
+  const stored = readJSON<StoredReports<ExpirableReport> | null>(
+    REPORTS_KEY,
+    null,
+  );
+  if (!stored || !Array.isArray(stored.reports)) return 0;
+  const { kept, pruned } = pruneExpiredReports(stored.reports, now);
+  if (pruned > 0) {
+    writeJSON(REPORTS_KEY, { savedAt: stored.savedAt, reports: kept });
   }
-  return 0;
+  return pruned;
 }
 
 /**
