@@ -18,7 +18,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { extractBiomarkersFromText, findUnrecognizedRows } from './pdfParser';
+import {
+  classifyOutOfScope,
+  extractBiomarkersFromText,
+  findUnrecognizedRows,
+} from './pdfParser';
 
 /* ------------------------------------------------------------------ */
 /* Basic extraction                                                    */
@@ -470,5 +474,118 @@ describe('findUnrecognizedRows', () => {
     expect(joined).not.toMatch(/Reference/i);
     expect(joined).not.toMatch(/Normal Range/i);
     expect(joined).not.toMatch(/Biological/i);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* classifyOutOfScope                                                  */
+/* ------------------------------------------------------------------ */
+
+describe('classifyOutOfScope', () => {
+  it('returns null for empty or whitespace-only text', () => {
+    expect(classifyOutOfScope('')).toBeNull();
+    expect(classifyOutOfScope('   \n  ')).toBeNull();
+  });
+
+  it('returns null for a normal lab panel with no out-of-scope signals', () => {
+    const text = `
+      LIPID PROFILE
+      Total Cholesterol  185  mg/dL
+      LDL Cholesterol    95   mg/dL
+      HDL Cholesterol    55   mg/dL
+      Triglycerides      110  mg/dL
+    `;
+    expect(classifyOutOfScope(text)).toBeNull();
+  });
+
+  it('does NOT flag a comprehensive panel that mentions HIV once (single hit)', () => {
+    // Real scenario: a marriage / pre-employment panel that bundles
+    // metabolic markers + a single HIV antibody result. One mention
+    // shouldn't override the rest of the document.
+    const text = `
+      Comprehensive Health Check
+      HbA1c            5.4  %
+      LDL Cholesterol  95   mg/dL
+      HIV antibody     Non-reactive
+    `;
+    expect(classifyOutOfScope(text)).toBeNull();
+  });
+
+  it('flags a viral panel with multiple distinct keyword hits', () => {
+    // Two distinct viral-category keywords ("dengue ns1" + "dengue igm")
+    // should clear the 2-hit threshold.
+    const text = `
+      DENGUE PROFILE
+      Dengue NS1 antigen: Positive
+      Dengue IgM antibody: Reactive
+      Dengue IgG antibody: Non-reactive
+    `;
+    expect(classifyOutOfScope(text)).toBe('viral');
+  });
+
+  it('flags an X-ray narrative report (imaging category)', () => {
+    const text = `
+      X-RAY CHEST PA VIEW
+      No focal opacity in either lung field.
+      Cardiac silhouette is normal.
+      Impression: Normal study.
+    `;
+    expect(classifyOutOfScope(text)).toBe('imaging');
+  });
+
+  it('flags an ECG/EKG tracing report (imaging category)', () => {
+    // ECG isn't strictly "imaging" but is a tracing, not a lab. Lives
+    // under the imaging set so the category list stays at three.
+    const text = `
+      ECG REPORT
+      Sinus rhythm at 72 bpm.
+      QRS complex within normal limits.
+      No ST elevation or ST depression observed.
+    `;
+    expect(classifyOutOfScope(text)).toBe('imaging');
+  });
+
+  it('flags a dental / oral exam record (physical-exam category)', () => {
+    const text = `
+      DENTAL EXAMINATION
+      Periodontal pocket depth: 3mm
+      Gingival recession: mild
+      Caries: 16, 17 distal surface
+      Occlusion: Class I
+    `;
+    expect(classifyOutOfScope(text)).toBe('physical-exam');
+  });
+
+  it('flags an optometry / eye exam (physical-exam category)', () => {
+    const text = `
+      OPTOMETRY ASSESSMENT
+      Visual acuity (Snellen): 6/9 OD, 6/6 OS
+      Refraction: -1.50 sph
+      Fundus examination: Normal
+      Intraocular pressure: 14 mmHg OD
+    `;
+    expect(classifyOutOfScope(text)).toBe('physical-exam');
+  });
+
+  it('is case-insensitive on the keyword match', () => {
+    const text = `
+      MRI BRAIN
+      Computed tomography correlation recommended.
+      No significant abnormality detected.
+    `;
+    expect(classifyOutOfScope(text)).toBe('imaging');
+  });
+
+  it('avoids substring traps — "ent" inside "patient" must not trigger', () => {
+    // The 'ent' / 'ear' / 'nose' single words are NOT in the keyword
+    // set (only multi-word headers + diagnostic terms are), but this
+    // test pins the broader invariant that single-word matches use
+    // word-boundary checks.
+    const text = `
+      Patient: John Doe
+      Specimen: Serum
+      Glucose 92 mg/dL
+    `;
+    expect(classifyOutOfScope(text)).toBeNull();
   });
 });

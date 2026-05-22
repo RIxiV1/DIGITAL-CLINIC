@@ -15,7 +15,7 @@ import { type Biomarker } from '../data/biomarkers';
 import { type Report } from '../data/reports';
 import { formatDate } from '../utils/uiUtils';
 import { sanitizeFilename } from '../utils/sanitizeFilename';
-import { parsePdfFile } from './pdfParser';
+import { classifyOutOfScope, parsePdfFile } from './pdfParser';
 
 /* ------------------------------------------------------------------ */
 /* Pending-upload bridge                                                */
@@ -117,8 +117,15 @@ export type ParsedReport = {
   parsedFromFile: boolean;
   /** Why parsing didn't yield real markers — surfaced in the
    *  ProcessingPage error state so the user knows whether it was a
-   *  format issue, an empty extraction, or a real parser error. */
-  failureReason?: 'no-file' | 'no-matches' | 'parser-error';
+   *  format issue, an empty extraction, an out-of-scope document
+   *  (viral panel, imaging, dental, etc.), or a real parser error.
+   *
+   *  'out-of-scope' is a refinement of 'no-matches': the file parsed
+   *  fine, but the document type is outside what this product supports
+   *  (only metabolic / HPA-axis lab panels are in-scope). Distinct
+   *  reason so the UI can show category-specific copy instead of the
+   *  generic "we didn't recognise any lab values" message. */
+  failureReason?: 'no-file' | 'no-matches' | 'parser-error' | 'out-of-scope';
   /** Specific error string from the parser (e.g. "password-protected
    *  PDF") when failureReason === 'parser-error'. */
   errorMessage?: string;
@@ -173,7 +180,7 @@ export async function parseUploadedReport(
   // visual stages run regardless so the UX is paced.
   type ExtractionOutcome =
     | { biomarkers: Biomarker[]; rawText: string; unrecognizedRows: string[] }
-    | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error'; message?: string; rawText?: string; unrecognizedRows?: string[] };
+    | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error' | 'out-of-scope'; message?: string; rawText?: string; unrecognizedRows?: string[] };
 
   let extractionDone = false;
   const extractionPromise: Promise<ExtractionOutcome> =
@@ -181,11 +188,28 @@ export async function parseUploadedReport(
     (input.file.type === 'application/pdf' ||
       input.file.type.startsWith('image/'))
       ? parsePdfFile(input.file)
-          .then((r): ExtractionOutcome =>
-            r.biomarkers.length > 0
-              ? { biomarkers: r.biomarkers, rawText: r.rawText, unrecognizedRows: r.unrecognizedRows }
-              : { biomarkers: null, reason: 'no-matches', rawText: r.rawText, unrecognizedRows: r.unrecognizedRows },
-          )
+          .then((r): ExtractionOutcome => {
+            if (r.biomarkers.length > 0) {
+              return {
+                biomarkers: r.biomarkers,
+                rawText: r.rawText,
+                unrecognizedRows: r.unrecognizedRows,
+              };
+            }
+            // Zero matches AND the text reads as a viral/imaging/dental
+            // report → use the out-of-scope reason so the failure view
+            // explains WHY rather than blaming the parser. The classifier
+            // is conservative (2+ distinct hits in one category), so a
+            // routine panel that happens to mention "HIV antibody" in
+            // passing doesn't trigger this path.
+            const outOfScope = classifyOutOfScope(r.rawText);
+            return {
+              biomarkers: null,
+              reason: outOfScope ? 'out-of-scope' : 'no-matches',
+              rawText: r.rawText,
+              unrecognizedRows: r.unrecognizedRows,
+            };
+          })
           .catch((err: unknown): ExtractionOutcome => ({
             biomarkers: null,
             reason: 'parser-error',

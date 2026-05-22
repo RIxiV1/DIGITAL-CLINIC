@@ -441,10 +441,15 @@ function ParseFailedView({
   onSample: () => void;
   onManualEntry: () => void;
 }) {
-  // Reason-specific headline so the user knows what actually happened
-  // (parser-error from pdfjs/tesseract is different from "we read it
-  // but nothing in the catalog matched", which is different from
-  // "no file was attached").
+  // Reason-specific headline so the user knows what actually happened.
+  // - parser-error: pdfjs/tesseract threw (corrupt PDF, locked PDF, …)
+  // - no-file: pendingUpload was empty (refresh mid-flow, deep-link)
+  // - out-of-scope: parsed fine but the document type isn't a lab panel
+  //   (viral panel, imaging report, dental exam, ECG). Distinct copy
+  //   so the user understands the parser isn't broken, the report
+  //   is just outside what the product supports.
+  // - no-matches: catch-all for "we read it but found nothing useful"
+  //   when the out-of-scope classifier isn't confident.
   const copy = (() => {
     switch (failure.reason) {
       case 'parser-error':
@@ -459,6 +464,14 @@ function ParseFailedView({
           title: 'There was nothing to parse.',
           detail:
             'It looks like the upload didn’t carry through — try uploading the file again from the Upload page.',
+        };
+      case 'out-of-scope':
+        // Exact string. Keep it intact — backend / analytics / future
+        // automated handlers should be able to string-match on it.
+        return {
+          title: 'This report is outside what we cover.',
+          detail:
+            'Error: The uploaded document contains testing (e.g., infectious disease panels or localized physical exams) that is not related to general metabolic biomarkers or the HPA axis ecosystem. We cannot analyze this report.',
         };
       case 'no-matches':
       default:

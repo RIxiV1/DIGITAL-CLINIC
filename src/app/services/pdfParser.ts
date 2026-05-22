@@ -589,6 +589,168 @@ export const __testInternals = {
 };
 
 /* ------------------------------------------------------------------ */
+/* Scope verification                                                  */
+/*                                                                      */
+/* The product is scoped to general metabolic biomarkers + HPA-axis    */
+/* endocrine panels (see catalog in data/biomarkers.ts). Other lab     */
+/* outputs people might upload — viral antigen panels, X-ray narrative */
+/* reports, dental records — would otherwise fall through to the       */
+/* generic "we read it but didn't recognise any lab values" error.     */
+/* That message is technically correct but doesn't tell the user WHY:  */
+/* they wonder if our parser is buggy, when actually the document is   */
+/* fundamentally a different category of report.                       */
+/*                                                                      */
+/* This classifier looks for clusters of keywords that strongly imply  */
+/* an out-of-scope document, so the UI can show a category-specific    */
+/* refusal message instead of "no matches."                            */
+/*                                                                      */
+/* Threshold: 2+ DISTINCT keyword hits from a single category. A lone  */
+/* mention of "HIV antibody" inside an otherwise-comprehensive panel   */
+/* doesn't trigger — only documents that are dominantly out-of-scope.  */
+/* ------------------------------------------------------------------ */
+
+export type OutOfScopeCategory = 'viral' | 'imaging' | 'physical-exam';
+
+/** Per-category keyword sets. Stored lowercased; we match against the
+ *  normalized lowercased text. Conservative selection — entries that
+ *  could appear in a routine panel (e.g. lone "x-ray" in a referral
+ *  note) are still in here but rely on the 2+ DISTINCT-hit gate to
+ *  avoid false positives. */
+const OUT_OF_SCOPE_KEYWORDS: Record<OutOfScopeCategory, readonly string[]> = {
+  viral: [
+    'dengue ns1',
+    'dengue igm',
+    'dengue igg',
+    'dengue',
+    'plasmodium',
+    'malaria',
+    'mp test',
+    'sars-cov-2',
+    'sars cov 2',
+    'covid-19',
+    'covid 19',
+    'rt-pcr',
+    'rt pcr',
+    'hiv 1',
+    'hiv 2',
+    'hiv antibody',
+    'anti-hiv',
+    'hbsag',
+    'hbeag',
+    'anti-hcv',
+    'anti-hbs',
+    'hepatitis b surface',
+    'hepatitis c',
+    'influenza a',
+    'influenza b',
+    'h1n1',
+    'h3n2',
+    'chikungunya',
+    'syphilis',
+    'vdrl',
+    'tpha',
+    'rpr',
+    'typhoid',
+    'widal',
+    'salmonella typhi',
+  ],
+  imaging: [
+    'x-ray',
+    'x ray',
+    'radiograph',
+    'magnetic resonance',
+    'mri brain',
+    'mri chest',
+    'mri abdomen',
+    'mri pelvis',
+    'ct scan',
+    'computed tomography',
+    'ct chest',
+    'ct abdomen',
+    'ultrasonography',
+    'sonography',
+    'usg abdomen',
+    'usg pelvis',
+    'doppler study',
+    'no focal opacity',
+    'no significant abnormality detected',
+    'impression:',
+    // ECG/EKG — tracings, not lab values
+    'ecg',
+    'ekg',
+    'electrocardiogram',
+    'qrs complex',
+    'sinus rhythm',
+    'st elevation',
+    'st depression',
+  ],
+  'physical-exam': [
+    'audiometry',
+    'audiogram',
+    'pure tone average',
+    'air conduction',
+    'bone conduction',
+    'visual acuity',
+    'snellen',
+    'refraction',
+    'fundus examination',
+    'intraocular pressure',
+    'periodontal',
+    'gingival',
+    'occlusion',
+    'mandibular',
+    'maxillary',
+    'caries',
+    'oral cavity',
+    'tonsillar',
+    'turbinate',
+  ],
+};
+
+/** Count distinct keyword hits within one category. We match on the
+ *  lowercased text and require WORD-ish boundaries to avoid e.g.
+ *  matching "dengue" inside "endenguered" — admittedly contrived, but
+ *  this also protects against partial substrings like "ent" matching
+ *  inside "patient". For multi-word keywords (e.g. "dengue ns1") we
+ *  fall back to plain substring matching since adding regex anchors
+ *  would over-restrict legitimate variants ("Dengue-NS1", "Dengue/NS1"). */
+function countDistinctHits(text: string, keywords: readonly string[]): number {
+  let hits = 0;
+  for (const kw of keywords) {
+    if (kw.includes(' ') || kw.includes('-')) {
+      if (text.includes(kw)) hits += 1;
+    } else {
+      // Single-word — require non-letter boundary to avoid substring traps.
+      const re = new RegExp(`(^|[^a-z])${escapeRegex(kw)}([^a-z]|$)`, 'i');
+      if (re.test(text)) hits += 1;
+    }
+  }
+  return hits;
+}
+
+/**
+ * Returns the strongest out-of-scope category if the text appears to be
+ * dominated by it, or null otherwise. "Dominated" = 2+ distinct keyword
+ * hits within a single category. Ties broken by the category with the
+ * most hits (max threshold).
+ *
+ * Pure function — accepts already-extracted text, no side effects, no
+ * I/O. Safe to test against fixture strings.
+ */
+export function classifyOutOfScope(text: string): OutOfScopeCategory | null {
+  if (!text) return null;
+  const lowered = text.toLowerCase();
+  let best: { category: OutOfScopeCategory; hits: number } | null = null;
+  for (const category of Object.keys(OUT_OF_SCOPE_KEYWORDS) as OutOfScopeCategory[]) {
+    const hits = countDistinctHits(lowered, OUT_OF_SCOPE_KEYWORDS[category]);
+    if (hits >= 2 && (!best || hits > best.hits)) {
+      best = { category, hits };
+    }
+  }
+  return best?.category ?? null;
+}
+
+/* ------------------------------------------------------------------ */
 /* Public entry point                                                   */
 /* ------------------------------------------------------------------ */
 
