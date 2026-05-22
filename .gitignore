@@ -13,3 +13,6 @@ dist-ssr
 /*.png
 /ui_smoke*.js
 /test-results
+
+# Local Claude Code permission settings — per-machine, not shared.
+.claude/settings.local.json
