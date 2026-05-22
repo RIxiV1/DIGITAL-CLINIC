@@ -124,15 +124,31 @@ export default function HealthRing({
               r={radius}
               fill="none"
               stroke={seg.color}
-              strokeWidth={thickness}
               strokeLinecap="round"
               strokeDasharray={`${seg.length} ${circumference}`}
-              initial={{ strokeDashoffset: -circumference }}
-              animate={{ strokeDashoffset: -offsets[i] }}
+              initial={{ strokeDashoffset: -circumference, strokeWidth: thickness }}
+              animate={{ strokeDashoffset: -offsets[i], strokeWidth: thickness }}
+              // Hover-expand the arc by 3px to pair with the <title>
+              // tooltip — the tooltip delivers the count, the expansion
+              // tells the user which arc they're targeting. No
+              // cursor-pointer (segments aren't actions) and no
+              // outline-none (SVG circles aren't keyboard-focusable, so
+              // the override would be meaningless code).
+              whileHover={{ strokeWidth: thickness + 3 }}
               transition={{
-                duration: 0.9,
-                ease: [0.22, 1, 0.36, 1],
-                delay: 0.1 + i * 0.15,
+                // Entry animation: slow ease for the dasharray reveal.
+                strokeDashoffset: {
+                  duration: 0.9,
+                  ease: [0.22, 1, 0.36, 1],
+                  delay: 0.1 + i * 0.15,
+                },
+                // Hover animation: snappy spring so the expand feels
+                // immediate, not animated-in like the entry.
+                strokeWidth: {
+                  type: 'spring',
+                  stiffness: 400,
+                  damping: 25,
+                },
               }}
             >
               <title>{`${seg.value} ${seg.value === 1 ? 'marker' : 'markers'} ${seg.label}`}</title>

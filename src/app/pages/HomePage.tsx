@@ -371,11 +371,20 @@ export default function HomePage() {
                   title="How your numbers have moved"
                 />
                 <div className="mt-4 grid gap-3">
-                  {trendsByPathway.map((group) => (
-                    <div
-                      key={group.id}
-                      className="rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden"
-                    >
+                  {trendsByPathway.map((group) => {
+                    const borderClass =
+                      group.id === 'hormonal'
+                        ? 'border-l-4 border-l-attention'
+                        : group.id === 'metabolic'
+                        ? 'border-l-4 border-l-indigo-600'
+                        : group.id === 'nutritional'
+                        ? 'border-l-4 border-l-good'
+                        : '';
+                    return (
+                      <div
+                        key={group.id}
+                        className={`rounded-[18px] bg-surface border border-line/70 ${borderClass} shadow-soft overflow-hidden`}
+                      >
                       <div className="px-5 pt-5 pb-2 flex items-center gap-2">
                         <Emoji
                           label={`${group.name} pathway`}
@@ -401,7 +410,8 @@ export default function HomePage() {
                         ))}
                       </div>
                     </div>
-                  ))}
+                  );
+                })}
                 </div>
               </section>
             )}
@@ -578,7 +588,7 @@ export default function HomePage() {
                       ? navigate({ type: 'results', reportId: r.id })
                       : navigate({ type: 'processing' })
                   }
-                  className="h-full"
+                  className={`h-full ${r.status === 'processing' ? 'animate-pulse-shimmer' : ''}`}
                 >
                   <div className="flex items-start gap-3">
                     <div className="grid place-items-center w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 shrink-0">

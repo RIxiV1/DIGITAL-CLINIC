@@ -391,3 +391,20 @@ input:focus-visible {
     color: #6B7280;
   }
 }
+
+@keyframes pulse-shimmer {
+  0%, 100% {
+    border-color: rgba(229, 231, 235, 0.7);
+    box-shadow: var(--shadow-soft);
+    opacity: 1;
+  }
+  50% {
+    border-color: var(--color-indigo-400);
+    box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.15), var(--shadow-soft);
+    opacity: 0.93;
+  }
+}
+
+.animate-pulse-shimmer {
+  animation: pulse-shimmer 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
