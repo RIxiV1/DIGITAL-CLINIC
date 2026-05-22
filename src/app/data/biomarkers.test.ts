@@ -17,7 +17,9 @@ import {
   categories,
   getTemplateById,
   markerFromTemplate,
+  pickHeadlineMarker,
   statusForValue,
+  type Biomarker,
   type BiomarkerCategoryId,
 } from './biomarkers';
 
@@ -164,5 +166,104 @@ describe('biomarkerCatalog integrity', () => {
 
   it('getTemplateById returns undefined for unknown ids', () => {
     expect(getTemplateById('nonexistent-marker-id')).toBeUndefined();
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* pickHeadlineMarker — clinical-significance sorting across tiers      */
+/* ------------------------------------------------------------------ */
+
+describe('pickHeadlineMarker', () => {
+  /**
+   * Lightweight Biomarker factory for the headline-picker tests. The
+   * catalog templates aren't usable as-is because they don't carry a
+   * `value` or `history` — both required to compute trend + delta.
+   */
+  function marker(
+    id: string,
+    status: Biomarker['status'],
+    value: number,
+    prev: number,
+    direction: Biomarker['direction'] = 'up',
+  ): Biomarker {
+    return {
+      id,
+      name: id,
+      value,
+      unit: '',
+      min: 0,
+      max: 100,
+      status,
+      category: 'hormones',
+      direction,
+      plain: '',
+      history: [{ date: '2026-01-01', value: prev }],
+    };
+  }
+
+  it('returns null when no markers have history', () => {
+    const m: Biomarker = {
+      id: 'x',
+      name: 'x',
+      value: 10,
+      unit: '',
+      min: 0,
+      max: 20,
+      status: 'good',
+      category: 'hormones',
+      plain: '',
+    };
+    expect(pickHeadlineMarker([m])).toBeNull();
+  });
+
+  it('declining concerns win over improving markers regardless of magnitude', () => {
+    // Even a tiny declining-concern outranks a huge improving marker —
+    // because the user needs to know what's getting WORSE first, not
+    // what's getting better. With direction='up' (up=better), value
+    // < prev = declining.
+    const tinyConcern = marker('t-concern', 'concern', 95, 100); // -5 declining
+    const bigImproving = marker('big-imp', 'good', 90, 10); // +80 improving
+    expect(pickHeadlineMarker([bigImproving, tinyConcern])?.id).toBe(
+      't-concern',
+    );
+  });
+
+  it('picks the largest-magnitude declining concern', () => {
+    // up=better direction → "declining" means value DECREASED.
+    const small = marker('small', 'concern', 95, 100); // -5
+    const large = marker('large', 'concern', 60, 100); // -40
+    const medium = marker('medium', 'concern', 80, 100); // -20
+    // Order shouldn't matter — the largest delta wins.
+    expect(pickHeadlineMarker([small, medium, large])?.id).toBe('large');
+    expect(pickHeadlineMarker([large, medium, small])?.id).toBe('large');
+  });
+
+  it('picks the largest-magnitude declining attention when no concerns are declining', () => {
+    // Real-world: previously the picker took whatever came first in the
+    // array. A user whose B12 dropped 200 pg/mL would have the headline
+    // call out a 5-point ferritin nudge instead if ferritin appeared first.
+    const small = marker('small-att', 'attention', 95, 100, 'up'); // -5
+    const large = marker('large-att', 'attention', 60, 100, 'up'); // -40
+    expect(pickHeadlineMarker([small, large])?.id).toBe('large-att');
+    expect(pickHeadlineMarker([large, small])?.id).toBe('large-att');
+  });
+
+  it('picks the largest-magnitude improving marker when nothing is declining', () => {
+    const small = marker('small-imp', 'good', 55, 50, 'up'); // +5
+    const large = marker('large-imp', 'good', 90, 50, 'up'); // +40
+    expect(pickHeadlineMarker([small, large])?.id).toBe('large-imp');
+    expect(pickHeadlineMarker([large, small])?.id).toBe('large-imp');
+  });
+
+  it('does not mutate the input array order', () => {
+    // The sort must be applied to a copy — callers (HomePage, the
+    // dashboard headline) pass arrays they iterate over for unrelated
+    // surfaces and would render in the wrong order if we sorted in place.
+    const a = marker('a', 'concern', 90, 100); // -10
+    const b = marker('b', 'concern', 50, 100); // -50
+    const input = [a, b];
+    const snapshot = [...input];
+    pickHeadlineMarker(input);
+    expect(input).toEqual(snapshot);
   });
 });

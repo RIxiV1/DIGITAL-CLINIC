@@ -89,23 +89,30 @@ export function getSampleReportForDashboard(): Report {
 /**
  * Returns the user's most recent ready report — by uploadedAt when
  * available, falling back to array position (newest-first per addReport).
- * Use this anywhere the UI wants "the user's current data" rather than
- * relying on `reports.find((r) => r.status === 'ready')`, which silently
- * depends on addReport's prepend behaviour and breaks if anyone
- * refactors to append.
+ *
+ * **Sample-vs-real preference:** if the user has any real (non-sample)
+ * ready report, sample reports are excluded entirely from the search.
+ * Without this, the curated sample `rep-001` (uploadedAt 2026-04-12)
+ * would outrank a real upload from earlier in 2026 just because its
+ * canned date is newer, and the dashboard would render demo data
+ * labelled as the user's latest. We only consider samples when the
+ * user has nothing else (e.g. they clicked "Load sample data" on an
+ * empty locker — the dashboard must surface SOMETHING).
  */
 export function getLatestReadyReport(reports: Report[]): Report | undefined {
   const ready = reports.filter((r) => r.status === 'ready');
   if (ready.length === 0) return undefined;
+  const real = ready.filter((r) => !r.isSample);
+  const pool = real.length > 0 ? real : ready;
   // Prefer ISO-date sort when available, fall back to array order for
   // legacy reports that predate the uploadedAt field.
-  const withDate = ready.filter((r) => r.uploadedAt);
-  if (withDate.length === ready.length) {
+  const withDate = pool.filter((r) => r.uploadedAt);
+  if (withDate.length === pool.length) {
     return withDate.reduce((latest, r) =>
       (latest.uploadedAt ?? '') >= (r.uploadedAt ?? '') ? latest : r,
     );
   }
-  return ready[0];
+  return pool[0];
 }
 
 export function badgeFor(r: Report): ReportBadge {

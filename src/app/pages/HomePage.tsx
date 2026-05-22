@@ -1,5 +1,4 @@
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
 import { FileText, Plus, Search, Upload, X } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -24,6 +23,7 @@ import {
   badgeFor,
   getLatestReadyReport,
   getSampleReportForDashboard,
+  type Report,
 } from '../data/reports';
 import { getMarkerInfo } from '../data/markerInfo';
 
@@ -77,21 +77,34 @@ export default function HomePage() {
   const [lockerSort, setLockerSort] = useState<LockerSort>('newest');
   const showLockerControls = reports.length >= 3;
   const displayedReports = useMemo(() => {
-    const q = lockerQuery.trim().toLowerCase();
-    const filtered = q
-      ? reports.filter(
-          (r) =>
-            r.name.toLowerCase().includes(q) ||
-            r.lab.toLowerCase().includes(q),
-        )
-      : reports;
+    // Tokenized locker search — "thyrocare april" should match a report
+    // named "April Comprehensive" from "Thyrocare · Mumbai" even though
+    // the tokens straddle the name+lab boundary. Single-word queries
+    // behave identically to the previous .includes(q) form.
+    const tokens = lockerQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const filtered =
+      tokens.length > 0
+        ? reports.filter((r) => {
+            const haystack = `${r.name} ${r.lab}`.toLowerCase();
+            return tokens.every((t) => haystack.includes(t));
+          })
+        : reports;
+    // Index map captures original array position so when the primary
+    // sort key (uploadedAt or lab) is missing or tied, we fall back to
+    // newest-first (addReport prepends, so lower index = newer). Without
+    // this, sort returned 0 for missing/equal dates and the browser's
+    // stable-sort could still produce platform-dependent ordering.
+    const indexById = new Map(reports.map((r, i) => [r.id, i]));
+    const fallback = (a: Report, b: Report) =>
+      (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0);
     const sorted = [...filtered].sort((a, b) => {
-      if (lockerSort === 'lab') return a.lab.localeCompare(b.lab);
-      // For newest/oldest, prefer uploadedAt (ISO) when present, fall
-      // back to original array position (newest-first per addReport).
+      if (lockerSort === 'lab') {
+        const cmp = a.lab.localeCompare(b.lab);
+        return cmp !== 0 ? cmp : fallback(a, b);
+      }
       const aKey = a.uploadedAt ?? '';
       const bKey = b.uploadedAt ?? '';
-      if (!aKey && !bKey) return 0;
+      if (!aKey || !bKey || aKey === bKey) return fallback(a, b);
       const cmp = aKey.localeCompare(bKey);
       return lockerSort === 'newest' ? -cmp : cmp;
     });
@@ -108,14 +121,25 @@ export default function HomePage() {
   const isFiltering = trimmedQuery.length > 0 || statusFilter !== 'all';
 
   const visibleMarkers = useMemo(() => {
-    const q = trimmedQuery;
+    // Tokenized matching: split the query on whitespace and require every
+    // token to hit somewhere in the marker's searchable fields. A flat
+    // .includes(q) treats the query as a literal substring, so "D Vitamin"
+    // would fail to match "Vitamin D (25-OH)" purely because of word
+    // order. Tokenizing fixes that without changing single-word behaviour.
+    const tokens = trimmedQuery.split(/\s+/).filter(Boolean);
     return biomarkers.filter((m) => {
-      const queryHit =
-        !q ||
-        m.name.toLowerCase().includes(q) ||
-        (m.simpleName?.toLowerCase().includes(q) ?? false) ||
-        m.plain.toLowerCase().includes(q) ||
-        m.category.toLowerCase().includes(q);
+      let queryHit = true;
+      if (tokens.length > 0) {
+        const haystack = [
+          m.name,
+          m.simpleName ?? '',
+          m.plain,
+          m.category,
+        ]
+          .join(' ')
+          .toLowerCase();
+        queryHit = tokens.every((t) => haystack.includes(t));
+      }
       const statusHit = statusFilter === 'all' || m.status === statusFilter;
       return queryHit && statusHit;
     });
@@ -310,14 +334,10 @@ export default function HomePage() {
                   }
                 />
                 <div className="mt-4 grid sm:grid-cols-2 gap-3">
-                  {attentionMarkers.map((m, i) => (
-                    <motion.div
-                      key={m.id}
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.04, duration: 0.35 }}
-                      className="h-full"
-                    >
+                  {attentionMarkers.map((m) => (
+                    // Per-row stagger animation removed — see #6.7.
+                    // Section-level Reveal anchors the visual entrance.
+                    <div key={m.id} className="h-full">
                       <MarkerAttentionCard
                         marker={m}
                         onAction={onMarkerAction(m)}
@@ -325,7 +345,7 @@ export default function HomePage() {
                           getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
                         }
                       />
-                    </motion.div>
+                    </div>
                   ))}
                 </div>
               </section>
@@ -527,15 +547,17 @@ export default function HomePage() {
               </Button>
             </Card>
           ) : (
-            displayedReports.map((r, i) => (
-              <motion.div
-                key={r.id}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.04, duration: 0.35 }}
-              >
+            displayedReports.map((r) => (
+              // Per-row stagger removed — see #6.7. Card's whileHover/
+              // whileTap still provides interactive feel without the
+              // mount-time cost.
+              <div key={r.id}>
                 <Card
-                  interactive={r.status === 'ready'}
+                  // interactive must mirror onClick — both ready and
+                  // processing entries are clickable (one opens results,
+                  // the other resumes the processing screen) and both
+                  // need hover/focus states for keyboard a11y.
+                  interactive
                   onClick={() =>
                     r.status === 'ready'
                       ? navigate({ type: 'results', reportId: r.id })
@@ -554,13 +576,24 @@ export default function HomePage() {
                         </div>
                         <StatusBadge status={badgeFor(r)} />
                       </div>
-                      <div className="text-[11px] text-muted mt-1">
-                        {r.uploadedOn} · {r.lab}
+                      <div className="text-[11px] text-muted mt-1 flex items-center gap-1.5">
+                        <span className="truncate">
+                          {r.uploadedOn} · {r.lab}
+                        </span>
+                        {r.isSample && (
+                          /* Demo data — never confuse the user about
+                             which numbers are theirs vs the curated
+                             example. Pill stays small so it doesn't
+                             compete with the real report rows. */
+                          <Pill tone="gold" size="sm" className="shrink-0">
+                            Sample
+                          </Pill>
+                        )}
                       </div>
                     </div>
                   </div>
                 </Card>
-              </motion.div>
+              </div>
             ))
           )}
         </div>

@@ -529,25 +529,33 @@ export function pickHeadlineMarker(
   const withHistory = markers.filter((m) => getTrend(m) !== null);
   if (withHistory.length === 0) return null;
 
+  // Largest-magnitude change wins inside each tier — previously only
+  // decliningConcerns was sorted, while the attention + improving
+  // fallbacks used raw array order. That made the headline pick depend
+  // on biomarker-catalog ordering rather than clinical significance.
+  const byAbsDelta = (a: Biomarker, b: Biomarker): number =>
+    Math.abs(b.value - (getPreviousValue(b) ?? 0)) -
+    Math.abs(a.value - (getPreviousValue(a) ?? 0));
+
   const decliningConcerns = withHistory.filter(
     (m) => m.status === 'concern' && getTrendTone(m) === 'declining',
   );
   if (decliningConcerns.length > 0) {
-    return decliningConcerns.sort(
-      (a, b) =>
-        Math.abs(b.value - (getPreviousValue(b) ?? 0)) -
-        Math.abs(a.value - (getPreviousValue(a) ?? 0)),
-    )[0];
+    return decliningConcerns.slice().sort(byAbsDelta)[0];
   }
   const decliningAttention = withHistory.filter(
     (m) => m.status === 'attention' && getTrendTone(m) === 'declining',
   );
-  if (decliningAttention.length > 0) return decliningAttention[0];
+  if (decliningAttention.length > 0) {
+    return decliningAttention.slice().sort(byAbsDelta)[0];
+  }
 
   const improving = withHistory.filter(
     (m) => getTrendTone(m) === 'improving',
   );
-  if (improving.length > 0) return improving[0];
+  if (improving.length > 0) {
+    return improving.slice().sort(byAbsDelta)[0];
+  }
 
   return null;
 }

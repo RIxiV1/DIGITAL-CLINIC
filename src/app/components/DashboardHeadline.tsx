@@ -124,23 +124,27 @@ export default function DashboardHeadline({
 }
 
 function pickCopy(markers: Biomarker[] | null, hasReport: boolean) {
-  // State C — no reports at all.
+  // State C — no reports at all. Voice: warm, specific, matches the
+  // landing page's "your X, your Y, your Z" register rather than the
+  // flat-clinical "Upload your first report to get your health snapshot"
+  // it used to say.
   if (!hasReport || !markers || markers.length === 0) {
     return {
       eyebrow: 'Get started',
-      headline: 'Upload your first report to get your health snapshot.',
-      sub: 'We translate the numbers into plain English, flag what matters, and track changes over time.',
+      headline: 'Drop in a report — we’ll translate the numbers.',
+      sub: 'Plain English, what matters flagged, and we’ll track the trend the next time you test.',
       ctaLabel: 'Upload a report',
     };
   }
 
   const summary = summarizeStatuses(markers);
 
-  // State D — everything is green.
+  // State D — everything is green. Voice: celebrating without sounding
+  // like a smug fitness app.
   if (summary.concern === 0 && summary.attention === 0) {
     return {
       eyebrow: 'On track',
-      headline: 'All markers on track. Keep doing what you’re doing.',
+      headline: 'Everything’s in range. Whatever you’re doing — keep going.',
       sub: 'Re-test in 6 months to confirm the trend holds.',
       ctaLabel: 'See all markers',
     };
@@ -164,10 +168,18 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean) {
           return bp - ap;
         })[0];
       const positiveDelta = positive ? formatDelta(positive) : null;
+      // The delta is computed against the MOST RECENT prior reading
+      // (formatDelta → getPreviousValue → history[last]). The "since X"
+      // date must reference that same reading, not history[0] — otherwise
+      // "dropped 50 since Jan 2026" would describe a 5-month delta when
+      // the actual change was measured against the March reading 6 weeks
+      // ago. Clinical misrepresentation, not just a copy nit.
+      const priorReadingDate =
+        newsworthy.history?.[newsworthy.history.length - 1]?.date;
 
       return {
         eyebrow: `Since your last test`,
-        headline: `Your ${newsworthy.name} dropped ${formatAbsDelta(newsworthy)} since ${formatRoughDate(newsworthy.history?.[0]?.date)}.`,
+        headline: `Your ${newsworthy.name} dropped ${formatAbsDelta(newsworthy)} since ${formatRoughDate(priorReadingDate)}.`,
         sub: positive && positiveDelta
           ? `${positive.name} is ${positiveDelta.startsWith('-') ? 'down' : 'up'} ${stripSign(positiveDelta)} ${positive.unit} — that's working. ${summary.concern} marker${summary.concern === 1 ? '' : 's'} still need${summary.concern === 1 ? 's' : ''} attention.`
           : `${summary.concern} marker${summary.concern === 1 ? '' : 's'} still need${summary.concern === 1 ? 's' : ''} attention.`,

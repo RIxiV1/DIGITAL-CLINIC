@@ -6,7 +6,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { mergeHistoryFromPriorReports, type Report } from './reports';
+import {
+  getLatestReadyReport,
+  mergeHistoryFromPriorReports,
+  type Report,
+} from './reports';
 import { pruneExpiredReports } from '../utils/persistence';
 import type { Biomarker } from './biomarkers';
 
@@ -193,6 +197,66 @@ describe('mergeHistoryFromPriorReports', () => {
     const real = readyReport('2026-02-20', [hb(13.9)]);
     const result = mergeHistoryFromPriorReports([hb(14.0)], [sample, real]);
     expect(result[0].history).toEqual([{ date: '2026-02-20', value: 13.9 }]);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* getLatestReadyReport — sample-vs-real preference                     */
+/* ------------------------------------------------------------------ */
+
+describe('getLatestReadyReport', () => {
+  const sample = (id: string, uploadedAt: string): Report => ({
+    id,
+    name: `Sample ${id}`,
+    lab: 'Sample lab',
+    uploadedOn: uploadedAt,
+    uploadedAt,
+    status: 'ready',
+    badge: 'analyzed',
+    isSample: true,
+    biomarkers: [hb(15)],
+  });
+
+  it('returns undefined when no ready reports exist', () => {
+    expect(getLatestReadyReport([])).toBeUndefined();
+    const processing: Report = {
+      id: 'p',
+      name: 'p',
+      lab: 'p',
+      uploadedOn: '',
+      status: 'processing',
+      badge: 'processing',
+      biomarkers: [],
+    };
+    expect(getLatestReadyReport([processing])).toBeUndefined();
+  });
+
+  it('returns the latest by uploadedAt when only real reports exist', () => {
+    const older = readyReport('2026-01-15', [hb(13.8)]);
+    const newer = readyReport('2026-03-10', [hb(14.0)]);
+    expect(getLatestReadyReport([older, newer])?.id).toBe('r-2026-03-10');
+    // Order in the input array must not matter.
+    expect(getLatestReadyReport([newer, older])?.id).toBe('r-2026-03-10');
+  });
+
+  it('prefers a real report even when a sample has a newer uploadedAt', () => {
+    // Real bug: the curated sample rep-001 (uploadedAt 2026-04-12) would
+    // outrank a real upload from earlier in 2026 if we just sorted by
+    // date. The dashboard must show the user's data, not demo data.
+    const realOlder = readyReport('2026-03-15', [hb(13.9)]);
+    const samplerNewer = sample('rep-001', '2026-04-12');
+    expect(getLatestReadyReport([realOlder, samplerNewer])?.id).toBe(
+      'r-2026-03-15',
+    );
+  });
+
+  it('falls back to a sample when no real ready report exists', () => {
+    // After "Load sample data" on an empty locker, the only ready
+    // report IS a sample — the dashboard still needs to surface
+    // something or it'd render its empty-state copy instead.
+    const s1 = sample('rep-001', '2026-04-12');
+    const s2 = sample('rep-002', '2026-03-04');
+    expect(getLatestReadyReport([s1, s2])?.id).toBe('rep-001');
   });
 });
 

@@ -80,11 +80,26 @@ export default function MarkerAttentionCard({
     return null;
   })();
 
+  // Stretched-link pattern. The card's hover-lift visually suggests
+  // clickability, but the card itself can't be a <button> because it
+  // already contains nested interactive elements (Info + action). A
+  // wrapping <button> would be invalid HTML, ungrab-friendly for screen
+  // readers, and break Tab order. Instead the PRIMARY action's ::after
+  // pseudo-element is stretched to inset:0 covering the whole card,
+  // and the Info button gets z-20 to stay above it. Clicking anywhere
+  // on the card triggers the primary action; clicking Info still
+  // opens the modal. Only one focusable surface exists per card, so
+  // tab order stays clean.
+  const stretchClass =
+    'relative after:absolute after:inset-0 after:z-10 after:content-[""]';
+  const isActionPrimary = !!(actionLabel && onAction);
+  const isLearnMorePrimary = !isActionPrimary && !!onLearnMore;
+
   return (
     <motion.div
       whileHover={{ y: -3 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className="relative bg-surface border border-line/70 rounded-[18px] shadow-soft h-full flex overflow-hidden group"
+      className="relative bg-surface border border-line/70 rounded-[18px] shadow-soft h-full flex overflow-hidden group focus-within:ring-2 focus-within:ring-indigo-400/60 focus-within:border-indigo-400"
     >
       {/* Status edge bar */}
       <div className={`w-1 ${edgeBarColor} shrink-0`} aria-hidden />
@@ -109,7 +124,12 @@ export default function MarkerAttentionCard({
               title={`Learn more about ${marker.name}`}
               // 48x48 hit area; -mr-3 -mt-3 pulls the larger button into
               // the corner so it doesn't push other card content around.
-              className="-mr-3 -mt-3 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-indigo-700 hover:bg-canvas/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
+              // When the action button is the stretched-link primary,
+              // Info needs z-20 to stay clickable above it; when Info is
+              // primary (no action), it carries the stretched-link itself.
+              className={`-mr-3 -mt-3 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-indigo-700 hover:bg-canvas/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors ${
+                isLearnMorePrimary ? stretchClass : 'relative z-20'
+              }`}
             >
               <Info size={14} />
             </button>
@@ -160,7 +180,14 @@ export default function MarkerAttentionCard({
             <button
               type="button"
               onClick={onAction}
-              className="mt-4 inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-700 hover:text-indigo-800 self-start"
+              // When this button is the primary action, its ::after
+              // pseudo-element stretches over the entire card so any
+              // click on the card body activates it. Without z-10 the
+              // ::after sits below other in-card content; with it the
+              // pseudo covers everything except the Info button (z-20).
+              className={`mt-4 inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-700 hover:text-indigo-800 self-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm ${
+                isActionPrimary ? stretchClass : ''
+              }`}
             >
               {actionLabel}
               <ArrowRight size={12} />
