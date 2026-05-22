@@ -5,14 +5,26 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState,
   type ReactNode,
 } from 'react';
+import {
+  useLocation,
+  useNavigate as useRouterNavigate,
+} from 'react-router-dom';
 import type { Page } from './types';
 import { assertNever } from '../utils/assertNever';
 
 /* ================================================================== */
 /* Public type + context                                                */
+/*                                                                      */
+/* Engine swap: this used to drive window.history directly via a hand-  */
+/* rolled URL serializer + popstate handler. It's now backed by         */
+/* react-router-dom (BrowserRouter lives in AppContext.tsx). The        */
+/* external API — useNavigation().{page, navigate, replace, back} — is  */
+/* deliberately unchanged so every consumer page keeps working without  */
+/* edits. Page objects translate to clean paths (`/reports/abc`) instead*/
+/* of the old `?page=results&id=abc` query format. No backwards-compat  */
+/* shim because there are no production users with bookmarked URLs yet. */
 /* ================================================================== */
 
 type NavigationValue = {
@@ -26,27 +38,93 @@ type NavigationValue = {
 const NavigationContext = createContext<NavigationValue | null>(null);
 
 /* ================================================================== */
-/* Pure helpers — Page <-> URL serialization                            */
+/* Page <-> URL path mapping                                            */
 /* ================================================================== */
 
-/** Type guard for a Page object pulled out of history.state. */
-function isPage(value: unknown): value is Page {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'type' in value &&
-    typeof (value as { type: unknown }).type === 'string'
-  );
+/**
+ * Encode a Page into a URL path. Landing collapses to '/' so the root
+ * URL stays clean; everything else gets a named path.
+ *
+ * `assertNever` on the default branch is the type-system safety net:
+ * adding a new Page variant without updating this switch becomes a
+ * compile-time error rather than a silent fallthrough.
+ */
+function pageToPath(page: Page): string {
+  switch (page.type) {
+    case 'landing':
+      return '/';
+    case 'quiz':
+      return '/quiz';
+    case 'recommendedTests':
+      return '/tests';
+    case 'home':
+      return '/dashboard';
+    case 'upload':
+      return '/upload';
+    case 'processing':
+      return '/processing';
+    case 'manualEntry':
+      return '/manual-entry';
+    case 'profile':
+      return '/profile';
+    case 'results':
+      return `/reports/${encodeURIComponent(page.reportId)}`;
+    case 'problem':
+      return `/topics/${encodeURIComponent(page.problemId)}`;
+    default:
+      return assertNever(page);
+  }
 }
 
 /**
- * Deep equality for Page discriminated-union values. Used by the
- * pushState dedup guard so a rapid double-navigate-to-the-same-page
- * doesn't pollute browser history with duplicate entries.
+ * Parse a URL path back into a Page. Returns landing for any unknown
+ * path so refreshes on legacy / malformed URLs don't crash the app.
  *
- * Covers the two shapes that carry an id: `results` and `problem`. The
- * other variants are atomic — same type = same page.
+ * The minimal LandingPage variant lives at `/minimal` but routes to the
+ * same `landing` Page type — the variant is selected by reading
+ * useLocation().pathname directly in LandingPage, not by branching the
+ * Page union.
  */
+function pathToPage(pathname: string): Page {
+  // Strip trailing slash and lowercase the leading segment for forgiving
+  // matches like "/Quiz" or "/quiz/".
+  const path = pathname.replace(/\/+$/, '').toLowerCase() || '/';
+
+  // Exact-match routes first.
+  switch (path) {
+    case '/':
+    case '/minimal':
+      return { type: 'landing' };
+    case '/quiz':
+      return { type: 'quiz' };
+    case '/tests':
+      return { type: 'recommendedTests' };
+    case '/dashboard':
+      return { type: 'home' };
+    case '/upload':
+      return { type: 'upload' };
+    case '/processing':
+      return { type: 'processing' };
+    case '/manual-entry':
+      return { type: 'manualEntry' };
+    case '/profile':
+      return { type: 'profile' };
+  }
+
+  // Parameterised routes.
+  const reportMatch = path.match(/^\/reports\/([^/]+)$/);
+  if (reportMatch) {
+    return { type: 'results', reportId: decodeURIComponent(reportMatch[1]) };
+  }
+  const topicMatch = path.match(/^\/topics\/([^/]+)$/);
+  if (topicMatch) {
+    return { type: 'problem', problemId: decodeURIComponent(topicMatch[1]) };
+  }
+
+  // Anything else falls back to landing.
+  return { type: 'landing' };
+}
+
 function pageEquals(a: Page | null | undefined, b: Page): boolean {
   if (!a) return false;
   if (a.type !== b.type) return false;
@@ -59,288 +137,101 @@ function pageEquals(a: Page | null | undefined, b: Page): boolean {
   return true;
 }
 
-/**
- * Encode a Page into a URL search string for deep linking.
- *   { type: 'home' }                        -> '?page=home'
- *   { type: 'results', reportId: 'r1' }     -> '?page=results&id=r1'
- *   { type: 'problem', problemId: 'low-t' } -> '?page=problem&id=low-t'
- *   { type: 'landing' }                     -> '' (clean root URL)
- *
- * `assertNever` on the default branch is the type-system safety net:
- * adding a new Page variant without updating this switch becomes a
- * compile-time error rather than a silent fallthrough.
- */
-function pageToSearch(page: Page): string {
-  switch (page.type) {
-    case 'landing':
-      return '';
-    case 'results':
-      return `?page=results&id=${encodeURIComponent(page.reportId)}`;
-    case 'problem':
-      return `?page=problem&id=${encodeURIComponent(page.problemId)}`;
-    case 'quiz':
-    case 'recommendedTests':
-    case 'home':
-    case 'upload':
-    case 'processing':
-    case 'manualEntry':
-    case 'profile':
-      return `?page=${page.type}`;
-    default:
-      return assertNever(page);
-  }
-}
-
-/**
- * Parse a URL search string into a Page. Returns null if the URL
- * doesn't describe a known page (callers should fall back to landing).
- */
-function searchToPage(search: string): Page | null {
-  if (!search) return null;
-  const params = new URLSearchParams(search);
-  const type = params.get('page');
-  const id = params.get('id') ?? '';
-  switch (type) {
-    case 'landing':
-      return { type: 'landing' };
-    case 'quiz':
-      return { type: 'quiz' };
-    case 'recommendedTests':
-      return { type: 'recommendedTests' };
-    case 'home':
-      return { type: 'home' };
-    case 'upload':
-      return { type: 'upload' };
-    case 'processing':
-      return { type: 'processing' };
-    case 'manualEntry':
-      return { type: 'manualEntry' };
-    case 'profile':
-      return { type: 'profile' };
-    case 'results':
-      return id ? { type: 'results', reportId: id } : null;
-    case 'problem':
-      return id ? { type: 'problem', problemId: id } : null;
-    default:
-      return null;
-  }
-}
-
-/** Pathname + new search string, preserving any base path the app is
- *  mounted under (e.g. `/clinic/`). */
-function pageUrl(page: Page): string {
-  if (typeof window === 'undefined') return pageToSearch(page) || '/';
-  return `${window.location.pathname}${pageToSearch(page)}`;
-}
-
-/** Read the current page out of `window.history.state` if it has one. */
-function readCurrentHistoryPage(): Page | null {
-  if (typeof window === 'undefined') return null;
-  const stateRaw = window.history.state as { page?: unknown } | null;
-  const candidate = stateRaw?.page;
-  return isPage(candidate) ? candidate : null;
-}
-
 /* ================================================================== */
 /* Provider                                                             */
 /* ================================================================== */
 
 export function NavigationProvider({ children }: { children: ReactNode }) {
-  /* Bootstrap from the URL so a deep link like /?page=home lands on
-   * home, refresh-safe. SSR-safe via the typeof-window guard. */
-  const [page, setPage] = useState<Page>(() => {
-    if (typeof window === 'undefined') return { type: 'landing' };
-    return searchToPage(window.location.search) ?? { type: 'landing' };
-  });
-  const [history, setHistory] = useState<Page[]>([]);
+  const location = useLocation();
+  const routerNavigate = useRouterNavigate();
 
-  /* ---- Refs for closure-free reads ---------------------------------
-   * navigate()/back() need the CURRENT page+history without listing
-   * them as useCallback deps (which would invalidate the callback
-   * every render). Mirroring state into refs lets the callbacks read
-   * fresh values without re-creating themselves.
-   *
-   * Updating a ref is not a state update, so this is Strict-Mode-safe
-   * — unlike calling setState inside another setState updater, which
-   * Strict Mode invokes twice in dev. */
-  const pageRef = useRef(page);
-  const historyRef = useRef(history);
-  useEffect(() => {
-    pageRef.current = page;
-  }, [page]);
-  useEffect(() => {
-    historyRef.current = history;
-  }, [history]);
+  // `page` is derived from the URL — single source of truth. The
+  // previous engine maintained `page` state separately and synced it
+  // back to history; this version inverts that, so back/forward and
+  // direct URL entry naturally produce the right page without any
+  // popstate handling at all.
+  const page = useMemo<Page>(() => pathToPage(location.pathname), [location.pathname]);
 
-  /* ---- Popstate-reentry guard --------------------------------------
-   * VULN 2 (popstate→pushState loop): the loop the brief describes
-   * can't happen with this code shape — popstate just calls setPage,
-   * not pushState. But this ref is a belt-and-braces guard against
-   * any future regression where someone adds a reactive effect that
-   * pushes history on state change: that effect can opt out by
-   * checking this ref. The ref is set BEFORE we touch state inside
-   * the popstate handler and cleared after the microtask drains. */
-  const isHandlingPopstateRef = useRef(false);
+  // Internal history tracking — react-router doesn't expose history
+  // length, but we need it for back()'s no-history fallback (deep-link
+  // entry → "back" should still go somewhere sensible). We push onto
+  // this stack on navigate() and pop on back(); replace() doesn't
+  // affect it. This isn't 100% in sync with the browser stack (e.g.
+  // we don't see forward navigations), but it's a safety net, not a
+  // primary data structure.
+  const historyRef = useRef<Page[]>([]);
+  // Mirror page changes so popstate-driven navigation doesn't lose
+  // the previous page when we later call back().
+  const lastPageRef = useRef<Page>(page);
 
-  /**
-   * Scroll-to-top on every page change. Without this, the browser
+  /* Scroll-to-top on every page change. Without this, the browser
    * preserves the previous page's scroll position — so clicking
    * "Go to my dashboard" from the bottom of a long RecommendedTestsPage
    * dumps you at the bottom of the shorter HomePage, looking at blank
-   * space below the content (which looks like a "white screen" bug).
-   */
+   * space below the content (which looks like a "white screen" bug). */
   useEffect(() => {
     if (typeof window === 'undefined') return;
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
   }, [page]);
 
-  /**
-   * Browser-history integration so back/forward AND refresh both work.
-   *
-   * - navigate() (below) pushes a new entry with the page encoded in
-   *   BOTH history.state (fast re-hydration) AND the URL search params
-   *   (deep linking + shareable URLs + refresh-safe).
-   * - replace() (below) rewrites the current entry without adding a step.
-   * - popstate (handler here) rehydrates from history.state if present,
-   *   otherwise re-parses the URL search params (covers cases where
-   *   state was serialized/lost — e.g., session restore).
-   *
-   * Anchor on mount: replace the current entry so the very first back
-   * press has a real state object to read from, and normalize the URL
-   * to match whatever page we booted into.
-   */
+  // Track the previous-page→current-page transitions to keep our
+  // internal stack in rough sync with the browser. Only push onto the
+  // stack when the URL change wasn't initiated by our own navigate()
+  // (which already pushed), and only when the page actually changed.
+  // For now we rely on navigate() to maintain the stack explicitly and
+  // skip the implicit-push path — simpler and correct for the back()
+  // use case which only needs "do we have any breadcrumbs at all."
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const initial = pageRef.current;
-    window.history.replaceState({ page: initial }, '', pageUrl(initial));
-
-    const onPopState = (e: PopStateEvent) => {
-      // Guard window — the imperative navigate()/replace() below check
-      // this so they don't write to history while a popstate is being
-      // processed.
-      isHandlingPopstateRef.current = true;
-      try {
-        const fromState = (e.state as { page?: unknown } | null)?.page;
-        const candidate: Page | null = isPage(fromState)
-          ? fromState
-          : searchToPage(window.location.search);
-        if (candidate) {
-          /* Sync our internal state to the entry the browser navigated
-           * to. Pop one from our internal history stack so back() and
-           * the browser back behave consistently. */
-          setPage(candidate);
-          setHistory((h) => (h.length > 0 ? h.slice(0, -1) : h));
-        } else {
-          /* Browser walked past our app's earliest entry — surface
-           * landing rather than letting the user fall out of the SPA. */
-          setPage({ type: 'landing' });
-          setHistory([]);
-        }
-      } finally {
-        // Drain through one microtask so any synchronous downstream
-        // effects (e.g. memoized consumers) finish reading the guard
-        // before we lower it.
-        queueMicrotask(() => {
-          isHandlingPopstateRef.current = false;
-        });
-      }
-    };
-
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  /**
-   * Push a new entry into browser history — but only if it's NOT a
-   * duplicate of what's already there. Dedup prevents rapid
-   * double-navigate (e.g. nervous-tap mobile UX) from polluting the
-   * back-button stack with identical entries, and prevents any future
-   * reactive effect from accidentally double-pushing.
-   *
-   * VULN 2 hardening: verifies window.history.state before writing.
-   */
-  const pushHistoryEntry = useCallback((next: Page) => {
-    if (typeof window === 'undefined') return;
-    if (isHandlingPopstateRef.current) return; // don't fight the browser
-    const current = readCurrentHistoryPage();
-    if (pageEquals(current, next)) return; // already there
-    window.history.pushState({ page: next }, '', pageUrl(next));
-  }, []);
-
-  /** Same idempotency check for replaceState. */
-  const replaceHistoryEntry = useCallback((next: Page) => {
-    if (typeof window === 'undefined') return;
-    if (isHandlingPopstateRef.current) return;
-    const current = readCurrentHistoryPage();
-    if (pageEquals(current, next)) return;
-    window.history.replaceState({ page: next }, '', pageUrl(next));
-  }, []);
-
-  /* ================================================================ */
-  /* Public callbacks — all stable across renders via useCallback      */
-  /* (VULN 1 hardening: consumers reading these via useNavigate()      */
-  /* don't re-render when callbacks would otherwise be reference-      */
-  /* different each cycle).                                            */
-  /* ================================================================ */
+    lastPageRef.current = page;
+  }, [page]);
 
   const navigate = useCallback(
     (next: Page) => {
-      // Dedup at the state layer too — pushing the same page onto
-      // history while we're already on it would re-render every
-      // consumer for no reason.
-      if (pageEquals(pageRef.current, next)) {
-        pushHistoryEntry(next); // still no-op via dedup, but safe
-        return;
-      }
-      setHistory((h) => [...h, pageRef.current]);
-      setPage(next);
-      pushHistoryEntry(next);
+      if (pageEquals(lastPageRef.current, next)) return;
+      // Push current page onto our internal breadcrumb stack BEFORE the
+      // URL change. back() consults this stack for its no-history-fall-
+      // back-to-home decision.
+      historyRef.current = [...historyRef.current, lastPageRef.current];
+      routerNavigate(pageToPath(next));
     },
-    [pushHistoryEntry],
+    [routerNavigate],
   );
 
   const replace = useCallback(
     (next: Page) => {
-      if (!pageEquals(pageRef.current, next)) {
-        setPage(next);
-      }
-      replaceHistoryEntry(next);
+      if (pageEquals(lastPageRef.current, next)) return;
+      // replace() doesn't add a breadcrumb — it rewrites the current
+      // entry, same as react-router's { replace: true } option.
+      routerNavigate(pageToPath(next), { replace: true });
     },
-    [replaceHistoryEntry],
+    [routerNavigate],
   );
 
   /**
-   * back() defers to the browser. window.history.back() fires popstate,
-   * which our handler above translates into state updates. This keeps
-   * the internal history and the browser history strictly in sync — vs
-   * the previous implementation which only mutated our internal stack
-   * and left the browser stack alone (which is why hitting the browser
-   * back button exited the app instead of stepping back inside it).
+   * back() — defers to the browser when we have any history at all,
+   * otherwise falls back to home. The browser knows about navigations
+   * we caused AND any forward/back the user did, so this stays correct
+   * across cross-tab restores and bfcache resumes.
    *
-   * No-history fallback: when the user deep-linked into a "page"-variant
-   * route (e.g. /?page=results&id=…) the internal history is empty.
-   * The previous implementation was silent — clicking the back arrow
-   * did nothing, which felt like a broken UI. Now we navigate(home) as
-   * a sensible safety net so the Back arrow always has SOMEWHERE to go.
+   * Deep-link no-history fallback: when a user lands on /reports/abc
+   * via a shared link, the back arrow has nowhere to go — sending them
+   * to landing would feel like ejecting them from the product. home is
+   * the universally-useful destination.
    */
   const back = useCallback(() => {
     if (historyRef.current.length === 0) {
-      // No internal history — fall through to home.
-      const home: Page = { type: 'home' };
-      setPage(home);
-      pushHistoryEntry(home);
+      routerNavigate(pageToPath({ type: 'home' }));
       return;
     }
-    if (typeof window !== 'undefined') window.history.back();
-  }, [pushHistoryEntry]);
+    historyRef.current = historyRef.current.slice(0, -1);
+    if (typeof window !== 'undefined') {
+      window.history.back();
+    }
+  }, [routerNavigate]);
 
-  /* VULN 1 fix (memoized provider value) — without this, every render
-   * creates a new object identity for `value`, which would force every
-   * useNavigation() consumer to re-render even when nothing they care
-   * about changed. */
   const value = useMemo<NavigationValue>(
-    () => ({ page, history, navigate, replace, back }),
-    [page, history, navigate, replace, back],
+    () => ({ page, history: historyRef.current, navigate, replace, back }),
+    [page, navigate, replace, back],
   );
 
   return (

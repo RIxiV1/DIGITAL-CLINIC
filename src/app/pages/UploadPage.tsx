@@ -20,6 +20,7 @@ import {
   validateUpload,
   type FileValidationError,
 } from '../services/api';
+import { clearPendingConfirm } from '../utils/persistence';
 
 /**
  * Selecting + validating a lab report before handing it off to the
@@ -79,6 +80,11 @@ export default function UploadPage() {
     for (const r of reports) {
       if (r.status === 'processing') removeReport(r.id);
     }
+    // Also drop any persisted confirm record — it's tied to a now-
+    // removed placeholder report. Stale records would be ignored on
+    // load (processingId mismatch), but clearing avoids the
+    // accumulation and is the right hygiene as we replace the flow.
+    clearPendingConfirm();
 
     const name = fileName ?? 'My lab report';
     const cleaned = name.replace(/\.[^.]+$/, '');

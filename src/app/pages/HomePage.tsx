@@ -1,4 +1,5 @@
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Plus, Search, Upload, X } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -240,16 +241,23 @@ export default function HomePage() {
                   aria-label="Search markers, goals, or tests"
                   className="w-full h-12 pl-10 pr-12 rounded-[14px] bg-canvas/70 border border-line text-[14px] placeholder:text-muted text-ink focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400"
                 />
-                {query && (
-                  <button
-                    type="button"
-                    onClick={() => setQuery('')}
-                    aria-label="Clear search"
-                    className="absolute right-0 top-1/2 -translate-y-1/2 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-ink"
-                  >
-                    <X size={14} />
-                  </button>
-                )}
+                <AnimatePresence initial={false}>
+                  {query && (
+                    <motion.button
+                      key="clear-marker-search"
+                      type="button"
+                      onClick={() => setQuery('')}
+                      aria-label="Clear search"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.8 }}
+                      transition={{ duration: 0.15, ease: 'easeOut' }}
+                      className="absolute right-0 top-1/2 -translate-y-1/2 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-ink"
+                    >
+                      <X size={14} />
+                    </motion.button>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
 
@@ -462,16 +470,23 @@ export default function HomePage() {
                 aria-label="Filter reports"
                 className="w-full h-10 pl-9 pr-9 rounded-full bg-surface border border-line text-[13.5px] placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
               />
-              {lockerQuery && (
-                <button
-                  type="button"
-                  onClick={() => setLockerQuery('')}
-                  aria-label="Clear search"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 grid place-items-center w-6 h-6 rounded-full text-muted hover:text-ink hover:bg-canvas"
-                >
-                  <X size={12} />
-                </button>
-              )}
+              <AnimatePresence initial={false}>
+                {lockerQuery && (
+                  <motion.button
+                    key="clear-locker-search"
+                    type="button"
+                    onClick={() => setLockerQuery('')}
+                    aria-label="Clear search"
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 grid place-items-center w-6 h-6 rounded-full text-muted hover:text-ink hover:bg-canvas"
+                  >
+                    <X size={12} />
+                  </motion.button>
+                )}
+              </AnimatePresence>
             </div>
             <div
               role="radiogroup"

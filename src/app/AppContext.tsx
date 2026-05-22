@@ -13,6 +13,7 @@
  */
 
 import type { ReactNode } from 'react';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { NavigationProvider } from './contexts/NavigationContext';
 import { QuizProvider } from './contexts/QuizContext';
 import { ReportsProvider } from './contexts/ReportsContext';
@@ -22,12 +23,33 @@ export { useNavigation } from './contexts/NavigationContext';
 export { useQuiz } from './contexts/QuizContext';
 export { useReports } from './contexts/ReportsContext';
 
-export function AppProvider({ children }: { children: ReactNode }) {
+/**
+ * Root provider stack. The optional `router` prop swaps the router
+ * implementation — production uses BrowserRouter (real URLs), tests
+ * pass a MemoryRouter so they can mount pages without a window.history
+ * sync. Without this seam, the smoke tests in pages.smoke.test.tsx
+ * would fail to mount the NavigationProvider's useLocation/useNavigate
+ * hooks.
+ */
+export function AppProvider({
+  children,
+  router = 'browser',
+  initialEntries,
+}: {
+  children: ReactNode;
+  router?: 'browser' | 'memory';
+  /** Only used when router === 'memory'. */
+  initialEntries?: string[];
+}) {
+  const Router = router === 'memory' ? MemoryRouter : BrowserRouter;
+  const routerProps = router === 'memory' ? { initialEntries } : {};
   return (
-    <NavigationProvider>
-      <QuizProvider>
-        <ReportsProvider>{children}</ReportsProvider>
-      </QuizProvider>
-    </NavigationProvider>
+    <Router {...routerProps}>
+      <NavigationProvider>
+        <QuizProvider>
+          <ReportsProvider>{children}</ReportsProvider>
+        </QuizProvider>
+      </NavigationProvider>
+    </Router>
   );
 }

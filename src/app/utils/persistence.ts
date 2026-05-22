@@ -14,6 +14,7 @@ const REPORTS_KEY = `${KEY_PREFIX}reports`;
 const QUIZ_KEY = `${KEY_PREFIX}quiz`;
 const QUIZ_COMPLETE_KEY = `${KEY_PREFIX}quizComplete`;
 const HISTORY_KEY = `${KEY_PREFIX}navHistory`;
+const PENDING_CONFIRM_KEY = `${KEY_PREFIX}pendingConfirm`;
 
 /** Reports older than this get cleaned up on next app load. 6 months. */
 const REPORT_TTL_MS = 180 * 24 * 60 * 60 * 1000;
@@ -89,6 +90,50 @@ export function saveNavHistory<T>(history: T[]): void {
 }
 
 /* ------------------------------------------------------------------ */
+/* Pending-confirm record                                              */
+/*                                                                      */
+/* When the parser finishes a real extraction, ProcessingPage hands     */
+/* control to the user via the ConfirmExtractedValuesView for them to   */
+/* verify the values before we commit the report. That confirm state    */
+/* used to live only in component-local state — so if the user          */
+/* navigated away (browser back, etc.) and then returned to             */
+/* /processing, the page would remount with a fresh `pendingConfirm`    */
+/* of null, the file would already be consumed from the module-level    */
+/* `pendingUpload` bridge, and the user would see a "There was nothing  */
+/* to parse" error instead of their actual extracted values.            */
+/*                                                                      */
+/* Persisting the confirm record fixes that: ProcessingPage checks for  */
+/* a stored confirm matching the current processingId on mount and      */
+/* restores the view without re-parsing. Cleared on confirm/reject.     */
+/* ------------------------------------------------------------------ */
+
+export type PendingConfirmRecord<TBiomarker> = {
+  /** Id of the placeholder Report this confirm corresponds to. */
+  processingId: string;
+  fileName: string;
+  biomarkers: TBiomarker[];
+  rawText?: string;
+  unrecognizedRows?: string[];
+};
+
+export function savePendingConfirm<T>(record: PendingConfirmRecord<T>): void {
+  writeJSON(PENDING_CONFIRM_KEY, record);
+}
+
+export function loadPendingConfirm<T>(): PendingConfirmRecord<T> | null {
+  return readJSON<PendingConfirmRecord<T> | null>(PENDING_CONFIRM_KEY, null);
+}
+
+export function clearPendingConfirm(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.removeItem(PENDING_CONFIRM_KEY);
+  } catch {
+    // storage disabled — no-op
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Maintenance                                                          */
 /* ------------------------------------------------------------------ */
 
@@ -153,20 +198,36 @@ export function cleanupExpiredReports(now: number = Date.now()): number {
 }
 
 /**
- * Removes any persisted reports stuck in `status: 'processing'`. The
- * parser's File handoff lives in module state, so a tab close mid-flow
- * leaves the placeholder report in localStorage but the File gone —
- * which would render as "There was nothing to parse" on next visit.
+ * Removes any persisted reports stuck in `status: 'processing'` that
+ * have NO paired pendingConfirm record. The parser's File handoff lives
+ * in module state, so a tab close mid-parse leaves the placeholder in
+ * localStorage but the File gone — which would render as "There was
+ * nothing to parse" on next visit.
+ *
+ * Exception: when a parse already succeeded and the user closed the tab
+ * mid-confirm-view, the matching pendingConfirm record carries all the
+ * data needed for ProcessingPage to restore the confirm view without
+ * re-parsing. Keep that one report so the restore path can find it.
+ *
  * Called once on app boot, BEFORE loadReports, so orphans never reach
  * UI state. Returns the count of reports cleaned up.
  */
 export function cleanupOrphanProcessing(): number {
-  const stored = readJSON<StoredReports<{ status?: string }> | null>(
+  const stored = readJSON<StoredReports<{ status?: string; id?: string }> | null>(
     REPORTS_KEY,
     null,
   );
   if (!stored || !Array.isArray(stored.reports)) return 0;
-  const kept = stored.reports.filter((r) => r?.status !== 'processing');
+  const pending = readJSON<{ processingId?: string } | null>(
+    PENDING_CONFIRM_KEY,
+    null,
+  );
+  const keepId = pending?.processingId;
+  const kept = stored.reports.filter(
+    (r) =>
+      r?.status !== 'processing' ||
+      (keepId !== undefined && r?.id === keepId),
+  );
   if (kept.length === stored.reports.length) return 0;
   writeJSON(REPORTS_KEY, { savedAt: stored.savedAt, reports: kept });
   return stored.reports.length - kept.length;

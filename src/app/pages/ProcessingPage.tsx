@@ -29,6 +29,11 @@ import {
   type Biomarker,
 } from '../data/biomarkers';
 import { sampleReports } from '../data/reports';
+import {
+  clearPendingConfirm,
+  loadPendingConfirm,
+  savePendingConfirm,
+} from '../utils/persistence';
 
 /**
  * Multi-stage parsing UI for the upload pipeline.
@@ -117,6 +122,25 @@ export default function ProcessingPage() {
     if (startedForRef.current === processingId) return;
     startedForRef.current = processingId;
 
+    // Restore-from-localStorage path. The previous flow held the confirm
+    // state in component-local state only — so navigating away from the
+    // confirm view (browser back, bottom-nav tap on iOS) lost the parsed
+    // values, and returning to /processing would re-run the parser
+    // against a now-consumed pendingUpload → failureReason='no-file' →
+    // "There was nothing to parse" error. By persisting the confirm
+    // record on success and checking for it here on mount, the restore
+    // is invisible to the user.
+    const persisted = loadPendingConfirm<Biomarker>();
+    if (persisted && persisted.processingId === processingId) {
+      setPendingConfirm({
+        biomarkers: persisted.biomarkers,
+        fileName: persisted.fileName,
+        rawText: persisted.rawText,
+        unrecognizedRows: persisted.unrecognizedRows,
+      });
+      return;
+    }
+
     // Drain the pending upload once per processingId. If the user
     // refreshed mid-flow, this returns null and parseUploadedReport
     // resolves with failureReason='no-file'.
@@ -137,17 +161,26 @@ export default function ProcessingPage() {
         // The placeholder report stays in 'processing' state during
         // the confirm step (so the locker doesn't show a half-baked
         // entry); it's only marked ready when the user confirms.
-        setPendingConfirm({
+        const confirmState: ConfirmState = {
           biomarkers: result.biomarkers,
           fileName,
           rawText: result.rawText,
           unrecognizedRows: result.unrecognizedRows,
+        };
+        // Persist so a navigate-away-then-back can restore this view
+        // without re-running the parser against the consumed file.
+        savePendingConfirm<Biomarker>({
+          processingId,
+          ...confirmState,
         });
+        setPendingConfirm(confirmState);
         return;
       }
       // Extraction failed. Roll back the placeholder report so we
       // don't leave a forever-"processing" ghost in the locker, then
-      // render the inline error state.
+      // render the inline error state. Defensive clear in case a stale
+      // confirm record from a prior session is still sitting in storage.
+      clearPendingConfirm();
       removeReport(processingId);
       setFailure({
         reason: result.failureReason ?? 'no-matches',
@@ -192,12 +225,14 @@ export default function ProcessingPage() {
       biomarkers: pendingConfirm.biomarkers,
       lab: 'Parsed from upload',
     });
+    clearPendingConfirm();
     setPendingConfirm(null);
     replace({ type: 'results', reportId: processingId });
   };
 
   const rejectAndRetry = () => {
     if (processingId) removeReport(processingId);
+    clearPendingConfirm();
     setPendingConfirm(null);
     replace({ type: 'upload' });
   };

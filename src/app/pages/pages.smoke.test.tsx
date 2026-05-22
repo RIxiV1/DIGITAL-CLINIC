@@ -88,6 +88,19 @@ describe('page smoke tests', () => {
     expect(container.firstChild).toBeTruthy();
   });
 
+  it('LandingPage minimal variant renders at /minimal', () => {
+    // Path-driven variant: LandingPage reads useLocation().pathname
+    // and switches to the 4-section trim layout. Test via MemoryRouter
+    // with an explicit initialEntries so we don't depend on jsdom's
+    // window.location.
+    const { container } = render(
+      <AppProvider router="memory" initialEntries={['/minimal']}>
+        <LandingPage />
+      </AppProvider>,
+    );
+    expect(container.firstChild).toBeTruthy();
+  });
+
   it('HomePage renders (empty locker state)', () => {
     const { container } = renderWithProvider(<HomePage />);
     expect(container.firstChild).toBeTruthy();

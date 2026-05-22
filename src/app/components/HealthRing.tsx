@@ -49,18 +49,21 @@ export default function HealthRing({
         value: good,
         length: (good / safeTotal) * circumference,
         color: 'var(--color-good)',
+        label: 'on track',
       },
       {
         key: 'attention',
         value: attention,
         length: (attention / safeTotal) * circumference,
         color: 'var(--color-attention)',
+        label: 'needs attention',
       },
       {
         key: 'concern',
         value: concern,
         length: (concern / safeTotal) * circumference,
         color: 'var(--color-concern)',
+        label: 'needs care',
       },
     ],
     [good, attention, concern, safeTotal, circumference],
@@ -104,7 +107,13 @@ export default function HealthRing({
           strokeWidth={thickness}
         />
 
-        {/* Three coloured arcs, each starting where the previous ended */}
+        {/* Three coloured arcs, each starting where the previous ended.
+            Native <title> child provides a free hover tooltip showing
+            the exact count + label per segment — sighted users get the
+            same count breakdown that the centre text shows for the
+            "on track" segment, without us building a custom tooltip
+            framework. Screen readers also read the parent <svg>'s
+            aria-label, so this is purely a sighted-user affordance. */}
         {segments.map((seg, i) => {
           if (seg.value === 0) return null;
           return (
@@ -125,7 +134,9 @@ export default function HealthRing({
                 ease: [0.22, 1, 0.36, 1],
                 delay: 0.1 + i * 0.15,
               }}
-            />
+            >
+              <title>{`${seg.value} ${seg.value === 1 ? 'marker' : 'markers'} ${seg.label}`}</title>
+            </motion.circle>
           );
         })}
       </svg>
