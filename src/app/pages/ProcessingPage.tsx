@@ -6,6 +6,7 @@ import {
   Check,
   ChevronDown,
   ChevronUp,
+  FileText,
   Pencil,
   RotateCcw,
   ScanLine,
@@ -14,6 +15,7 @@ import {
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
+import Emoji from '../components/Emoji';
 import Logo from '../components/Logo';
 import Pill from '../components/Pill';
 import StickyBottomBar from '../components/StickyBottomBar';
@@ -652,8 +654,26 @@ function ConfirmExtractedValuesView({
 }) {
   const [showRaw, setShowRaw] = useState(false);
 
+  // Status summary — three counts the user can scan at a glance before
+  // committing to the report. Putting them next to the headline turns
+  // "we found N values" from a count into a verdict: "and X of them
+  // need your attention right now."
+  const counts = useMemo(() => {
+    let concern = 0;
+    let attention = 0;
+    let good = 0;
+    for (const m of biomarkers) {
+      if (m.status === 'concern') concern += 1;
+      else if (m.status === 'attention') attention += 1;
+      else good += 1;
+    }
+    return { concern, attention, good };
+  }, [biomarkers]);
+
   // Group by category in canonical order so the user reads the values
-  // in the same sequence as the eventual report.
+  // in the same sequence as the eventual report. Within each category,
+  // sort by severity (concern → attention → good) so the markers that
+  // need verification most appear at the top of every section.
   const grouped = useMemo(() => {
     const byCategory = new Map<string, Biomarker[]>();
     for (const m of biomarkers) {
@@ -661,37 +681,75 @@ function ConfirmExtractedValuesView({
       list.push(m);
       byCategory.set(m.category, list);
     }
+    const severityRank: Record<Biomarker['status'], number> = {
+      concern: 0,
+      attention: 1,
+      good: 2,
+    };
     return biomarkerCategories
       .filter((c) => byCategory.has(c.id))
-      .map((c) => ({ category: c, markers: byCategory.get(c.id) ?? [] }));
+      .map((c) => ({
+        category: c,
+        markers: (byCategory.get(c.id) ?? []).slice().sort(
+          (a, b) => severityRank[a.status] - severityRank[b.status],
+        ),
+      }));
   }, [biomarkers]);
 
   return (
-    <div className="min-h-dvh bg-canvas flex flex-col pb-32">
+    <div className="min-h-dvh bg-canvas pb-36">
       <Container size="narrow" className="pt-6">
         <Logo />
       </Container>
 
-      <Container size="wide" className="flex-1 mt-4 lg:mt-8">
+      <Container size="wide" className="mt-6 lg:mt-10">
+        {/* ---- Hero ---- */}
         <div className="lg:max-w-3xl lg:mx-auto">
           <Pill tone="gold" size="sm">
             <Check size={11} strokeWidth={3} /> Extraction complete
           </Pill>
-          <h1 className="font-display text-[26px] lg:text-[32px] leading-tight mt-3 text-balance text-ink">
-            We found {biomarkers.length}{' '}
+          <h1 className="font-display text-[28px] lg:text-[36px] leading-[1.05] mt-3 text-balance text-ink">
+            We found{' '}
+            <span className="text-indigo-700">{biomarkers.length}</span>{' '}
             {biomarkers.length === 1 ? 'value' : 'values'} in your report.
           </h1>
-          <p className="mt-2 text-[14px] lg:text-[15px] text-ink-soft text-pretty">
+          <p className="mt-3 text-[14px] lg:text-[15px] text-ink-soft text-pretty max-w-xl">
             Check each number against your report before continuing. We
             deliberately only show what we could pull out — if a marker
             you expected isn’t listed, it wasn’t in our catalog or our
             parser couldn’t find a match.
           </p>
-          <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-muted">
-            <span className="font-semibold uppercase tracking-[0.12em] text-[10px]">
-              File
-            </span>
-            <span className="break-all">{fileName}</span>
+
+          {/* Status summary — three chips, color-coded, only render the
+              non-zero ones. The order is severity-first so users see
+              "needs care" before scanning past it. */}
+          <div className="mt-5 flex flex-wrap gap-2">
+            {counts.concern > 0 && (
+              <SummaryChip tone="concern" count={counts.concern} label="need care" />
+            )}
+            {counts.attention > 0 && (
+              <SummaryChip tone="attention" count={counts.attention} label="need attention" />
+            )}
+            {counts.good > 0 && (
+              <SummaryChip tone="good" count={counts.good} label="on track" />
+            )}
+          </div>
+
+          {/* File pill — replaces the bare "FILE filename" line. The
+              card-shaped container gives the metadata real visual
+              weight without making it compete with the headline. */}
+          <div className="mt-5 inline-flex items-center gap-2.5 max-w-full pl-2.5 pr-3.5 py-2 rounded-[12px] bg-surface border border-line/70 shadow-soft">
+            <div className="grid place-items-center w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 shrink-0">
+              <FileText size={14} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[9.5px] uppercase tracking-[0.16em] font-bold text-muted leading-none">
+                File parsed
+              </div>
+              <div className="mt-0.5 text-[13px] text-ink font-medium truncate">
+                {fileName}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -725,55 +783,35 @@ function ConfirmExtractedValuesView({
 
           {grouped.map(({ category, markers }) => (
             <Card key={category.id} padded={false} className="overflow-hidden">
-              <div className="px-5 pt-4 pb-3 border-b border-line/70 flex items-center gap-2">
-                <span
-                  aria-label={category.name}
-                  role="img"
-                  className="text-[16px] leading-none"
-                >
-                  {category.icon}
-                </span>
-                <div className="font-display text-[15px] leading-tight">
-                  {category.name}
+              {/* Tinted category header — icon in a colored badge,
+                  description as a sub-line so users know what each
+                  section covers without needing to expand it. */}
+              <div className="px-5 pt-4 pb-4 flex items-center gap-3 bg-indigo-50/50 border-b border-line/60">
+                <div className="grid place-items-center w-10 h-10 rounded-2xl bg-white border border-line/60 shadow-soft shrink-0">
+                  <Emoji label={category.name} className="text-[18px] leading-none">
+                    {category.icon}
+                  </Emoji>
                 </div>
-                <Pill tone="neutral" size="sm" className="ml-auto">
-                  {markers.length}
+                <div className="flex-1 min-w-0">
+                  <div className="font-display text-[16px] leading-tight text-ink">
+                    {category.name}
+                  </div>
+                  <div className="text-[11.5px] text-muted mt-0.5 truncate">
+                    {category.description}
+                  </div>
+                </div>
+                <Pill tone="indigo" size="sm" className="shrink-0">
+                  {markers.length} {markers.length === 1 ? 'value' : 'values'}
                 </Pill>
               </div>
-              <ul className="divide-y divide-line/60">
-                {markers.map((m) => {
-                  const c = statusColor(m.status);
-                  return (
-                    <li
-                      key={m.id}
-                      className="px-5 py-3 flex items-center gap-3"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <div className="text-[13.5px] font-semibold text-ink leading-tight">
-                          {m.name}
-                        </div>
-                        <div className="text-[11.5px] text-muted mt-0.5">
-                          Reference {m.min}–{m.max}{m.unit ? ` ${m.unit}` : ''}
-                        </div>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="font-display text-[18px] leading-none text-ink tabular-nums">
-                          {m.value}
-                          {m.unit && (
-                            <span className="text-[11px] ml-1 text-muted font-sans font-medium">
-                              {m.unit}
-                            </span>
-                          )}
-                        </div>
-                        <div
-                          className={`mt-1 inline-flex items-center px-1.5 h-4 rounded-full text-[9px] font-bold uppercase tracking-[0.1em] ${c.bg} ${c.text}`}
-                        >
-                          {c.label}
-                        </div>
-                      </div>
-                    </li>
-                  );
-                })}
+              <ul>
+                {markers.map((m, i) => (
+                  <MarkerRow
+                    key={m.id}
+                    marker={m}
+                    showTopBorder={i > 0}
+                  />
+                ))}
               </ul>
             </Card>
           ))}
@@ -871,19 +909,26 @@ function ConfirmExtractedValuesView({
         </div>
       </Container>
 
-      {/* Sticky bottom CTAs — fixed so they stay visible on long lists. */}
+      {/* Sticky bottom CTAs. The previous layout used `flex-col-reverse
+          sm:flex-row items-stretch` with both buttons stretching to
+          half-width on sm+, which crammed the long-copy secondary
+          ("Wrong file — start over") into a 3-line wrap on narrow
+          desktop containers. New layout: secondary becomes an icon-
+          only button on mobile and a compact pill on sm+, primary
+          dominates as flex-1 so it always reads in one line. */}
       <StickyBottomBar bordered>
         <Container size="narrow">
-          <div className="flex flex-col-reverse sm:flex-row items-stretch gap-2">
-            <Button
-              size="lg"
-              variant="secondary"
-              leading={<RotateCcw size={14} />}
+          <div className="flex items-stretch gap-2">
+            <button
+              type="button"
               onClick={onReject}
-              responsiveFullWidth
+              aria-label="Wrong file — start over"
+              title="Wrong file — start over"
+              className="shrink-0 inline-flex items-center gap-1.5 h-14 px-4 sm:px-5 rounded-[14px] bg-surface border border-line text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 text-[14px] font-semibold shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
             >
-              Wrong file — start over
-            </Button>
+              <RotateCcw size={16} />
+              <span className="hidden sm:inline">Re-upload</span>
+            </button>
             <Button
               size="lg"
               variant="primary"
@@ -896,6 +941,189 @@ function ConfirmExtractedValuesView({
           </div>
         </Container>
       </StickyBottomBar>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Summary chip — used in the hero to render the concern/attention/    */
+/* good counts. Kept here (vs Pill) because the visual treatment is    */
+/* heavier: dot + bold count + descriptor, sized for a hero summary    */
+/* not an inline tag.                                                  */
+/* ------------------------------------------------------------------ */
+
+function SummaryChip({
+  tone,
+  count,
+  label,
+}: {
+  tone: 'concern' | 'attention' | 'good';
+  count: number;
+  label: string;
+}) {
+  const dot =
+    tone === 'concern' ? 'bg-concern' : tone === 'attention' ? 'bg-attention' : 'bg-good';
+  const bg =
+    tone === 'concern'
+      ? 'bg-concern-soft'
+      : tone === 'attention'
+        ? 'bg-attention-soft'
+        : 'bg-good-soft';
+  const text =
+    tone === 'concern' ? 'text-concern' : tone === 'attention' ? 'text-attention' : 'text-good';
+  return (
+    <div
+      className={`inline-flex items-center gap-2 pl-2.5 pr-3.5 h-9 rounded-full ${bg}`}
+    >
+      <span className={`w-2 h-2 rounded-full ${dot}`} aria-hidden />
+      <span className={`font-display text-[16px] tabular-nums ${text} leading-none`}>
+        {count}
+      </span>
+      <span className={`text-[12.5px] font-medium ${text} leading-none`}>
+        {label}
+      </span>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* MarkerRow — confirm-view row layout                                  */
+/*                                                                      */
+/* Hierarchy: status accent edge (left) → name + reference + mini      */
+/* range bar (centre) → value + unit + status pill (right). The accent  */
+/* edge is the strongest visual signal — at-risk markers earn a vivid   */
+/* left-edge stripe and a soft row tint, "on track" rows stay quiet.    */
+/* ------------------------------------------------------------------ */
+
+function MarkerRow({
+  marker,
+  showTopBorder,
+}: {
+  marker: Biomarker;
+  showTopBorder: boolean;
+}) {
+  const c = statusColor(marker.status);
+  const isConcern = marker.status === 'concern';
+  const isAttention = marker.status === 'attention';
+  const accentBg = isConcern
+    ? 'bg-concern'
+    : isAttention
+      ? 'bg-attention'
+      : 'bg-transparent';
+  // Subtle tint for non-good rows so attention/concern jumps out
+  // without screaming. The /40 + /20 opacities are tuned to be
+  // perceptible but not noisy — closer to a highlight than a
+  // colored box.
+  const rowTint = isConcern
+    ? 'bg-concern-soft/40'
+    : isAttention
+      ? 'bg-attention-soft/30'
+      : '';
+  return (
+    <li
+      className={`relative flex items-stretch ${rowTint} ${showTopBorder ? 'border-t border-line/50' : ''}`}
+    >
+      <div className={`w-1 shrink-0 ${accentBg}`} aria-hidden />
+      <div className="flex-1 min-w-0 px-5 py-4 flex items-start gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="text-[14px] font-semibold text-ink leading-tight">
+            {marker.name}
+          </div>
+          <div className="text-[11.5px] text-muted mt-0.5">
+            Reference {marker.min}–{marker.max}
+            {marker.unit ? ` ${marker.unit}` : ''}
+          </div>
+          {/* Mini range bar — three-zone gradient with a pin showing
+              where the value sits. Same piecewise math as
+              BiomarkerBar (healthy band always at the visual centre)
+              so a low value on HbA1c and a low value on testosterone
+              read the same way at a glance. */}
+          <div className="mt-2.5 max-w-[220px]">
+            <MiniRange marker={marker} />
+          </div>
+        </div>
+        <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
+          <div className="font-display text-[22px] leading-none text-ink tabular-nums">
+            {marker.value}
+            {marker.unit && (
+              <span className="text-[12px] ml-1 text-muted font-sans font-medium">
+                {marker.unit}
+              </span>
+            )}
+          </div>
+          <div
+            className={`inline-flex items-center px-2 h-5 rounded-full text-[9.5px] font-bold uppercase tracking-[0.08em] ${c.bg} ${c.text}`}
+          >
+            {c.label}
+          </div>
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* MiniRange — compact range visualisation                              */
+/*                                                                      */
+/* Piecewise positioning identical to BiomarkerBar's:                  */
+/*   - left third  = critical-low zone                                  */
+/*   - middle third = healthy band (min..max)                           */
+/*   - right third = critical-high zone                                 */
+/* This decouples visual position from clinical scale, so a marker at  */
+/* the middle of its healthy band always lands at the visual centre   */
+/* regardless of whether the band is [4–5.7] (HbA1c) or [300–1000]    */
+/* (testosterone).                                                      */
+/* ------------------------------------------------------------------ */
+
+function MiniRange({ marker }: { marker: Biomarker }) {
+  const SEGMENT = 100 / 3;
+  const PIN_BUFFER = 2.5;
+  const span = marker.max - marker.min || 1;
+  const criticalLow = Math.max(0, marker.min - span);
+  const criticalHigh = marker.max + span;
+  const v = marker.value;
+  let raw: number;
+  if (v <= criticalLow) raw = 0;
+  else if (v < marker.min) {
+    const denom = marker.min - criticalLow || 1;
+    raw = ((v - criticalLow) / denom) * SEGMENT;
+  } else if (v <= marker.max) {
+    const denom = span || 1;
+    raw = SEGMENT + ((v - marker.min) / denom) * SEGMENT;
+  } else if (v < criticalHigh) {
+    const denom = criticalHigh - marker.max || 1;
+    raw = SEGMENT * 2 + ((v - marker.max) / denom) * SEGMENT;
+  } else raw = 100;
+  const pinPct = Math.max(PIN_BUFFER, Math.min(100 - PIN_BUFFER, raw));
+
+  const direction = marker.direction ?? 'band';
+  // Colour the extremes per direction (matches BiomarkerBar): "up is
+  // better" means the low end is the dangerous one, "down is better"
+  // flips it, "band" keeps both ends red.
+  const lowZoneClr =
+    direction === 'down'
+      ? 'var(--color-attention-soft)'
+      : 'var(--color-concern-soft)';
+  const highZoneClr =
+    direction === 'up'
+      ? 'var(--color-attention-soft)'
+      : 'var(--color-concern-soft)';
+  const midZoneClr = 'var(--color-good-soft)';
+  const gradient =
+    `linear-gradient(to right, ${lowZoneClr} 0%, ${lowZoneClr} ${SEGMENT}%, ` +
+    `${midZoneClr} ${SEGMENT}%, ${midZoneClr} ${SEGMENT * 2}%, ` +
+    `${highZoneClr} ${SEGMENT * 2}%, ${highZoneClr} 100%)`;
+
+  return (
+    <div className="relative" aria-hidden>
+      <div
+        className="h-1.5 w-full rounded-full"
+        style={{ background: gradient }}
+      />
+      <div
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-white border-2 border-ink shadow-sm"
+        style={{ left: `${pinPct}%` }}
+      />
     </div>
   );
 }
