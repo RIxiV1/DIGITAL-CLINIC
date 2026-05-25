@@ -81,6 +81,26 @@ export default function ProblemDetailPage({
     p.relatedMarkerIds.includes(m.id),
   );
 
+  /** Pick the focal marker for the "Your numbers" section. The URL
+   *  doesn't carry which marker triggered this drill-in (just
+   *  /problem/:problemId), so we infer the focal from severity: worst
+   *  status first, then natural order. The user came here because
+   *  something was alarming — show the most-alarming related marker
+   *  as the full BiomarkerBar and demote the rest to a compact
+   *  inline strip. Previously every related marker rendered with
+   *  equal weight, which inverted the Isolation Effect for a page
+   *  whose job is to focus the user on one thing. */
+  const severityRank = (s: 'concern' | 'attention' | 'good') =>
+    s === 'concern' ? 0 : s === 'attention' ? 1 : 2;
+  const focalMarker = related.length
+    ? [...related].sort(
+        (a, b) => severityRank(a.status) - severityRank(b.status),
+      )[0]
+    : null;
+  const companionMarkers = focalMarker
+    ? related.filter((m) => m.id !== focalMarker.id)
+    : [];
+
   return (
     <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
       <Header variant="page" title="Deep dive" subtitle={p.title} />
@@ -137,11 +157,42 @@ export default function ProblemDetailPage({
             {isOpen('numbers') && (
               <div
                 id="problem-section-numbers"
-                className="divide-y divide-line/70 border-t border-line"
+                className="border-t border-line"
               >
-                {related.map((m) => (
-                  <BiomarkerBar key={m.id} marker={m} compact />
-                ))}
+                {/* Focal: the worst-status related marker. Full
+                    BiomarkerBar so the user can see range + position +
+                    delta for the one that brought them here. */}
+                {focalMarker && (
+                  <BiomarkerBar marker={focalMarker} compact />
+                )}
+                {/* Companions: every other related marker as a compact
+                    inline strip — name + value + unit, dot-separated.
+                    Reading order matches the focal's pathway, not
+                    severity (the user came for the focal; companions
+                    are pathway context, not parallel focal points). */}
+                {companionMarkers.length > 0 && (
+                  <div className="px-5 py-3 border-t border-line/70 bg-canvas/40">
+                    <div className="text-micro uppercase tracking-label font-bold text-muted mb-1.5">
+                      Related markers
+                    </div>
+                    <p className="text-caption text-ink-soft leading-relaxed">
+                      {companionMarkers.map((m, i) => (
+                        <span key={m.id}>
+                          {i > 0 && (
+                            <span className="text-muted/60"> · </span>
+                          )}
+                          {m.name}{' '}
+                          <span className="tabular-nums font-semibold text-ink">
+                            {m.value}
+                          </span>
+                          {m.unit && (
+                            <span className="text-muted"> {m.unit}</span>
+                          )}
+                        </span>
+                      ))}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </Card>
