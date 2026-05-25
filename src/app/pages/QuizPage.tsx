@@ -23,7 +23,16 @@ export default function QuizPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const [isPersonalizing, setIsPersonalizing] = useState(false);
-  const [confirmExit, setConfirmExit] = useState(false);
+  /** Holds the "yes, leave" action while the unsaved-work confirm
+   *  dialog is open. `null` ⇒ no dialog. Stored as a function so each
+   *  entry point can choose its own destination — the X / Logo route
+   *  to home/landing via doExit(), but the step-0 back arrow routes
+   *  through `back()` to honor the browser back-stack the user came
+   *  in on. Previously this was a boolean and the modal hard-coded
+   *  doExit, which meant the back arrow either discarded data
+   *  silently (old code) or destroyed back-history (my first
+   *  attempted fix). Storing the action fixes both. */
+  const [pendingExit, setPendingExit] = useState<null | (() => void)>(null);
 
   const step = quizSteps[stepIndex];
   const isCompound = !!step.subSteps;
@@ -78,37 +87,47 @@ export default function QuizPage() {
     }
   };
 
+  /** Does the user have anything we'd lose by leaving now? */
+  const isQuizTouched = () =>
+    !!quiz.age ||
+    !!quiz.activity ||
+    quiz.priorities.length > 0 ||
+    quiz.symptoms.length > 0;
+
+  /** Try to run `action`. If the user has touched anything, the
+   *  unsaved-work confirm dialog opens first; otherwise the action
+   *  runs immediately. */
+  const requestLeave = (action: () => void) => {
+    if (isQuizTouched()) {
+      // useState passing a function value needs the (() => fn) wrapper
+      // or React would treat `fn` as an updater and call it.
+      setPendingExit(() => action);
+    } else {
+      action();
+    }
+  };
+
+  /** Exit-to-app destination, same as the X and Logo buttons. */
+  const doExit = () => {
+    replace(hasCompletedQuiz ? { type: 'home' } : { type: 'landing' });
+  };
+
   const goBack = () => {
     if (stepIndex > 0) {
       setDirection(-1);
       setStepIndex(stepIndex - 1);
     } else {
-      back();
+      // Step 0 back arrow: honour the back-stack the user arrived
+      // with, but confirm first if they've already picked anything.
+      requestLeave(back);
     }
   };
 
   const requestExit = () => {
-    // If the user has made selections, ask before throwing them away.
-    const touched =
-      !!quiz.age ||
-      !!quiz.activity ||
-      quiz.priorities.length > 0 ||
-      quiz.symptoms.length > 0;
-    // Confirm if the user has touched anything — even on step 0.
-    // Previous logic also required stepIndex > 0, which meant selecting
-    // four symptoms on screen 1 and then tapping the logo silently
-    // discarded the work. `touched` alone is the right signal.
-    if (touched) {
-      setConfirmExit(true);
-    } else {
-      doExit();
-    }
-  };
-
-  const doExit = () => {
-    setConfirmExit(false);
-    // If the user already finished a quiz earlier, return home; else landing.
-    replace(hasCompletedQuiz ? { type: 'home' } : { type: 'landing' });
+    // X / Logo exit: always routes to home or landing (doExit), with
+    // the unsaved-work confirm in front. Distinct from the step-0
+    // back arrow above, which preserves history via back().
+    requestLeave(doExit);
   };
 
   /**
@@ -117,9 +136,32 @@ export default function QuizPage() {
    * page-scoped, ignores keystrokes when the user is mid-typing in an
    * input/textarea, and yields to the exit/personalizing overlays
    * (those swallow their own keys).
+   *
+   * Stale-closure fix: the listener reads `goNext`/`goBack`/etc.
+   * through a ref that's refreshed on every render. That decouples
+   * the effect's stability (mounts once, tears down on overlay) from
+   * the handler freshness — no more `eslint-disable-next-line
+   * react-hooks/exhaustive-deps` papering over a real race where
+   * a same-tick state change made the closed-over goNext stale.
    */
+  const keyboardHandlersRef = useRef({
+    goNext,
+    goBack,
+    requestExit,
+    canContinue,
+    stepField: step.field,
+  });
   useEffect(() => {
-    if (confirmExit || isPersonalizing) return;
+    keyboardHandlersRef.current = {
+      goNext,
+      goBack,
+      requestExit,
+      canContinue,
+      stepField: step.field,
+    };
+  });
+  useEffect(() => {
+    if (pendingExit || isPersonalizing) return;
     const onKey = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const editable =
@@ -128,23 +170,25 @@ export default function QuizPage() {
           target.tagName === 'TEXTAREA' ||
           target.isContentEditable);
       if (editable) return;
+      // Read latest values via ref every key event — never a stale
+      // closure from when the listener was first attached.
+      const h = keyboardHandlersRef.current;
       if (e.key === 'ArrowRight' || e.key === 'Enter') {
-        if (canContinue || step.field === 'symptoms') {
+        if (h.canContinue || h.stepField === 'symptoms') {
           e.preventDefault();
-          goNext();
+          h.goNext();
         }
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        goBack();
+        h.goBack();
       } else if (e.key === 'Escape') {
         e.preventDefault();
-        requestExit();
+        h.requestExit();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canContinue, stepIndex, confirmExit, isPersonalizing, step.field]);
+  }, [pendingExit, isPersonalizing]);
 
   /* ---- Swipe gestures ----
    *
@@ -379,12 +423,19 @@ export default function QuizPage() {
         </Container>
       </StickyBottomBar>
 
-      {/* Exit confirmation */}
+      {/* Exit confirmation. `pendingExit` carries the action that
+          fires on "Yes, leave" — doExit for X/Logo (forces to
+          home/landing) or `back` for the step-0 back arrow (honours
+          history). */}
       <AnimatePresence>
-        {confirmExit && (
+        {pendingExit && (
           <ExitConfirm
-            onCancel={() => setConfirmExit(false)}
-            onConfirm={doExit}
+            onCancel={() => setPendingExit(null)}
+            onConfirm={() => {
+              const action = pendingExit;
+              setPendingExit(null);
+              action();
+            }}
           />
         )}
       </AnimatePresence>

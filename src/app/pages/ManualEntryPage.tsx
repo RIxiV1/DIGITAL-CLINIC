@@ -256,8 +256,11 @@ export default function ManualEntryPage() {
       </Container>
 
       {/* Sticky bottom CTA — counts entered values so the user knows
-          what the save will produce. Disabled until they've typed at
-          least one. */}
+          what the save will produce. When some typed values are
+          out-of-range, the warning row spells out exactly how many
+          will be excluded BEFORE the user clicks — otherwise the
+          row-level red tint is easy to miss when scrolling and the
+          save silently drops 3 of 5. */}
       <StickyBottomBar bordered>
         <Container size="narrow">
           {saveError && (
@@ -267,6 +270,23 @@ export default function ManualEntryPage() {
             >
               <AlertTriangle size={14} className="shrink-0 mt-0.5" aria-hidden />
               <span>{saveError}</span>
+            </div>
+          )}
+          {filledCount > validCount && (
+            <div
+              role="status"
+              aria-live="polite"
+              className="mb-3 flex items-start gap-2 rounded-[14px] bg-attention-soft border border-attention/30 px-3.5 py-2.5 text-caption text-attention leading-relaxed"
+            >
+              <AlertTriangle size={14} className="shrink-0 mt-0.5" aria-hidden />
+              <span>
+                {filledCount - validCount} value
+                {filledCount - validCount === 1 ? ' is' : 's are'} outside the
+                plausible range and{' '}
+                {filledCount - validCount === 1 ? "won't" : "won't"} be saved.
+                Fix or clear {filledCount - validCount === 1 ? 'it' : 'them'} above
+                to include {filledCount - validCount === 1 ? 'it' : 'them'}.
+              </span>
             </div>
           )}
           <div className="flex flex-col-reverse sm:flex-row items-stretch gap-2">
@@ -283,12 +303,23 @@ export default function ManualEntryPage() {
               variant="primary"
               trailing={<ArrowRight size={18} />}
               onClick={save}
-              disabled={filledCount === 0}
+              // Gated on validCount, not filledCount. With the old
+              // gate, a user could type 5 numbers, see 3 highlighted
+              // OOR, watch the label drop to "See my report (2
+              // values)", click anyway, and lose 3 entries silently.
+              // Now the button only enables when at least one value
+              // actually saves — and the amber warning above
+              // explains the diff if any were dropped.
+              disabled={validCount === 0}
               fullWidth
             >
               {filledCount === 0
                 ? 'Enter at least one value'
-                : `See my report (${validCount} value${validCount === 1 ? '' : 's'})`}
+                : validCount === 0
+                  ? 'Fix at least one value to continue'
+                  : filledCount > validCount
+                    ? `See my report (${validCount} of ${filledCount} values)`
+                    : `See my report (${validCount} value${validCount === 1 ? '' : 's'})`}
             </Button>
           </div>
         </Container>

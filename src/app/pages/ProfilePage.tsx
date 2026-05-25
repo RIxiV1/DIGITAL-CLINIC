@@ -218,33 +218,61 @@ export default function ProfilePage() {
                     },
                   ] as const
                 ).map((row, i, arr) => {
-                  const Wrapper = row.onClick ? 'button' : 'div';
+                  const isInteractive = !!row.onClick;
+                  const borderCls =
+                    i < arr.length - 1 ? 'border-b border-line/70' : '';
+                  // Interactive rows render as <button>; non-interactive
+                  // "Coming soon" rows render as <div role="group"
+                  // aria-disabled> so screen readers + keyboard users
+                  // are told upfront that the row isn't actionable.
+                  // Previously the unwired rows looked identical to
+                  // wired ones (same padding, same icon, same hover
+                  // affordance) but did nothing on tap — keyboard
+                  // users tabbed through dead space without warning.
+                  if (isInteractive) {
+                    return (
+                      <button
+                        key={row.label}
+                        type="button"
+                        onClick={row.onClick}
+                        className={`w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-canvas/60 transition-colors cursor-pointer ${borderCls}`}
+                      >
+                        <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
+                          <row.Icon size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-body-sm">
+                            {row.label}
+                          </div>
+                          <div className="text-caption text-muted truncate">
+                            {row.hint}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  }
                   return (
-                    <Wrapper
+                    <div
                       key={row.label}
-                      type={row.onClick ? 'button' : undefined}
-                      onClick={row.onClick}
-                      className={`w-full px-5 py-4 flex items-center gap-3 text-left ${
-                        i < arr.length - 1 ? 'border-b border-line/70' : ''
-                      } ${row.onClick ? 'hover:bg-canvas/60 transition-colors cursor-pointer' : ''}`}
+                      role="group"
+                      aria-disabled="true"
+                      className={`w-full px-5 py-4 flex items-center gap-3 text-left ${borderCls}`}
                     >
-                      <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
+                      <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50/60 text-indigo-700/70 shrink-0">
                         <row.Icon size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-body-sm">
+                        <div className="font-semibold text-body-sm text-ink/70">
                           {row.label}
                         </div>
                         <div className="text-caption text-muted truncate">
                           {row.hint}
                         </div>
                       </div>
-                      {!row.onClick && (
-                        <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-micro font-bold uppercase tracking-widest text-muted shrink-0">
-                          Soon
-                        </span>
-                      )}
-                    </Wrapper>
+                      <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-micro font-bold uppercase tracking-widest text-muted shrink-0">
+                        Soon
+                      </span>
+                    </div>
                   );
                 })}
               </Card>

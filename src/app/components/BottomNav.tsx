@@ -41,7 +41,7 @@ function navIdFor(page: Page): ItemId {
 }
 
 export default function BottomNav() {
-  const { page, navigate } = useNavigation();
+  const { page, replace } = useNavigation();
   // Skip mounting on lg+. The previous version used `md:hidden` to hide
   // the nav but still paid the DOM + framer-motion + event-listener cost
   // on desktops where it was never visible. Mirrors Header's
@@ -66,7 +66,13 @@ export default function BottomNav() {
             return (
               <button
                 key={id}
-                onClick={() => navigate(target)}
+                // Tab bars should replace, not push. The previous
+                // navigate() call shoved a new history entry on every
+                // tap, so a few cycles of Home → Quiz → Home → Quiz
+                // turned the browser back button into a sequence of
+                // tab-switch dismissals. Real apps' bottom nav swaps
+                // routes in place — that's what replace() gives us.
+                onClick={() => replace(target)}
                 aria-label={label}
                 aria-current={active ? 'page' : undefined}
                 className="relative flex-1 grid place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-full"

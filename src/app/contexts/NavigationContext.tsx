@@ -152,16 +152,23 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   // popstate handling at all.
   const page = useMemo<Page>(() => pathToPage(location.pathname), [location.pathname]);
 
-  // Internal history tracking — react-router doesn't expose history
-  // length, but we need it for back()'s no-history fallback (deep-link
-  // entry → "back" should still go somewhere sensible). We push onto
-  // this stack on navigate() and pop on back(); replace() doesn't
-  // affect it. This isn't 100% in sync with the browser stack (e.g.
-  // we don't see forward navigations), but it's a safety net, not a
-  // primary data structure.
-  const historyRef = useRef<Page[]>([]);
-  // Mirror page changes so popstate-driven navigation doesn't lose
-  // the previous page when we later call back().
+  // Session-start sentinel. react-router stamps every history entry
+  // with a `location.key`; the very first one is "default". We capture
+  // it on mount and compare against it in back() to decide whether
+  // we're at the user's initial entry into the app (no history to go
+  // back to → fall back to home) or somewhere deeper (let the browser
+  // handle it).
+  //
+  // Was a historyRef stack that only pushed on our own navigate() —
+  // any browser-driven back/forward desynced it from reality, so the
+  // "fallback to home" branch fired prematurely after a few cycles of
+  // browser navigation, teleporting users to the dashboard when they
+  // expected to step back one page. The location.key approach uses
+  // the browser's own bookkeeping as the source of truth and stays
+  // in sync regardless of how navigation was triggered.
+  const sessionStartKeyRef = useRef(location.key);
+  // Mirror page changes so navigate()'s "did the page actually change"
+  // check has a stable comparison source.
   const lastPageRef = useRef<Page>(page);
 
   /* Scroll-to-top on every page change. Without this, the browser
@@ -174,13 +181,6 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
     window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
   }, [page]);
 
-  // Track the previous-page→current-page transitions to keep our
-  // internal stack in rough sync with the browser. Only push onto the
-  // stack when the URL change wasn't initiated by our own navigate()
-  // (which already pushed), and only when the page actually changed.
-  // For now we rely on navigate() to maintain the stack explicitly and
-  // skip the implicit-push path — simpler and correct for the back()
-  // use case which only needs "do we have any breadcrumbs at all."
   useEffect(() => {
     lastPageRef.current = page;
   }, [page]);
@@ -188,10 +188,6 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   const navigate = useCallback(
     (next: Page) => {
       if (pageEquals(lastPageRef.current, next)) return;
-      // Push current page onto our internal breadcrumb stack BEFORE the
-      // URL change. back() consults this stack for its no-history-fall-
-      // back-to-home decision.
-      historyRef.current = [...historyRef.current, lastPageRef.current];
       routerNavigate(pageToPath(next));
     },
     [routerNavigate],
@@ -208,29 +204,35 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   );
 
   /**
-   * back() — defers to the browser when we have any history at all,
-   * otherwise falls back to home. The browser knows about navigations
-   * we caused AND any forward/back the user did, so this stays correct
-   * across cross-tab restores and bfcache resumes.
+   * back() — defers to the browser unless we're sitting on the session-
+   * start entry, in which case we fall back to home. The browser keeps
+   * its own history bookkeeping (including any forward/back the user
+   * did via the browser chrome), so this stays correct across cross-
+   * tab restores, bfcache resumes, and arbitrary browser navigation.
    *
-   * Deep-link no-history fallback: when a user lands on /reports/abc
-   * via a shared link, the back arrow has nowhere to go — sending them
-   * to landing would feel like ejecting them from the product. home is
-   * the universally-useful destination.
+   * "Session start" = the location.key snapshotted at NavigationProvider
+   * mount. If the user is still there, they have nowhere to step back
+   * to inside the app — landing them on home is the universally-useful
+   * destination. For a deep-link entry (/reports/abc), home is still
+   * better than launching the user out of the SPA via window.history.
    */
   const back = useCallback(() => {
-    if (historyRef.current.length === 0) {
+    if (location.key === sessionStartKeyRef.current) {
       routerNavigate(pageToPath({ type: 'home' }));
       return;
     }
-    historyRef.current = historyRef.current.slice(0, -1);
     if (typeof window !== 'undefined') {
       window.history.back();
     }
-  }, [routerNavigate]);
+  }, [location.key, routerNavigate]);
 
   const value = useMemo<NavigationValue>(
-    () => ({ page, history: historyRef.current, navigate, replace, back }),
+    // `history` exposed for any future callers that want to read the
+    // depth — kept as an empty array now that the internal ref is
+    // gone. Consumers don't appear to read it today; tracking it again
+    // would mean re-introducing the desync the location.key fix just
+    // eliminated.
+    () => ({ page, history: [], navigate, replace, back }),
     [page, navigate, replace, back],
   );
 

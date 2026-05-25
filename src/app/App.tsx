@@ -123,6 +123,16 @@ function PageHost() {
       >
         Skip to main content
       </a>
+      {/* popLayout: when a page exits, framer-motion positions the
+          exiting child absolutely so the entering child can immediately
+          take its place in flow. Without an opaque background on the
+          motion.div, the canvas-colored body briefly shows through
+          the small y-translation during the cross-fade — perceived as
+          a white flash on slow devices.
+          - min-h-dvh keeps the exit wrapper at viewport height
+            throughout the animation so it doesn't visually collapse.
+          - bg-canvas makes the wrapper opaque so the body underneath
+            never peeks through during the y-shift. */}
       <AnimatePresence mode="popLayout">
         <motion.div
           key={pageKey(page)}
@@ -130,7 +140,7 @@ function PageHost() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-          className="min-h-dvh w-full"
+          className="min-h-dvh w-full bg-canvas"
         >
           <Suspense fallback={fallbackForPage(page)}>
             <main id="main-content" tabIndex={-1} className="outline-none">
