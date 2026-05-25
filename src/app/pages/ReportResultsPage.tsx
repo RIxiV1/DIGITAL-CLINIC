@@ -330,7 +330,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               </p>
             </div>
 
-            {/* Mobile/tablet filters (lg uses sidebar) */}
+            {/* Mobile/tablet status filter strip. The matching CATEGORY
+                chip strip used to sit below this — now removed: once
+                category cards collapse-by-default, tapping a category
+                header serves the same "focus on this category" role
+                the chip strip did, without the parallel scroll
+                surface. Two stacked horizontal scrollers became one;
+                ~25 lines of duplicate affordance gone. Desktop keeps
+                the category list in the sticky sidebar where space is
+                cheap. */}
             <div className="md:hidden no-print">
               <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
                 <div className="flex gap-2 w-max">
@@ -357,27 +365,6 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                       </button>
                     );
                   })}
-                </div>
-              </div>
-
-              <div className="mt-3 overflow-x-auto scrollbar-none -mx-5 px-5">
-                <div className="flex gap-2 w-max">
-                  <CategoryChip
-                    label="All categories"
-                    active={activeCategory === 'all'}
-                    onClick={() => setActiveCategory('all')}
-                  />
-                  {categories
-                    .filter((c) => presentCategoryIds.has(c.id))
-                    .map((c) => (
-                      <CategoryChip
-                        key={c.id}
-                        emoji={c.icon}
-                        label={c.name}
-                        active={activeCategory === c.id}
-                        onClick={() => setActiveCategory(c.id)}
-                      />
-                    ))}
                 </div>
               </div>
             </div>
