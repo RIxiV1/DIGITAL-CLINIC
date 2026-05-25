@@ -83,6 +83,12 @@ export default function HomePage() {
   const [lockerQuery, setLockerQuery] = useState('');
   const [lockerSort, setLockerSort] = useState<LockerSort>('newest');
   const showLockerControls = reports.length >= 3;
+  /* Cap the locker at 3 cards on first paint. Most users come to act
+   * on the newest report; rendering 8+ cards turns the locker into
+   * a feed when it's really a destination. "View all" expands;
+   * searching auto-expands (the matches are the point of searching). */
+  const LOCKER_CAP = 3;
+  const [showAllReports, setShowAllReports] = useState(false);
   const displayedReports = useMemo(() => {
     // Tokenized locker search — "thyrocare april" should match a report
     // named "April Comprehensive" from "Thyrocare · Mumbai" even though
@@ -155,16 +161,33 @@ export default function HomePage() {
   // Markers that need attention — red + amber, latest report only.
   // When filtering, the user is explicitly asking to see everything that
   // matches, so we drop the "attention only" gate.
-  const attentionMarkers = useMemo(() => {
+  //
+  // Two memos so we can show a focused default (3) with a "see all"
+  // expand — `attentionMarkersAll` is the full sorted list, kept so
+  // the toggle below the grid can show the total count. Previously
+  // capped at 6, but 6 concern/attention cards on first paint is
+  // decision-paralysis territory: the user can act on 3, staring at
+  // 6 makes everything feel equally urgent. The expand stays on the
+  // visit so a power user can still see everything in one go.
+  const ATTENTION_CAP = 3;
+  const [showAllAttention, setShowAllAttention] = useState(false);
+  const attentionMarkersAll = useMemo(() => {
     if (isFiltering) return visibleMarkers.slice(0, 12);
     return visibleMarkers
       .filter((m) => m.status === 'concern' || m.status === 'attention')
       .sort((a, b) => {
         if (a.status !== b.status) return a.status === 'concern' ? -1 : 1;
         return 0;
-      })
-      .slice(0, 6);
+      });
   }, [visibleMarkers, isFiltering]);
+  const attentionMarkers = useMemo(() => {
+    // When filtering, the user already narrowed the list — render
+    // everything that matched (capped at 12 to keep the bento sane).
+    if (isFiltering) return attentionMarkersAll;
+    return showAllAttention
+      ? attentionMarkersAll
+      : attentionMarkersAll.slice(0, ATTENTION_CAP);
+  }, [attentionMarkersAll, isFiltering, showAllAttention]);
 
   // Markers with trend data — group by pathway for Zone 3.
   const trendsByPathway = useMemo(() => {
@@ -400,6 +423,27 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
+                {/* "See all" expander — only when the user isn't
+                    already filtering (filtering implies "show me
+                    everything that matches", so a separate expand
+                    would be redundant) and only when there's
+                    actually more to see beyond the cap. The toggle
+                    keeps the state local — leaving the page resets
+                    it, so every visit starts at the focused 3. */}
+                {!isFiltering &&
+                  attentionMarkersAll.length > ATTENTION_CAP && (
+                    <div className="mt-3">
+                      <button
+                        type="button"
+                        onClick={() => setShowAllAttention((v) => !v)}
+                        className="inline-flex items-center gap-1 text-caption font-semibold text-indigo-700 hover:text-indigo-900 underline-offset-2 hover:underline transition-colors"
+                      >
+                        {showAllAttention
+                          ? 'Show fewer'
+                          : `See all ${attentionMarkersAll.length} flagged markers →`}
+                      </button>
+                    </div>
+                  )}
               </section>
             )}
 
@@ -657,6 +701,20 @@ export default function HomePage() {
           </div>
         )}
 
+        {/* Slice the rendered list when the user isn't searching and
+            hasn't asked to see everything. Searching auto-expands —
+            otherwise a search that matches a 6th-oldest report would
+            be invisible behind the cap. */}
+        {(() => {
+          const lockerSearchActive = lockerQuery.trim().length > 0;
+          const renderedReports =
+            lockerSearchActive || showAllReports
+              ? displayedReports
+              : displayedReports.slice(0, LOCKER_CAP);
+          const hasOverflow =
+            !lockerSearchActive && displayedReports.length > LOCKER_CAP;
+          return (
+            <>
         <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
           {/* The outer `reports.length > 0` gate (above) makes the empty
               locker state unreachable here — the empty-state preview +
@@ -677,7 +735,7 @@ export default function HomePage() {
               </Button>
             </Card>
           ) : (
-            displayedReports.map((r) => (
+            renderedReports.map((r) => (
               // Per-row stagger removed — see #6.7. Card's whileHover/
               // whileTap still provides interactive feel without the
               // mount-time cost.
@@ -758,6 +816,22 @@ export default function HomePage() {
             ))
           )}
         </div>
+        {hasOverflow && (
+          <div className="mt-4">
+            <button
+              type="button"
+              onClick={() => setShowAllReports((v) => !v)}
+              className="inline-flex items-center gap-1 text-caption font-semibold text-indigo-700 hover:text-indigo-900 underline-offset-2 hover:underline transition-colors"
+            >
+              {showAllReports
+                ? 'Show fewer reports'
+                : `View all ${displayedReports.length} reports →`}
+            </button>
+          </div>
+        )}
+            </>
+          );
+        })()}
       </Container>
       )}
 

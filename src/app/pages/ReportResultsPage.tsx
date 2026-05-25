@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
+  ChevronDown,
   ChevronRight,
   Download,
   Info,
@@ -73,6 +74,38 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         .slice(0, 4),
     [biomarkers],
   );
+
+  /** Per-category expansion. Default-expanded: any category with at
+   *  least one `concern` marker. Everything else collapses by default
+   *  so a 30-marker report doesn't render 30 BiomarkerBar rows on
+   *  first paint — the user sees what to act on, expands the rest on
+   *  intent. Local state per visit; resets when the user navigates to
+   *  a different report (URL key triggers remount via pageKey). */
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(
+    () => {
+      const initial = new Set<string>();
+      for (const m of biomarkers) {
+        if (m.status === 'concern') initial.add(m.category);
+      }
+      return initial;
+    },
+  );
+  const toggleCategory = (id: string) => {
+    setExpandedCategoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  /** Filtering ("Needs care", "On track") or picking a single category
+   *  is an explicit "show me this" intent — force-expand every visible
+   *  category so the markers the user asked to see are actually
+   *  rendered. The toggle is only meaningful when neither filter is
+   *  set, so we hide the chevron in those cases too. */
+  const filtersAreNarrowing = filter !== 'all' || activeCategory !== 'all';
+  const isCategoryOpen = (id: string) =>
+    filtersAreNarrowing || expandedCategoryIds.has(id);
 
   // Ref-based dedup so a double-tap on the download button doesn't
   // produce two PDFs while the lazy chunk is still resolving.
@@ -338,53 +371,143 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               </Card>
             ) : (
               <div className="grid gap-4 mt-4 md:mt-0">
-                {groups.map(({ category, markers }) => (
-                  <motion.div
-                    key={category.id}
-                    initial={{ opacity: 0, y: 6 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <Card padded={false}>
-                      <div className="px-5 pt-5 pb-3 flex items-start gap-3 border-b border-line">
-                        <Emoji
-                          label={category.name}
-                          className="text-display-md leading-none"
+                {groups.map(({ category, markers }) => {
+                  // Collapsed categories hide the BiomarkerBar list to
+                  // keep the report scannable. The header still carries
+                  // the actionable info — emoji + name + status-count
+                  // dots — so a user can see at a glance "this category
+                  // has 1 concern and 2 in range" without opening it.
+                  // Default-open: any category with a concern marker
+                  // (set in expandedCategoryIds at mount). Default-
+                  // closed: everything else. The previous always-on
+                  // render produced 30+ BiomarkerBar rows on a typical
+                  // report, which buried the actually-flagged markers
+                  // under reference data.
+                  const open = isCategoryOpen(category.id);
+                  const counts = {
+                    concern: markers.filter((m) => m.status === 'concern')
+                      .length,
+                    attention: markers.filter((m) => m.status === 'attention')
+                      .length,
+                    good: markers.filter((m) => m.status === 'good').length,
+                  };
+                  return (
+                    <motion.div
+                      key={category.id}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Card padded={false}>
+                        <button
+                          type="button"
+                          onClick={() => toggleCategory(category.id)}
+                          disabled={filtersAreNarrowing}
+                          aria-expanded={open}
+                          aria-controls={`category-panel-${category.id}`}
+                          className={`w-full px-5 pt-5 pb-4 flex items-center gap-3 text-left transition-colors ${
+                            open ? 'border-b border-line' : ''
+                          } ${
+                            filtersAreNarrowing
+                              ? 'cursor-default'
+                              : 'hover:bg-canvas/40'
+                          }`}
                         >
-                          {category.icon}
-                        </Emoji>
-                        <div className="flex-1">
-                          <div className="font-display text-body-lg leading-tight">
-                            {category.name}
+                          <Emoji
+                            label={category.name}
+                            className="text-display-md leading-none"
+                          >
+                            {category.icon}
+                          </Emoji>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-display text-body-lg leading-tight">
+                              {category.name}
+                            </div>
+                            {/* Status-count dots replace the category
+                                description here. The description
+                                ("Hormones, thyroid, sex drive" etc.)
+                                was descriptive but not informative —
+                                the dots tell the user what to do at
+                                a glance, which is the job of the
+                                collapsed header. */}
+                            <div className="mt-1 inline-flex items-center gap-3 text-caption text-ink-soft">
+                              {counts.concern > 0 && (
+                                <span className="inline-flex items-center gap-1.5 font-semibold text-concern">
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full bg-concern"
+                                    aria-hidden
+                                  />
+                                  {counts.concern}
+                                  <span className="sr-only"> need care</span>
+                                </span>
+                              )}
+                              {counts.attention > 0 && (
+                                <span className="inline-flex items-center gap-1.5 font-semibold text-attention">
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full bg-attention"
+                                    aria-hidden
+                                  />
+                                  {counts.attention}
+                                  <span className="sr-only"> need attention</span>
+                                </span>
+                              )}
+                              {counts.good > 0 && (
+                                <span className="inline-flex items-center gap-1.5 text-ink-soft">
+                                  <span
+                                    className="w-1.5 h-1.5 rounded-full bg-good"
+                                    aria-hidden
+                                  />
+                                  {counts.good}
+                                  <span className="sr-only"> on track</span>
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-caption text-ink-soft mt-0.5">
-                            {category.description}
+                          {filtersAreNarrowing ? (
+                            // When the user is filtering (status or
+                            // single-category), all visible categories
+                            // are forced-open and the chevron toggle
+                            // is meaningless. Show the marker count
+                            // pill instead.
+                            <Pill tone="neutral" size="sm">
+                              {markers.length}
+                            </Pill>
+                          ) : (
+                            <ChevronDown
+                              size={20}
+                              className={`text-muted shrink-0 transition-transform duration-200 ${
+                                open ? 'rotate-180' : ''
+                              }`}
+                              aria-hidden
+                            />
+                          )}
+                        </button>
+                        {open && (
+                          <div
+                            id={`category-panel-${category.id}`}
+                            className="divide-y divide-line/70"
+                          >
+                            {markers.map((m) => (
+                              <BiomarkerBar
+                                key={m.id}
+                                marker={m}
+                                onClick={
+                                  m.problemId
+                                    ? () =>
+                                        navigate({
+                                          type: 'problem',
+                                          problemId: m.problemId!,
+                                        })
+                                    : undefined
+                                }
+                              />
+                            ))}
                           </div>
-                        </div>
-                        <Pill tone="neutral" size="sm">
-                          {markers.length}
-                        </Pill>
-                      </div>
-                      <div className="divide-y divide-line/70">
-                        {markers.map((m) => (
-                          <BiomarkerBar
-                            key={m.id}
-                            marker={m}
-                            onClick={
-                              m.problemId
-                                ? () =>
-                                    navigate({
-                                      type: 'problem',
-                                      problemId: m.problemId!,
-                                    })
-                                : undefined
-                            }
-                          />
-                        ))}
-                      </div>
-                    </Card>
-                  </motion.div>
-                ))}
+                        )}
+                      </Card>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
 
