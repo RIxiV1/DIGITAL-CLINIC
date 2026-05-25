@@ -65,6 +65,26 @@ export default function QuizPage() {
     }
   };
 
+  /** Wipe the current step's selections. Used by the "Clear all" link
+   *  that appears below the option grid on multi-select steps (symptoms,
+   *  priorities) once at least one chip is selected. For single-selects
+   *  the user just picks a different option, so the button doesn't
+   *  render there. */
+  const clearField = (field: Field, multi: boolean) => {
+    setQuiz({
+      [field]: multi ? [] : undefined,
+    } as Partial<QuizAnswers>);
+  };
+
+  /** How many chips are currently selected on the active step. Drives
+   *  the "Clear all" button's visibility AND its label — the count
+   *  reassures the user that the click will actually do something. */
+  const currentMultiCount = (() => {
+    if (isCompound || !step.multi || !step.field) return 0;
+    const value = quiz[step.field as keyof QuizAnswers];
+    return Array.isArray(value) ? value.length : 0;
+  })();
+
   const canContinue = (() => {
     if (isCompound) {
       return step.subSteps!.every((s) => !!quiz[s.field]);
@@ -382,6 +402,27 @@ export default function QuizPage() {
                     }
                     multi={step.multi ?? false}
                   />
+                </div>
+              )}
+
+              {/* Clear all — only on multi-select steps once at least
+                  one chip is picked. Right-aligned, low-emphasis text
+                  button so it doesn't compete with Continue. Count in
+                  the label confirms what the click affects. */}
+              {currentMultiCount > 0 && step.field && (
+                <div className="mt-4 flex">
+                  <button
+                    type="button"
+                    onClick={() => step.field && clearField(step.field, true)}
+                    aria-label={`Clear all ${currentMultiCount} selections on this step`}
+                    className="ml-auto inline-flex items-center gap-1 min-h-11 px-2 -mr-2 text-caption font-semibold text-muted hover:text-ink underline-offset-2 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+                  >
+                    <X size={12} />
+                    Clear all
+                    <span className="text-muted/70 font-normal">
+                      ({currentMultiCount})
+                    </span>
+                  </button>
                 </div>
               )}
 
