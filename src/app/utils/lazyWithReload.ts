@@ -49,7 +49,16 @@ function markReloadAttempted(): void {
   }
 }
 
-export function lazyWithReload<T extends ComponentType<unknown>>(
+// Constraint mirrors React.lazy's own (`T extends ComponentType<any>`)
+// rather than `ComponentType<unknown>` — the latter rejects any
+// component with required props (ReportResultsPage needs reportId,
+// ProblemDetailPage needs problemId), because props are contravariant
+// and ComponentType<{reportId: string}> is not a subtype of
+// ComponentType<unknown>. Using `any` is the standard escape and what
+// React's own typings use.
+//
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function lazyWithReload<T extends ComponentType<any>>(
   factory: () => Promise<{ default: T }>,
 ) {
   return lazy(() =>
