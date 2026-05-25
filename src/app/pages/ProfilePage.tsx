@@ -56,7 +56,7 @@ export default function ProfilePage() {
 
       <Container size="wide" className="pt-5 md:pt-10">
         <div className="hidden md:block mb-7">
-          <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
+          <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
             Profile
           </div>
           <h1 className="font-display text-display-md lg:text-display-lg leading-tight mt-1">
@@ -129,7 +129,7 @@ export default function ProfilePage() {
             <section>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
+                  <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
                     Your priorities
                   </div>
                   <h2 className="font-display text-display-md leading-tight mt-1">
@@ -138,7 +138,7 @@ export default function ProfilePage() {
                 </div>
                 <button
                   onClick={() => navigate({ type: 'quiz' })}
-                  className="text-caption font-bold uppercase tracking-[0.12em] text-indigo-700 hover:text-indigo-800"
+                  className="text-caption font-bold uppercase tracking-label text-indigo-700 hover:text-indigo-800"
                 >
                   Edit
                 </button>
@@ -176,7 +176,7 @@ export default function ProfilePage() {
           {/* RIGHT: Settings + sign out */}
           <div className="md:col-span-7 grid gap-5">
             <section>
-              <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
+              <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
                 Settings
               </div>
               <h2 className="font-display text-display-md leading-tight mt-1">
@@ -240,7 +240,7 @@ export default function ProfilePage() {
                         </div>
                       </div>
                       {!row.onClick && (
-                        <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-micro font-bold uppercase tracking-[0.1em] text-muted shrink-0">
+                        <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-micro font-bold uppercase tracking-widest text-muted shrink-0">
                           Soon
                         </span>
                       )}
@@ -284,7 +284,7 @@ function ProfileStat({ label, value }: { label: string; value: string }) {
       <div className="font-display text-body leading-tight text-white truncate">
         {value}
       </div>
-      <div className="text-micro uppercase tracking-[0.12em] font-bold text-indigo-100 mt-1.5">
+      <div className="text-micro uppercase tracking-label font-bold text-indigo-100 mt-1.5">
         {label}
       </div>
     </div>

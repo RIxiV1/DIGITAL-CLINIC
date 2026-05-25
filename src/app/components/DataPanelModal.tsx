@@ -124,7 +124,7 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
                 <Database size={18} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-micro font-bold uppercase tracking-[0.18em] text-indigo-700 mb-0.5">
+                <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700 mb-0.5">
                   Privacy
                 </div>
                 <h2
@@ -249,7 +249,7 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
 function StatRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between px-4 py-2.5">
-      <span className="text-caption uppercase tracking-[0.1em] font-bold text-muted">
+      <span className="text-caption uppercase tracking-widest font-bold text-muted">
         {label}
       </span>
       <span className="font-display text-body-sm text-ink tabular-nums">

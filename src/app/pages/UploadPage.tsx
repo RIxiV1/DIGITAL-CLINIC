@@ -344,7 +344,7 @@ export default function UploadPage() {
           </Card>
 
           <div className="mt-2 px-1">
-            <div className="text-micro uppercase tracking-[0.14em] font-bold text-muted mb-2">
+            <div className="text-micro uppercase tracking-label font-bold text-muted mb-2">
               Labs we read fluently
             </div>
             <div className="flex flex-wrap gap-1.5">

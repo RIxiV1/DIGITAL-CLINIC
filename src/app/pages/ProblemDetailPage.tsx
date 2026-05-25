@@ -88,7 +88,7 @@ export default function ProblemDetailPage({
         <Container size="wide" className="mt-6">
           <Card padded={false} className="lg:max-w-3xl">
             <div className="px-5 pt-5 pb-3 border-b border-line">
-              <div className="text-micro uppercase tracking-[0.14em] font-bold text-indigo-700">
+              <div className="text-micro uppercase tracking-label font-bold text-indigo-700">
                 Your numbers
               </div>
               <div className="font-display text-body-lg mt-1">
@@ -145,10 +145,10 @@ export default function ProblemDetailPage({
       {/* Action plan */}
       <Container size="wide" className="mt-7 md:mt-10">
         <div className="lg:max-w-3xl">
-          <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
+          <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
             Your action plan
           </div>
-          <h2 className="font-display text-display-md lg:text-display-md leading-tight mt-1">
+          <h2 className="font-display text-display-md leading-tight mt-1">
             Doable this month
           </h2>
         </div>

@@ -77,13 +77,13 @@ export default function LearnMoreModal({
             <div className="flex items-start gap-3 px-6 pt-6 pb-4 border-b border-line/70">
               <div className="flex-1 min-w-0">
                 {subtitle && (
-                  <div className="text-micro font-bold uppercase tracking-[0.18em] text-indigo-700 mb-1">
+                  <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700 mb-1">
                     {subtitle}
                   </div>
                 )}
                 <h2
                   id={titleId}
-                  className="font-display text-display-md sm:text-display-md leading-tight text-ink"
+                  className="font-display text-display-md leading-tight text-ink"
                 >
                   {title}
                 </h2>
@@ -165,7 +165,7 @@ function Section({
 }) {
   return (
     <section className={last ? '' : 'mb-5 pb-5 border-b border-line/60'}>
-      <div className="text-micro font-bold uppercase tracking-[0.18em] text-indigo-700 mb-2">
+      <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700 mb-2">
         {eyebrow}
       </div>
       {children}

@@ -39,7 +39,7 @@ export default function Hero({
           {/* LEFT — Headline + CTAs */}
           <div className="md:col-span-6">
             <motion.div variants={fadeUp}>
-              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white border border-blue-100 text-caption font-semibold uppercase tracking-[0.12em] text-blue-700 shadow-clinical">
+              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white border border-blue-100 text-caption font-semibold uppercase tracking-label text-blue-700 shadow-clinical">
                 <span className="relative grid place-items-center w-3.5 h-3.5">
                   <span className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping" />
                   <span className="relative w-1.5 h-1.5 rounded-full bg-blue-600" />
@@ -50,7 +50,7 @@ export default function Hero({
 
             <motion.h1
               variants={fadeUp}
-              className="font-sans font-bold text-display-lg sm:text-display-xl md:text-display-xl lg:text-display-xl leading-[1.06] tracking-[-0.025em] mt-5 text-ink text-balance"
+              className="font-sans font-bold text-display-lg sm:text-display-xl leading-[1.06] tracking-tight mt-5 text-ink text-balance"
             >
               Your hair loss, your fatigue, and your sex drive{' '}
               {/* Single gradient accent — used exactly once, on the
@@ -138,15 +138,14 @@ export default function Hero({
 function HeroVisual() {
   // Mouse-tracking spotlight on the Hormonal Health Map card below.
   // Two motion values store the cursor's position relative to the
-  // card; useMotionTemplate builds the radial-gradient CSS without
-  // any React re-renders. The motion.div's `style={{ background }}`
-  // subscribes via framer-motion's signal graph — the DOM updates
-  // directly on each mousemove, so we get 60fps glow tracking
-  // without the component re-rendering 60 times a second.
-  //
-  // Doing this inline in `style` with raw event-driven setState
-  // would be the wrong shape (60 re-renders/second on a single
-  // mousemove). useMotionValue is the right primitive.
+  // card; useMotionTemplate builds the radial-gradient CSS string,
+  // and the motion.div's `style={{ background }}` subscribes via
+  // framer-motion's signal graph. The component itself does NOT
+  // re-render on each mousemove — that's the win over a raw
+  // onMouseMove → setState pattern, which would force a React render
+  // ~60 times a second for the duration of any cursor sweep. (The
+  // DOM still gets a style mutation per frame; that work happens on
+  // the compositor, not the React tree.)
   //
   // Disabled entirely when prefers-reduced-motion is set — the
   // listener is gone, the overlay isn't rendered. Users who opt out
@@ -272,7 +271,7 @@ function MapRow({
           {organ}
         </div>
         <div
-          className={`text-micro font-bold uppercase tracking-[0.1em] leading-tight mt-0.5 ${
+          className={`text-micro font-bold uppercase tracking-widest leading-tight mt-0.5 ${
             highlighted ? 'text-blue-100' : 'text-blue-700'
           }`}
         >

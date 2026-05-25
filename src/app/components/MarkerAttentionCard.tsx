@@ -107,7 +107,7 @@ export default function MarkerAttentionCard({
       <div className="flex-1 p-5 flex flex-col min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-micro uppercase tracking-[0.14em] font-bold text-muted truncate">
+            <div className="text-micro uppercase tracking-label font-bold text-muted truncate">
               {marker.name}
             </div>
             {marker.simpleName && (
@@ -160,7 +160,7 @@ export default function MarkerAttentionCard({
 
         {/* Pulsing status indicator + label */}
         <div
-          className={`mt-2 inline-flex self-start items-center gap-1.5 px-2 h-5 rounded-full text-micro font-bold uppercase tracking-[0.1em] ${c.bg} ${c.text}`}
+          className={`mt-2 inline-flex self-start items-center gap-1.5 px-2 h-5 rounded-full text-micro font-bold uppercase tracking-widest ${c.bg} ${c.text}`}
         >
           <span className="relative grid place-items-center w-1.5 h-1.5">
             <span

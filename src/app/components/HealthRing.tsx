@@ -166,7 +166,7 @@ export default function HealthRing({
             {good}
           </div>
           <div
-            className={`text-micro uppercase tracking-[0.16em] font-bold mt-1 ${subTextCls}`}
+            className={`text-micro uppercase tracking-eyebrow font-bold mt-1 ${subTextCls}`}
           >
             of {total} on track
           </div>

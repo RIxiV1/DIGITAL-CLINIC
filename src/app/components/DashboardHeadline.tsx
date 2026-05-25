@@ -105,11 +105,11 @@ export default function DashboardHeadline({
     >
       <div className="relative grid md:grid-cols-[1fr_auto] gap-5 md:gap-8 md:items-center">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-[0.18em] font-bold text-indigo-100">
+          <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-eyebrow font-bold text-indigo-100">
             <Sparkles size={11} />
             {eyebrow}
           </div>
-          <h1 className="mt-2.5 font-display text-display-md sm:text-display-md lg:text-display-lg leading-[1.15] text-balance">
+          <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.15] text-balance">
             {headline}
           </h1>
           {sub && (

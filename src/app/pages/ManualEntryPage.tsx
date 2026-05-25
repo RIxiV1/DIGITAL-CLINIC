@@ -180,7 +180,7 @@ export default function ManualEntryPage() {
           <div className="mt-5">
             <label
               htmlFor="report-name"
-              className="block text-micro font-bold uppercase tracking-[0.14em] text-indigo-700 mb-1.5"
+              className="block text-micro font-bold uppercase tracking-label text-indigo-700 mb-1.5"
             >
               Report name (optional)
             </label>

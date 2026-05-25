@@ -392,7 +392,7 @@ export default function ProcessingPage() {
               className="h-full bg-indigo-600 rounded-full"
             />
           </div>
-          <div className="mt-2 text-caption uppercase tracking-[0.14em] font-bold text-muted text-right tabular-nums">
+          <div className="mt-2 text-caption uppercase tracking-label font-bold text-muted text-right tabular-nums">
             {Math.round(overall * 100)}%
           </div>
         </div>
@@ -454,7 +454,7 @@ export default function ProcessingPage() {
           </div>
         </div>
 
-        <p className="mt-7 text-caption uppercase tracking-[0.14em] font-bold text-muted">
+        <p className="mt-7 text-caption uppercase tracking-label font-bold text-muted">
           Usually under 60 seconds
         </p>
       </Container>
@@ -540,7 +540,7 @@ function ParseFailedView({
                 <AlertTriangle size={20} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-micro font-bold uppercase tracking-[0.18em] text-concern">
+                <div className="text-micro font-bold uppercase tracking-eyebrow text-concern">
                   Parsing failed
                 </div>
                 <h2 className="font-display text-display-md leading-tight text-ink mt-1">
@@ -550,7 +550,7 @@ function ParseFailedView({
                   {copy.detail}
                 </p>
                 <div className="mt-3 rounded-[10px] bg-surface border border-line/70 px-3 py-2 text-caption text-muted break-all">
-                  <span className="font-bold uppercase tracking-[0.12em] text-micro text-muted block mb-0.5">
+                  <span className="font-bold uppercase tracking-label text-micro text-muted block mb-0.5">
                     File
                   </span>
                   {failure.fileName}
@@ -565,7 +565,7 @@ function ParseFailedView({
                   failure.ocrPagesSkipped !== undefined &&
                   failure.ocrPagesSkipped > 0 && (
                     <div className="mt-3 rounded-[10px] bg-attention-soft/60 border border-attention/30 px-3 py-2 text-caption text-ink-soft">
-                      <span className="font-bold uppercase tracking-[0.12em] text-micro text-attention block mb-0.5">
+                      <span className="font-bold uppercase tracking-label text-micro text-attention block mb-0.5">
                         Partial OCR
                       </span>
                       {failure.ocrPagesSkipped} of {failure.ocrPagesAttempted}{' '}
@@ -743,7 +743,7 @@ function ConfirmExtractedValuesView({
               <FileText size={14} />
             </div>
             <div className="min-w-0">
-              <div className="text-micro uppercase tracking-[0.16em] font-bold text-muted leading-none">
+              <div className="text-micro uppercase tracking-eyebrow font-bold text-muted leading-none">
                 File parsed
               </div>
               <div className="mt-0.5 text-caption text-ink font-medium truncate">
@@ -896,7 +896,7 @@ function ConfirmExtractedValuesView({
               className="mt-2 group"
               onToggle={(e) => setShowRaw(e.currentTarget.open)}
             >
-              <summary className="cursor-pointer list-none flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.12em] text-muted hover:text-ink transition-colors w-fit">
+              <summary className="cursor-pointer list-none flex items-center gap-1.5 text-caption font-bold uppercase tracking-label text-muted hover:text-ink transition-colors w-fit">
                 {showRaw ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 Show what we read from the file
               </summary>
@@ -1052,7 +1052,7 @@ function MarkerRow({
             )}
           </div>
           <div
-            className={`inline-flex items-center px-2 h-5 rounded-full text-micro font-bold uppercase tracking-[0.08em] ${c.bg} ${c.text}`}
+            className={`inline-flex items-center px-2 h-5 rounded-full text-micro font-bold uppercase tracking-widest ${c.bg} ${c.text}`}
           >
             {c.label}
           </div>

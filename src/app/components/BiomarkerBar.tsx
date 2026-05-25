@@ -229,7 +229,7 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
               {marker.simpleName}
             </div>
           )}
-          <div className="mt-1 text-caption text-muted uppercase tracking-[0.08em]">
+          <div className="mt-1 text-caption text-muted uppercase tracking-widest">
             Healthy range · {marker.min}–{marker.max} {marker.unit}
             {hasOptimal && (
               <>
@@ -250,13 +250,13 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           </div>
           {/* Tri-tier tag — Optimal / Borderline / Critical. */}
           <div
-            className={`mt-1.5 inline-flex items-center gap-1 px-2 h-5 rounded-full text-micro font-bold uppercase tracking-[0.1em] ${tier.className}`}
+            className={`mt-1.5 inline-flex items-center gap-1 px-2 h-5 rounded-full text-micro font-bold uppercase tracking-widest ${tier.className}`}
             aria-label={`${tier.label}: ${tier.caption}`}
           >
             {tier.label}
           </div>
           <div
-            className={`mt-1 text-micro uppercase tracking-[0.1em] font-bold ${colors.text}`}
+            className={`mt-1 text-micro uppercase tracking-widest font-bold ${colors.text}`}
           >
             {colors.label}
           </div>
@@ -322,7 +322,7 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
         />
       </div>
 
-      <div className="mt-2 flex justify-between text-micro font-semibold uppercase tracking-[0.08em] text-muted">
+      <div className="mt-2 flex justify-between text-micro font-semibold uppercase tracking-widest text-muted">
         <span>Critical low</span>
         <span className="text-good">Healthy</span>
         <span>Critical high</span>
@@ -338,7 +338,7 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
       {/* What this means */}
       {!compact && (
         <div className="mt-4 pt-4 border-t border-line/70">
-          <div className="text-micro font-bold uppercase tracking-[0.14em] text-indigo-700">
+          <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
             What this means
           </div>
           <p className="mt-1.5 text-caption leading-relaxed text-ink-soft">

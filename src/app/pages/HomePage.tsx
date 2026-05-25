@@ -436,7 +436,7 @@ export default function HomePage() {
                         >
                           {group.icon}
                         </Emoji>
-                        <div className="text-micro uppercase tracking-[0.16em] font-bold text-indigo-700">
+                        <div className="text-micro uppercase tracking-eyebrow font-bold text-indigo-700">
                           {group.name}
                         </div>
                       </div>
@@ -504,7 +504,7 @@ export default function HomePage() {
           <Pill tone="indigo" size="sm">
             What you’ll see
           </Pill>
-          <h2 className="font-display text-display-md lg:text-display-md leading-tight mt-2">
+          <h2 className="font-display text-display-md leading-tight mt-2">
             Your dashboard, once you upload
           </h2>
           {/* sm:2 → md:3 ladder so a 700px portrait tablet doesn't
@@ -909,7 +909,7 @@ function SectionHeading({
         <Pill tone="indigo" size="sm">
           {eyebrow}
         </Pill>
-        <h2 className="font-display text-display-md lg:text-display-md leading-tight mt-2">
+        <h2 className="font-display text-display-md leading-tight mt-2">
           {title}
         </h2>
         {subtitle && (

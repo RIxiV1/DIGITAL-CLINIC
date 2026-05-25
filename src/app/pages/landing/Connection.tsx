@@ -89,10 +89,10 @@ export default function ConnectionSection({
           <div className="md:col-span-5 md:sticky lg:top-24">
             <Reveal delay={0.1}>
               <div className="rounded-2xl bg-white border border-line shadow-clinical p-6 md:p-7">
-                <div className="inline-flex items-center gap-2 text-caption font-bold uppercase tracking-[0.16em] text-blue-700">
+                <div className="inline-flex items-center gap-2 text-caption font-bold uppercase tracking-eyebrow text-blue-700">
                   <span className="w-5 h-px bg-blue-600" /> Why it matters
                 </div>
-                <h3 className="font-sans font-bold text-display-md md:text-display-md tracking-[-0.01em] mt-3 text-ink">
+                <h3 className="font-sans font-bold text-display-md tracking-tight mt-3 text-ink">
                   You’ve been treating these separately.
                 </h3>
                 <p className="mt-3 text-body-sm text-ink-soft leading-relaxed">
@@ -159,7 +159,7 @@ function CascadeBig() {
           <FlaskConical size={14} />
         </div>
         <div className="min-w-0">
-          <div className="text-micro uppercase tracking-[0.22em] font-bold text-blue-700">
+          <div className="text-micro uppercase tracking-eyebrow font-bold text-blue-700">
             Your hormone chain
           </div>
           <div className="text-caption text-ink-soft font-medium">
@@ -203,7 +203,7 @@ function CascadeBig() {
       {/* Branching divider */}
       <div className="mt-8 flex items-center gap-3">
         <span className="flex-1 h-px bg-blue-200" />
-        <span className="text-micro uppercase tracking-[0.2em] font-bold text-blue-700 whitespace-nowrap">
+        <span className="text-micro uppercase tracking-eyebrow font-bold text-blue-700 whitespace-nowrap">
           When the axis is off — you feel it as
         </span>
         <span className="flex-1 h-px bg-blue-200" />
@@ -272,7 +272,7 @@ function AxisStation({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div
-                className={`text-micro uppercase tracking-[0.22em] font-bold ${
+                className={`text-micro uppercase tracking-eyebrow font-bold ${
                   isOutput ? 'text-blue-200' : 'text-blue-700'
                 }`}
               >
@@ -287,7 +287,7 @@ function AxisStation({
               </div>
             </div>
             {isOutput && (
-              <span className="shrink-0 inline-flex items-center px-2 h-5 rounded-full bg-white/15 text-micro font-bold uppercase tracking-[0.14em] text-blue-100">
+              <span className="shrink-0 inline-flex items-center px-2 h-5 rounded-full bg-white/15 text-micro font-bold uppercase tracking-label text-blue-100">
                 Output
               </span>
             )}
@@ -307,14 +307,14 @@ function AxisStation({
             }`}
           >
             <span
-              className={`text-micro uppercase tracking-[0.18em] font-bold ${
+              className={`text-micro uppercase tracking-eyebrow font-bold ${
                 isOutput ? 'text-blue-200' : 'text-blue-700'
               }`}
             >
               {verb}
             </span>
             <span
-              className={`font-sans font-bold text-body md:text-body tracking-[-0.01em] ${
+              className={`font-sans font-bold text-body tracking-tight ${
                 isOutput ? 'text-white' : 'text-ink'
               }`}
             >
@@ -342,7 +342,7 @@ function AxisStation({
                 strokeWidth={2.5}
                 className="text-blue-600"
               />
-              <span className="text-micro uppercase tracking-[0.14em] font-bold text-blue-700">
+              <span className="text-micro uppercase tracking-label font-bold text-blue-700">
                 {hormone}
               </span>
             </span>
@@ -476,7 +476,7 @@ function CascadeCompact() {
                     {s.organ}
                   </div>
                   <div
-                    className={`text-micro font-bold uppercase tracking-[0.1em] mt-0.5 truncate ${
+                    className={`text-micro font-bold uppercase tracking-widest mt-0.5 truncate ${
                       s.isOutput ? 'text-blue-100' : 'text-blue-700'
                     }`}
                   >
@@ -492,7 +492,7 @@ function CascadeCompact() {
       {/* "Felt as" divider */}
       <div className="mt-3 flex items-center gap-2">
         <span className="flex-1 h-px bg-blue-100" />
-        <span className="text-micro uppercase tracking-[0.14em] font-bold text-blue-700">
+        <span className="text-micro uppercase tracking-label font-bold text-blue-700">
           Felt as
         </span>
         <span className="flex-1 h-px bg-blue-100" />

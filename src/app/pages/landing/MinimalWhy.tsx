@@ -14,11 +14,11 @@ export default function MinimalWhy() {
     <section className="py-14 sm:py-18 md:py-22 bg-canvas">
       <div className="mx-auto w-full max-w-3xl px-5 md:px-8">
         <Reveal>
-          <div className="inline-flex items-center gap-2 text-caption font-bold uppercase tracking-[0.18em] text-indigo-700">
+          <div className="inline-flex items-center gap-2 text-caption font-bold uppercase tracking-eyebrow text-indigo-700">
             <span className="w-6 h-px bg-indigo-600" />
             What you get
           </div>
-          <h2 className="font-sans font-bold text-display-md sm:text-display-md md:text-display-lg leading-[1.1] tracking-[-0.02em] mt-3 text-balance">
+          <h2 className="font-sans font-bold text-display-md md:text-display-lg leading-[1.1] tracking-tight mt-3 text-balance">
             Plain English, the right tests, your data — yours.
           </h2>
         </Reveal>

@@ -260,7 +260,7 @@ export default function QuizPage() {
         {/* Progress strip — step counter + an unobtrusive swipe hint that
             only renders on touch contexts (hidden via the parent flex on
             very-small viewports otherwise). */}
-        <div className="mt-3 flex items-center justify-between text-micro font-bold uppercase tracking-[0.16em] text-muted">
+        <div className="mt-3 flex items-center justify-between text-micro font-bold uppercase tracking-eyebrow text-muted">
           <span className="hidden sm:inline opacity-70">
             Tip · arrow keys or swipe to move
           </span>
@@ -295,7 +295,7 @@ export default function QuizPage() {
                 transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
               }}
             >
-              <div className="text-micro font-bold uppercase tracking-[0.16em] text-indigo-700 mb-2">
+              <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700 mb-2">
                 {step.sectionLabel}
               </div>
               <h1 className="font-display text-display-md leading-tight text-balance">

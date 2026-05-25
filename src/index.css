@@ -107,6 +107,19 @@
   --text-display-lg: 2rem;           /* 32px */
   --text-display-xl: 3.5rem;         /* 56px */
 
+  /* Letter-spacing tokens — close the loop on the typography system.
+   *
+   * Before this, 12 distinct tracking-[Nem] bracket values were
+   * sprinkled across uppercase labels and display headings:
+   *   0.08, 0.1, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22em positives
+   *   -0.01, -0.02, -0.025, -0.03em negatives
+   * They cluster into three roles. The custom tokens below cover the
+   * two positive roles; Tailwind's built-in tracking-tight (-0.025em)
+   * and tracking-widest (0.1em) cover the negative and tight-label
+   * roles respectively, so we don't redefine them. */
+  --tracking-label: 0.14em;          /* uppercase chips, badges */
+  --tracking-eyebrow: 0.18em;        /* eyebrow tags, micro labels */
+
   /* Premium shadows */
   /* Elevation system. Four steps, used as:
    *   soft     — every Card at rest, the "page background" elevation.

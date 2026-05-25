@@ -157,12 +157,12 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   <Pill tone="dark" size="sm">
                     <Sparkles size={10} /> The Bottom Line
                   </Pill>
-                  <span className="text-micro uppercase tracking-[0.14em] font-bold text-indigo-900/70">
+                  <span className="text-micro uppercase tracking-label font-bold text-indigo-900/70">
                     {report.uploadedOn}
                   </span>
                 </div>
 
-                <p className="mt-4 font-display text-display-md lg:text-display-md leading-[1.2] text-balance">
+                <p className="mt-4 font-display text-display-md leading-[1.2] text-balance">
                   {bottomLine}
                 </p>
 
@@ -354,7 +354,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             <div className="sticky top-24 grid gap-5">
               <Card padded={false} className="overflow-hidden">
                 <div className="px-5 pt-5 pb-3 border-b border-line">
-                  <div className="text-micro font-bold uppercase tracking-[0.14em] text-indigo-700">
+                  <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
                     Filter
                   </div>
                   <div className="font-display text-body mt-1">
@@ -387,7 +387,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   })}
                 </div>
                 <div className="px-5 pt-4 pb-3 border-t border-line">
-                  <div className="text-micro font-bold uppercase tracking-[0.14em] text-indigo-700">
+                  <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
                     Categories
                   </div>
                 </div>
@@ -414,7 +414,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               {deepDives.length > 0 && (
                 <Card padded={false}>
                   <div className="px-5 pt-5 pb-3 border-b border-line">
-                    <div className="text-micro font-bold uppercase tracking-[0.14em] text-indigo-700">
+                    <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
                       Suggested deep dives
                     </div>
                     <div className="font-display text-body mt-1">
@@ -439,11 +439,11 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                             <Sparkles size={16} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-micro uppercase tracking-[0.12em] font-bold text-muted truncate">
+                            <div className="text-micro uppercase tracking-label font-bold text-muted truncate">
                               {m.name}
                             </div>
                             <div
-                              className={`text-caption mt-0.5 ${c.text} font-bold uppercase tracking-[0.1em]`}
+                              className={`text-caption mt-0.5 ${c.text} font-bold uppercase tracking-widest`}
                             >
                               {c.label}
                             </div>
@@ -465,7 +465,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         {/* Mobile-only suggested deep dives (sidebar handles lg+) */}
         {deepDives.length > 0 && (
           <div className="md:hidden mt-8 no-print">
-            <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
+            <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
               Suggested deep dives
             </div>
             <h2 className="font-display text-display-md leading-tight mt-1">
@@ -488,7 +488,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                         <Sparkles size={18} />
                       </div>
                       <div className="flex-1">
-                        <div className="text-micro uppercase tracking-[0.12em] font-bold text-muted">
+                        <div className="text-micro uppercase tracking-label font-bold text-muted">
                           {m.name}
                         </div>
                         <div className="font-semibold leading-tight mt-0.5">
@@ -497,7 +497,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                             : 'See what to tweak this month'}
                         </div>
                         <div
-                          className={`text-caption mt-1 ${c.text} font-bold uppercase tracking-[0.1em]`}
+                          className={`text-caption mt-1 ${c.text} font-bold uppercase tracking-widest`}
                         >
                           {c.label}
                         </div>
@@ -537,7 +537,7 @@ function BottomLineTile({
     <div className="rounded-[14px] bg-white/80 p-3">
       <div className="flex items-center gap-1.5">
         <span className={`w-2 h-2 rounded-full ${dot}`} />
-        <span className="text-micro uppercase tracking-[0.14em] font-bold text-indigo-900/80">
+        <span className="text-micro uppercase tracking-label font-bold text-indigo-900/80">
           {label}
         </span>
       </div>

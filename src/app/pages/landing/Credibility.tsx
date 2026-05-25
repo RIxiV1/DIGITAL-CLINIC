@@ -80,7 +80,7 @@ function StatCard({
       }`}
     >
       <div
-        className={`font-sans font-bold text-display-xl md:text-display-xl leading-none tracking-[-0.03em] ${
+        className={`font-sans font-bold text-display-xl leading-none tracking-tight ${
           accent ? 'text-white' : 'text-blue-700'
         }`}
       >

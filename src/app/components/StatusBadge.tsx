@@ -37,7 +37,7 @@ export default function StatusBadge({ status, className = '' }: Props) {
   const c = config[status];
   return (
     <span
-      className={`inline-flex items-center gap-1.5 px-2.5 h-6 rounded-full text-micro font-bold uppercase tracking-[0.12em] ${c.classes} ${className}`}
+      className={`inline-flex items-center gap-1.5 px-2.5 h-6 rounded-full text-micro font-bold uppercase tracking-label ${c.classes} ${className}`}
     >
       <c.Icon
         size={11}

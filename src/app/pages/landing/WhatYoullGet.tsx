@@ -121,12 +121,12 @@ function DoctorSummaryMockup() {
             <div className="flex items-center gap-2">
               <Logo size="sm" />
             </div>
-            <div className="text-micro uppercase tracking-[0.14em] font-bold text-blue-700">
+            <div className="text-micro uppercase tracking-label font-bold text-blue-700">
               Doctor Summary · v1
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-3">
-            <div className="font-sans font-bold text-display-md tracking-[-0.01em]">
+            <div className="font-sans font-bold text-display-md tracking-tight">
               Hormonal Health Snapshot
             </div>
             <div className="text-caption text-muted">Patient: FM-A284</div>
@@ -143,7 +143,7 @@ function DoctorSummaryMockup() {
             <div className="rounded-2xl bg-blue-600 text-white p-5 shadow-clinical relative overflow-hidden">
               <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-blue-400/30 blur-2xl" />
               <div className="relative">
-                <div className="text-micro font-bold uppercase tracking-[0.14em] text-blue-100">
+                <div className="text-micro font-bold uppercase tracking-label text-blue-100">
                   Top-line read
                 </div>
                 <p className="mt-2 font-sans font-semibold text-body leading-snug">
@@ -155,7 +155,7 @@ function DoctorSummaryMockup() {
             </div>
 
             <div className="rounded-2xl bg-white border border-line p-4">
-              <div className="text-micro font-bold uppercase tracking-[0.14em] text-blue-700">
+              <div className="text-micro font-bold uppercase tracking-label text-blue-700">
                 Specialist
               </div>
               <div className="mt-2 flex items-start gap-2">
@@ -177,7 +177,7 @@ function DoctorSummaryMockup() {
             <div className="rounded-2xl bg-white border border-line p-4 md:p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-micro font-bold uppercase tracking-[0.14em] text-blue-700">
+                  <div className="text-micro font-bold uppercase tracking-label text-blue-700">
                     Recommended tests
                   </div>
                   <div className="font-sans font-semibold text-body-sm mt-1">
@@ -260,13 +260,13 @@ function TestRow({
             {name}
           </span>
           <span
-            className={`text-micro font-bold uppercase tracking-[0.1em] px-1.5 h-4 rounded-full border inline-flex items-center shrink-0 ${flagTone}`}
+            className={`text-micro font-bold uppercase tracking-widest px-1.5 h-4 rounded-full border inline-flex items-center shrink-0 ${flagTone}`}
           >
             {flag}
           </span>
         </div>
         <div className="mt-1 flex items-start gap-1.5">
-          <span className="text-micro font-bold uppercase tracking-[0.1em] text-blue-700 mt-0.5 shrink-0">
+          <span className="text-micro font-bold uppercase tracking-widest text-blue-700 mt-0.5 shrink-0">
             Why
           </span>
           <span className="text-caption text-ink-soft leading-snug">

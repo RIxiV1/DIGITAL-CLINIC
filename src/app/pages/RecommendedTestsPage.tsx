@@ -177,14 +177,10 @@ export default function RecommendedTestsPage() {
                       >
                         <div className="px-5 pb-5">
                           <div className="rounded-[16px] bg-gold-50 border border-gold-200 p-4">
-                            <div className="text-micro uppercase tracking-[0.14em] font-bold text-gold-800">
+                            <div className="text-micro uppercase tracking-label font-bold text-gold-800">
                               Why this for you
                             </div>
-                            {/* Hardcoded ink so the body stays dark on the
-                                gold background in BOTH themes. text-ink
-                                would invert to light in dark mode and the
-                                copy would vanish into the gold tile. */}
-                            <p className="mt-1.5 text-body-sm leading-relaxed text-[#0F1422]">
+                            <p className="mt-1.5 text-body-sm leading-relaxed text-ink">
                               {t.whyTemplate(quiz)}
                             </p>
                           </div>
@@ -204,7 +200,7 @@ export default function RecommendedTestsPage() {
                           )}
 
                           <div className="mt-4">
-                            <div className="text-micro uppercase tracking-[0.14em] font-bold text-indigo-700">
+                            <div className="text-micro uppercase tracking-label font-bold text-indigo-700">
                               What’s in this test
                             </div>
                             <ul className="mt-2 grid gap-2">
@@ -462,7 +458,7 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
         </div>
       </div>
       <div
-        className={`shrink-0 mt-0.5 inline-flex items-center px-2.5 h-6 rounded-full text-micro font-bold uppercase tracking-[0.1em] ${tierStyles.badge}`}
+        className={`shrink-0 mt-0.5 inline-flex items-center px-2.5 h-6 rounded-full text-micro font-bold uppercase tracking-widest ${tierStyles.badge}`}
         aria-label={`${system.label}: ${tierStyles.label}`}
       >
         {tierStyles.label}

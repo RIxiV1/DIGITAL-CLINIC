@@ -16,13 +16,13 @@ export default function FinalCta({ onStart }: { onStart: () => void }) {
               }}
             />
             <div className="relative px-5 sm:px-8 md:px-12 py-12 sm:py-16 md:py-20 text-center text-white">
-              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white/15 backdrop-blur text-caption font-bold uppercase tracking-[0.14em] text-white">
+              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white/15 backdrop-blur text-caption font-bold uppercase tracking-label text-white">
                 <Sparkles size={11} /> Free during MVP
               </span>
-              <h2 className="font-sans font-bold text-display-md sm:text-display-lg md:text-display-xl lg:text-display-xl leading-[1.05] tracking-[-0.025em] mt-5 text-balance max-w-[22ch] mx-auto">
+              <h2 className="font-sans font-bold text-display-md sm:text-display-lg md:text-display-xl leading-[1.05] tracking-tight mt-5 text-balance max-w-[22ch] mx-auto">
                 See what your hormones are telling you.
               </h2>
-              <p className="mt-5 text-body sm:text-body md:text-body-lg leading-relaxed text-blue-100 max-w-[42ch] mx-auto text-pretty">
+              <p className="mt-5 text-body md:text-body-lg leading-relaxed text-blue-100 max-w-[42ch] mx-auto text-pretty">
                 3 minutes. One clear picture.
               </p>
 
