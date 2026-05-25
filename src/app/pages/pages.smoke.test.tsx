@@ -23,6 +23,7 @@ import QuizPage from './QuizPage';
 import RecommendedTestsPage from './RecommendedTestsPage';
 import UploadPage from './UploadPage';
 import ManualEntryPage from './ManualEntryPage';
+import ProcessingPage from './ProcessingPage';
 import ProfilePage from './ProfilePage';
 import ReportResultsPage from './ReportResultsPage';
 import ProblemDetailPage from './ProblemDetailPage';
@@ -154,6 +155,22 @@ describe('page smoke tests', () => {
   it('ProblemDetailPage renders not-found state for an unknown id', () => {
     const { container } = renderWithProvider(
       <ProblemDetailPage problemId="not-a-real-problem" />,
+    );
+    expect(container.firstChild).toBeTruthy();
+  });
+
+  it('ProcessingPage renders without crashing (empty-locker fallback path)', () => {
+    // With no processing report in context, ProcessingPage's mount
+    // effect navigates home — but the initial render still has to
+    // produce DOM. This pins "the parsing UI mounts without throwing"
+    // (catches regressions in the parseSteps render loop, the
+    // pendingConfirm restore, or the loadPendingConfirm/localStorage
+    // calls). MemoryRouter prevents the redirect from touching
+    // window.history during the test.
+    const { container } = render(
+      <AppProvider router="memory" initialEntries={['/processing']}>
+        <ProcessingPage />
+      </AppProvider>,
     );
     expect(container.firstChild).toBeTruthy();
   });
