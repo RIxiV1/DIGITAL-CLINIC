@@ -6,11 +6,10 @@ import {
   FileText,
   Image as ImageIcon,
   Info,
-  ShieldCheck,
+  Pencil,
   UploadCloud,
 } from 'lucide-react';
 import Button from '../components/Button';
-import Card from '../components/Card';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import StickyBottomBar from '../components/StickyBottomBar';
@@ -59,9 +58,35 @@ export default function UploadPage() {
   // "dragging" highlight doesn't flicker when the cursor moves over the
   // icon or label nested inside the dropzone.
   const [dragDepth, setDragDepth] = useState(0);
+
+  /** Debounce ref for openPicker — guards against the same gesture
+   *  firing both the dropzone's onClick and an inner action-rail
+   *  button's onClick. On mobile, a fast double-tap (or a stuck
+   *  synthetic click after a touch) could otherwise stack two file
+   *  pickers in a row. 300ms is well below "the user opened the
+   *  picker, closed it, and re-tapped" but well above any plausible
+   *  same-gesture echo. */
+  const lastPickerOpenRef = useRef(0);
+  const openPicker = (ref: React.RefObject<HTMLInputElement | null>) => {
+    const now = Date.now();
+    if (now - lastPickerOpenRef.current < 300) return;
+    lastPickerOpenRef.current = now;
+    ref.current?.click();
+  };
   const dragging = dragDepth > 0;
 
   const onSelect = (f: File | null) => {
+    // Reset the underlying <input value> AFTER we've handled this
+    // event but BEFORE returning. The browser fires `change` only
+    // when the new value differs from the previous one — without this
+    // reset, picking `report.pdf`, getting a validation error, fixing
+    // the file on disk, and picking `report.pdf` again would silently
+    // no-op (the filename hadn't "changed" from the browser's
+    // perspective). Two inputs because the dropzone has a primary
+    // input for both PDFs/photos and a photo-only one for the camera
+    // path.
+    if (inputRef.current) inputRef.current.value = '';
+    if (photoInputRef.current) photoInputRef.current.value = '';
     if (!f) return;
     const result = validateUpload(f);
     if (!result.ok) {
@@ -147,6 +172,36 @@ export default function UploadPage() {
           </p>
         </div>
 
+        {/* "Labs we read fluently" sits BEFORE the dropzone — the
+            question this chip strip answers ("will my report from
+            <lab> work?") is a pre-action concern. Previously this
+            block lived at the bottom of the page, only visible after
+            the user had already uploaded. The compact tone-down vs
+            the prior "section heading + flex-wrap chips" version is
+            deliberate: this is a trust signal, not a feature list. */}
+        <div className="mb-4 px-1">
+          <div className="text-micro uppercase tracking-label font-bold text-muted mb-2">
+            Labs we read fluently
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {[
+              'Thyrocare',
+              'Dr Lal Pathlabs',
+              'SRL',
+              'Metropolis',
+              'Apollo',
+              'Healthians',
+            ].map((l) => (
+              <span
+                key={l}
+                className="px-2.5 py-1 rounded-full bg-surface border border-line text-caption text-ink-soft"
+              >
+                {l}
+              </span>
+            ))}
+          </div>
+        </div>
+
         {/* Dropzone — dashed border affordance, real drag-state visual,
             and distinct PDF/Photo entry points with their own filters.
             The previous version was a flat white card with two
@@ -176,7 +231,7 @@ export default function UploadPage() {
               setDragDepth(0);
               onSelect(e.dataTransfer.files?.[0] ?? null);
             }}
-            onClick={() => inputRef.current?.click()}
+            onClick={() => openPicker(inputRef)}
             aria-label={
               fileName
                 ? `Chosen file: ${fileName}. Tap to choose a different file.`
@@ -237,19 +292,22 @@ export default function UploadPage() {
             />
           </button>
 
-          {/* Action rails — visually distinct, semantically different.
+          {/* Action rails — three semantically-distinct entry points.
               Pick PDF accepts only `application/pdf`; Use photo
-              accepts JPEG/PNG/WebP and hints at the camera. Was
-              previously two identical buttons opening the same
-              promiscuous input. */}
-          <div className="mt-3 grid grid-cols-2 gap-2.5">
+              accepts JPEG/PNG/WebP and hints at the camera; Type
+              values routes to the manual-entry page. Manual entry
+              used to be a small underlined text link at the bottom of
+              the page — burying the escape hatch meant the users who
+              needed it most (failed parses, photo of a paper slip)
+              didn't find it. Promoted here as a peer of PDF/Photo. */}
+          <div className="mt-3 grid grid-cols-3 gap-2.5">
             <button
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                inputRef.current?.click();
+                openPicker(inputRef);
               }}
-              className="flex flex-col items-center gap-1 py-3 rounded-[14px] bg-surface border border-line text-blue-700 hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 transition-colors min-h-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+              className="flex flex-col items-center gap-1 py-3 px-2 rounded-[14px] bg-surface border border-line text-blue-700 hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 transition-colors min-h-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
             >
               <FileText size={18} />
               <div className="text-caption font-semibold leading-none">
@@ -263,9 +321,9 @@ export default function UploadPage() {
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                photoInputRef.current?.click();
+                openPicker(photoInputRef);
               }}
-              className="flex flex-col items-center gap-1 py-3 rounded-[14px] bg-surface border border-line text-blue-700 hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 transition-colors min-h-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+              className="flex flex-col items-center gap-1 py-3 px-2 rounded-[14px] bg-surface border border-line text-blue-700 hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 transition-colors min-h-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
             >
               <ImageIcon size={18} />
               <div className="text-caption font-semibold leading-none">
@@ -273,6 +331,22 @@ export default function UploadPage() {
               </div>
               <div className="text-micro text-muted leading-none">
                 camera or roll
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate({ type: 'manualEntry' });
+              }}
+              className="flex flex-col items-center gap-1 py-3 px-2 rounded-[14px] bg-surface border border-line text-blue-700 hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 transition-colors min-h-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+            >
+              <Pencil size={18} />
+              <div className="text-caption font-semibold leading-none">
+                Type values
+              </div>
+              <div className="text-micro text-muted leading-none">
+                enter by hand
               </div>
             </button>
           </div>
@@ -325,60 +399,14 @@ export default function UploadPage() {
           )}
         </AnimatePresence>
 
-        <div className="mt-6 grid gap-3">
-          <Card className="bg-surface">
-            <div className="flex items-start gap-3">
-              <div className="grid place-items-center w-10 h-10 rounded-xl bg-good-soft text-good shrink-0">
-                <ShieldCheck size={18} />
-              </div>
-              <div>
-                <div className="font-semibold text-body-sm">
-                  Private, end to end
-                </div>
-                <p className="text-caption text-ink-soft mt-1 leading-relaxed">
-                  Reports are processed for your eyes only. You can delete any
-                  upload at any time.
-                </p>
-              </div>
-            </div>
-          </Card>
-
-          <div className="mt-2 px-1">
-            <div className="text-micro uppercase tracking-label font-bold text-muted mb-2">
-              Labs we read fluently
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {[
-                'Thyrocare',
-                'Dr Lal Pathlabs',
-                'SRL',
-                'Metropolis',
-                'Apollo',
-                'Healthians',
-              ].map((l) => (
-                <span
-                  key={l}
-                  className="px-2.5 py-1 rounded-full bg-surface border border-line text-caption text-ink-soft"
-                >
-                  {l}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          {/* Manual-entry escape hatch — for users who'd rather type
-              the values they care about than upload a PDF, or whose
-              report layout the parser can't handle. */}
-          <div className="mt-3 px-1 text-center">
-            <button
-              type="button"
-              onClick={() => navigate({ type: 'manualEntry' })}
-              className="text-caption text-indigo-700 hover:text-indigo-900 font-semibold underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors"
-            >
-              Or enter values manually instead →
-            </button>
-          </div>
-        </div>
+        {/* The "Private, end to end" Card, the "Labs we read fluently"
+            chip strip, and the manual-entry footer link used to live
+            here. Privacy is now covered once — in the info banner
+            above the dropzone — instead of being repeated below it.
+            Labs moved above the dropzone (pre-action trust signal).
+            Manual entry is the third action-rail tile (peer of PDF
+            and Photo). This whole post-action block was visual mass
+            that competed with the sticky "Start analysing" CTA. */}
       </Container>
 
       <StickyBottomBar>

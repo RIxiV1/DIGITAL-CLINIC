@@ -75,11 +75,21 @@ export default function LandingPage() {
         onSample={viewSample}
         onDashboard={goDashboard}
       />
+      {/* Section order is convince-then-enable:
+       *   Connection (the science) → Credibility (the receipts) →
+       *   HowItWorks (the usage flow) → WhatYoullGet (the feature list).
+       *
+       * Pre-rebrand, HowItWorks sat right after Connection — the user
+       * landed, saw the science, and was immediately walked through
+       * usage steps for a product they hadn't decided to use yet.
+       * Pulling Credibility up to sit adjacent to Connection makes the
+       * science + the receipts read as one "why trust this" block
+       * before the page asks for any action.  */}
       <Hero onStart={startQuiz} onSample={viewSample} />
       <ConnectionSection onStart={startQuiz} />
+      <Credibility />
       <HowItWorks />
       <WhatYoullGet />
-      <Credibility />
       <FinalCta onStart={startQuiz} />
       <Footer />
     </div>

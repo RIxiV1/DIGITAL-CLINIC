@@ -1,6 +1,6 @@
 import { useDeferredValue, useId, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, FileText, Plus, Search, Trash2, Upload, X } from 'lucide-react';
+import { AlertTriangle, FileText, Plus, Search, Trash2, X } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
@@ -492,13 +492,21 @@ export default function HomePage() {
         </Container>
       )}
 
-      {/* "What you'll see once you upload" preview — fills the gap
-          between the headline and the locker on tall viewports
-          whenever there's no ready report to populate the dashboard.
-          Gate is broader than `reports.length === 0` so the same
-          preview also shows in the "only a processing entry exists"
-          edge case (otherwise that user sees just headline + a
-          shimmering locker card and a sea of grey). */}
+      {/* "What you'll see once you upload" preview — only renders when
+          there's no ready report to populate the dashboard. Gate is
+          broader than `reports.length === 0` so the same preview also
+          shows in the "only a processing entry exists" edge case
+          (otherwise that user sees just headline + a shimmering locker
+          card and a sea of grey).
+
+          Sample-data affordance lives here, NOT in the locker. The
+          locker is only rendered when the user has a real report; for
+          empty users this preview block + the headline's "Upload a
+          report" CTA + a "Load sample data" link is the complete
+          empty-state surface. Previously the same empty user saw an
+          Upload button in the headline, an Upload button in the
+          locker section header, AND Upload/Load-sample buttons in the
+          locker empty-state card — three CTAs for one action. */}
       {!ready && reports.every((r) => r.status !== 'ready') && (
         <Container size="wide" className="mt-6 md:mt-8">
           <Pill tone="indigo" size="sm">
@@ -543,10 +551,32 @@ export default function HomePage() {
               </Card>
             ))}
           </div>
+          {/* Secondary affordance — "Upload a report" is already in the
+              headline CTA above, so this row only carries the sample
+              path. Indented as a low-emphasis text button to keep the
+              headline's primary action visually dominant. */}
+          {reports.length === 0 && (
+            <div className="mt-5 flex items-center justify-center sm:justify-start gap-2 text-caption text-ink-soft">
+              <span>No report on hand?</span>
+              <button
+                type="button"
+                onClick={loadSampleData}
+                className="font-semibold text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors"
+              >
+                Load sample data instead
+              </button>
+            </div>
+          )}
         </Container>
       )}
 
-      {/* ZONE 4 · Your locker */}
+      {/* ZONE 4 · Your locker — only rendered when there's something
+          to put in it. Empty-state was previously a card INSIDE this
+          section with its own Upload + Load-sample CTAs, but that
+          duplicated the headline CTA and the preview block above. For
+          a truly empty user the locker section adds no content — only
+          chrome — so it sits out entirely until the first upload. */}
+      {reports.length > 0 && (
       <Container size="wide" className="mt-6 md:mt-8">
         <SectionHeading
           eyebrow="Your locker"
@@ -628,34 +658,11 @@ export default function HomePage() {
         )}
 
         <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {reports.length === 0 ? (
-            <Card className="text-center !py-10 sm:col-span-2 md:col-span-3">
-              <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 mb-3">
-                <FileText size={20} />
-              </div>
-              <div className="font-display text-display-md">No reports yet.</div>
-              <p className="text-caption text-ink-soft mt-1.5 max-w-sm mx-auto leading-relaxed">
-                Drop a report and we'll translate it into plain English — or open
-                the sample first to see exactly what you'll get.
-              </p>
-              <div className="mt-5 flex flex-col sm:flex-row gap-2.5 justify-center">
-                <Button
-                  size="md"
-                  onClick={() => navigate({ type: 'upload' })}
-                  leading={<Upload size={14} />}
-                >
-                  Upload a report
-                </Button>
-                <Button
-                  size="md"
-                  variant="secondary"
-                  onClick={loadSampleData}
-                >
-                  Load sample data
-                </Button>
-              </div>
-            </Card>
-          ) : displayedReports.length === 0 ? (
+          {/* The outer `reports.length > 0` gate (above) makes the empty
+              locker state unreachable here — the empty-state preview +
+              "Load sample data" link in the section above carry that
+              role. Only the search-empty branch remains. */}
+          {displayedReports.length === 0 ? (
             <Card className="text-center !py-8 sm:col-span-2 md:col-span-3">
               <div className="text-caption text-ink-soft">
                 No reports match <span className="font-semibold text-ink">"{lockerQuery}"</span>.
@@ -752,6 +759,7 @@ export default function HomePage() {
           )}
         </div>
       </Container>
+      )}
 
       <BottomNav />
 

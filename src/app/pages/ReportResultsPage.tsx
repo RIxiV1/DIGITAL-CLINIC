@@ -207,11 +207,74 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         </motion.div>
       </Container>
 
-      {/* Body: 2-col on lg — left biomarkers, right sticky filters + deep dives */}
+      {/* Mobile-only "Suggested deep dives" — promoted above the marker
+          categories so the action items sit directly under the Bottom
+          Line, before the reference data. Desktop has the same content
+          in the sticky sidebar (always visible while scrolling), so
+          this block is md:hidden. Previously sat at the bottom of the
+          page; a user with 8 categories × 4 markers each had to scroll
+          through 32 rows of in-range markers to reach the 3 cards that
+          answered "what should I do." */}
+      {deepDives.length > 0 && (
+        <Container size="wide" className="mt-6 md:hidden no-print">
+          <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
+            Suggested deep dives
+          </div>
+          <h2 className="font-display text-display-md leading-tight mt-1">
+            What I’d look at first
+          </h2>
+
+          <div className="mt-4 grid gap-3">
+            {deepDives.slice(0, 3).map((m) => {
+              const c = statusColor(m.status);
+              return (
+                <Card
+                  key={m.id}
+                  interactive
+                  onClick={() =>
+                    navigate({ type: 'problem', problemId: m.problemId! })
+                  }
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="grid place-items-center w-10 h-10 rounded-2xl bg-gold-100 text-gold-700 shrink-0">
+                      <Sparkles size={18} />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-micro uppercase tracking-label font-bold text-muted">
+                        {m.name}
+                      </div>
+                      <div className="font-semibold leading-tight mt-0.5">
+                        {m.status === 'concern'
+                          ? 'Action plan + retest cadence'
+                          : 'See what to tweak this month'}
+                      </div>
+                      <div
+                        className={`text-caption mt-1 ${c.text} font-bold uppercase tracking-widest`}
+                      >
+                        {c.label}
+                      </div>
+                    </div>
+                    <ChevronRight size={18} className="text-muted" />
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        </Container>
+      )}
+
+      {/* Body: 2-col on md — left biomarkers, right sticky filters + deep dives */}
       <Container size="wide" className="mt-6 md:mt-10">
         <div className="grid md:grid-cols-12 gap-6 md:gap-8">
           {/* LEFT — Biomarker groups */}
           <main className="md:col-span-8">
+            <div className="mb-6 rounded-xl bg-indigo-50/50 border border-indigo-100 p-3 flex items-start gap-2.5 print-shadow-none">
+              <Info size={16} className="text-indigo-600 shrink-0 mt-0.5" />
+              <p className="text-caption text-indigo-900 leading-snug">
+                <strong>Not a diagnosis.</strong> We translate your report, but you should always consult a doctor before acting on these results.
+              </p>
+            </div>
+
             {/* Mobile/tablet filters (lg uses sidebar) */}
             <div className="md:hidden no-print">
               <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
@@ -325,16 +388,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               </div>
             )}
 
-            {/* Disclaimer */}
-            <div className="mt-8 rounded-[16px] bg-surface border border-line p-4 flex gap-3 print-shadow-none">
-              <Info size={16} className="text-muted shrink-0 mt-0.5" />
-              <p className="text-caption text-ink-soft leading-relaxed">
-                Digital Clinic translates and contextualises your report — it
-                is <strong>not a diagnosis</strong>. Always discuss findings
-                with a qualified doctor before changing medication or starting
-                therapy.
-              </p>
-            </div>
+
 
             <div className="mt-5 no-print">
               <Button
@@ -462,54 +516,10 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           </aside>
         </div>
 
-        {/* Mobile-only suggested deep dives (sidebar handles lg+) */}
-        {deepDives.length > 0 && (
-          <div className="md:hidden mt-8 no-print">
-            <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
-              Suggested deep dives
-            </div>
-            <h2 className="font-display text-display-md leading-tight mt-1">
-              What I’d look at first
-            </h2>
-
-            <div className="mt-4 grid gap-3">
-              {deepDives.slice(0, 3).map((m) => {
-                const c = statusColor(m.status);
-                return (
-                  <Card
-                    key={m.id}
-                    interactive
-                    onClick={() =>
-                      navigate({ type: 'problem', problemId: m.problemId! })
-                    }
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="grid place-items-center w-10 h-10 rounded-2xl bg-gold-100 text-gold-700 shrink-0">
-                        <Sparkles size={18} />
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-micro uppercase tracking-label font-bold text-muted">
-                          {m.name}
-                        </div>
-                        <div className="font-semibold leading-tight mt-0.5">
-                          {m.status === 'concern'
-                            ? 'Action plan + retest cadence'
-                            : 'See what to tweak this month'}
-                        </div>
-                        <div
-                          className={`text-caption mt-1 ${c.text} font-bold uppercase tracking-widest`}
-                        >
-                          {c.label}
-                        </div>
-                      </div>
-                      <ChevronRight size={18} className="text-muted" />
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        )}
+        {/* Mobile-only "Suggested deep dives" used to live here at the
+            bottom of the Container. It's been moved up to sit directly
+            under the Bottom Line — action items come before reference
+            data in the read order. */}
       </Container>
 
       <BottomNav />
