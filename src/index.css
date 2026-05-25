@@ -1,19 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  /* Deep Indigo — brand authority (mapped to Clinical Blue to execute system-wide theme shift) */
-  --color-indigo-50: #EBF5FF;
-  --color-indigo-100: #D6EBFF;
-  --color-indigo-200: #ADD6FF;
-  --color-indigo-300: #7AB8FF;
-  --color-indigo-400: #3D95FF;
-  --color-indigo-500: #0F7AEB;
-  --color-indigo-600: #0066CC;
-  --color-indigo-700: #0052A3;
-  --color-indigo-800: #003D7A;
-  --color-indigo-900: #002852;
-
-  /* Clinical Blue — Digital Clinic primary (deep, authoritative, calm) */
+  /* Clinical Blue — Digital Clinic primary (deep, authoritative, calm).
+   * Single source of truth: every `bg-blue-*` / `text-blue-*` /
+   * `border-blue-*` class resolves to one of these stops. The legacy
+   * `indigo-*` class names are aliased below — they were a leftover
+   * from the pre-rebrand identity, kept around so a wholesale
+   * indigo→blue find/replace isn't required. */
   --color-blue-50: #EBF5FF;
   --color-blue-100: #D6EBFF;
   --color-blue-200: #ADD6FF;
@@ -24,6 +17,22 @@
   --color-blue-700: #0052A3;
   --color-blue-800: #003D7A;
   --color-blue-900: #002852;
+
+  /* Legacy alias — pre-rebrand brand was indigo. Now both class
+   * families resolve to the same Clinical Blue stops, so a future
+   * "actually shift to a new primary" decision flips one place
+   * (--color-blue-*) instead of grep-and-pray across two scales.
+   * Do NOT add new code using indigo-* — prefer blue-*. */
+  --color-indigo-50: var(--color-blue-50);
+  --color-indigo-100: var(--color-blue-100);
+  --color-indigo-200: var(--color-blue-200);
+  --color-indigo-300: var(--color-blue-300);
+  --color-indigo-400: var(--color-blue-400);
+  --color-indigo-500: var(--color-blue-500);
+  --color-indigo-600: var(--color-blue-600);
+  --color-indigo-700: var(--color-blue-700);
+  --color-indigo-800: var(--color-blue-800);
+  --color-indigo-900: var(--color-blue-900);
 
   /* Soft mint — fresh AI accent */
   --color-mint-50: #ECFDF4;
@@ -63,16 +72,24 @@
   --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
 
   /* Premium shadows */
+  /* Elevation system. Four steps, used as:
+   *   soft     — every Card at rest, the "page background" elevation.
+   *   pop      — hovered / active Card, modal floats.
+   *   clinical — ultra-faint, used on the landing's "feathered" cards
+   *              where we want shape without weight. Aesthetic tax,
+   *              not a missing-shadow tax — see WhatYoullGet, Hero.
+   *   blue     — colored CTA glow. Aliased by --shadow-indigo for any
+   *              legacy callers (single source of truth, like the
+   *              color tokens above). */
   --shadow-soft: 0 1px 1px rgba(15, 20, 34, 0.02),
     0 6px 18px rgba(15, 20, 34, 0.05);
   --shadow-pop: 0 4px 8px rgba(15, 20, 34, 0.04),
     0 16px 36px rgba(15, 20, 34, 0.10);
-  --shadow-indigo: 0 8px 24px rgba(0, 102, 204, 0.22);
-  /* Ultra-subtle premium SaaS card shadow */
   --shadow-clinical: 0 4px 30px rgba(0, 0, 0, 0.03);
   --shadow-clinical-lg: 0 6px 40px rgba(0, 0, 0, 0.05),
     0 1px 1px rgba(0, 0, 0, 0.02);
   --shadow-blue: 0 10px 30px rgba(0, 102, 204, 0.18);
+  --shadow-indigo: var(--shadow-blue);
 
   /* Radii */
   --radius-card: 20px;

@@ -43,6 +43,11 @@ export default function UploadPage() {
   const { reports, addReport, removeReport } = useReports();
   const { replace, navigate } = useNavigation();
   const inputRef = useRef<HTMLInputElement | null>(null);
+  // Separate input for the "Use photo" path so its accept= filter can
+  // narrow to image MIME types and its capture= hint can bias mobile
+  // toward the camera. Sharing one input forced both buttons to accept
+  // the same permissive set, defeating their visual differentiation.
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
   /** Keep the validated File around so we can hand it to the parser
    *  via setPendingUpload(...) when the user hits "Start analysing". */
   const fileRef = useRef<File | null>(null);
@@ -142,83 +147,135 @@ export default function UploadPage() {
           </p>
         </div>
 
-        {/* Single dropzone — filename-heuristic gate removed, so we
-            no longer swap in a clinical-error card pre-parse. Any
-            "we couldn't read this" message now lives in
-            ProcessingPage's ParseFailedView, grounded in actual
-            extraction results rather than a filename guess. */}
+        {/* Dropzone — dashed border affordance, real drag-state visual,
+            and distinct PDF/Photo entry points with their own filters.
+            The previous version was a flat white card with two
+            identical buttons that both opened the same file input;
+            now the dropzone reads as a drop target the moment users
+            see it (dashed border), and the two action rails respect
+            their declared file types so the iOS share sheet doesn't
+            offer "Files" when the user tapped "Use photo". */}
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
         >
-          <Card padded={false} className="overflow-hidden">
-                <div
-                  onDragEnter={(e) => {
-                    e.preventDefault();
-                    setDragDepth((d) => d + 1);
-                  }}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDragLeave={(e) => {
-                    e.preventDefault();
-                    setDragDepth((d) => Math.max(0, d - 1));
-                  }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setDragDepth(0);
-                    onSelect(e.dataTransfer.files?.[0] ?? null);
-                  }}
-                  onClick={() => inputRef.current?.click()}
-                  className={`p-7 text-center cursor-pointer transition-colors ${
-                    dragging ? 'bg-indigo-50' : 'bg-surface'
-                  }`}
-                >
-                  <motion.div
-                    animate={{
-                      y: dragging ? -4 : 0,
-                      scale: dragging ? 1.05 : 1,
-                    }}
-                    className="mx-auto grid place-items-center w-16 h-16 rounded-3xl bg-indigo-50 text-indigo-700"
-                  >
-                    <UploadCloud size={28} />
-                  </motion.div>
-                  <div className="mt-4 font-display text-[18px] text-ink">
-                    {fileName ?? 'Tap to choose a file'}
-                  </div>
-                  <div className="mt-1 text-[13px] text-muted">
-                    {fileName
-                      ? 'Looks good. Hit start when you’re ready.'
-                      : 'or drag and drop it here'}
-                  </div>
-                  <input
-                    ref={inputRef}
-                    type="file"
-                    accept="application/pdf,image/*"
-                    className="hidden"
-                    onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
-                  />
-                </div>
-                <div className="grid grid-cols-2 border-t border-line">
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      inputRef.current?.click();
-                    }}
-                    className="flex items-center justify-center gap-2 py-3 text-[13px] font-semibold text-indigo-700 hover:bg-indigo-50/60 min-h-12"
-                  >
-                    <FileText size={16} /> Pick PDF
-                  </button>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      inputRef.current?.click();
-                    }}
-                    className="flex items-center justify-center gap-2 py-3 text-[13px] font-semibold text-indigo-700 hover:bg-indigo-50/60 border-l border-line min-h-12"
-                  >
-                    <ImageIcon size={16} /> Use photo
-                  </button>
-                </div>
-              </Card>
+          <button
+            type="button"
+            onDragEnter={(e) => {
+              e.preventDefault();
+              setDragDepth((d) => d + 1);
+            }}
+            onDragOver={(e) => e.preventDefault()}
+            onDragLeave={(e) => {
+              e.preventDefault();
+              setDragDepth((d) => Math.max(0, d - 1));
+            }}
+            onDrop={(e) => {
+              e.preventDefault();
+              setDragDepth(0);
+              onSelect(e.dataTransfer.files?.[0] ?? null);
+            }}
+            onClick={() => inputRef.current?.click()}
+            aria-label={
+              fileName
+                ? `Chosen file: ${fileName}. Tap to choose a different file.`
+                : 'Choose or drop a lab report'
+            }
+            className={`group relative block w-full p-7 sm:p-8 rounded-[20px] border-2 border-dashed text-center transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60 focus-visible:ring-offset-2 ${
+              dragging
+                ? 'border-blue-500 bg-blue-50 ring-4 ring-blue-100/60'
+                : fileName
+                  ? 'border-good/50 bg-good-soft/30 hover:border-good'
+                  : 'border-line-strong bg-surface hover:border-blue-400 hover:bg-blue-50/40'
+            }`}
+          >
+            <motion.div
+              animate={{
+                y: dragging ? -6 : 0,
+                scale: dragging ? 1.06 : 1,
+                rotate: dragging ? -3 : 0,
+              }}
+              transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+              className={`mx-auto grid place-items-center w-16 h-16 rounded-3xl transition-colors ${
+                fileName
+                  ? 'bg-good-soft text-good'
+                  : 'bg-blue-50 text-blue-700 group-hover:bg-blue-100'
+              }`}
+            >
+              {fileName ? <FileText size={28} /> : <UploadCloud size={28} />}
+            </motion.div>
+            <div className="mt-4 font-display text-[18px] text-ink leading-tight break-words">
+              {fileName ?? (dragging ? 'Drop it here' : 'Tap to choose a file')}
+            </div>
+            <div className="mt-1.5 text-[13px] text-muted">
+              {fileName
+                ? 'Looks good. Hit start when you’re ready.'
+                : dragging
+                  ? 'Release to upload'
+                  : 'or drag and drop a PDF / photo here'}
+            </div>
+            <input
+              ref={inputRef}
+              type="file"
+              accept="application/pdf,image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
+            />
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              // capture=environment hints mobile to open the camera
+              // on the back-facing lens instead of the photo library.
+              // Falls back to the photo library on browsers that
+              // don't support the hint, which is the desired UX
+              // anyway — no harm in declaring the preference.
+              capture="environment"
+              className="hidden"
+              onChange={(e) => onSelect(e.target.files?.[0] ?? null)}
+            />
+          </button>
+
+          {/* Action rails — visually distinct, semantically different.
+              Pick PDF accepts only `application/pdf`; Use photo
+              accepts JPEG/PNG/WebP and hints at the camera. Was
+              previously two identical buttons opening the same
+              promiscuous input. */}
+          <div className="mt-3 grid grid-cols-2 gap-2.5">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                inputRef.current?.click();
+              }}
+              className="flex flex-col items-center gap-1 py-3 rounded-[14px] bg-surface border border-line text-blue-700 hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 transition-colors min-h-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+            >
+              <FileText size={18} />
+              <div className="text-[13px] font-semibold leading-none">
+                Pick a PDF
+              </div>
+              <div className="text-[10.5px] text-muted leading-none">
+                from your files
+              </div>
+            </button>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                photoInputRef.current?.click();
+              }}
+              className="flex flex-col items-center gap-1 py-3 rounded-[14px] bg-surface border border-line text-blue-700 hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 transition-colors min-h-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+            >
+              <ImageIcon size={18} />
+              <div className="text-[13px] font-semibold leading-none">
+                Use photo
+              </div>
+              <div className="text-[10.5px] text-muted leading-none">
+                camera or roll
+              </div>
+            </button>
+          </div>
         </motion.div>
 
         {/* Soft warning — informational, not blocking. Shown when the

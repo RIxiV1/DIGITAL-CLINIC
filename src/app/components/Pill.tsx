@@ -42,8 +42,14 @@ export default function Pill({
   dot?: boolean;
   size?: 'sm' | 'md';
 }) {
+  // sm was 20px tall — fine for pure ornament, but the moment any
+  // sm pill becomes a clickable filter chip it's well under the 44×44
+  // touch-target floor. Bumped to 24px (h-6) so decorative pills
+  // breathe and any future-clickable variant has somewhere reasonable
+  // to grow from (callers can apply min-h-12 + flex sleeves to opt in
+  // to a fully tappable variant).
   const sizeCls =
-    size === 'sm' ? 'px-2 h-5 text-[10px]' : 'px-2.5 h-6 text-[11px]';
+    size === 'sm' ? 'px-2 h-6 text-[10.5px]' : 'px-2.5 h-7 text-[11.5px]';
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${sizeCls} ${toneClasses[tone]} ${className}`}

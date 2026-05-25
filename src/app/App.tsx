@@ -112,6 +112,17 @@ function PageHost() {
 
   return (
     <div className="min-h-dvh bg-canvas relative overflow-x-hidden">
+      {/* Skip link — hidden until keyboard-focused, then slides into
+          view so keyboard users can jump past the header / nav and
+          land directly on page content. Without this every page tab
+          starts at the logo and walks through the entire header before
+          reaching anything actionable. */}
+      <a
+        href="#main-content"
+        className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-3 focus-visible:left-3 focus-visible:z-[100] focus-visible:px-4 focus-visible:h-11 focus-visible:inline-flex focus-visible:items-center focus-visible:rounded-full focus-visible:bg-blue-600 focus-visible:text-white focus-visible:text-[13px] focus-visible:font-semibold focus-visible:shadow-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+      >
+        Skip to main content
+      </a>
       <AnimatePresence mode="popLayout">
         <motion.div
           key={pageKey(page)}
@@ -121,7 +132,11 @@ function PageHost() {
           transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
           className="min-h-dvh w-full"
         >
-          <Suspense fallback={fallbackForPage(page)}>{node}</Suspense>
+          <Suspense fallback={fallbackForPage(page)}>
+            <main id="main-content" tabIndex={-1} className="outline-none">
+              {node}
+            </main>
+          </Suspense>
         </motion.div>
       </AnimatePresence>
     </div>

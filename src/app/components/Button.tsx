@@ -2,7 +2,14 @@ import { motion, type HTMLMotionProps } from 'framer-motion';
 import type { ReactNode } from 'react';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'gold' | 'dark';
-type Size = 'sm' | 'md' | 'lg';
+// Size scale, rough heights:
+//   sm — 44px (touch-target minimum; was 36px before the a11y bump)
+//   md — 44px
+//   lg — 56px
+//   xl — 50px, matches the landing hero — kept distinct from lg so
+//        the hero CTA can stop hand-rolling its own button with
+//        style={{ height: 50 }}.
+type Size = 'sm' | 'md' | 'lg' | 'xl';
 type Shape = 'pill' | 'rounded';
 
 type Props = Omit<HTMLMotionProps<'button'>, 'children'> & {
@@ -36,9 +43,14 @@ const variantClasses: Record<Variant, string> = {
 };
 
 const sizeClasses: Record<Size, string> = {
-  sm: 'h-9 px-4 text-[13px]',
+  // sm bumped from h-9 (36px) to h-11 (44px) to meet the WCAG 2.5.5
+  // 44×44 touch-target floor. Visual delta is small enough that the
+  // few sm callers (table-action rows in DataPanelModal, etc.) are
+  // happy with the new height; the wider hit area only helps.
+  sm: 'h-11 px-4 text-[13px]',
   md: 'h-11 px-5 text-[14px]',
   lg: 'h-14 px-6 text-[15px]',
+  xl: 'h-[50px] px-6 text-[15px]',
 };
 
 const shapeClasses: Record<Shape, string> = {

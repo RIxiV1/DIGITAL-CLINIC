@@ -9,6 +9,7 @@ import {
   Lock,
   Sparkles,
 } from 'lucide-react';
+import Button from '../../components/Button';
 import { fadeUp, stagger } from './shared';
 
 export default function Hero({
@@ -62,20 +63,24 @@ export default function Hero({
               variants={fadeUp}
               className="mt-6 flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-3"
             >
-              <button
+              {/* Primary CTA — uses the shared Button atom (size="xl"
+                  is the 50px hero height; shape="pill" matches the
+                  landing's rounded-full vocabulary). Was previously a
+                  hand-rolled <button> with style={{ height: 50 }} that
+                  bypassed the design system entirely. */}
+              <Button
+                size="xl"
+                shape="pill"
+                variant="primary"
                 onClick={onStart}
-                style={{ height: 50 }}
-                className="group inline-flex items-center justify-center gap-2 px-6 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-[15px] font-semibold shadow-blue transition-all hover:-translate-y-0.5 w-full sm:w-auto"
+                trailing={<ArrowRight size={16} />}
+                className="w-full sm:w-auto shadow-blue"
               >
                 Find out in 3 minutes
-                <ArrowRight
-                  size={16}
-                  className="transition-transform group-hover:translate-x-0.5"
-                />
-              </button>
+              </Button>
               <button
                 onClick={onSample}
-                className="inline-flex items-center justify-center gap-1.5 px-1 sm:px-2 text-[14px] font-semibold text-ink-soft hover:text-blue-700 transition-colors"
+                className="inline-flex items-center justify-center gap-1.5 px-1 sm:px-2 h-11 text-[14px] font-semibold text-ink-soft hover:text-blue-700 transition-colors"
               >
                 See a sample report
                 <ChevronRight size={14} />

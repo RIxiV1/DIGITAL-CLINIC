@@ -68,12 +68,14 @@ export default function Header({
       ? 'max-w-md md:max-w-3xl lg:max-w-5xl xl:max-w-6xl'
       : 'max-w-md';
 
-  // Solid bg-canvas (no backdrop-blur). The previous bg-canvas/85
-  // backdrop-blur-md forced the browser to repaint the entire header
-  // region on every scroll frame, which manifested as visible scroll
-  // lag on mid-tier devices. The visual difference between blurred-
-  // glass and solid is negligible since the header sits on the canvas
-  // (light gray) background anyway.
+  // Translucent canvas (bg-canvas/80) + backdrop-blur-md so content
+  // below the sticky header visibly fades behind it instead of being
+  // clipped by a hard edge. We previously tried solid bg-canvas to
+  // dodge a scroll-repaint cost on low-end Android, but the visual
+  // tradeoff was too stark — the blurred-glass treatment is back,
+  // and the comment that lived here ("solid bg-canvas, no
+  // backdrop-blur") has been removed because it contradicted the
+  // actual className it sat above.
   return (
     <header className="sticky top-0 z-30 bg-canvas/80 backdrop-blur-md border-b border-line/70 no-print">
       <div
