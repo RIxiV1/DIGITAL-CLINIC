@@ -371,7 +371,8 @@ export default function QuizPage() {
               ) : (
                 <div className="mt-6">
                   <PillOptions
-                    options={step.options ?? []}
+                    options={step.options}
+                    groups={step.optionGroups}
                     isSelected={(id) =>
                       !!step.field && isSelectedFor(id, step.field)
                     }
@@ -683,51 +684,86 @@ function PersonalizingOverlay({ onDone }: { onDone: () => void }) {
 // breakpoint reasoning at all. Long labels stay readable, short
 // labels pack two per row on a phone, three+ on tablet+. No more
 // 370px landmark.
+//
+// Pill rendering supports either a flat `options` list (the existing
+// shape — priorities, sub-step options) or a grouped `groups` list
+// (new — symptoms, where the 11-pill wall needed chunking for
+// Miller's-Law sanity). When grouped, each cluster renders under an
+// optional uppercase label using the same `text-micro` / `tracking-
+// label` tokens the rest of the codebase uses for ornamental
+// section headers. A group with no label renders bare — used for
+// the standalone "Nothing specific" opt-out below the four thematic
+// clusters.
 function PillOptions({
   options,
+  groups,
   isSelected,
   toggle,
   multi,
 }: {
-  options: { id: string; label: string }[];
+  options?: { id: string; label: string }[];
+  groups?: Array<{
+    label?: string;
+    options: { id: string; label: string }[];
+  }>;
   isSelected: (id: string) => boolean;
   toggle: (id: string) => void;
   multi: boolean;
 }) {
-  return (
-    <div className="flex flex-wrap gap-2.5">
-      {options.map((opt) => {
-        const selected = isSelected(opt.id);
-        return (
-          <motion.button
-            key={opt.id}
-            type="button"
-            aria-pressed={multi ? selected : undefined}
-            whileTap={{ scale: 0.95 }}
-            whileHover={{ y: -1.5, scale: 1.01 }}
-            transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-            onClick={() => toggle(opt.id)}
-            className={`relative inline-flex items-center justify-center gap-2 min-h-12 h-auto py-2.5 px-4 rounded-full font-semibold text-caption border transition-all text-center ${
+  const renderPill = (opt: { id: string; label: string }) => {
+    const selected = isSelected(opt.id);
+    return (
+      <motion.button
+        key={opt.id}
+        type="button"
+        aria-pressed={multi ? selected : undefined}
+        whileTap={{ scale: 0.95 }}
+        whileHover={{ y: -1.5, scale: 1.01 }}
+        transition={{ type: 'spring', stiffness: 500, damping: 25 }}
+        onClick={() => toggle(opt.id)}
+        className={`relative inline-flex items-center justify-center gap-2 min-h-12 h-auto py-2.5 px-4 rounded-full font-semibold text-caption border transition-all text-center ${
+          selected
+            ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
+            : 'bg-surface border-line text-ink-soft hover:border-indigo-300 hover:text-indigo-700 shadow-soft'
+        }`}
+      >
+        {multi && (
+          <span
+            className={`grid place-items-center w-5 h-5 rounded-full ${
               selected
-                ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
-                : 'bg-surface border-line text-ink-soft hover:border-indigo-300 hover:text-indigo-700 shadow-soft'
+                ? 'bg-gold-500 text-indigo-900'
+                : 'bg-canvas border border-line-strong text-transparent'
             }`}
           >
-            {multi && (
-              <span
-                className={`grid place-items-center w-5 h-5 rounded-full ${
-                  selected
-                    ? 'bg-gold-500 text-indigo-900'
-                    : 'bg-canvas border border-line-strong text-transparent'
-                }`}
-              >
-                <Check size={12} strokeWidth={3} />
-              </span>
+            <Check size={12} strokeWidth={3} />
+          </span>
+        )}
+        {opt.label}
+      </motion.button>
+    );
+  };
+
+  if (groups) {
+    return (
+      <div className="space-y-5">
+        {groups.map((g, i) => (
+          <div key={g.label ?? `_ungrouped_${i}`}>
+            {g.label && (
+              <div className="text-micro uppercase tracking-label font-bold text-muted mb-2.5">
+                {g.label}
+              </div>
             )}
-            {opt.label}
-          </motion.button>
-        );
-      })}
+            <div className="flex flex-wrap gap-2.5">
+              {g.options.map(renderPill)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-wrap gap-2.5">
+      {(options ?? []).map(renderPill)}
     </div>
   );
 }
