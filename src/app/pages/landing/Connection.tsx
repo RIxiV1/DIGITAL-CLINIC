@@ -79,14 +79,14 @@ export default function ConnectionSection({
           />
         </Reveal>
 
-        <div className="mt-12 md:mt-16 grid lg:grid-cols-12 gap-10 lg:gap-14 items-start">
-          <div className="lg:col-span-7">
+        <div className="mt-12 md:mt-16 grid md:grid-cols-12 gap-10 md:gap-14 items-start">
+          <div className="md:col-span-7">
             <Reveal>
               <ConnectionDiagram />
             </Reveal>
           </div>
 
-          <div className="lg:col-span-5 lg:sticky lg:top-24">
+          <div className="md:col-span-5 md:sticky lg:top-24">
             <Reveal delay={0.1}>
               <div className="rounded-2xl bg-white border border-line shadow-clinical p-6 md:p-7">
                 <div className="inline-flex items-center gap-2 text-caption font-bold uppercase tracking-[0.16em] text-blue-700">

@@ -25,16 +25,16 @@ export default function WhatYoullGet() {
           />
         </Reveal>
 
-        <div className="mt-10 md:mt-14 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+        <div className="mt-10 md:mt-14 grid md:grid-cols-12 gap-8 md:gap-12 items-center">
           {/* LEFT — Doctor Summary mockup */}
-          <div className="lg:col-span-7 order-2 lg:order-1">
+          <div className="md:col-span-7 order-2 md:order-1">
             <Reveal>
               <DoctorSummaryMockup />
             </Reveal>
           </div>
 
           {/* RIGHT — Checklist */}
-          <div className="lg:col-span-5 order-1 lg:order-2">
+          <div className="md:col-span-5 order-1 md:order-2">
             <Reveal>
               <div className="grid gap-3">
                 {[

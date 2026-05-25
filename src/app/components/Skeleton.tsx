@@ -55,8 +55,8 @@ export function PageSkeleton({
     return (
       <div className="min-h-dvh bg-white">
         <ChromeSkeleton tone="landing" />
-        <div className="mx-auto w-full max-w-6xl px-5 md:px-8 pt-14 md:pt-20 grid lg:grid-cols-12 gap-10 items-start">
-          <div className="lg:col-span-6 space-y-5">
+        <div className="mx-auto w-full max-w-6xl px-5 md:px-8 pt-14 md:pt-20 grid md:grid-cols-12 gap-10 items-start">
+          <div className="md:col-span-6 space-y-5">
             <Skeleton className="w-40 h-7 rounded-full" />
             <Skeleton className="w-full h-12" />
             <Skeleton className="w-5/6 h-12" />
@@ -66,7 +66,7 @@ export function PageSkeleton({
               <Skeleton className="w-40 h-12 rounded-full" />
             </div>
           </div>
-          <div className="lg:col-span-6">
+          <div className="md:col-span-6">
             <Skeleton className="w-full aspect-square max-w-[480px] rounded-2xl" />
           </div>
         </div>

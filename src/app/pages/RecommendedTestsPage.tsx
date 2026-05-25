@@ -66,11 +66,11 @@ export default function RecommendedTestsPage() {
   };
 
   return (
-    <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
       <Header variant="page" title="Your recommended tests" />
 
-      <Container size="wide" className="pt-5 lg:pt-10">
-        <div className="lg:max-w-3xl lg:mx-auto">
+      <Container size="wide" className="pt-5 md:pt-10">
+        <div className="lg:max-w-3xl md:mx-auto">
           <Pill tone="gold" size="md">
             <Sparkles size={11} />
             Personalised for you
@@ -316,7 +316,7 @@ export default function RecommendedTestsPage() {
 
       {/* Secondary action — go to dashboard. Less prominent now that
           the two "next" cards above carry the primary intent. */}
-      <Container size="wide" className="mt-5 lg:mt-6">
+      <Container size="wide" className="mt-5 md:mt-6">
         <div className="lg:max-w-3xl">
           <Button
             size="md"

@@ -212,7 +212,7 @@ export default function HomePage() {
     attentionMarkers.length > 0 || trendsByPathway.length > 0;
 
   return (
-    <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
       <Header variant="home" />
 
       {/* Storage-quota warning. Set by ReportsContext when localStorage
@@ -254,7 +254,7 @@ export default function HomePage() {
       )}
 
       {/* ZONE 1 · Dynamic headline (with embedded health ring) */}
-      <Container size="wide" className="pt-5 lg:pt-8 relative">
+      <Container size="wide" className="pt-5 md:pt-8 relative">
         <DashboardHeadline
           markers={ready ? biomarkers : null}
           hasReport={!!ready}
@@ -265,7 +265,7 @@ export default function HomePage() {
       {/* ZONE 2 · Search + filter. Only renders when there's a report to
           filter — pre-upload the user has nothing to look through. */}
       {ready && biomarkers.length > 0 && (
-        <Container size="wide" className="mt-6 lg:mt-8">
+        <Container size="wide" className="mt-6 md:mt-8">
           <div className="rounded-[18px] bg-surface border border-line/70 shadow-soft p-3 sm:p-4">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
@@ -368,13 +368,13 @@ export default function HomePage() {
 
       {/* BENTO ROW · Attention markers (left) + Trends (right) on lg+ */}
       {hasAnyContent && (
-        <Container size="wide" className="mt-6 lg:mt-8">
-          <div className="grid lg:grid-cols-12 gap-4 lg:gap-5">
+        <Container size="wide" className="mt-6 md:mt-8">
+          <div className="grid md:grid-cols-12 gap-4 md:gap-5">
             {/* Attention block — col-span-7 on lg, full width otherwise */}
             {attentionMarkers.length > 0 && (
               <section
                 className={`${
-                  trendsByPathway.length > 0 ? 'lg:col-span-7' : 'lg:col-span-12'
+                  trendsByPathway.length > 0 ? 'md:col-span-7' : 'md:col-span-12'
                 }`}
               >
                 <SectionHeading
@@ -407,7 +407,7 @@ export default function HomePage() {
             {trendsByPathway.length > 0 && (
               <section
                 className={`${
-                  attentionMarkers.length > 0 ? 'lg:col-span-5' : 'lg:col-span-12'
+                  attentionMarkers.length > 0 ? 'md:col-span-5' : 'md:col-span-12'
                 }`}
               >
                 <SectionHeading
@@ -500,7 +500,7 @@ export default function HomePage() {
           edge case (otherwise that user sees just headline + a
           shimmering locker card and a sea of grey). */}
       {!ready && reports.every((r) => r.status !== 'ready') && (
-        <Container size="wide" className="mt-6 lg:mt-8">
+        <Container size="wide" className="mt-6 md:mt-8">
           <Pill tone="indigo" size="sm">
             What you’ll see
           </Pill>
@@ -547,7 +547,7 @@ export default function HomePage() {
       )}
 
       {/* ZONE 4 · Your locker */}
-      <Container size="wide" className="mt-6 lg:mt-8">
+      <Container size="wide" className="mt-6 md:mt-8">
         <SectionHeading
           eyebrow="Your locker"
           title="All your reports, one place"
@@ -627,9 +627,9 @@ export default function HomePage() {
           </div>
         )}
 
-        <div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+        <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
           {reports.length === 0 ? (
-            <Card className="text-center !py-10 sm:col-span-2 lg:col-span-3">
+            <Card className="text-center !py-10 sm:col-span-2 md:col-span-3">
               <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 mb-3">
                 <FileText size={20} />
               </div>
@@ -656,7 +656,7 @@ export default function HomePage() {
               </div>
             </Card>
           ) : displayedReports.length === 0 ? (
-            <Card className="text-center !py-8 sm:col-span-2 lg:col-span-3">
+            <Card className="text-center !py-8 sm:col-span-2 md:col-span-3">
               <div className="text-meta text-ink-soft">
                 No reports match <span className="font-semibold text-ink">"{lockerQuery}"</span>.
               </div>

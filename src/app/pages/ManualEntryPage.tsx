@@ -161,8 +161,8 @@ export default function ManualEntryPage() {
     <div className="min-h-dvh pb-32 bg-canvas">
       <Header variant="page" title="Enter values manually" />
 
-      <Container size="wide" className="pt-5 lg:pt-8">
-        <div className="lg:max-w-3xl lg:mx-auto">
+      <Container size="wide" className="pt-5 md:pt-8">
+        <div className="lg:max-w-3xl md:mx-auto">
           <Pill tone="indigo" size="sm">
             <Pencil size={11} /> Manual entry
           </Pill>
@@ -195,7 +195,7 @@ export default function ManualEntryPage() {
           </div>
         </div>
 
-        <div className="mt-6 lg:max-w-3xl lg:mx-auto grid gap-4">
+        <div className="mt-6 lg:max-w-3xl md:mx-auto grid gap-4">
           {grouped.map(({ category, templates }) => {
             const isOpen = expanded.has(category.id);
             const filledInCategory = templates.filter(

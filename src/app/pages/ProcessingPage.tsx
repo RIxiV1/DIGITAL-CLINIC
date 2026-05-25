@@ -702,9 +702,9 @@ function ConfirmExtractedValuesView({
         <Logo />
       </Container>
 
-      <Container size="wide" className="mt-6 lg:mt-10">
+      <Container size="wide" className="mt-6 md:mt-10">
         {/* ---- Hero ---- */}
-        <div className="lg:max-w-3xl lg:mx-auto">
+        <div className="lg:max-w-3xl md:mx-auto">
           <Pill tone="gold" size="sm">
             <Check size={11} strokeWidth={3} /> Extraction complete
           </Pill>
@@ -753,7 +753,7 @@ function ConfirmExtractedValuesView({
           </div>
         </div>
 
-        <div className="mt-6 lg:max-w-3xl lg:mx-auto grid gap-4">
+        <div className="mt-6 lg:max-w-3xl md:mx-auto grid gap-4">
           {/* OCR skip banner — surfaces when Tesseract couldn't finish
               one or more pages (timeout or render failure). Without
               this, a partial result on a multi-page report looks

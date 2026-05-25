@@ -121,7 +121,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   }
 
   return (
-    <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
       <Header
         variant="page"
         title={report.name}
@@ -139,7 +139,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
       />
 
       {/* The Bottom Line — full-width hero */}
-      <Container size="wide" className="pt-5 lg:pt-8">
+      <Container size="wide" className="pt-5 md:pt-8">
         <motion.div
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
@@ -150,9 +150,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             className="!bg-gold-500 border-gold-500 text-indigo-900 relative overflow-hidden !p-6 lg:!p-8"
           >
             <div className="absolute -top-8 -right-8 w-40 h-40 lg:w-56 lg:h-56 rounded-full bg-gold-400/40 blur-2xl pointer-events-none" />
-            <div className="relative grid lg:grid-cols-3 gap-6 lg:gap-10 items-start">
+            <div className="relative grid md:grid-cols-3 gap-6 md:gap-10 items-start">
               {/* Left: pill + line */}
-              <div className="lg:col-span-2">
+              <div className="md:col-span-2">
                 <div className="flex items-center gap-2">
                   <Pill tone="dark" size="sm">
                     <Sparkles size={10} /> The Bottom Line
@@ -185,7 +185,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               </div>
 
               {/* Right: status tiles */}
-              <div className="grid grid-cols-3 gap-2 lg:gap-2.5">
+              <div className="grid grid-cols-3 gap-2 md:gap-2.5">
                 <BottomLineTile
                   count={summary.good}
                   label="On track"
@@ -208,12 +208,12 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
       </Container>
 
       {/* Body: 2-col on lg — left biomarkers, right sticky filters + deep dives */}
-      <Container size="wide" className="mt-6 lg:mt-10">
-        <div className="grid lg:grid-cols-12 gap-6 lg:gap-8">
+      <Container size="wide" className="mt-6 md:mt-10">
+        <div className="grid md:grid-cols-12 gap-6 md:gap-8">
           {/* LEFT — Biomarker groups */}
-          <main className="lg:col-span-8">
+          <main className="md:col-span-8">
             {/* Mobile/tablet filters (lg uses sidebar) */}
-            <div className="lg:hidden no-print">
+            <div className="md:hidden no-print">
               <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
                 <div className="flex gap-2 w-max">
                   {(
@@ -265,7 +265,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             </div>
 
             {groups.length === 0 ? (
-              <Card className="text-center !py-10 mt-4 lg:mt-0">
+              <Card className="text-center !py-10 mt-4 md:mt-0">
                 <div className="font-display text-h4">
                   Nothing in that bucket.
                 </div>
@@ -274,7 +274,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 </p>
               </Card>
             ) : (
-              <div className="grid gap-4 mt-4 lg:mt-0">
+              <div className="grid gap-4 mt-4 md:mt-0">
                 {groups.map(({ category, markers }) => (
                   <motion.div
                     key={category.id}
@@ -350,7 +350,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           </main>
 
           {/* RIGHT — Sticky sidebar (filters + deep dives) */}
-          <aside className="hidden lg:block lg:col-span-4 no-print">
+          <aside className="hidden md:block md:col-span-4 no-print">
             <div className="sticky top-24 grid gap-5">
               <Card padded={false} className="overflow-hidden">
                 <div className="px-5 pt-5 pb-3 border-b border-line">
@@ -464,7 +464,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
         {/* Mobile-only suggested deep dives (sidebar handles lg+) */}
         {deepDives.length > 0 && (
-          <div className="lg:hidden mt-8 no-print">
+          <div className="md:hidden mt-8 no-print">
             <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
               Suggested deep dives
             </div>

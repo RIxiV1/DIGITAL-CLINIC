@@ -100,10 +100,10 @@ export default function DashboardHeadline({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-[24px] text-white p-6 lg:p-8 shadow-pop"
+      className="relative overflow-hidden rounded-[24px] text-white p-6 md:p-8 shadow-pop"
       style={{ background: gradient }}
     >
-      <div className="relative grid lg:grid-cols-[1fr_auto] gap-5 lg:gap-8 lg:items-center">
+      <div className="relative grid md:grid-cols-[1fr_auto] gap-5 md:gap-8 md:items-center">
         <div>
           <div className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.18em] font-bold text-indigo-100">
             <Sparkles size={11} />
@@ -128,7 +128,7 @@ export default function DashboardHeadline({
         </div>
 
         {summary && (
-          <div className="flex justify-center lg:justify-end">
+          <div className="flex justify-center md:justify-end">
             <HealthRing
               good={summary.good}
               attention={summary.attention}

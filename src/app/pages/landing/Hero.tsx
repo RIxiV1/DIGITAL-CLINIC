@@ -27,17 +27,17 @@ export default function Hero({
   return (
     <section className="relative bg-white overflow-hidden">
       {/* Left blue accent bar */}
-      <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 hidden lg:block" />
+      <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 hidden md:block" />
 
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8 pt-10 sm:pt-14 md:pt-20 pb-14 md:pb-20">
         <motion.div
           variants={stagger}
           initial="hidden"
           animate="show"
-          className="grid lg:grid-cols-12 gap-8 md:gap-12 items-end"
+          className="grid md:grid-cols-12 gap-8 md:gap-12 items-end"
         >
           {/* LEFT — Headline + CTAs */}
-          <div className="lg:col-span-6">
+          <div className="md:col-span-6">
             <motion.div variants={fadeUp}>
               <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white border border-blue-100 text-caption font-semibold uppercase tracking-[0.12em] text-blue-700 shadow-clinical">
                 <span className="relative grid place-items-center w-3.5 h-3.5">
@@ -126,7 +126,7 @@ export default function Hero({
           </div>
 
           {/* RIGHT — Connection visual preview */}
-          <motion.div variants={fadeUp} className="lg:col-span-6">
+          <motion.div variants={fadeUp} className="md:col-span-6">
             <HeroVisual />
           </motion.div>
         </motion.div>
@@ -162,7 +162,7 @@ function HeroVisual() {
   };
 
   return (
-    <div className="relative w-full max-w-[560px] mx-auto lg:mx-0 lg:ml-auto lg:-mb-20">
+    <div className="relative w-full max-w-[560px] mx-auto md:mx-0 md:ml-auto lg:-mb-20">
       {/* Founders / clinicians photo — WebP only (60 KB, universally
           supported in modern browsers). The PNG fallback got removed
           to keep /public lean. */}

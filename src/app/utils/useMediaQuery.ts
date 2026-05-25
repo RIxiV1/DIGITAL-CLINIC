@@ -30,7 +30,13 @@ export function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-/** Tailwind's `lg` breakpoint — matches CSS `min-width: 1024px`. */
-export function useIsLgUp(): boolean {
-  return useMediaQuery('(min-width: 1024px)');
+/** Tailwind's `md` breakpoint — matches CSS `min-width: 768px`.
+ *
+ *  Was `useIsLgUp` (1024px). Bumping the gate down to `md` means iPad
+ *  portrait (768px viewport) gets the desktop shell immediately
+ *  instead of falling through to the mobile layout it doesn't need.
+ *  The name change is deliberate: leaving "Lg" in the identifier
+ *  while the underlying breakpoint moved would be a maintenance trap. */
+export function useIsMdUp(): boolean {
+  return useMediaQuery('(min-width: 768px)');
 }

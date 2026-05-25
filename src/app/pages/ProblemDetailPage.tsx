@@ -60,14 +60,14 @@ export default function ProblemDetailPage({
   );
 
   return (
-    <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
       <Header variant="page" title="Deep dive" subtitle={p.title} />
 
       {/* Hero. "Personalised for you" pill removed — this is a generic
           deep-dive article (same copy for every visitor with the same
           condition), not personalised content. The pill belonged on
           RecommendedTestsPage where the page is genuinely per-quiz. */}
-      <Container size="wide" className="pt-5 lg:pt-10">
+      <Container size="wide" className="pt-5 md:pt-10">
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -77,7 +77,7 @@ export default function ProblemDetailPage({
           <h1 className="font-display text-h2-lg lg:text-display leading-tight mt-3 text-balance">
             {p.title}
           </h1>
-          <p className="mt-3 lg:mt-4 text-ui lg:text-lead text-ink leading-relaxed text-pretty">
+          <p className="mt-3 md:mt-4 text-ui lg:text-lead text-ink leading-relaxed text-pretty">
             {p.summary}
           </p>
         </motion.div>
@@ -143,7 +143,7 @@ export default function ProblemDetailPage({
       </Container>
 
       {/* Action plan */}
-      <Container size="wide" className="mt-7 lg:mt-10">
+      <Container size="wide" className="mt-7 md:mt-10">
         <div className="lg:max-w-3xl">
           <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
             Your action plan
@@ -197,7 +197,7 @@ export default function ProblemDetailPage({
         </Card>
       </Container>
 
-      <Container size="wide" className="mt-6 lg:mt-8 lg:pb-12">
+      <Container size="wide" className="mt-6 md:mt-8 md:pb-12">
         <div className="lg:max-w-3xl">
           <Button
             size="lg"

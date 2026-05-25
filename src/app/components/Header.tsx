@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import Logo from './Logo';
 import { useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
-import { useIsLgUp } from '../utils/useMediaQuery';
+import { useIsMdUp } from '../utils/useMediaQuery';
 
 type Props = {
   variant?: 'home' | 'page';
@@ -58,14 +58,17 @@ export default function Header({
   const { back, navigate, page } = useNavigation();
   const handleBack = onBack ?? back;
   const active = activeNavId(page);
-  // Only one shell renders at a time — the previous `flex lg:hidden`
-  // / `hidden lg:flex` pattern mounted both DOM trees and paid the
+  // Only one shell renders at a time — the previous `flex md:hidden`
+  // / `hidden md:flex` pattern mounted both DOM trees and paid the
   // event-listener + framer-motion cost for the invisible one.
-  const isLgUp = useIsLgUp();
+  const isMdUp = useIsMdUp();
 
   const widthCls =
     size === 'wide'
-      ? 'max-w-md md:max-w-3xl lg:max-w-5xl xl:max-w-6xl'
+      // Container max-width ramp pulled one tier earlier — same shift
+      // applied to components/Container.tsx so layout stays coherent
+      // across the page. iPad portrait now reads as desktop.
+      ? 'max-w-md sm:max-w-3xl md:max-w-5xl lg:max-w-6xl'
       : 'max-w-md';
 
   // Translucent canvas (bg-canvas/80) + backdrop-blur-md so content
@@ -79,10 +82,10 @@ export default function Header({
   return (
     <header className="sticky top-0 z-30 bg-canvas/80 backdrop-blur-md border-b border-line/70 no-print">
       <div
-        className={`mx-auto w-full ${widthCls} px-4 sm:px-6 lg:px-8 h-14 lg:h-16 flex items-center gap-2`}
+        className={`mx-auto w-full ${widthCls} px-4 sm:px-6 md:px-8 h-14 md:h-16 flex items-center gap-2`}
       >
         {/* ---------- Mobile / tablet shell ---------- */}
-        {!isLgUp && (
+        {!isMdUp && (
         <div className="flex items-center gap-2 w-full">
           {variant === 'home' ? (
             <button
@@ -126,7 +129,7 @@ export default function Header({
         )}
 
         {/* ---------- Desktop shell ---------- */}
-        {isLgUp && (
+        {isMdUp && (
         <div className="flex items-center gap-8 w-full">
           <button
             onClick={() => navigate({ type: 'landing' })}

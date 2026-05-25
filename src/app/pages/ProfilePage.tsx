@@ -47,15 +47,15 @@ export default function ProfilePage() {
     : 'Not set';
 
   return (
-    <div className="min-h-dvh pb-28 lg:pb-12 bg-canvas">
+    <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
       <Header
         variant="page"
         title="Profile"
         subtitle="Account & preferences"
       />
 
-      <Container size="wide" className="pt-5 lg:pt-10">
-        <div className="hidden lg:block mb-7">
+      <Container size="wide" className="pt-5 md:pt-10">
+        <div className="hidden md:block mb-7">
           <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
             Profile
           </div>
@@ -64,9 +64,9 @@ export default function ProfilePage() {
           </h1>
         </div>
 
-        <div className="grid lg:grid-cols-12 gap-6 lg:gap-8">
+        <div className="grid md:grid-cols-12 gap-6 md:gap-8">
           {/* LEFT: Identity + Priorities */}
-          <div className="lg:col-span-5 grid gap-5">
+          <div className="md:col-span-5 grid gap-5">
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -174,7 +174,7 @@ export default function ProfilePage() {
           </div>
 
           {/* RIGHT: Settings + sign out */}
-          <div className="lg:col-span-7 grid gap-5">
+          <div className="md:col-span-7 grid gap-5">
             <section>
               <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
                 Settings
@@ -256,12 +256,12 @@ export default function ProfilePage() {
               responsiveFullWidth
               leading={<LogOut size={16} />}
               onClick={handleSignOut}
-              className="lg:self-start"
+              className="md:self-start"
             >
               Sign out
             </Button>
 
-            <p className="text-center lg:text-left text-caption text-muted">
+            <p className="text-center md:text-left text-caption text-muted">
               Digital Clinic · v0.1.0
             </p>
           </div>
