@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   CalendarClock,
   CheckCircle2,
+  ChevronDown,
   Info,
   Lightbulb,
 } from 'lucide-react';
@@ -37,6 +38,27 @@ export default function ProblemDetailPage({
   const sourceMarkers = useMemo(() => {
     return getLatestReadyReport(reports)?.biomarkers ?? sampleBiomarkers;
   }, [reports]);
+
+  /** Section disclosure. Most users land here from a flagged marker
+   *  card on the dashboard — they came for the action plan (which
+   *  stays always-visible below the hero) and might want to drill
+   *  into the reference content (What / Why / Numbers / Retest). Each
+   *  starts collapsed; the header is the toggle. Previously every
+   *  section rendered open: a hero + 4 reading cards + the action-plan
+   *  grid + the retest card, all stacked vertically, all eager. */
+  type SectionId = 'numbers' | 'what' | 'why' | 'retest';
+  const [expandedSections, setExpandedSections] = useState<Set<SectionId>>(
+    () => new Set(),
+  );
+  const toggleSection = (id: SectionId) => {
+    setExpandedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const isOpen = (id: SectionId) => expandedSections.has(id);
 
   if (!p) {
     return (
@@ -83,62 +105,113 @@ export default function ProblemDetailPage({
         </motion.div>
       </Container>
 
-      {/* Related markers visualisation */}
+      {/* Related markers visualisation — collapsed by default. The hero
+          + action plan carry the user's primary intent (what to do);
+          the numbers context is one tap away. */}
       {related.length > 0 && (
         <Container size="wide" className="mt-6">
           <Card padded={false} className="lg:max-w-3xl">
-            <div className="px-5 pt-5 pb-3 border-b border-line">
-              <div className="text-micro uppercase tracking-label font-bold text-indigo-700">
-                Your numbers
+            <button
+              type="button"
+              onClick={() => toggleSection('numbers')}
+              aria-expanded={isOpen('numbers')}
+              aria-controls="problem-section-numbers"
+              className="w-full px-5 pt-5 pb-4 flex items-start gap-3 text-left hover:bg-canvas/40 transition-colors"
+            >
+              <div className="flex-1">
+                <div className="text-micro uppercase tracking-label font-bold text-indigo-700">
+                  Your numbers
+                </div>
+                <div className="font-display text-body-lg mt-1">
+                  What this looks like in your latest report
+                </div>
               </div>
-              <div className="font-display text-body-lg mt-1">
-                What this looks like in your latest report
+              <ChevronDown
+                size={18}
+                className={`text-muted shrink-0 transition-transform duration-200 ${
+                  isOpen('numbers') ? 'rotate-180' : ''
+                }`}
+                aria-hidden
+              />
+            </button>
+            {isOpen('numbers') && (
+              <div
+                id="problem-section-numbers"
+                className="divide-y divide-line/70 border-t border-line"
+              >
+                {related.map((m) => (
+                  <BiomarkerBar key={m.id} marker={m} compact />
+                ))}
               </div>
-            </div>
-            <div className="divide-y divide-line/70">
-              {related.map((m) => (
-                <BiomarkerBar key={m.id} marker={m} compact />
-              ))}
-            </div>
+            )}
           </Card>
         </Container>
       )}
 
-      {/* What this means */}
+      {/* What this means — collapsed by default. Reference content; the
+          user can open if they want context on the problem itself. */}
       <Container size="wide" className="mt-6">
-        <Card className="lg:max-w-3xl">
-          <div className="flex items-start gap-3">
+        <Card padded={false} className="lg:max-w-3xl">
+          <button
+            type="button"
+            onClick={() => toggleSection('what')}
+            aria-expanded={isOpen('what')}
+            aria-controls="problem-section-what"
+            className="w-full p-5 flex items-center gap-3 text-left hover:bg-canvas/40 transition-colors"
+          >
             <div className="grid place-items-center w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 shrink-0">
               <Info size={18} />
             </div>
-            <div>
-              <div className="font-display text-body-lg">
-                What does this actually mean?
-              </div>
-              <p className="text-body-sm text-ink leading-relaxed mt-2">
-                {p.what}
-              </p>
+            <div className="flex-1 font-display text-body-lg">
+              What does this actually mean?
             </div>
-          </div>
+            <ChevronDown
+              size={18}
+              className={`text-muted shrink-0 transition-transform duration-200 ${
+                isOpen('what') ? 'rotate-180' : ''
+              }`}
+              aria-hidden
+            />
+          </button>
+          {isOpen('what') && (
+            <div id="problem-section-what" className="px-5 pb-5 -mt-1">
+              <p className="text-body-sm text-ink leading-relaxed">{p.what}</p>
+            </div>
+          )}
         </Card>
       </Container>
 
-      {/* Why it matters */}
+      {/* Why it matters — collapsed by default. Same shape as What. */}
       <Container size="wide" className="mt-3">
-        <Card className="!bg-gold-50 border-gold-200 lg:max-w-3xl">
-          <div className="flex items-start gap-3">
+        <Card padded={false} className="!bg-gold-50 border-gold-200 lg:max-w-3xl">
+          <button
+            type="button"
+            onClick={() => toggleSection('why')}
+            aria-expanded={isOpen('why')}
+            aria-controls="problem-section-why"
+            className="w-full p-5 flex items-center gap-3 text-left hover:bg-gold-100/50 transition-colors"
+          >
             <div className="grid place-items-center w-10 h-10 rounded-2xl bg-gold-500 text-indigo-900 shrink-0">
               <Lightbulb size={18} />
             </div>
-            <div>
-              <div className="font-display text-body-lg">
-                Why it’s worth your attention
-              </div>
-              <p className="text-body-sm text-ink leading-relaxed mt-2">
+            <div className="flex-1 font-display text-body-lg">
+              Why it’s worth your attention
+            </div>
+            <ChevronDown
+              size={18}
+              className={`text-ink-soft shrink-0 transition-transform duration-200 ${
+                isOpen('why') ? 'rotate-180' : ''
+              }`}
+              aria-hidden
+            />
+          </button>
+          {isOpen('why') && (
+            <div id="problem-section-why" className="px-5 pb-5 -mt-1">
+              <p className="text-body-sm text-ink leading-relaxed">
                 {p.whyMatters}
               </p>
             </div>
-          </div>
+          )}
         </Card>
       </Container>
 
@@ -180,20 +253,41 @@ export default function ProblemDetailPage({
         </div>
       </Container>
 
-      {/* Retest */}
+      {/* Retest — collapsed by default. Cadence info; user opens when
+          they want to schedule the next test. */}
       <Container size="wide" className="mt-6">
-        <Card className="!bg-indigo-600 border-indigo-600 text-white lg:max-w-3xl">
-          <div className="flex items-start gap-3">
+        <Card
+          padded={false}
+          className="!bg-indigo-600 border-indigo-600 text-white lg:max-w-3xl"
+        >
+          <button
+            type="button"
+            onClick={() => toggleSection('retest')}
+            aria-expanded={isOpen('retest')}
+            aria-controls="problem-section-retest"
+            className="w-full p-5 flex items-center gap-3 text-left hover:bg-indigo-700/40 transition-colors"
+          >
             <div className="grid place-items-center w-10 h-10 rounded-2xl bg-indigo-500/40 text-gold-300 shrink-0">
               <CalendarClock size={18} />
             </div>
-            <div>
-              <div className="font-display text-body-lg">When to re-check</div>
-              <p className="text-caption text-indigo-100 mt-1.5 leading-relaxed">
+            <div className="flex-1 font-display text-body-lg">
+              When to re-check
+            </div>
+            <ChevronDown
+              size={18}
+              className={`text-indigo-100 shrink-0 transition-transform duration-200 ${
+                isOpen('retest') ? 'rotate-180' : ''
+              }`}
+              aria-hidden
+            />
+          </button>
+          {isOpen('retest') && (
+            <div id="problem-section-retest" className="px-5 pb-5 -mt-1">
+              <p className="text-caption text-indigo-100 leading-relaxed">
                 {p.retest}
               </p>
             </div>
-          </div>
+          )}
         </Card>
       </Container>
 

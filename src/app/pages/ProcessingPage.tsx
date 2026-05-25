@@ -28,7 +28,6 @@ import {
 } from '../services/api';
 import {
   categories as biomarkerCategories,
-  statusColor,
   type Biomarker,
 } from '../data/biomarkers';
 import { sampleReports } from '../data/reports';
@@ -670,6 +669,31 @@ function ConfirmExtractedValuesView({
     return { concern, attention, good };
   }, [biomarkers]);
 
+  /** Per-category expansion mirrors the ReportResults pattern. Default-
+   *  open: any category with at least one `concern` marker. Everything
+   *  else collapses on first paint so the user can scan category
+   *  headers + the SummaryChips up top to verify "did we get the
+   *  numbers right?" without staring at 30+ MarkerRows. The categories
+   *  carrying flagged values are the only ones that need scrutiny by
+   *  default; the rest are one tap away. */
+  const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(
+    () => {
+      const initial = new Set<string>();
+      for (const m of biomarkers) {
+        if (m.status === 'concern') initial.add(m.category);
+      }
+      return initial;
+    },
+  );
+  const toggleCategory = (id: string) => {
+    setExpandedCategoryIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
   // Group by category in canonical order so the user reads the values
   // in the same sequence as the eventual report. Within each category,
   // sort by severity (concern → attention → good) so the markers that
@@ -781,40 +805,62 @@ function ConfirmExtractedValuesView({
               </Card>
             )}
 
-          {grouped.map(({ category, markers }) => (
-            <Card key={category.id} padded={false} className="overflow-hidden">
-              {/* Tinted category header — icon in a colored badge,
-                  description as a sub-line so users know what each
-                  section covers without needing to expand it. */}
-              <div className="px-5 pt-4 pb-4 flex items-center gap-3 bg-indigo-50/50 border-b border-line/60">
-                <div className="grid place-items-center w-10 h-10 rounded-2xl bg-white border border-line/60 shadow-soft shrink-0">
-                  <Emoji label={category.name} className="text-body-lg leading-none">
-                    {category.icon}
-                  </Emoji>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-display text-body leading-tight text-ink">
-                    {category.name}
+          {grouped.map(({ category, markers }) => {
+            const open = expandedCategoryIds.has(category.id);
+            return (
+              <Card key={category.id} padded={false} className="overflow-hidden">
+                {/* Tinted category header — clickable to toggle the
+                    marker list. Default-open for categories with any
+                    concern marker; collapsed otherwise. Icon badge +
+                    description stay; existing count Pill + a chevron
+                    on the right. */}
+                <button
+                  type="button"
+                  onClick={() => toggleCategory(category.id)}
+                  aria-expanded={open}
+                  aria-controls={`confirm-category-${category.id}`}
+                  className={`w-full px-5 pt-4 pb-4 flex items-center gap-3 bg-indigo-50/50 text-left hover:bg-indigo-50/70 transition-colors ${
+                    open ? 'border-b border-line/60' : ''
+                  }`}
+                >
+                  <div className="grid place-items-center w-10 h-10 rounded-2xl bg-white border border-line/60 shadow-soft shrink-0">
+                    <Emoji label={category.name} className="text-body-lg leading-none">
+                      {category.icon}
+                    </Emoji>
                   </div>
-                  <div className="text-caption text-muted mt-0.5 truncate">
-                    {category.description}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display text-body leading-tight text-ink">
+                      {category.name}
+                    </div>
+                    <div className="text-caption text-muted mt-0.5 truncate">
+                      {category.description}
+                    </div>
                   </div>
-                </div>
-                <Pill tone="indigo" size="sm" className="shrink-0">
-                  {markers.length} {markers.length === 1 ? 'value' : 'values'}
-                </Pill>
-              </div>
-              <ul>
-                {markers.map((m, i) => (
-                  <MarkerRow
-                    key={m.id}
-                    marker={m}
-                    showTopBorder={i > 0}
+                  <Pill tone="indigo" size="sm" className="shrink-0">
+                    {markers.length} {markers.length === 1 ? 'value' : 'values'}
+                  </Pill>
+                  <ChevronDown
+                    size={18}
+                    className={`text-muted shrink-0 transition-transform duration-200 ${
+                      open ? 'rotate-180' : ''
+                    }`}
+                    aria-hidden
                   />
-                ))}
-              </ul>
-            </Card>
-          ))}
+                </button>
+                {open && (
+                  <ul id={`confirm-category-${category.id}`}>
+                    {markers.map((m, i) => (
+                      <MarkerRow
+                        key={m.id}
+                        marker={m}
+                        showTopBorder={i > 0}
+                      />
+                    ))}
+                  </ul>
+                )}
+              </Card>
+            );
+          })}
 
           {/* "We ignored these sections" notice — appears when the
               upload bundles in-scope panels (CBC, hormones, …) with an
@@ -851,39 +897,49 @@ function ConfirmExtractedValuesView({
             </Card>
           )}
 
-          {/* Unrecognized-rows notice — lab values we detected (label +
-              number + recognized unit) but didn't have in the catalog.
-              This is the difference between "your parser missed things"
-              and "your lab uses markers we don't cover yet". Only shown
-              when there's at least one such row. */}
+          {/* Unrecognized-rows notice — diagnostic / power-user content,
+              not action-driving. A user verifying their values cares
+              about the marker grid above; the rows we couldn't map are
+              informational (the difference between "your parser missed
+              things" and "your lab uses markers we don't cover yet").
+              Wrapped in `<details>` so the row list is collapsed by
+              default — the header still shows the count, the body
+              expands on intent. Mirrors the raw-text disclosure below. */}
           {unrecognizedRows && unrecognizedRows.length > 0 && (
             <Card padded={false} className="overflow-hidden border-amber-200/70">
-              <div className="px-5 pt-4 pb-3 border-b border-amber-100 bg-amber-50/40 flex items-center gap-2">
-                <span aria-hidden role="img" className="text-body leading-none">
-                  🔍
-                </span>
-                <div className="font-display text-body-sm leading-tight">
-                  We saw these rows but couldn’t map them
+              <details className="group">
+                <summary className="cursor-pointer list-none px-5 pt-4 pb-3 bg-amber-50/40 flex items-center gap-2 hover:bg-amber-50/60 transition-colors">
+                  <span aria-hidden role="img" className="text-body leading-none">
+                    🔍
+                  </span>
+                  <div className="font-display text-body-sm leading-tight">
+                    We saw these rows but couldn’t map them
+                  </div>
+                  <Pill tone="neutral" size="sm" className="ml-auto">
+                    {unrecognizedRows.length}
+                  </Pill>
+                  <ChevronDown
+                    size={16}
+                    className="text-muted shrink-0 transition-transform duration-200 group-open:rotate-180"
+                    aria-hidden
+                  />
+                </summary>
+                <div className="px-5 py-3 border-t border-amber-100">
+                  <p className="text-caption text-ink-soft leading-relaxed mb-2">
+                    Your report mentioned these values, but they aren’t in
+                    our catalog yet. Nothing was discarded — they just won’t
+                    appear in the dashboard. If any of these look important
+                    to you, let us know and we’ll add them.
+                  </p>
+                  <ul className="text-caption font-mono text-ink-soft space-y-1">
+                    {unrecognizedRows.map((row, i) => (
+                      <li key={`${row}-${i}`} className="break-words">
+                        · {row}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
-                <Pill tone="neutral" size="sm" className="ml-auto">
-                  {unrecognizedRows.length}
-                </Pill>
-              </div>
-              <div className="px-5 py-3">
-                <p className="text-caption text-ink-soft leading-relaxed mb-2">
-                  Your report mentioned these values, but they aren’t in
-                  our catalog yet. Nothing was discarded — they just won’t
-                  appear in the dashboard. If any of these look important
-                  to you, let us know and we’ll add them.
-                </p>
-                <ul className="text-caption font-mono text-ink-soft space-y-1">
-                  {unrecognizedRows.map((row, i) => (
-                    <li key={`${row}-${i}`} className="break-words">
-                      · {row}
-                    </li>
-                  ))}
-                </ul>
-              </div>
+              </details>
             </Card>
           )}
 
@@ -1002,7 +1058,6 @@ function MarkerRow({
   marker: Biomarker;
   showTopBorder: boolean;
 }) {
-  const c = statusColor(marker.status);
   const isConcern = marker.status === 'concern';
   const isAttention = marker.status === 'attention';
   const accentBg = isConcern
@@ -1019,6 +1074,14 @@ function MarkerRow({
     : isAttention
       ? 'bg-attention-soft/30'
       : '';
+  // The per-row status Pill (UPPERCASE "NEEDS CARE" / "NEEDS ATTENTION")
+  // used to live in the right cluster alongside the value. Dropped:
+  // the SummaryChips in the hero already give the per-status counts
+  // (the verdict the user is verifying), and the accent edge + row
+  // tint already encode the per-marker status visually. Keeping the
+  // pill would mean rendering the same severity dimension three times
+  // (hero chip + edge/tint + pill) on every row — wallpaper that
+  // stops popping. Right column is just `value + unit` now.
   return (
     <li
       className={`relative flex items-stretch ${rowTint} ${showTopBorder ? 'border-t border-line/50' : ''}`}
@@ -1048,20 +1111,13 @@ function MarkerRow({
             <MiniRange marker={marker} />
           </div>
         </div>
-        <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-          <div className="font-display text-body-lg sm:text-display-md leading-none text-ink tabular-nums">
-            {marker.value}
-            {marker.unit && (
-              <span className="text-caption ml-1 text-muted font-sans font-medium">
-                {marker.unit}
-              </span>
-            )}
-          </div>
-          <div
-            className={`inline-flex items-center px-2 h-5 rounded-full text-micro font-bold uppercase tracking-widest ${c.bg} ${c.text}`}
-          >
-            {c.label}
-          </div>
+        <div className="text-right shrink-0 font-display text-body-lg sm:text-display-md leading-none text-ink tabular-nums">
+          {marker.value}
+          {marker.unit && (
+            <span className="text-caption ml-1 text-muted font-sans font-medium">
+              {marker.unit}
+            </span>
+          )}
         </div>
       </div>
     </li>
