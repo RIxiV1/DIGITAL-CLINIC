@@ -704,7 +704,7 @@ function ConfirmExtractedValuesView({
 
       <Container size="wide" className="mt-6 md:mt-10">
         {/* ---- Hero ---- */}
-        <div className="lg:max-w-3xl md:mx-auto">
+        <div className="lg:max-w-3xl lg:mx-auto">
           <Pill tone="gold" size="sm">
             <Check size={11} strokeWidth={3} /> Extraction complete
           </Pill>
@@ -753,7 +753,7 @@ function ConfirmExtractedValuesView({
           </div>
         </div>
 
-        <div className="mt-6 lg:max-w-3xl md:mx-auto grid gap-4">
+        <div className="mt-6 lg:max-w-3xl lg:mx-auto grid gap-4">
           {/* OCR skip banner — surfaces when Tesseract couldn't finish
               one or more pages (timeout or render failure). Without
               this, a partial result on a multi-page report looks
@@ -1024,7 +1024,13 @@ function MarkerRow({
       className={`relative flex items-stretch ${rowTint} ${showTopBorder ? 'border-t border-line/50' : ''}`}
     >
       <div className={`w-1 shrink-0 ${accentBg}`} aria-hidden />
-      <div className="flex-1 min-w-0 px-5 py-4 flex items-start gap-4">
+      {/* Mobile gap is tighter (gap-2) and value font is smaller
+          (text-body-lg = 17px) so the right cluster stops eating
+          ~100px on a 320px iPhone SE — there's now actual room for
+          the marker name + reference + mini range bar without forced
+          word wrap. From sm+ the original 24px value + gap-4 layout
+          returns for the more generous viewport. */}
+      <div className="flex-1 min-w-0 px-4 sm:px-5 py-4 flex items-start gap-2 sm:gap-4">
         <div className="flex-1 min-w-0">
           <div className="text-body-sm font-semibold text-ink leading-tight">
             {marker.name}
@@ -1043,7 +1049,7 @@ function MarkerRow({
           </div>
         </div>
         <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-          <div className="font-display text-display-md leading-none text-ink tabular-nums">
+          <div className="font-display text-body-lg sm:text-display-md leading-none text-ink tabular-nums">
             {marker.value}
             {marker.unit && (
               <span className="text-caption ml-1 text-muted font-sans font-medium">

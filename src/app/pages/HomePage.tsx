@@ -693,44 +693,46 @@ export default function HomePage() {
                       <FileText size={20} />
                     </div>
                     <div className="flex-1 min-w-0">
+                      {/* Title row: just name + trash on the right. The
+                          status badge used to sit here too, but
+                          "Veena_Devi_…" + "ANALYZED" + trash crammed the
+                          name into ~60px on iPhone SE and truncated
+                          report titles to ~5 characters. Status badge
+                          moved to its own row below the metadata so it
+                          gets to breathe and the name gets full width
+                          minus the small trash button. */}
                       <div className="flex items-center justify-between gap-2">
                         <div className="font-semibold text-ink truncate">
                           {r.name}
                         </div>
-                        {/* StatusBadge + trash share one cluster so the
-                            delete affordance never absolute-positions on
-                            top of the badge. On lg+ the trash sits hidden
-                            until hover/focus-within; on mobile it's
-                            persistent (no hover state). */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <StatusBadge status={badgeFor(r)} />
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setReportPendingDelete(r.id);
-                            }}
-                            aria-label={`Delete ${r.name}`}
-                            title="Delete this report"
-                            className="grid place-items-center w-7 h-7 rounded-full text-muted hover:text-concern hover:bg-concern-soft opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-concern/60"
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setReportPendingDelete(r.id);
+                          }}
+                          aria-label={`Delete ${r.name}`}
+                          title="Delete this report"
+                          className="shrink-0 grid place-items-center w-8 h-8 -mr-1 rounded-full text-muted hover:text-concern hover:bg-concern-soft opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-concern/60"
+                        >
+                          <Trash2 size={13} />
+                        </button>
                       </div>
-                      <div className="text-caption text-muted mt-1 flex items-center gap-1.5">
-                        <span className="truncate">
+                      <div className="text-caption text-muted mt-1 flex items-center gap-1.5 min-w-0">
+                        <span className="truncate min-w-0">
                           {r.uploadedOn} · {r.lab}
                         </span>
                         {r.isSample && (
                           /* Demo data — never confuse the user about
                              which numbers are theirs vs the curated
-                             example. Pill stays small so it doesn't
-                             compete with the real report rows. */
+                             example. */
                           <Pill tone="gold" size="sm" className="shrink-0">
                             Sample
                           </Pill>
                         )}
+                      </div>
+                      <div className="mt-2 flex items-center gap-2 flex-wrap">
+                        <StatusBadge status={badgeFor(r)} />
                       </div>
                       {/* Marker count — only on ready reports with values
                           extracted. Lets the user pick "the richer one"

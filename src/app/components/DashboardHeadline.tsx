@@ -128,7 +128,13 @@ export default function DashboardHeadline({
         </div>
 
         {summary && (
-          <div className="flex justify-center md:justify-end">
+          // Ring used to center on mobile while the text block above
+          // (eyebrow / title / sub / CTA) was left-aligned — a
+          // visible "everything else is left, this floating circle is
+          // somehow centered" mismatch. Left-aligning on mobile (and
+          // right-aligning on md+) gives the headline a single
+          // consistent axis at every viewport.
+          <div className="flex justify-start md:justify-end">
             <HealthRing
               good={summary.good}
               attention={summary.attention}

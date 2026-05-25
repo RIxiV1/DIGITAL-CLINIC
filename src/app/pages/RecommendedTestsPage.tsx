@@ -70,7 +70,13 @@ export default function RecommendedTestsPage() {
       <Header variant="page" title="Your recommended tests" />
 
       <Container size="wide" className="pt-5 md:pt-10">
-        <div className="lg:max-w-3xl md:mx-auto">
+        {/* Symmetric — both the cap (lg:max-w-3xl) and the centering
+            (lg:mx-auto) fire at the same breakpoint. The asymmetric
+            `md:mx-auto lg:max-w-3xl` pattern that lived here briefly
+            left iPad portrait centered without a max-width cap, so
+            the content stretched to whatever the wide Container
+            offered. */}
+        <div className="lg:max-w-3xl lg:mx-auto">
           <Pill tone="gold" size="md">
             <Sparkles size={11} />
             Personalised for you
