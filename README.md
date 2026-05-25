@@ -1,17 +1,20 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/activity.svg" alt="Digital Clinic Logo" width="120" />
 
-  # 🏥 Digital Clinic
+<img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/activity.svg" alt="Digital Clinic Logo" width="96" />
 
-  **Medical-Grade Patient Health Dashboard**
+# Digital Clinic
 
-  <br />
+**Medical-grade patient health dashboard.**
+Translate lab reports into plain English, score yourself across hormone / metabolic / vitamin axes, and track trends over time — all client-side, all in your browser.
 
-  [![React](https://img.shields.io/badge/React-18.3-blue?style=flat-square&logo=react)](https://react.dev/)
-  [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
-  [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-  [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
-  [![Vitest](https://img.shields.io/badge/Vitest-4.1-7E9B4E?style=flat-square&logo=vitest)](https://vitest.dev/)
+<p>
+  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React 18.3" /></a>
+  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 6.0" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5.6" /></a>
+  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" /></a>
+  <a href="https://vitest.dev/"><img src="https://img.shields.io/badge/Vitest-4.1-7E9B4E?style=flat-square&logo=vitest&logoColor=white" alt="Vitest 4.1" /></a>
+</p>
+
 </div>
 
 ---
