@@ -171,9 +171,15 @@ export default function MarkerAttentionCard({
           {c.label}
         </div>
 
-        <p className="mt-3 text-caption text-ink-soft leading-relaxed line-clamp-3">
-          {marker.plain}
-        </p>
+        {/* The plain-English explanation paragraph used to live here
+            (three lines of `marker.plain`, line-clamped). It was a
+            second-order signal on a card whose primary job is "act on
+            this": users had to parse a paragraph on each of the 3
+            visible cards before deciding which to click. The Info
+            button in the top-right corner already opens a richer
+            LearnMoreModal for users who want the context — keeping
+            the in-card paragraph was duplicate, eager disclosure.
+            Drop here, surface there. */}
 
         {actionLabel &&
           (onAction ? (

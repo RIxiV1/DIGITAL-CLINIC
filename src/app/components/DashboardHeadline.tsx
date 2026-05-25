@@ -9,7 +9,6 @@ import {
   summarizeStatuses,
   type Biomarker,
 } from '../data/biomarkers';
-import HealthRing from './HealthRing';
 
 type Props = {
   /** Markers from the latest analyzed report, or null/[] if none. */
@@ -91,10 +90,20 @@ export default function DashboardHeadline({
   hasReport,
   onPrimaryCTA,
 }: Props) {
-  const { eyebrow, headline, sub, ctaLabel } = pickCopy(markers, hasReport);
+  const { eyebrow, headline, qualifier, sub, ctaLabel } = pickCopy(
+    markers,
+    hasReport,
+  );
   const gradient = useGradientForTimeOfDay();
-  const summary = markers && markers.length > 0 ? summarizeStatuses(markers) : null;
 
+  // Single-column layout. Earlier versions ran the text content beside
+  // a 160px HealthRing in `md:grid-cols-[1fr_auto]` — the ring was a
+  // visual restatement of the same status counts already in `sub`
+  // (e.g. "4 markers need attention"). Two focal candidates on one
+  // card meant neither dominated; dropping the ring gives the
+  // headline a single read axis and a cleaner figure-to-ground.
+  // Counts still appear, now as a small status-dot strip below the
+  // headline rather than a separate visual element.
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -103,54 +112,58 @@ export default function DashboardHeadline({
       className="relative overflow-hidden rounded-[24px] text-white p-6 md:p-8 shadow-pop"
       style={{ background: gradient }}
     >
-      <div className="relative grid md:grid-cols-[1fr_auto] gap-5 md:gap-8 md:items-center">
-        <div>
-          <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-eyebrow font-bold text-indigo-100">
-            <Sparkles size={11} />
-            {eyebrow}
-          </div>
-          <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.15] text-balance">
-            {headline}
-          </h1>
-          {sub && (
-            <p className="mt-2 text-caption lg:text-body-sm text-indigo-100 leading-relaxed max-w-[60ch]">
-              {sub}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={onPrimaryCTA}
-            className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-caption font-semibold shadow-soft transition-colors whitespace-nowrap"
-          >
-            {ctaLabel}
-            <ArrowRight size={14} />
-          </button>
+      <div className="relative">
+        <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-eyebrow font-bold text-indigo-100">
+          <Sparkles size={11} />
+          {eyebrow}
         </div>
-
-        {summary && (
-          // Ring used to center on mobile while the text block above
-          // (eyebrow / title / sub / CTA) was left-aligned — a
-          // visible "everything else is left, this floating circle is
-          // somehow centered" mismatch. Left-aligning on mobile (and
-          // right-aligning on md+) gives the headline a single
-          // consistent axis at every viewport.
-          <div className="flex justify-start md:justify-end">
-            <HealthRing
-              good={summary.good}
-              attention={summary.attention}
-              concern={summary.concern}
-              size={160}
-              thickness={12}
-              tone="onDark"
-            />
-          </div>
+        <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.15] text-balance">
+          {headline}
+        </h1>
+        {/* qualifier + sub stack as two short lines instead of one
+            paragraph. The previous single `sub` combined the positive
+            qualifier ("Vitamin D is up — that's working.") with the
+            count clause ("4 markers still need attention.") in one
+            string, producing a 40-word two-clause sub that competed
+            with the headline. Splitting puts each clause on its own
+            visual row — both small (caption-sized), both subordinate. */}
+        {qualifier && (
+          <p className="mt-2 text-caption lg:text-body-sm text-indigo-100 leading-relaxed max-w-[60ch]">
+            {qualifier}
+          </p>
         )}
+        {sub && (
+          <p className="mt-1 text-caption lg:text-body-sm text-indigo-100/80 leading-relaxed max-w-[60ch]">
+            {sub}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={onPrimaryCTA}
+          className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-caption font-semibold shadow-soft transition-colors whitespace-nowrap"
+        >
+          {ctaLabel}
+          <ArrowRight size={14} />
+        </button>
       </div>
     </motion.div>
   );
 }
 
-function pickCopy(markers: Biomarker[] | null, hasReport: boolean) {
+/** Two short lines beat one long sentence under a glance-pace
+ *  headline. `qualifier` carries the optional positive-trend clause
+ *  (state A only); `sub` carries the count or tagline. Both render at
+ *  caption size below the display-md headline, so neither competes
+ *  with the headline for focal weight. */
+type Copy = {
+  eyebrow: string;
+  headline: string;
+  qualifier?: string;
+  sub?: string;
+  ctaLabel: string;
+};
+
+function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
   // State C — no reports at all. Voice: warm, specific, matches the
   // landing page's "your X, your Y, your Z" register rather than the
   // flat-clinical "Upload your first report to get your health snapshot"
@@ -203,13 +216,18 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean) {
       // ago. Clinical misrepresentation, not just a copy nit.
       const priorReadingDate =
         newsworthy.history?.[newsworthy.history.length - 1]?.date;
-
+      const countLine = `${summary.concern} marker${summary.concern === 1 ? '' : 's'} still need${summary.concern === 1 ? 's' : ''} attention.`;
       return {
         eyebrow: `Since your last test`,
         headline: `Your ${newsworthy.name} dropped ${formatAbsDelta(newsworthy)} since ${formatRoughDate(priorReadingDate)}.`,
-        sub: positive && positiveDelta
-          ? `${positive.name} is ${positiveDelta.startsWith('-') ? 'down' : 'up'} ${stripSign(positiveDelta)} ${positive.unit} — that's working. ${summary.concern} marker${summary.concern === 1 ? '' : 's'} still need${summary.concern === 1 ? 's' : ''} attention.`
-          : `${summary.concern} marker${summary.concern === 1 ? '' : 's'} still need${summary.concern === 1 ? 's' : ''} attention.`,
+        // Optional positive-trend qualifier on its own line. When
+        // there's no improving marker to call out, this stays
+        // undefined and the count line carries the sub on its own.
+        qualifier:
+          positive && positiveDelta
+            ? `${positive.name} is ${positiveDelta.startsWith('-') ? 'down' : 'up'} ${stripSign(positiveDelta)} ${positive.unit} — that's working.`
+            : undefined,
+        sub: countLine,
         ctaLabel: 'See what needs attention',
       };
     }

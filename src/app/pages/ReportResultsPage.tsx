@@ -183,57 +183,79 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             className="!bg-gold-500 border-gold-500 text-indigo-900 relative overflow-hidden !p-6 lg:!p-8"
           >
             <div className="absolute -top-8 -right-8 w-40 h-40 lg:w-56 lg:h-56 rounded-full bg-gold-400/40 blur-2xl pointer-events-none" />
-            <div className="relative grid md:grid-cols-3 gap-6 md:gap-10 items-start">
-              {/* Left: pill + line */}
-              <div className="md:col-span-2">
-                <div className="flex items-center gap-2">
-                  <Pill tone="dark" size="sm">
-                    <Sparkles size={10} /> The Bottom Line
-                  </Pill>
-                  <span className="text-micro uppercase tracking-label font-bold text-indigo-900/70">
-                    {report.uploadedOn}
-                  </span>
-                </div>
-
-                <p className="mt-4 font-display text-display-md leading-[1.2] text-balance">
-                  {bottomLine}
-                </p>
-
-                <div className="mt-5 flex flex-wrap items-center gap-2 no-print">
-                  <Button
-                    variant="dark"
-                    size="sm"
-                    leading={<Download size={14} />}
-                    onClick={handleDownload}
-                  >
-                    Download as PDF
-                  </Button>
-                  {/* Share button removed — the URL doesn't carry the
-                      report data (reports live in localStorage on this
-                      device), so a "share" produced a link that resolved
-                      to the curated sample report or a not-found page
-                      on the recipient's side. Send the PDF instead;
-                      Download as PDF is the legitimate share path. */}
-                </div>
+            {/* Single-column layout. The 1/3 column on the right used
+                to carry three display-md count tiles (good / attention
+                / concern) — that's three large numbers competing with
+                the bottom-line prose for focal weight on a card whose
+                only job is to deliver one summary. Counts still live
+                here, now as a small dot strip beneath the prose:
+                supporting metadata, not a parallel focal point. */}
+            <div className="relative">
+              <div className="flex items-center gap-2">
+                <Pill tone="dark" size="sm">
+                  <Sparkles size={10} /> The Bottom Line
+                </Pill>
+                <span className="text-micro uppercase tracking-label font-bold text-indigo-900/70">
+                  {report.uploadedOn}
+                </span>
               </div>
 
-              {/* Right: status tiles */}
-              <div className="grid grid-cols-3 gap-2 md:gap-2.5">
-                <BottomLineTile
-                  count={summary.good}
-                  label="On track"
-                  tone="good"
-                />
-                <BottomLineTile
-                  count={summary.attention}
-                  label="Needs attention"
-                  tone="attention"
-                />
-                <BottomLineTile
-                  count={summary.concern}
-                  label="Needs care"
-                  tone="concern"
-                />
+              <p className="mt-4 font-display text-display-md leading-[1.2] text-balance">
+                {bottomLine}
+              </p>
+
+              {/* Status-count dot strip. Same counts the tiles used to
+                  show, rendered as a single line of caption-sized
+                  metadata. Skipped counts (`good === 0` etc.) are
+                  hidden — no empty `0 on track` chip. */}
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption font-semibold text-indigo-900/80">
+                {summary.concern > 0 && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className="w-2 h-2 rounded-full bg-concern"
+                      aria-hidden
+                    />
+                    <span className="tabular-nums">{summary.concern}</span>
+                    <span>need care</span>
+                  </span>
+                )}
+                {summary.attention > 0 && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className="w-2 h-2 rounded-full bg-attention"
+                      aria-hidden
+                    />
+                    <span className="tabular-nums">{summary.attention}</span>
+                    <span>borderline</span>
+                  </span>
+                )}
+                {summary.good > 0 && (
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className="w-2 h-2 rounded-full bg-good"
+                      aria-hidden
+                    />
+                    <span className="tabular-nums">{summary.good}</span>
+                    <span>on track</span>
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-5 flex flex-wrap items-center gap-2 no-print">
+                <Button
+                  variant="dark"
+                  size="sm"
+                  leading={<Download size={14} />}
+                  onClick={handleDownload}
+                >
+                  Download as PDF
+                </Button>
+                {/* Share button removed — the URL doesn't carry the
+                    report data (reports live in localStorage on this
+                    device), so a "share" produced a link that resolved
+                    to the curated sample report or a not-found page
+                    on the recipient's side. Send the PDF instead;
+                    Download as PDF is the legitimate share path. */}
               </div>
             </div>
           </Card>
@@ -647,36 +669,6 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
       <BottomNav />
 
-    </div>
-  );
-}
-
-function BottomLineTile({
-  count,
-  label,
-  tone,
-}: {
-  count: number;
-  label: string;
-  tone: 'good' | 'attention' | 'concern';
-}) {
-  const dot =
-    tone === 'good'
-      ? 'bg-good'
-      : tone === 'attention'
-        ? 'bg-attention'
-        : 'bg-concern';
-  return (
-    <div className="rounded-[14px] bg-white/80 p-3">
-      <div className="flex items-center gap-1.5">
-        <span className={`w-2 h-2 rounded-full ${dot}`} />
-        <span className="text-micro uppercase tracking-label font-bold text-indigo-900/80">
-          {label}
-        </span>
-      </div>
-      <div className="font-display text-display-md leading-none mt-1.5 text-indigo-900">
-        {count}
-      </div>
     </div>
   );
 }
