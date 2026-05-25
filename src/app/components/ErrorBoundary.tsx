@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { isChunkLoadError } from '../utils/lazyWithReload';
 
 type Props = { children: ReactNode };
 type State = { error: Error | null };
@@ -36,6 +37,13 @@ export default class ErrorBoundary extends Component<Props, State> {
         this.state.error.message ||
         this.state.error.toString() ||
         'Unknown error';
+      // Chunk-load failures usually mean a stale deploy — the user had
+      // the app open when we shipped and is now holding chunk URLs that
+      // no longer exist. lazyWithReload tries one auto-reload first;
+      // by the time we land here it already fired, so the fix is a
+      // full-page refresh (which bypasses the in-memory module cache).
+      const isChunkError = isChunkLoadError(this.state.error);
+      const hardReload = () => window.location.reload();
       return (
         <div className="min-h-dvh bg-canvas grid place-items-center px-6 py-12">
           <div className="max-w-md text-center">
@@ -43,25 +51,29 @@ export default class ErrorBoundary extends Component<Props, State> {
               <span className="font-display text-[20px] leading-none">!</span>
             </div>
             <div className="mt-5 text-[10px] uppercase tracking-[0.18em] font-bold text-concern">
-              Something broke
+              {isChunkError ? 'New version available' : 'Something broke'}
             </div>
             <h1 className="font-display text-[24px] leading-tight mt-2 text-balance">
-              A page render failed mid-flight.
+              {isChunkError
+                ? 'We just shipped an update.'
+                : 'A page render failed mid-flight.'}
             </h1>
             <p className="mt-3 text-[13.5px] text-ink-soft leading-relaxed">
-              You hit a render error in the app. Try again to get back to a
-              clean state — if it keeps happening on the same page, the
-              message below is the clue to send back.
+              {isChunkError
+                ? "Your browser is still on the previous version of the app. Refresh to load the latest — you won't lose any saved reports."
+                : 'You hit a render error in the app. Try again to get back to a clean state — if it keeps happening on the same page, the message below is the clue to send back.'}
             </p>
-            <pre className="mt-5 text-left text-[11.5px] leading-relaxed font-mono bg-surface border border-line rounded-2xl p-4 overflow-auto max-h-48">
-              {msg}
-            </pre>
+            {!isChunkError && (
+              <pre className="mt-5 text-left text-[11.5px] leading-relaxed font-mono bg-surface border border-line rounded-2xl p-4 overflow-auto max-h-48">
+                {msg}
+              </pre>
+            )}
             <button
               type="button"
-              onClick={this.reset}
+              onClick={isChunkError ? hardReload : this.reset}
               className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-indigo-600 text-white text-[13.5px] font-semibold shadow-clinical hover:bg-indigo-700 transition-colors"
             >
-              Try again
+              {isChunkError ? 'Refresh app' : 'Try again'}
             </button>
           </div>
         </div>

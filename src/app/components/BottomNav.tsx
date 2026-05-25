@@ -46,13 +46,19 @@ export default function BottomNav() {
   // the nav but still paid the DOM + framer-motion + event-listener cost
   // on desktops where it was never visible. Mirrors Header's
   // useIsLgUp-based gating, so both nav surfaces share one rule.
+  //
+  // We keep the `lg:hidden` class on the <nav> too as a Tailwind belt
+  // around the JS suspenders: if someone ever turns on SSR/SSG,
+  // useIsLgUp returns false server-side and corrects on hydrate, which
+  // would briefly render the nav on a desktop first paint. The CSS
+  // gate hides it during that flash without waiting for JS.
   const isLgUp = useIsLgUp();
   if (isLgUp) return null;
 
   const activeId: ItemId = navIdFor(page);
 
   return (
-    <nav className="no-print sticky bottom-0 z-30 safe-bottom">
+    <nav className="lg:hidden no-print sticky bottom-0 z-30 safe-bottom">
       <div className="mx-auto max-w-md px-4 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
         <div className="bg-surface/85 backdrop-blur-md rounded-full border border-line/70 shadow-pop flex items-center p-1.5">
           {items.map(({ id, label, page: target, Icon }) => {

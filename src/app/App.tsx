@@ -1,10 +1,11 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppProvider, useNavigation, type Page } from './AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { PageSkeleton } from './components/Skeleton';
 import LandingPage from './pages/LandingPage';
 import { assertNever } from './utils/assertNever';
+import { lazyWithReload } from './utils/lazyWithReload';
 
 /* Lazy-loaded pages.
  *
@@ -14,35 +15,25 @@ import { assertNever } from './utils/assertNever';
  * landing surface + React + framer-motion. Each page becomes its own
  * Vite chunk fetched the first time a user navigates to it.
  *
- * The chunkNames are stable so Vite produces predictable filenames
- * (helps with CDN cache hits across deploys). */
-const QuizPage = lazy(() =>
-  import(/* webpackChunkName: "p-quiz" */ './pages/QuizPage'),
+ * lazyWithReload wraps React.lazy so a "stale-deploy" chunk fetch
+ * failure (user had the app open when we shipped; old chunk URLs are
+ * gone) triggers a hard reload instead of dumping the user on the
+ * ErrorBoundary. See utils/lazyWithReload.ts for the guard logic. */
+const QuizPage = lazyWithReload(() => import('./pages/QuizPage'));
+const RecommendedTestsPage = lazyWithReload(
+  () => import('./pages/RecommendedTestsPage'),
 );
-const RecommendedTestsPage = lazy(() =>
-  import(/* webpackChunkName: "p-recommended" */ './pages/RecommendedTestsPage'),
+const HomePage = lazyWithReload(() => import('./pages/HomePage'));
+const UploadPage = lazyWithReload(() => import('./pages/UploadPage'));
+const ProcessingPage = lazyWithReload(() => import('./pages/ProcessingPage'));
+const ManualEntryPage = lazyWithReload(() => import('./pages/ManualEntryPage'));
+const ReportResultsPage = lazyWithReload(
+  () => import('./pages/ReportResultsPage'),
 );
-const HomePage = lazy(() =>
-  import(/* webpackChunkName: "p-home" */ './pages/HomePage'),
+const ProblemDetailPage = lazyWithReload(
+  () => import('./pages/ProblemDetailPage'),
 );
-const UploadPage = lazy(() =>
-  import(/* webpackChunkName: "p-upload" */ './pages/UploadPage'),
-);
-const ProcessingPage = lazy(() =>
-  import(/* webpackChunkName: "p-processing" */ './pages/ProcessingPage'),
-);
-const ManualEntryPage = lazy(() =>
-  import(/* webpackChunkName: "p-manual" */ './pages/ManualEntryPage'),
-);
-const ReportResultsPage = lazy(() =>
-  import(/* webpackChunkName: "p-results" */ './pages/ReportResultsPage'),
-);
-const ProblemDetailPage = lazy(() =>
-  import(/* webpackChunkName: "p-problem" */ './pages/ProblemDetailPage'),
-);
-const ProfilePage = lazy(() =>
-  import(/* webpackChunkName: "p-profile" */ './pages/ProfilePage'),
-);
+const ProfilePage = lazyWithReload(() => import('./pages/ProfilePage'));
 
 function pageKey(p: Page): string {
   switch (p.type) {

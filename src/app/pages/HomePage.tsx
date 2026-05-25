@@ -1,4 +1,4 @@
-import { useDeferredValue, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useId, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AlertTriangle, FileText, Plus, Search, Trash2, Upload, X } from 'lucide-react';
 import Button from '../components/Button';
@@ -492,12 +492,14 @@ export default function HomePage() {
         </Container>
       )}
 
-      {/* "What you'll see once you upload" preview — only when the
-          user has zero reports. Replaces the empty grey gap that used
-          to sit between the headline and the locker empty card on tall
-          viewports; doubles as a low-pressure pre-sell of the dashboard
-          they're about to populate. */}
-      {!ready && reports.length === 0 && (
+      {/* "What you'll see once you upload" preview — fills the gap
+          between the headline and the locker on tall viewports
+          whenever there's no ready report to populate the dashboard.
+          Gate is broader than `reports.length === 0` so the same
+          preview also shows in the "only a processing entry exists"
+          edge case (otherwise that user sees just headline + a
+          shimmering locker card and a sea of grey). */}
+      {!ready && reports.every((r) => r.status !== 'ready') && (
         <Container size="wide" className="mt-6 lg:mt-8">
           <Pill tone="indigo" size="sm">
             What you’ll see
@@ -505,26 +507,33 @@ export default function HomePage() {
           <h2 className="font-display text-[22px] lg:text-[26px] leading-tight mt-2">
             Your dashboard, once you upload
           </h2>
-          <div className="mt-4 grid sm:grid-cols-3 gap-3">
+          {/* sm:2 → md:3 ladder so a 700px portrait tablet doesn't
+              crop the third card awkwardly. */}
+          <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
             {[
               {
                 icon: '🎯',
+                label: 'Target',
                 title: 'Markers to act on first',
                 copy: 'Anything outside the healthy range is pulled up top — concern, then attention.',
               },
               {
                 icon: '📈',
+                label: 'Trend',
                 title: 'Trends over time',
                 copy: 'Each marker gets a sparkline once you have two or more reports.',
               },
               {
                 icon: '🧭',
+                label: 'Plan',
                 title: 'A plan, not a panel',
                 copy: 'Lab numbers translated into plain English — and what to do about them.',
               },
             ].map((s) => (
               <Card key={s.title}>
-                <div className="text-[22px] leading-none">{s.icon}</div>
+                <Emoji label={s.label} className="text-[22px] leading-none">
+                  {s.icon}
+                </Emoji>
                 <div className="font-display text-[15px] leading-tight mt-3">
                   {s.title}
                 </div>
@@ -784,6 +793,7 @@ function DeleteReportConfirm({
   onConfirm: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement | null>(null);
+  const titleId = useId();
   useModalA11y({
     open: !!report,
     cardRef,
@@ -814,7 +824,7 @@ function DeleteReportConfirm({
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
-            aria-labelledby="del-report-title"
+            aria-labelledby={titleId}
             className="w-full sm:max-w-sm bg-surface rounded-3xl shadow-pop border border-line p-5"
           >
             <div className="flex items-start gap-3">
@@ -823,7 +833,7 @@ function DeleteReportConfirm({
               </div>
               <div className="flex-1 min-w-0">
                 <h2
-                  id="del-report-title"
+                  id={titleId}
                   className="font-display text-[18px] leading-tight text-ink"
                 >
                   Delete this report?

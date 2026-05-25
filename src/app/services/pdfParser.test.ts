@@ -656,6 +656,31 @@ describe('classifyOutOfScope', () => {
     `;
     expect(classifyOutOfScope(text)).toBe('viral');
   });
+
+  it('strict mode does NOT flag on a single definitive hit (success-path guard)', () => {
+    // The success-path call site uses strict mode so a boilerplate
+    // "Dengue Antibody: Not tested" row in an otherwise-metabolic
+    // panel doesn't trip the "we ignored some sections" banner.
+    // Relaxed mode would flag this; strict requires 2+ distinct hits.
+    const text = `
+      Annual comprehensive panel
+      Fasting Glucose 92 mg/dL
+      Dengue Antibody: Not tested
+    `;
+    expect(classifyOutOfScope(text, 'strict')).toBeNull();
+    expect(classifyOutOfScope(text, 'relaxed')).toBe('viral');
+  });
+
+  it('strict mode STILL flags a 2+ keyword document', () => {
+    // Strict only filters the single-hit shortcut; the 2+ path is
+    // unchanged and continues to catch dominantly out-of-scope files.
+    const text = `
+      HIV antibody: Non-reactive
+      HBsAg: Non-reactive
+      VDRL: Non-reactive
+    `;
+    expect(classifyOutOfScope(text, 'strict')).toBe('viral');
+  });
 });
 
 /* ------------------------------------------------------------------ */

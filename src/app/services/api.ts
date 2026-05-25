@@ -204,7 +204,19 @@ export async function parseUploadedReport(
         ocrPagesAttempted?: number;
         ocrPagesSkipped?: number;
       }
-    | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error' | 'out-of-scope'; message?: string; rawText?: string; unrecognizedRows?: string[] };
+    | {
+        biomarkers: null;
+        reason: 'no-file' | 'no-matches' | 'parser-error' | 'out-of-scope';
+        message?: string;
+        rawText?: string;
+        unrecognizedRows?: string[];
+        // OCR diagnostic rides the failure path too — most useful on
+        // no-matches / out-of-scope, where "we read the file but found
+        // nothing" might actually mean "OCR skipped 2 of 3 pages on
+        // your phone and the one it got didn't have markers."
+        ocrPagesAttempted?: number;
+        ocrPagesSkipped?: number;
+      };
 
   let extractionDone = false;
   const extractionPromise: Promise<ExtractionOutcome> =
@@ -220,11 +232,20 @@ export async function parseUploadedReport(
               // this, deliberately skipped rows would surface in the
               // "unrecognized rows" panel as if the parser had missed
               // them.
+              //
+              // STRICT mode here on purpose: a successful extraction is
+              // already proof the report is mostly a lab panel, so we
+              // need 2+ category-specific hits before claiming an
+              // ignored section. The relaxed (definitive-single-hit)
+              // threshold is reserved for the failure branch below,
+              // where a polite "Dengue: not tested" no-row boilerplate
+              // shouldn't drive a misleading "we ignored that section"
+              // banner.
               return {
                 biomarkers: r.biomarkers,
                 rawText: r.rawText,
                 unrecognizedRows: r.unrecognizedRows,
-                ignoredCategory: classifyOutOfScope(r.rawText),
+                ignoredCategory: classifyOutOfScope(r.rawText, 'strict'),
                 ocrPagesAttempted: r.ocrPagesAttempted,
                 ocrPagesSkipped: r.ocrPagesSkipped,
               };
@@ -241,6 +262,8 @@ export async function parseUploadedReport(
               reason: outOfScope ? 'out-of-scope' : 'no-matches',
               rawText: r.rawText,
               unrecognizedRows: r.unrecognizedRows,
+              ocrPagesAttempted: r.ocrPagesAttempted,
+              ocrPagesSkipped: r.ocrPagesSkipped,
             };
           })
           .catch((err: unknown): ExtractionOutcome => ({
@@ -301,9 +324,11 @@ export async function parseUploadedReport(
     // Polite poll — render a heartbeat tick so framer-motion has
     // something to bind to even though the progress number isn't
     // moving. The UI's spinner is the actual "still working" cue.
-    // After ~5s of post-stage waiting we swap the detail copy to a
-    // candid "running OCR — this can take 30s on phone" message so
-    // the user doesn't assume the tab is frozen.
+    // After ~5s of post-stage waiting we swap the detail copy so the
+    // user doesn't assume the tab is frozen. Copy stays format-
+    // agnostic — OCR is the most common slow path but text-layer
+    // extraction on a 19MB PDF can also stall here, and we don't
+    // want a literally-wrong "running OCR" line in that case.
     const waitStart = Date.now();
     while (!extractionDone) {
       await new Promise((r) => setTimeout(r, 250));
@@ -314,7 +339,7 @@ export async function parseUploadedReport(
         overall: 0.95,
         detailOverride:
           waited > 5_000
-            ? 'Running OCR on the file — this can take 20–30 seconds on a phone.'
+            ? 'Still working — large files or photos can take 20–30 seconds on a phone.'
             : undefined,
       });
     }
@@ -364,6 +389,8 @@ export async function parseUploadedReport(
     errorMessage: outcome.message,
     rawText: outcome.rawText,
     unrecognizedRows: outcome.unrecognizedRows,
+    ocrPagesAttempted: outcome.ocrPagesAttempted,
+    ocrPagesSkipped: outcome.ocrPagesSkipped,
   };
 }
 

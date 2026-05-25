@@ -622,111 +622,180 @@ export const __testInternals = {
 
 export type OutOfScopeCategory = 'viral' | 'imaging' | 'physical-exam';
 
-/** Per-category keyword sets. Stored lowercased; we match against the
- *  normalized lowercased text. Conservative selection — entries that
- *  could appear in a routine panel (e.g. lone "x-ray" in a referral
- *  note) are still in here but rely on the 2+ DISTINCT-hit gate to
- *  avoid false positives. */
-const OUT_OF_SCOPE_KEYWORDS: Record<OutOfScopeCategory, readonly string[]> = {
-  viral: [
-    'dengue ns1',
-    'dengue igm',
-    'dengue igg',
-    'dengue',
-    // "Dengue Combo NS1+IgM+IgG" / "NS1+IgM/IgG" style row labels —
-    // some labs print them as a single combo line, so the
-    // dengue-specific keywords above only hit once. Adding the
-    // bare antibody fragments lifts the hit count past the
-    // 2-distinct gate. False-positive risk is low: ns1 and igm/igg
-    // outside an infectious-panel context are extremely rare in a
-    // metabolic/HPA report.
-    'ns1',
-    'igm/igg',
-    'igm+igg',
-    'plasmodium',
-    'malaria',
-    'mp test',
-    'sars-cov-2',
-    'sars cov 2',
-    'covid-19',
-    'covid 19',
-    'rt-pcr',
-    'rt pcr',
-    'hiv 1',
-    'hiv 2',
-    'hiv antibody',
-    'anti-hiv',
-    'hbsag',
-    'hbeag',
-    'anti-hcv',
-    'anti-hbs',
-    'hepatitis b surface',
-    'hepatitis c',
-    'influenza a',
-    'influenza b',
-    'h1n1',
-    'h3n2',
-    'chikungunya',
-    'syphilis',
-    'vdrl',
-    'tpha',
-    'rpr',
-    'typhoid',
-    'widal',
-    'salmonella typhi',
-  ],
-  imaging: [
-    'x-ray',
-    'x ray',
-    'radiograph',
-    'magnetic resonance',
-    'mri brain',
-    'mri chest',
-    'mri abdomen',
-    'mri pelvis',
-    'ct scan',
-    'computed tomography',
-    'ct chest',
-    'ct abdomen',
-    'ultrasonography',
-    'sonography',
-    'usg abdomen',
-    'usg pelvis',
-    'doppler study',
-    'no focal opacity',
-    'no significant abnormality detected',
-    'impression:',
-    // ECG/EKG — tracings, not lab values
-    'ecg',
-    'ekg',
-    'electrocardiogram',
-    'qrs complex',
-    'sinus rhythm',
-    'st elevation',
-    'st depression',
-  ],
-  'physical-exam': [
-    'audiometry',
-    'audiogram',
-    'pure tone average',
-    'air conduction',
-    'bone conduction',
-    'visual acuity',
-    'snellen',
-    'refraction',
-    'fundus examination',
-    'intraocular pressure',
-    'periodontal',
-    'gingival',
-    'occlusion',
-    'mandibular',
-    'maxillary',
-    'caries',
-    'oral cavity',
-    'tonsillar',
-    'turbinate',
-  ],
+/**
+ * Per-category keyword sets, with a "definitive" subset that's specific
+ * enough to fire on a single hit.
+ *
+ * Stored lowercased; we match against the normalized lowercased text.
+ * `keywords` is the full pool used to count distinct hits (relaxed
+ * mode: 1 definitive OR 2+ distinct; strict mode: 2+ distinct only).
+ *
+ * Definitive terms MUST also appear in `keywords` — this invariant is
+ * asserted at module init below, so a future divergence becomes a
+ * loud test failure rather than a silent tie-break bug.
+ */
+type OutOfScopeKeywordSet = {
+  /** Anything plausibly indicative of the category. Multiple hits
+   *  required to trigger out-of-scope on its own. Conservative entries
+   *  ("x-ray" inside a referral note) live here too — the 2+ gate
+   *  keeps them safe. */
+  keywords: readonly string[];
+  /** Specific enough that a single appearance is sufficient to flag
+   *  the category. Used for relaxed-mode triggering on the failure
+   *  path; ignored in strict mode. */
+  definitive: readonly string[];
 };
+
+const OUT_OF_SCOPE: Record<OutOfScopeCategory, OutOfScopeKeywordSet> = {
+  viral: {
+    keywords: [
+      'dengue ns1',
+      'dengue igm',
+      'dengue igg',
+      'dengue',
+      // "Dengue Combo NS1+IgM+IgG" / "NS1+IgM/IgG" style row labels —
+      // some labs print them as a single combo line, so the
+      // dengue-specific keywords above only hit once. Adding the
+      // bare antibody fragments lifts the hit count past the
+      // 2-distinct gate. False-positive risk is low: ns1 and igm/igg
+      // outside an infectious-panel context are extremely rare in a
+      // metabolic/HPA report.
+      'ns1',
+      'igm/igg',
+      'igm+igg',
+      'plasmodium',
+      'malaria',
+      'mp test',
+      'sars-cov-2',
+      'sars cov 2',
+      'covid-19',
+      'covid 19',
+      'rt-pcr',
+      'rt pcr',
+      'hiv 1',
+      'hiv 2',
+      'hiv antibody',
+      'anti-hiv',
+      'hbsag',
+      'hbeag',
+      'anti-hcv',
+      'anti-hbs',
+      'hepatitis b surface',
+      'hepatitis c',
+      'influenza a',
+      'influenza b',
+      'h1n1',
+      'h3n2',
+      'chikungunya',
+      'syphilis',
+      'vdrl',
+      'tpha',
+      'rpr',
+      'typhoid',
+      'widal',
+      'salmonella typhi',
+    ],
+    definitive: [
+      'dengue',
+      'hbsag',
+      'anti-hcv',
+      'anti-hbs',
+      'widal',
+      'vdrl',
+      'tpha',
+      'chikungunya',
+      'plasmodium',
+    ],
+  },
+  imaging: {
+    keywords: [
+      'x-ray',
+      'x ray',
+      'radiograph',
+      'magnetic resonance',
+      'mri brain',
+      'mri chest',
+      'mri abdomen',
+      'mri pelvis',
+      'ct scan',
+      'computed tomography',
+      'ct chest',
+      'ct abdomen',
+      'ultrasonography',
+      'sonography',
+      'usg abdomen',
+      'usg pelvis',
+      'doppler study',
+      'no focal opacity',
+      'no significant abnormality detected',
+      'impression:',
+      // ECG/EKG — tracings, not lab values
+      'ecg',
+      'ekg',
+      'electrocardiogram',
+      'qrs complex',
+      'sinus rhythm',
+      'st elevation',
+      'st depression',
+    ],
+    definitive: [
+      'no focal opacity',
+      'no significant abnormality detected',
+      'computed tomography',
+      'sinus rhythm',
+      'qrs complex',
+    ],
+  },
+  'physical-exam': {
+    keywords: [
+      'audiometry',
+      'audiogram',
+      'pure tone average',
+      'air conduction',
+      'bone conduction',
+      'visual acuity',
+      'snellen',
+      'refraction',
+      'fundus examination',
+      'intraocular pressure',
+      'periodontal',
+      'gingival',
+      'occlusion',
+      'mandibular',
+      'maxillary',
+      'caries',
+      'oral cavity',
+      'tonsillar',
+      'turbinate',
+    ],
+    definitive: [
+      'audiometry',
+      'pure tone average',
+      'snellen',
+      'fundus examination',
+      'periodontal',
+      'caries',
+    ],
+  },
+};
+
+// Invariant: every definitive term must also live in the main keyword
+// list. Without this guarantee, a definitive-only term would never
+// contribute to the `hits` count used for tie-breaking — its category
+// would lose ties to any 1-hit category from another domain. Run this
+// check at module load (cheap, runs once) so divergence shows up as a
+// loud failure at app/test boot rather than as a quiet
+// misclassification at runtime.
+for (const cat of Object.keys(OUT_OF_SCOPE) as OutOfScopeCategory[]) {
+  const main = new Set(OUT_OF_SCOPE[cat].keywords);
+  for (const term of OUT_OF_SCOPE[cat].definitive) {
+    if (!main.has(term)) {
+      throw new Error(
+        `OUT_OF_SCOPE invariant: definitive term "${term}" in category "${cat}" is missing from the main keywords list. Add it (or drop it from definitive).`,
+      );
+    }
+  }
+}
 
 /** Count distinct keyword hits within one category. We match on the
  *  lowercased text and require WORD-ish boundaries to avoid e.g.
@@ -749,60 +818,42 @@ function countDistinctHits(text: string, keywords: readonly string[]): number {
   return hits;
 }
 
-/** Definitive single-hit terms. These keywords are specific enough that
- *  a single appearance is sufficient to classify the document — they
- *  essentially never show up in a metabolic / HPA-axis panel. The
- *  2-hit-per-category default still applies to everything else, so a
- *  routine panel that mentions "x-ray" once doesn't get misclassified. */
-const OUT_OF_SCOPE_DEFINITIVE: Record<OutOfScopeCategory, readonly string[]> = {
-  viral: [
-    'dengue',
-    'hbsag',
-    'anti-hcv',
-    'anti-hbs',
-    'widal',
-    'vdrl',
-    'tpha',
-    'chikungunya',
-    'plasmodium',
-  ],
-  imaging: [
-    'no focal opacity',
-    'no significant abnormality detected',
-    'computed tomography',
-    'sinus rhythm',
-    'qrs complex',
-  ],
-  'physical-exam': [
-    'audiometry',
-    'pure tone average',
-    'snellen',
-    'fundus examination',
-    'periodontal',
-    'caries',
-  ],
-};
-
 /**
  * Returns the strongest out-of-scope category if the text appears to be
- * dominated by it, or null otherwise. Two paths trigger:
+ * dominated by it, or null otherwise.
  *
- *   - The text contains a "definitive" keyword from one category (1-hit
- *     terms specific enough that a single appearance suffices).
- *   - The text contains 2+ distinct keywords from one category.
+ * Trigger thresholds:
+ *   - strict mode (default): 2+ distinct keywords from one category.
+ *   - relaxed mode: ALSO triggers on a single definitive-term hit, for
+ *     compact reports where the panel header is the only signal
+ *     ("HBsAg ELISA: Non-reactive" alone is enough to know).
  *
- * Ties broken by total hit count. Pure function — no side effects.
+ * The two call sites use different modes on purpose:
+ *   - parseUploadedReport's FAILURE branch uses relaxed — a zero-match
+ *     extraction is the moment to be most generous about reclassifying
+ *     "this isn't a lab panel".
+ *   - parseUploadedReport's SUCCESS branch uses strict — a mostly-
+ *     metabolic report that boilerplates "Dengue Antibody: Not tested"
+ *     shouldn't trip the "we ignored some sections" banner on a single
+ *     polite no-test row.
+ *
+ * Ties broken by total hit count (`hits` from the main keyword list,
+ * NOT the definitive subset). Pure function — no side effects.
  */
-export function classifyOutOfScope(text: string): OutOfScopeCategory | null {
+export function classifyOutOfScope(
+  text: string,
+  mode: 'strict' | 'relaxed' = 'relaxed',
+): OutOfScopeCategory | null {
   if (!text) return null;
   const lowered = text.toLowerCase();
   let best: { category: OutOfScopeCategory; hits: number } | null = null;
-  for (const category of Object.keys(OUT_OF_SCOPE_KEYWORDS) as OutOfScopeCategory[]) {
+  for (const category of Object.keys(OUT_OF_SCOPE) as OutOfScopeCategory[]) {
+    const hits = countDistinctHits(lowered, OUT_OF_SCOPE[category].keywords);
     const definitiveHit =
-      countDistinctHits(lowered, OUT_OF_SCOPE_DEFINITIVE[category]) > 0;
-    const hits = countDistinctHits(lowered, OUT_OF_SCOPE_KEYWORDS[category]);
+      mode === 'relaxed' &&
+      countDistinctHits(lowered, OUT_OF_SCOPE[category].definitive) > 0;
     if ((hits >= 2 || definitiveHit) && (!best || hits > best.hits)) {
-      best = { category, hits: Math.max(hits, definitiveHit ? 1 : 0) };
+      best = { category, hits };
     }
   }
   return best?.category ?? null;

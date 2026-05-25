@@ -37,9 +37,16 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [wiped, setWiped] = useState(false);
-
-  // Stats are computed on every open — quick, no need to cache.
-  const stats = open ? getStorageStats() : null;
+  // Stats live in state (not derived on every render) so handleWipe
+  // can refresh them after clearing storage. Previously the value
+  // was frozen at open time, so post-wipe the download button still
+  // saw the old keyCount and stayed enabled, downloading an empty
+  // payload — a benign bug, but visibly inconsistent.
+  const [stats, setStats] = useState<ReturnType<typeof getStorageStats> | null>(null);
+  useEffect(() => {
+    if (open) setStats(getStorageStats());
+    else setStats(null);
+  }, [open]);
 
   // Esc + focus-trap + scroll lock + restore-focus, shared via useModalA11y.
   // Close button is the preferred landing spot (same as LearnMoreModal) so
@@ -60,6 +67,7 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
 
   const handleWipe = () => {
     wipeAllData();
+    setStats(getStorageStats());
     setWiped(true);
     setConfirming(false);
     onAfterWipe?.();

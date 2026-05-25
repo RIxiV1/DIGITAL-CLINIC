@@ -55,6 +55,13 @@ type FailureState = {
   reason: NonNullable<ParsedReport['failureReason']>;
   errorMessage?: string;
   fileName: string;
+  /** OCR partial-failure diagnostic. When the parser failed AND some
+   *  pages timed out, "we couldn't find anything" might actually mean
+   *  "OCR couldn't read N of M pages." Surfacing the partial count
+   *  reframes the failure from "your report is unusable" to "the
+   *  parser hit a wall — retry might work." */
+  ocrPagesAttempted?: number;
+  ocrPagesSkipped?: number;
 };
 
 /** Success-but-unconfirmed: the parser produced N markers and we're
@@ -224,6 +231,8 @@ export default function ProcessingPage() {
         reason: result.failureReason ?? 'no-matches',
         errorMessage: result.errorMessage,
         fileName,
+        ocrPagesAttempted: result.ocrPagesAttempted,
+        ocrPagesSkipped: result.ocrPagesSkipped,
       });
     });
   }, [
@@ -544,6 +553,29 @@ function ParseFailedView({
                   </span>
                   {failure.fileName}
                 </div>
+                {/* OCR partial-failure callout. Without this, a user
+                    whose 3-page PDF had 2 pages time out reads "we
+                    didn't recognise any lab values" and blames their
+                    report — when actually the parser only saw 1/3 of
+                    it. Calling it out turns blame into "try again /
+                    upload pages individually". */}
+                {failure.ocrPagesAttempted &&
+                  failure.ocrPagesSkipped !== undefined &&
+                  failure.ocrPagesSkipped > 0 && (
+                    <div className="mt-3 rounded-[10px] bg-attention-soft/60 border border-attention/30 px-3 py-2 text-[12px] text-ink-soft">
+                      <span className="font-bold uppercase tracking-[0.12em] text-[10px] text-attention block mb-0.5">
+                        Partial OCR
+                      </span>
+                      {failure.ocrPagesSkipped} of {failure.ocrPagesAttempted}{' '}
+                      page{failure.ocrPagesAttempted === 1 ? '' : 's'}{' '}
+                      timed out before we could read{' '}
+                      {failure.ocrPagesAttempted === 1 ? 'it' : 'them'}. The
+                      remaining page{failure.ocrPagesAttempted - failure.ocrPagesSkipped === 1 ? '' : 's'}{' '}
+                      may not have had the values you were expecting.
+                      Retrying — or cropping the relevant section into a
+                      clearer photo — usually helps.
+                    </div>
+                  )}
               </div>
             </div>
           </div>
