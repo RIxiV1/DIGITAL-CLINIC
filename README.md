@@ -5,13 +5,13 @@
 
   **Medical-Grade Patient Health Dashboard**
 
-  <p>
-    [![React](https://img.shields.io/badge/React-18.3-blue?style=flat-square&logo=react)](https://react.dev/)
-    [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
-    [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
-    [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
-    [![Vitest](https://img.shields.io/badge/Vitest-4.1-7E9B4E?style=flat-square&logo=vitest)](https://vitest.dev/)
-  </p>
+  <br />
+
+  [![React](https://img.shields.io/badge/React-18.3-blue?style=flat-square&logo=react)](https://react.dev/)
+  [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite)](https://vite.dev/)
+  [![TypeScript](https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
+  [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=flat-square&logo=tailwindcss)](https://tailwindcss.com/)
+  [![Vitest](https://img.shields.io/badge/Vitest-4.1-7E9B4E?style=flat-square&logo=vitest)](https://vitest.dev/)
 </div>
 
 ---

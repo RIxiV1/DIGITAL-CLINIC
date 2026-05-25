@@ -665,7 +665,7 @@ export default function HomePage() {
               // Per-row stagger removed — see #6.7. Card's whileHover/
               // whileTap still provides interactive feel without the
               // mount-time cost.
-              <div key={r.id} className="relative group">
+              <div key={r.id} className="group">
                 <Card
                   // interactive must mirror onClick — both ready and
                   // processing entries are clickable (one opens results,
@@ -688,7 +688,26 @@ export default function HomePage() {
                         <div className="font-semibold text-ink truncate">
                           {r.name}
                         </div>
-                        <StatusBadge status={badgeFor(r)} />
+                        {/* StatusBadge + trash share one cluster so the
+                            delete affordance never absolute-positions on
+                            top of the badge. On lg+ the trash sits hidden
+                            until hover/focus-within; on mobile it's
+                            persistent (no hover state). */}
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <StatusBadge status={badgeFor(r)} />
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setReportPendingDelete(r.id);
+                            }}
+                            aria-label={`Delete ${r.name}`}
+                            title="Delete this report"
+                            className="grid place-items-center w-7 h-7 rounded-full text-muted hover:text-concern hover:bg-concern-soft opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-concern/60"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
                       </div>
                       <div className="text-[11px] text-muted mt-1 flex items-center gap-1.5">
                         <span className="truncate">
@@ -717,25 +736,6 @@ export default function HomePage() {
                     </div>
                   </div>
                 </Card>
-                {/* Per-row delete affordance. Hidden until hover/focus on
-                    desktop, always-on for sm-down where there's no
-                    hover state. Sample reports keep the icon — the
-                    user may want to clear demo data once they have a
-                    real report of their own. The button sits OUTSIDE
-                    the Card so its click doesn't bubble through the
-                    card's interactive onClick handler. */}
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setReportPendingDelete(r.id);
-                  }}
-                  aria-label={`Delete ${r.name}`}
-                  title="Delete this report"
-                  className="absolute top-2 right-2 grid place-items-center w-8 h-8 rounded-full bg-surface/90 backdrop-blur text-muted opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100 hover:text-concern hover:bg-concern-soft transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-concern/60"
-                >
-                  <Trash2 size={14} />
-                </button>
               </div>
             ))
           )}
