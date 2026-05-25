@@ -1,5 +1,10 @@
 import { type ReactNode } from 'react';
-import { motion } from 'framer-motion';
+import {
+  motion,
+  useMotionTemplate,
+  useMotionValue,
+  useReducedMotion,
+} from 'framer-motion';
 import {
   ArrowRight,
   ChevronRight,
@@ -48,7 +53,23 @@ export default function Hero({
               className="font-sans font-bold text-h1 sm:text-hero md:text-hero-lg lg:text-hero-xl leading-[1.06] tracking-[-0.025em] mt-5 text-ink text-balance"
             >
               Your hair loss, your fatigue, and your sex drive{' '}
-              <span className="text-blue-700">might be the same problem.</span>
+              {/* Single gradient accent — used exactly once, on the
+                  payoff phrase of the headline. Blue-700 → blue-500 →
+                  gold-600 mirrors the brand stack (clinical blue
+                  anchor + premium gold edge) and gives the headline a
+                  visual hierarchy boost without resorting to a second
+                  color or a heavier weight. Repeating this treatment
+                  on every heading is the slop the user warned about
+                  — keep it scarce. */}
+              <span
+                className="bg-clip-text text-transparent"
+                style={{
+                  backgroundImage:
+                    'linear-gradient(120deg, var(--color-blue-700) 0%, var(--color-blue-500) 55%, var(--color-gold-600) 100%)',
+                }}
+              >
+                might be the same problem.
+              </span>
             </motion.h1>
 
             <motion.p
@@ -115,6 +136,31 @@ export default function Hero({
 }
 
 function HeroVisual() {
+  // Mouse-tracking spotlight on the Hormonal Health Map card below.
+  // Two motion values store the cursor's position relative to the
+  // card; useMotionTemplate builds the radial-gradient CSS without
+  // any React re-renders. The motion.div's `style={{ background }}`
+  // subscribes via framer-motion's signal graph — the DOM updates
+  // directly on each mousemove, so we get 60fps glow tracking
+  // without the component re-rendering 60 times a second.
+  //
+  // Doing this inline in `style` with raw event-driven setState
+  // would be the wrong shape (60 re-renders/second on a single
+  // mousemove). useMotionValue is the right primitive.
+  //
+  // Disabled entirely when prefers-reduced-motion is set — the
+  // listener is gone, the overlay isn't rendered. Users who opt out
+  // of motion don't get a moving glow they didn't ask for.
+  const prefersReducedMotion = useReducedMotion();
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+  const spotlight = useMotionTemplate`radial-gradient(240px circle at ${mouseX}px ${mouseY}px, rgba(0, 102, 204, 0.14), transparent 65%)`;
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    mouseX.set(e.clientX - r.left);
+    mouseY.set(e.clientY - r.top);
+  };
+
   return (
     <div className="relative w-full max-w-[560px] mx-auto lg:mx-0 lg:ml-auto lg:-mb-20">
       {/* Founders / clinicians photo — WebP only (60 KB, universally
@@ -131,7 +177,21 @@ function HeroVisual() {
           a y: [0, -5, 0] / 6s infinite float animation; removed because
           it read as "drifting / off-anchor" rather than the intended
           "gently floating overlay" cue. */}
-      <div className="absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden">
+      <div
+        onMouseMove={prefersReducedMotion ? undefined : handleMouseMove}
+        className="group absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden"
+      >
+        {/* Spotlight overlay. Pointer-events-none so it never blocks
+            interaction; opacity gated by the parent's :hover (via
+            Tailwind's group-hover) so the glow only appears when the
+            cursor is over the card — no React state involved. */}
+        {!prefersReducedMotion && (
+          <motion.div
+            aria-hidden
+            style={{ background: spotlight }}
+            className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          />
+        )}
         {/* Mac-style window chrome */}
         <div className="px-3.5 py-2 border-b border-line/70 flex items-center justify-between">
           <div className="flex items-center gap-1.5">

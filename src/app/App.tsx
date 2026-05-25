@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
 import { AppProvider, useNavigation, type Page } from './AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { PageSkeleton } from './components/Skeleton';
@@ -146,9 +146,25 @@ function PageHost() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AppProvider>
-        <PageHost />
-      </AppProvider>
+      {/* MotionConfig with reducedMotion="user" cascades the OS-level
+       *  prefers-reduced-motion preference into every framer-motion
+       *  child. With this, the page-level entry choreography (the
+       *  PageHost AnimatePresence + the dozen custom cubic-bezier
+       *  transitions sprinkled across charts, sparklines, and the
+       *  health ring) stops fighting users who explicitly asked for
+       *  less motion. Animations don't disappear — duration collapses
+       *  to 0 — so state transitions still fire, they just don't
+       *  visibly choreograph.
+       *
+       *  Doing this at the root means every motion descendant inherits
+       *  the behaviour without needing per-component useReducedMotion
+       *  checks. Hero's mouse-spotlight already guards itself
+       *  explicitly (event listener is the bigger cost there). */}
+      <MotionConfig reducedMotion="user">
+        <AppProvider>
+          <PageHost />
+        </AppProvider>
+      </MotionConfig>
     </ErrorBoundary>
   );
 }
