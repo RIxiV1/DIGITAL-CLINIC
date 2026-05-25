@@ -260,7 +260,7 @@ export default function QuizPage() {
         {/* Progress strip — step counter + an unobtrusive swipe hint that
             only renders on touch contexts (hidden via the parent flex on
             very-small viewports otherwise). */}
-        <div className="mt-3 flex items-center justify-between text-eyebrow font-bold uppercase tracking-[0.16em] text-muted">
+        <div className="mt-3 flex items-center justify-between text-micro font-bold uppercase tracking-[0.16em] text-muted">
           <span className="hidden sm:inline opacity-70">
             Tip · arrow keys or swipe to move
           </span>
@@ -295,13 +295,13 @@ export default function QuizPage() {
                 transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
               }}
             >
-              <div className="text-eyebrow font-bold uppercase tracking-[0.16em] text-indigo-700 mb-2">
+              <div className="text-micro font-bold uppercase tracking-[0.16em] text-indigo-700 mb-2">
                 {step.sectionLabel}
               </div>
-              <h1 className="font-display text-h2-lg leading-tight text-balance">
+              <h1 className="font-display text-display-md leading-tight text-balance">
                 {step.title}
               </h1>
-              <p className="mt-2 text-ui text-ink-soft text-pretty">
+              <p className="mt-2 text-body text-ink-soft text-pretty">
                 {step.subtitle}
               </p>
 
@@ -426,7 +426,7 @@ function CompoundOptions({
             transition: { delay: 0.1 + i * 0.08, duration: 0.32 },
           }}
         >
-          <div className="text-ui font-semibold text-ink leading-tight">
+          <div className="text-body font-semibold text-ink leading-tight">
             {sub.question}
           </div>
           <div className="mt-3">
@@ -496,11 +496,11 @@ function ExitConfirm({
       >
         <div
           id={titleId}
-          className="font-display text-h4 leading-tight text-ink"
+          className="font-display text-display-md leading-tight text-ink"
         >
           Exit the quiz?
         </div>
-        <p className="mt-2 text-ui-sm text-ink-soft leading-relaxed">
+        <p className="mt-2 text-body-sm text-ink-soft leading-relaxed">
           We won’t save your progress. You can always restart — it only takes
           two minutes.
         </p>
@@ -587,7 +587,7 @@ function PersonalizingOverlay({ onDone }: { onDone: () => void }) {
           </motion.div>
         </div>
 
-        <h2 className="font-display text-h3-lg leading-tight mt-7 text-balance">
+        <h2 className="font-display text-display-md leading-tight mt-7 text-balance">
           Personalizing your insights…
         </h2>
 
@@ -599,7 +599,7 @@ function PersonalizingOverlay({ onDone }: { onDone: () => void }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.3 }}
-              className="absolute inset-x-0 text-meta text-ink-soft"
+              className="absolute inset-x-0 text-caption text-ink-soft"
             >
               {personalizingSteps[tick]}
             </motion.p>
@@ -656,7 +656,7 @@ function PillOptions({
             whileHover={{ y: -1.5, scale: 1.01 }}
             transition={{ type: 'spring', stiffness: 500, damping: 25 }}
             onClick={() => toggle(opt.id)}
-            className={`relative inline-flex items-center justify-center gap-2 min-h-12 h-auto py-2.5 px-4 rounded-full font-semibold text-meta border transition-all text-center ${
+            className={`relative inline-flex items-center justify-center gap-2 min-h-12 h-auto py-2.5 px-4 rounded-full font-semibold text-caption border transition-all text-center ${
               selected
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
                 : 'bg-surface border-line text-ink-soft hover:border-indigo-300 hover:text-indigo-700 shadow-soft'
@@ -725,7 +725,7 @@ function CardOptions({
                 <div className="font-semibold">{opt.label}</div>
                 {opt.hint && (
                   <div
-                    className={`text-footnote mt-0.5 ${
+                    className={`text-caption mt-0.5 ${
                       selected ? 'text-indigo-100' : 'text-muted'
                     }`}
                   >

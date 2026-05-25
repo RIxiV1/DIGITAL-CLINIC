@@ -72,10 +72,10 @@ export default function WhatYoullGet() {
                       <Icon size={17} />
                     </div>
                     <div>
-                      <div className="font-semibold text-ink text-ui-sm">
+                      <div className="font-semibold text-ink text-body-sm">
                         {title}
                       </div>
-                      <div className="text-meta text-ink-soft leading-relaxed mt-0.5">
+                      <div className="text-caption text-ink-soft leading-relaxed mt-0.5">
                         {body}
                       </div>
                     </div>
@@ -91,10 +91,10 @@ export default function WhatYoullGet() {
                     <Download size={17} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-ink text-ui-sm">
+                    <div className="font-semibold text-ink text-body-sm">
                       Your health data, always accessible
                     </div>
-                    <div className="text-footnote text-ink-soft mt-0.5">
+                    <div className="text-caption text-ink-soft mt-0.5">
                       Download as PDF. Share with any doctor. Stored under your
                       anonymous ID.
                     </div>
@@ -121,12 +121,12 @@ function DoctorSummaryMockup() {
             <div className="flex items-center gap-2">
               <Logo size="sm" />
             </div>
-            <div className="text-eyebrow uppercase tracking-[0.14em] font-bold text-blue-700">
+            <div className="text-micro uppercase tracking-[0.14em] font-bold text-blue-700">
               Doctor Summary · v1
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-3">
-            <div className="font-sans font-bold text-h4 tracking-[-0.01em]">
+            <div className="font-sans font-bold text-display-md tracking-[-0.01em]">
               Hormonal Health Snapshot
             </div>
             <div className="text-caption text-muted">Patient: FM-A284</div>
@@ -143,10 +143,10 @@ function DoctorSummaryMockup() {
             <div className="rounded-2xl bg-blue-600 text-white p-5 shadow-clinical relative overflow-hidden">
               <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-blue-400/30 blur-2xl" />
               <div className="relative">
-                <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-blue-100">
+                <div className="text-micro font-bold uppercase tracking-[0.14em] text-blue-100">
                   Top-line read
                 </div>
-                <p className="mt-2 font-sans font-semibold text-ui leading-snug">
+                <p className="mt-2 font-sans font-semibold text-body leading-snug">
                   Two hormone markers flagged — low free testosterone and
                   vitamin D. Likely connected to fatigue + low libido on
                   intake.
@@ -155,13 +155,13 @@ function DoctorSummaryMockup() {
             </div>
 
             <div className="rounded-2xl bg-white border border-line p-4">
-              <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-blue-700">
+              <div className="text-micro font-bold uppercase tracking-[0.14em] text-blue-700">
                 Specialist
               </div>
               <div className="mt-2 flex items-start gap-2">
                 <Microscope size={14} className="text-ink-soft mt-0.5 shrink-0" />
                 <div>
-                  <div className="text-meta font-semibold text-ink">
+                  <div className="text-caption font-semibold text-ink">
                     Endocrinologist
                   </div>
                   <div className="text-caption text-ink-soft leading-snug mt-0.5">
@@ -177,10 +177,10 @@ function DoctorSummaryMockup() {
             <div className="rounded-2xl bg-white border border-line p-4 md:p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-blue-700">
+                  <div className="text-micro font-bold uppercase tracking-[0.14em] text-blue-700">
                     Recommended tests
                   </div>
-                  <div className="font-sans font-semibold text-ui-sm mt-1">
+                  <div className="font-sans font-semibold text-body-sm mt-1">
                     4 panels — ranked by impact
                   </div>
                 </div>
@@ -251,25 +251,25 @@ function TestRow({
         : 'bg-blue-50 text-blue-700 border-blue-100';
   return (
     <div className="rounded-xl border border-line bg-canvas/40 p-3 flex items-start gap-3">
-      <span className="grid place-items-center shrink-0 w-7 h-7 rounded-lg bg-white border border-blue-100 text-blue-700 font-mono text-eyebrow font-bold">
+      <span className="grid place-items-center shrink-0 w-7 h-7 rounded-lg bg-white border border-blue-100 text-blue-700 font-mono text-micro font-bold">
         {index}
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <span className="font-sans font-semibold text-meta text-ink leading-snug">
+          <span className="font-sans font-semibold text-caption text-ink leading-snug">
             {name}
           </span>
           <span
-            className={`text-eyebrow-xs font-bold uppercase tracking-[0.1em] px-1.5 h-4 rounded-full border inline-flex items-center shrink-0 ${flagTone}`}
+            className={`text-micro font-bold uppercase tracking-[0.1em] px-1.5 h-4 rounded-full border inline-flex items-center shrink-0 ${flagTone}`}
           >
             {flag}
           </span>
         </div>
         <div className="mt-1 flex items-start gap-1.5">
-          <span className="text-eyebrow-xs font-bold uppercase tracking-[0.1em] text-blue-700 mt-0.5 shrink-0">
+          <span className="text-micro font-bold uppercase tracking-[0.1em] text-blue-700 mt-0.5 shrink-0">
             Why
           </span>
-          <span className="text-footnote text-ink-soft leading-snug">
+          <span className="text-caption text-ink-soft leading-snug">
             {reason}
           </span>
         </div>

@@ -74,12 +74,12 @@ export default function LegalModal({ kind, onClose }: Props) {
             {/* Header */}
             <div className="flex items-start gap-3 px-6 pt-6 pb-4 border-b border-line/70">
               <div className="flex-1 min-w-0">
-                <div className="text-eyebrow font-bold uppercase tracking-[0.18em] text-blue-700 mb-1">
+                <div className="text-micro font-bold uppercase tracking-[0.18em] text-blue-700 mb-1">
                   {doc.eyebrow}
                 </div>
                 <h2
                   id={titleId}
-                  className="font-display text-h4 sm:text-h3 leading-tight text-ink"
+                  className="font-display text-display-md sm:text-display-md leading-tight text-ink"
                 >
                   {doc.title}
                 </h2>
@@ -99,13 +99,13 @@ export default function LegalModal({ kind, onClose }: Props) {
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
               {doc.sections.map((s) => (
                 <section key={s.heading}>
-                  <h3 className="text-eyebrow font-bold uppercase tracking-[0.16em] text-blue-700 mb-2">
+                  <h3 className="text-micro font-bold uppercase tracking-[0.16em] text-blue-700 mb-2">
                     {s.heading}
                   </h3>
                   {s.paragraphs.map((p, i) => (
                     <p
                       key={i}
-                      className="text-meta leading-relaxed text-ink-soft mt-2 first:mt-0"
+                      className="text-caption leading-relaxed text-ink-soft mt-2 first:mt-0"
                     >
                       {p}
                     </p>

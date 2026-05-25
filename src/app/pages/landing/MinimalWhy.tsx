@@ -18,7 +18,7 @@ export default function MinimalWhy() {
             <span className="w-6 h-px bg-indigo-600" />
             What you get
           </div>
-          <h2 className="font-sans font-bold text-h3-lg sm:text-h2-lg md:text-display leading-[1.1] tracking-[-0.02em] mt-3 text-balance">
+          <h2 className="font-sans font-bold text-display-md sm:text-display-md md:text-display-lg leading-[1.1] tracking-[-0.02em] mt-3 text-balance">
             Plain English, the right tests, your data — yours.
           </h2>
         </Reveal>
@@ -31,10 +31,10 @@ export default function MinimalWhy() {
                   <Icon size={18} />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-ink text-ui">
+                  <div className="font-semibold text-ink text-body">
                     {title}
                   </div>
-                  <p className="mt-1 text-meta text-ink-soft leading-relaxed">
+                  <p className="mt-1 text-caption text-ink-soft leading-relaxed">
                     {body}
                   </p>
                 </div>

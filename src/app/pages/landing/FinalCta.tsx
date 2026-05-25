@@ -19,10 +19,10 @@ export default function FinalCta({ onStart }: { onStart: () => void }) {
               <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white/15 backdrop-blur text-caption font-bold uppercase tracking-[0.14em] text-white">
                 <Sparkles size={11} /> Free during MVP
               </span>
-              <h2 className="font-sans font-bold text-h2-lg sm:text-display md:text-hero lg:text-hero-xl leading-[1.05] tracking-[-0.025em] mt-5 text-balance max-w-[22ch] mx-auto">
+              <h2 className="font-sans font-bold text-display-md sm:text-display-lg md:text-display-xl lg:text-display-xl leading-[1.05] tracking-[-0.025em] mt-5 text-balance max-w-[22ch] mx-auto">
                 See what your hormones are telling you.
               </h2>
-              <p className="mt-5 text-ui sm:text-ui-lg md:text-body-lg leading-relaxed text-blue-100 max-w-[42ch] mx-auto text-pretty">
+              <p className="mt-5 text-body sm:text-body md:text-body-lg leading-relaxed text-blue-100 max-w-[42ch] mx-auto text-pretty">
                 3 minutes. One clear picture.
               </p>
 
@@ -30,14 +30,14 @@ export default function FinalCta({ onStart }: { onStart: () => void }) {
                 <button
                   onClick={onStart}
                   style={{ height: 56 }}
-                  className="inline-flex items-center justify-center gap-2 px-7 rounded-full bg-white text-blue-700 hover:bg-blue-50 text-ui font-semibold shadow-clinical-lg transition-colors w-full sm:w-auto"
+                  className="inline-flex items-center justify-center gap-2 px-7 rounded-full bg-white text-blue-700 hover:bg-blue-50 text-body font-semibold shadow-clinical-lg transition-colors w-full sm:w-auto"
                 >
                   Start the assessment
                   <ArrowRight size={16} />
                 </button>
               </div>
 
-              <div className="mt-6 text-footnote text-blue-100 inline-flex items-center gap-1.5">
+              <div className="mt-6 text-caption text-blue-100 inline-flex items-center gap-1.5">
                 <Lock size={12} />
                 Anonymous ID. No email or phone required. Your data stays yours.
               </div>

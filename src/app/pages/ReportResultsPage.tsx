@@ -100,10 +100,10 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             empty grey scroll below. */}
         <div className="flex-1 grid place-items-center px-6 py-10">
           <div className="text-center max-w-md">
-            <h1 className="font-display text-h3-lg leading-tight">
+            <h1 className="font-display text-display-md leading-tight">
               We couldn’t find that report.
             </h1>
-            <p className="mt-3 text-ui-sm text-ink-soft leading-relaxed">
+            <p className="mt-3 text-body-sm text-ink-soft leading-relaxed">
               It may have been removed, or the link may be out of date. Head
               back to your dashboard to pick another one.
             </p>
@@ -157,12 +157,12 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   <Pill tone="dark" size="sm">
                     <Sparkles size={10} /> The Bottom Line
                   </Pill>
-                  <span className="text-eyebrow uppercase tracking-[0.14em] font-bold text-indigo-900/70">
+                  <span className="text-micro uppercase tracking-[0.14em] font-bold text-indigo-900/70">
                     {report.uploadedOn}
                   </span>
                 </div>
 
-                <p className="mt-4 font-display text-h3 lg:text-h2-lg leading-[1.2] text-balance">
+                <p className="mt-4 font-display text-display-md lg:text-display-md leading-[1.2] text-balance">
                   {bottomLine}
                 </p>
 
@@ -229,7 +229,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                       <button
                         key={f.id}
                         onClick={() => setFilter(f.id)}
-                        className={`px-4 min-h-12 rounded-full text-footnote font-semibold whitespace-nowrap transition-colors ${
+                        className={`px-4 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
                           active
                             ? 'bg-indigo-600 text-white shadow-soft'
                             : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
@@ -266,10 +266,10 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
             {groups.length === 0 ? (
               <Card className="text-center !py-10 mt-4 md:mt-0">
-                <div className="font-display text-h4">
+                <div className="font-display text-display-md">
                   Nothing in that bucket.
                 </div>
-                <p className="text-meta text-ink-soft mt-1">
+                <p className="text-caption text-ink-soft mt-1">
                   Try a different filter.
                 </p>
               </Card>
@@ -286,15 +286,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                       <div className="px-5 pt-5 pb-3 flex items-start gap-3 border-b border-line">
                         <Emoji
                           label={category.name}
-                          className="text-h3 leading-none"
+                          className="text-display-md leading-none"
                         >
                           {category.icon}
                         </Emoji>
                         <div className="flex-1">
-                          <div className="font-display text-lead leading-tight">
+                          <div className="font-display text-body-lg leading-tight">
                             {category.name}
                           </div>
-                          <div className="text-footnote text-ink-soft mt-0.5">
+                          <div className="text-caption text-ink-soft mt-0.5">
                             {category.description}
                           </div>
                         </div>
@@ -328,7 +328,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             {/* Disclaimer */}
             <div className="mt-8 rounded-[16px] bg-surface border border-line p-4 flex gap-3 print-shadow-none">
               <Info size={16} className="text-muted shrink-0 mt-0.5" />
-              <p className="text-footnote text-ink-soft leading-relaxed">
+              <p className="text-caption text-ink-soft leading-relaxed">
                 Digital Clinic translates and contextualises your report — it
                 is <strong>not a diagnosis</strong>. Always discuss findings
                 with a qualified doctor before changing medication or starting
@@ -354,10 +354,10 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             <div className="sticky top-24 grid gap-5">
               <Card padded={false} className="overflow-hidden">
                 <div className="px-5 pt-5 pb-3 border-b border-line">
-                  <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-indigo-700">
+                  <div className="text-micro font-bold uppercase tracking-[0.14em] text-indigo-700">
                     Filter
                   </div>
-                  <div className="font-display text-ui-lg mt-1">
+                  <div className="font-display text-body mt-1">
                     Refine view
                   </div>
                 </div>
@@ -375,7 +375,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                       <button
                         key={f.id}
                         onClick={() => setFilter(f.id)}
-                        className={`w-full text-left px-3 h-10 rounded-xl text-meta font-semibold transition-colors ${
+                        className={`w-full text-left px-3 h-10 rounded-xl text-caption font-semibold transition-colors ${
                           active
                             ? 'bg-indigo-600 text-white'
                             : 'bg-canvas/60 text-ink-soft hover:bg-indigo-50'
@@ -387,7 +387,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   })}
                 </div>
                 <div className="px-5 pt-4 pb-3 border-t border-line">
-                  <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-indigo-700">
+                  <div className="text-micro font-bold uppercase tracking-[0.14em] text-indigo-700">
                     Categories
                   </div>
                 </div>
@@ -414,10 +414,10 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               {deepDives.length > 0 && (
                 <Card padded={false}>
                   <div className="px-5 pt-5 pb-3 border-b border-line">
-                    <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-indigo-700">
+                    <div className="text-micro font-bold uppercase tracking-[0.14em] text-indigo-700">
                       Suggested deep dives
                     </div>
-                    <div className="font-display text-ui-lg mt-1">
+                    <div className="font-display text-body mt-1">
                       What to look at first
                     </div>
                   </div>
@@ -439,7 +439,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                             <Sparkles size={16} />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="text-eyebrow uppercase tracking-[0.12em] font-bold text-muted truncate">
+                            <div className="text-micro uppercase tracking-[0.12em] font-bold text-muted truncate">
                               {m.name}
                             </div>
                             <div
@@ -468,7 +468,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
               Suggested deep dives
             </div>
-            <h2 className="font-display text-h3 leading-tight mt-1">
+            <h2 className="font-display text-display-md leading-tight mt-1">
               What I’d look at first
             </h2>
 
@@ -488,7 +488,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                         <Sparkles size={18} />
                       </div>
                       <div className="flex-1">
-                        <div className="text-eyebrow uppercase tracking-[0.12em] font-bold text-muted">
+                        <div className="text-micro uppercase tracking-[0.12em] font-bold text-muted">
                           {m.name}
                         </div>
                         <div className="font-semibold leading-tight mt-0.5">
@@ -537,11 +537,11 @@ function BottomLineTile({
     <div className="rounded-[14px] bg-white/80 p-3">
       <div className="flex items-center gap-1.5">
         <span className={`w-2 h-2 rounded-full ${dot}`} />
-        <span className="text-eyebrow-xs uppercase tracking-[0.14em] font-bold text-indigo-900/80">
+        <span className="text-micro uppercase tracking-[0.14em] font-bold text-indigo-900/80">
           {label}
         </span>
       </div>
-      <div className="font-display text-h3-lg leading-none mt-1.5 text-indigo-900">
+      <div className="font-display text-display-md leading-none mt-1.5 text-indigo-900">
         {count}
       </div>
     </div>
@@ -573,7 +573,7 @@ function CategoryChip({
       }`}
     >
       {emoji && (
-        <Emoji label={label} className="text-meta leading-none">
+        <Emoji label={label} className="text-caption leading-none">
           {emoji}
         </Emoji>
       )}

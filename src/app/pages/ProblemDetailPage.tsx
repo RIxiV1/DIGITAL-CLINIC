@@ -74,10 +74,10 @@ export default function ProblemDetailPage({
           transition={{ duration: 0.4 }}
           className="lg:max-w-3xl"
         >
-          <h1 className="font-display text-h2-lg lg:text-display leading-tight mt-3 text-balance">
+          <h1 className="font-display text-display-md lg:text-display-lg leading-tight mt-3 text-balance">
             {p.title}
           </h1>
-          <p className="mt-3 md:mt-4 text-ui lg:text-lead text-ink leading-relaxed text-pretty">
+          <p className="mt-3 md:mt-4 text-body lg:text-body-lg text-ink leading-relaxed text-pretty">
             {p.summary}
           </p>
         </motion.div>
@@ -88,10 +88,10 @@ export default function ProblemDetailPage({
         <Container size="wide" className="mt-6">
           <Card padded={false} className="lg:max-w-3xl">
             <div className="px-5 pt-5 pb-3 border-b border-line">
-              <div className="text-eyebrow uppercase tracking-[0.14em] font-bold text-indigo-700">
+              <div className="text-micro uppercase tracking-[0.14em] font-bold text-indigo-700">
                 Your numbers
               </div>
-              <div className="font-display text-lead mt-1">
+              <div className="font-display text-body-lg mt-1">
                 What this looks like in your latest report
               </div>
             </div>
@@ -112,10 +112,10 @@ export default function ProblemDetailPage({
               <Info size={18} />
             </div>
             <div>
-              <div className="font-display text-lead">
+              <div className="font-display text-body-lg">
                 What does this actually mean?
               </div>
-              <p className="text-ui-sm text-ink leading-relaxed mt-2">
+              <p className="text-body-sm text-ink leading-relaxed mt-2">
                 {p.what}
               </p>
             </div>
@@ -131,10 +131,10 @@ export default function ProblemDetailPage({
               <Lightbulb size={18} />
             </div>
             <div>
-              <div className="font-display text-lead">
+              <div className="font-display text-body-lg">
                 Why it’s worth your attention
               </div>
-              <p className="text-ui-sm text-ink leading-relaxed mt-2">
+              <p className="text-body-sm text-ink leading-relaxed mt-2">
                 {p.whyMatters}
               </p>
             </div>
@@ -148,7 +148,7 @@ export default function ProblemDetailPage({
           <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
             Your action plan
           </div>
-          <h2 className="font-display text-h3 lg:text-h2-lg leading-tight mt-1">
+          <h2 className="font-display text-display-md lg:text-display-md leading-tight mt-1">
             Doable this month
           </h2>
         </div>
@@ -165,7 +165,7 @@ export default function ProblemDetailPage({
                   </div>
                   <div className="flex-1">
                     <div className="font-semibold">{a.title}</div>
-                    <p className="text-meta text-ink-soft mt-1 leading-relaxed">
+                    <p className="text-caption text-ink-soft mt-1 leading-relaxed">
                       {a.detail}
                     </p>
                   </div>
@@ -188,8 +188,8 @@ export default function ProblemDetailPage({
               <CalendarClock size={18} />
             </div>
             <div>
-              <div className="font-display text-lead">When to re-check</div>
-              <p className="text-meta text-indigo-100 mt-1.5 leading-relaxed">
+              <div className="font-display text-body-lg">When to re-check</div>
+              <p className="text-caption text-indigo-100 mt-1.5 leading-relaxed">
                 {p.retest}
               </p>
             </div>

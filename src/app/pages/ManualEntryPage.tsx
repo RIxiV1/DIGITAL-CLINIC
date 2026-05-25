@@ -166,10 +166,10 @@ export default function ManualEntryPage() {
           <Pill tone="indigo" size="sm">
             <Pencil size={11} /> Manual entry
           </Pill>
-          <h1 className="font-display text-h2 lg:text-h1 leading-tight mt-3 text-balance text-ink">
+          <h1 className="font-display text-display-md lg:text-display-lg leading-tight mt-3 text-balance text-ink">
             Type in the values you have.
           </h1>
-          <p className="mt-2 text-ui-sm lg:text-ui text-ink-soft text-pretty">
+          <p className="mt-2 text-body-sm lg:text-body text-ink-soft text-pretty">
             Skip anything that wasn’t in your report — we’ll only show what
             you enter. Numbers outside reasonable ranges are dropped
             automatically to catch typos.
@@ -180,7 +180,7 @@ export default function ManualEntryPage() {
           <div className="mt-5">
             <label
               htmlFor="report-name"
-              className="block text-eyebrow font-bold uppercase tracking-[0.14em] text-indigo-700 mb-1.5"
+              className="block text-micro font-bold uppercase tracking-[0.14em] text-indigo-700 mb-1.5"
             >
               Report name (optional)
             </label>
@@ -190,7 +190,7 @@ export default function ManualEntryPage() {
               value={reportName}
               onChange={(e) => setReportName(e.target.value)}
               placeholder="My lab report"
-              className="w-full h-12 px-4 rounded-[14px] bg-surface border border-line text-ui-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400"
+              className="w-full h-12 px-4 rounded-[14px] bg-surface border border-line text-body-sm text-ink placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400"
             />
           </div>
         </div>
@@ -217,10 +217,10 @@ export default function ManualEntryPage() {
                     {category.icon}
                   </span>
                   <div className="flex-1 min-w-0 text-left">
-                    <div className="font-display text-ui-lg leading-tight">
+                    <div className="font-display text-body leading-tight">
                       {category.name}
                     </div>
-                    <div className="text-footnote text-muted mt-0.5 truncate">
+                    <div className="text-caption text-muted mt-0.5 truncate">
                       {category.description}
                     </div>
                   </div>
@@ -263,7 +263,7 @@ export default function ManualEntryPage() {
           {saveError && (
             <div
               role="alert"
-              className="mb-3 flex items-start gap-2 rounded-[14px] bg-concern-soft border border-concern/30 px-3.5 py-2.5 text-footnote text-concern leading-relaxed"
+              className="mb-3 flex items-start gap-2 rounded-[14px] bg-concern-soft border border-concern/30 px-3.5 py-2.5 text-caption text-concern leading-relaxed"
             >
               <AlertTriangle size={14} className="shrink-0 mt-0.5" aria-hidden />
               <span>{saveError}</span>
@@ -331,7 +331,7 @@ function MarkerInputRow({
       <div className="flex-1 min-w-0">
         <label
           htmlFor={id}
-          className="block text-meta font-semibold text-ink leading-tight"
+          className="block text-caption font-semibold text-ink leading-tight"
         >
           {template.name}
         </label>
@@ -360,7 +360,7 @@ function MarkerInputRow({
           aria-label={`${template.name}${template.unit ? ' in ' + template.unit : ''}`}
           aria-invalid={isOOR ? true : undefined}
           aria-describedby={isOOR ? `${id}-error` : undefined}
-          className={`w-24 h-11 px-3 text-right text-ui-sm tabular-nums rounded-[12px] focus:outline-none focus:ring-2 ${
+          className={`w-24 h-11 px-3 text-right text-body-sm tabular-nums rounded-[12px] focus:outline-none focus:ring-2 ${
             isOOR
               ? 'bg-concern-soft border border-concern/60 text-concern focus:ring-concern/40 focus:border-concern'
               : 'bg-surface border border-line focus:ring-indigo-400/60 focus:border-indigo-400'

@@ -59,7 +59,7 @@ export default function ProfilePage() {
           <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
             Profile
           </div>
-          <h1 className="font-display text-h2-lg lg:text-h1 leading-tight mt-1">
+          <h1 className="font-display text-display-md lg:text-display-lg leading-tight mt-1">
             Account & preferences
           </h1>
         </div>
@@ -90,10 +90,10 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-display text-h3 leading-tight">
+                      <div className="font-display text-display-md leading-tight">
                         Your account
                       </div>
-                      <div className="text-footnote text-indigo-100 mt-0.5">
+                      <div className="text-caption text-indigo-100 mt-0.5">
                         Anonymous · stored in this browser
                       </div>
                     </div>
@@ -132,7 +132,7 @@ export default function ProfilePage() {
                   <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
                     Your priorities
                   </div>
-                  <h2 className="font-display text-h4 leading-tight mt-1">
+                  <h2 className="font-display text-display-md leading-tight mt-1">
                     What we’re watching
                   </h2>
                 </div>
@@ -147,7 +147,7 @@ export default function ProfilePage() {
               <Card className="mt-4">
                 {quiz.priorities.length === 0 ? (
                   <div>
-                    <p className="text-meta text-ink-soft leading-relaxed">
+                    <p className="text-caption text-ink-soft leading-relaxed">
                       You haven’t set priorities yet. Take the quiz so we can
                       tailor your dashboard.
                     </p>
@@ -179,7 +179,7 @@ export default function ProfilePage() {
               <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
                 Settings
               </div>
-              <h2 className="font-display text-h4 leading-tight mt-1">
+              <h2 className="font-display text-display-md leading-tight mt-1">
                 Account &amp; data
               </h2>
 
@@ -232,15 +232,15 @@ export default function ProfilePage() {
                         <row.Icon size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-ui-sm">
+                        <div className="font-semibold text-body-sm">
                           {row.label}
                         </div>
-                        <div className="text-footnote text-muted truncate">
+                        <div className="text-caption text-muted truncate">
                           {row.hint}
                         </div>
                       </div>
                       {!row.onClick && (
-                        <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-eyebrow font-bold uppercase tracking-[0.1em] text-muted shrink-0">
+                        <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-micro font-bold uppercase tracking-[0.1em] text-muted shrink-0">
                           Soon
                         </span>
                       )}
@@ -281,10 +281,10 @@ export default function ProfilePage() {
 function ProfileStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[14px] bg-indigo-700/50 p-3 text-center">
-      <div className="font-display text-ui-lg leading-tight text-white truncate">
+      <div className="font-display text-body leading-tight text-white truncate">
         {value}
       </div>
-      <div className="text-eyebrow uppercase tracking-[0.12em] font-bold text-indigo-100 mt-1.5">
+      <div className="text-micro uppercase tracking-[0.12em] font-bold text-indigo-100 mt-1.5">
         {label}
       </div>
     </div>

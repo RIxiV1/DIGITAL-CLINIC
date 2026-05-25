@@ -231,7 +231,7 @@ export default function HomePage() {
               className="text-concern shrink-0 mt-0.5"
               aria-hidden
             />
-            <div className="flex-1 min-w-0 text-meta leading-relaxed text-ink">
+            <div className="flex-1 min-w-0 text-caption leading-relaxed text-ink">
               <div className="font-semibold text-concern">
                 Your browser ran out of storage space.
               </div>
@@ -283,7 +283,7 @@ export default function HomePage() {
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search markers, goals, or tests"
                   aria-label="Search markers, goals, or tests"
-                  className="w-full h-12 pl-10 pr-12 rounded-[14px] bg-canvas/70 border border-line text-ui-sm placeholder:text-muted text-ink focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400"
+                  className="w-full h-12 pl-10 pr-12 rounded-[14px] bg-canvas/70 border border-line text-body-sm placeholder:text-muted text-ink focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400"
                 />
                 <AnimatePresence initial={false}>
                   {query && (
@@ -317,7 +317,7 @@ export default function HomePage() {
                       // min-h-12 (48px) so the hit area meets the
                       // 48x48 touch-target rule even though the visible
                       // chip is compact.
-                      className={`px-4 min-h-12 rounded-full text-footnote font-semibold whitespace-nowrap transition-colors ${
+                      className={`px-4 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
                         active
                           ? 'bg-indigo-600 text-white shadow-soft'
                           : 'bg-canvas/70 border border-line text-ink-soft hover:border-indigo-300'
@@ -338,7 +338,7 @@ export default function HomePage() {
               <div
                 role="status"
                 aria-live="polite"
-                className="mt-3 text-footnote text-ink-soft"
+                className="mt-3 text-caption text-ink-soft"
               >
                 {totalMatches === 0 ? (
                   <span>No matches. Try a broader search.</span>
@@ -436,7 +436,7 @@ export default function HomePage() {
                         >
                           {group.icon}
                         </Emoji>
-                        <div className="text-eyebrow uppercase tracking-[0.16em] font-bold text-indigo-700">
+                        <div className="text-micro uppercase tracking-[0.16em] font-bold text-indigo-700">
                           {group.name}
                         </div>
                       </div>
@@ -471,8 +471,8 @@ export default function HomePage() {
             <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 mb-3">
               <Search size={20} />
             </div>
-            <div className="font-display text-h4">Nothing matched.</div>
-            <p className="text-meta text-ink-soft mt-1.5 max-w-sm mx-auto leading-relaxed">
+            <div className="font-display text-display-md">Nothing matched.</div>
+            <p className="text-caption text-ink-soft mt-1.5 max-w-sm mx-auto leading-relaxed">
               Try a different keyword (e.g. "vitamin", "sugar", "heart"), or
               switch the status filter back to "All markers".
             </p>
@@ -504,7 +504,7 @@ export default function HomePage() {
           <Pill tone="indigo" size="sm">
             What you’ll see
           </Pill>
-          <h2 className="font-display text-h3 lg:text-h2 leading-tight mt-2">
+          <h2 className="font-display text-display-md lg:text-display-md leading-tight mt-2">
             Your dashboard, once you upload
           </h2>
           {/* sm:2 → md:3 ladder so a 700px portrait tablet doesn't
@@ -531,13 +531,13 @@ export default function HomePage() {
               },
             ].map((s) => (
               <Card key={s.title}>
-                <Emoji label={s.label} className="text-h3 leading-none">
+                <Emoji label={s.label} className="text-display-md leading-none">
                   {s.icon}
                 </Emoji>
-                <div className="font-display text-ui leading-tight mt-3">
+                <div className="font-display text-body leading-tight mt-3">
                   {s.title}
                 </div>
-                <p className="mt-1.5 text-footnote text-ink-soft leading-relaxed">
+                <p className="mt-1.5 text-caption text-ink-soft leading-relaxed">
                   {s.copy}
                 </p>
               </Card>
@@ -555,7 +555,7 @@ export default function HomePage() {
             <button
               type="button"
               onClick={() => navigate({ type: 'upload' })}
-              className="inline-flex items-center gap-1.5 min-h-12 h-12 px-4 rounded-full bg-indigo-600 text-white text-meta font-semibold shadow-soft hover:bg-indigo-700"
+              className="inline-flex items-center gap-1.5 min-h-12 h-12 px-4 rounded-full bg-indigo-600 text-white text-caption font-semibold shadow-soft hover:bg-indigo-700"
             >
               <Plus size={14} /> Upload
             </button>
@@ -576,7 +576,7 @@ export default function HomePage() {
                 onChange={(e) => setLockerQuery(e.target.value)}
                 placeholder="Search by filename or lab…"
                 aria-label="Filter reports"
-                className="w-full h-10 pl-9 pr-9 rounded-full bg-surface border border-line text-meta placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                className="w-full h-10 pl-9 pr-9 rounded-full bg-surface border border-line text-caption placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
               />
               <AnimatePresence initial={false}>
                 {lockerQuery && (
@@ -599,7 +599,7 @@ export default function HomePage() {
             <div
               role="radiogroup"
               aria-label="Sort reports"
-              className="inline-flex p-0.5 rounded-full bg-surface border border-line text-footnote font-semibold shrink-0"
+              className="inline-flex p-0.5 rounded-full bg-surface border border-line text-caption font-semibold shrink-0"
             >
               {(
                 [
@@ -633,8 +633,8 @@ export default function HomePage() {
               <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 mb-3">
                 <FileText size={20} />
               </div>
-              <div className="font-display text-h4">No reports yet.</div>
-              <p className="text-meta text-ink-soft mt-1.5 max-w-sm mx-auto leading-relaxed">
+              <div className="font-display text-display-md">No reports yet.</div>
+              <p className="text-caption text-ink-soft mt-1.5 max-w-sm mx-auto leading-relaxed">
                 Drop a report and we'll translate it into plain English — or open
                 the sample first to see exactly what you'll get.
               </p>
@@ -657,7 +657,7 @@ export default function HomePage() {
             </Card>
           ) : displayedReports.length === 0 ? (
             <Card className="text-center !py-8 sm:col-span-2 md:col-span-3">
-              <div className="text-meta text-ink-soft">
+              <div className="text-caption text-ink-soft">
                 No reports match <span className="font-semibold text-ink">"{lockerQuery}"</span>.
               </div>
               <Button
@@ -838,7 +838,7 @@ function DeleteReportConfirm({
                 >
                   Delete this report?
                 </h2>
-                <p className="mt-1.5 text-meta text-ink-soft leading-relaxed break-words">
+                <p className="mt-1.5 text-caption text-ink-soft leading-relaxed break-words">
                   <span className="font-semibold text-ink">{report.name}</span>
                   {' '}({report.lab}) will be removed from your locker. This
                   can’t be undone.
@@ -909,11 +909,11 @@ function SectionHeading({
         <Pill tone="indigo" size="sm">
           {eyebrow}
         </Pill>
-        <h2 className="font-display text-h3 lg:text-h2 leading-tight mt-2">
+        <h2 className="font-display text-display-md lg:text-display-md leading-tight mt-2">
           {title}
         </h2>
         {subtitle && (
-          <p className="text-meta text-ink-soft mt-1">{subtitle}</p>
+          <p className="text-caption text-ink-soft mt-1">{subtitle}</p>
         )}
       </div>
       {rightSlot && <div className="shrink-0">{rightSlot}</div>}

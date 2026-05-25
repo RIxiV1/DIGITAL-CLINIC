@@ -105,22 +105,22 @@ export default function DashboardHeadline({
     >
       <div className="relative grid md:grid-cols-[1fr_auto] gap-5 md:gap-8 md:items-center">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.18em] font-bold text-indigo-100">
+          <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-[0.18em] font-bold text-indigo-100">
             <Sparkles size={11} />
             {eyebrow}
           </div>
-          <h1 className="mt-2.5 font-display text-h3 sm:text-h2 lg:text-h1 leading-[1.15] text-balance">
+          <h1 className="mt-2.5 font-display text-display-md sm:text-display-md lg:text-display-lg leading-[1.15] text-balance">
             {headline}
           </h1>
           {sub && (
-            <p className="mt-2 text-meta lg:text-ui-sm text-indigo-100 leading-relaxed max-w-[60ch]">
+            <p className="mt-2 text-caption lg:text-body-sm text-indigo-100 leading-relaxed max-w-[60ch]">
               {sub}
             </p>
           )}
           <button
             type="button"
             onClick={onPrimaryCTA}
-            className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-meta font-semibold shadow-soft transition-colors whitespace-nowrap"
+            className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-caption font-semibold shadow-soft transition-colors whitespace-nowrap"
           >
             {ctaLabel}
             <ArrowRight size={14} />

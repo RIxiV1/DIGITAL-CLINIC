@@ -87,7 +87,7 @@ function StepCard({
           <Icon size={20} />
         </div>
         <span
-          className={`font-semibold text-footnote uppercase tracking-[0.18em] ${
+          className={`font-semibold text-caption uppercase tracking-[0.18em] ${
             emphasized ? 'text-blue-200' : 'text-muted'
           }`}
         >
@@ -95,14 +95,14 @@ function StepCard({
         </span>
       </div>
       <div
-        className={`mt-6 font-sans font-bold text-h4 md:text-h3 tracking-[-0.01em] leading-snug ${
+        className={`mt-6 font-sans font-bold text-display-md md:text-display-md tracking-[-0.01em] leading-snug ${
           emphasized ? 'text-white' : 'text-ink'
         }`}
       >
         {title}
       </div>
       <p
-        className={`mt-3 text-ui-sm leading-relaxed ${
+        className={`mt-3 text-body-sm leading-relaxed ${
           emphasized ? 'text-blue-100' : 'text-ink-soft'
         }`}
       >

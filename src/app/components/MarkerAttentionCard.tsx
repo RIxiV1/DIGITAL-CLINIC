@@ -107,7 +107,7 @@ export default function MarkerAttentionCard({
       <div className="flex-1 p-5 flex flex-col min-w-0">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
-            <div className="text-eyebrow uppercase tracking-[0.14em] font-bold text-muted truncate">
+            <div className="text-micro uppercase tracking-[0.14em] font-bold text-muted truncate">
               {marker.name}
             </div>
             {marker.simpleName && (
@@ -137,15 +137,15 @@ export default function MarkerAttentionCard({
         </div>
 
         <div className="mt-2 flex items-baseline gap-2">
-          <span className="font-display text-h2-lg leading-none text-ink tabular-nums">
+          <span className="font-display text-display-md leading-none text-ink tabular-nums">
             {animatedValue}
           </span>
-          <span className="text-footnote text-muted font-medium">
+          <span className="text-caption text-muted font-medium">
             {marker.unit}
           </span>
           {trendIcon && delta && (
             <span
-              className={`inline-flex items-center gap-0.5 text-footnote font-bold tabular-nums ${trendToneCls}`}
+              className={`inline-flex items-center gap-0.5 text-caption font-bold tabular-nums ${trendToneCls}`}
               title={
                 prev !== undefined
                   ? `Previously ${prev} ${marker.unit}`
@@ -160,7 +160,7 @@ export default function MarkerAttentionCard({
 
         {/* Pulsing status indicator + label */}
         <div
-          className={`mt-2 inline-flex self-start items-center gap-1.5 px-2 h-5 rounded-full text-eyebrow-xs font-bold uppercase tracking-[0.1em] ${c.bg} ${c.text}`}
+          className={`mt-2 inline-flex self-start items-center gap-1.5 px-2 h-5 rounded-full text-micro font-bold uppercase tracking-[0.1em] ${c.bg} ${c.text}`}
         >
           <span className="relative grid place-items-center w-1.5 h-1.5">
             <span
@@ -171,7 +171,7 @@ export default function MarkerAttentionCard({
           {c.label}
         </div>
 
-        <p className="mt-3 text-footnote text-ink-soft leading-relaxed line-clamp-3">
+        <p className="mt-3 text-caption text-ink-soft leading-relaxed line-clamp-3">
           {marker.plain}
         </p>
 
@@ -185,7 +185,7 @@ export default function MarkerAttentionCard({
               // click on the card body activates it. Without z-10 the
               // ::after sits below other in-card content; with it the
               // pseudo covers everything except the Info button (z-20).
-              className={`mt-4 inline-flex items-center gap-1 text-footnote font-semibold text-indigo-700 hover:text-indigo-800 self-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm ${
+              className={`mt-4 inline-flex items-center gap-1 text-caption font-semibold text-indigo-700 hover:text-indigo-800 self-start focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm ${
                 isActionPrimary ? stretchClass : ''
               }`}
             >
@@ -193,7 +193,7 @@ export default function MarkerAttentionCard({
               <ArrowRight size={12} />
             </button>
           ) : (
-            <div className="mt-4 inline-flex items-center gap-1 text-footnote font-medium text-muted self-start">
+            <div className="mt-4 inline-flex items-center gap-1 text-caption font-medium text-muted self-start">
               <span aria-hidden>·</span>
               {actionLabel}
             </div>

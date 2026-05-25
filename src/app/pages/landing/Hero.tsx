@@ -50,7 +50,7 @@ export default function Hero({
 
             <motion.h1
               variants={fadeUp}
-              className="font-sans font-bold text-h1 sm:text-hero md:text-hero-lg lg:text-hero-xl leading-[1.06] tracking-[-0.025em] mt-5 text-ink text-balance"
+              className="font-sans font-bold text-display-lg sm:text-display-xl md:text-display-xl lg:text-display-xl leading-[1.06] tracking-[-0.025em] mt-5 text-ink text-balance"
             >
               Your hair loss, your fatigue, and your sex drive{' '}
               {/* Single gradient accent — used exactly once, on the
@@ -74,7 +74,7 @@ export default function Hero({
 
             <motion.p
               variants={fadeUp}
-              className="mt-4 text-ui md:text-lead leading-relaxed text-ink-soft max-w-[40ch] text-pretty"
+              className="mt-4 text-body md:text-body-lg leading-relaxed text-ink-soft max-w-[40ch] text-pretty"
             >
               One hormonal system controls all three. Most Indian men have never
               had it tested. Upload any lab report — we’ll translate the whole
@@ -102,7 +102,7 @@ export default function Hero({
               </Button>
               <button
                 onClick={onSample}
-                className="inline-flex items-center justify-center gap-1.5 px-1 sm:px-2 h-11 text-ui-sm font-semibold text-ink-soft hover:text-blue-700 transition-colors"
+                className="inline-flex items-center justify-center gap-1.5 px-1 sm:px-2 h-11 text-body-sm font-semibold text-ink-soft hover:text-blue-700 transition-colors"
               >
                 See a sample report
                 <ChevronRight size={14} />
@@ -112,7 +112,7 @@ export default function Hero({
             {/* Real credibility strip — no fake user counts */}
             <motion.div
               variants={fadeUp}
-              className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-footnote text-muted"
+              className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-caption text-muted"
             >
               <span className="inline-flex items-center gap-1.5">
                 <FlaskConical size={13} className="text-blue-600" />
@@ -199,7 +199,7 @@ function HeroVisual() {
             <span className="w-2 h-2 rounded-full bg-[#FEBC2E]" />
             <span className="w-2 h-2 rounded-full bg-[#28C840]" />
           </div>
-          <div className="text-eyebrow font-semibold text-ink">
+          <div className="text-micro font-semibold text-ink">
             Hormonal health map
           </div>
           <div className="w-10" />
@@ -272,7 +272,7 @@ function MapRow({
           {organ}
         </div>
         <div
-          className={`text-eyebrow-xs font-bold uppercase tracking-[0.1em] leading-tight mt-0.5 ${
+          className={`text-micro font-bold uppercase tracking-[0.1em] leading-tight mt-0.5 ${
             highlighted ? 'text-blue-100' : 'text-blue-700'
           }`}
         >

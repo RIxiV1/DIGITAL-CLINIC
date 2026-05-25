@@ -76,10 +76,10 @@ export default function RecommendedTestsPage() {
             Personalised for you
           </Pill>
 
-          <h1 className="font-display text-h2-lg lg:text-display leading-tight mt-3 text-balance">
+          <h1 className="font-display text-display-md lg:text-display-lg leading-tight mt-3 text-balance">
             Here’s what we’d test, given what you told us.
           </h1>
-          <p className="mt-2 text-ui-sm lg:text-ui text-ink-soft text-pretty">
+          <p className="mt-2 text-body-sm lg:text-body text-ink-soft text-pretty">
             Tap any test to see <em>why</em> we picked it and <em>what</em>’s
             actually measured.
           </p>
@@ -98,10 +98,10 @@ export default function RecommendedTestsPage() {
                   <AlertCircle size={18} />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-display text-ui-lg lg:text-lead text-ink leading-tight">
+                  <div className="font-display text-body lg:text-body-lg text-ink leading-tight">
                     Talk to a doctor before acting on this.
                   </div>
-                  <p className="mt-1.5 text-meta text-ink-soft leading-relaxed">
+                  <p className="mt-1.5 text-caption text-ink-soft leading-relaxed">
                     Your answers cluster strongly toward at least one
                     system. The tests below help confirm or rule it out —
                     but the interpretation belongs in a consultation,
@@ -134,12 +134,12 @@ export default function RecommendedTestsPage() {
                     onClick={() => setExpanded(open ? null : t.id)}
                     className="w-full text-left p-5 flex items-start gap-3"
                   >
-                    <div className="grid place-items-center w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 font-display text-ui shrink-0">
+                    <div className="grid place-items-center w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 font-display text-body shrink-0">
                       {String(i + 1).padStart(2, '0')}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-semibold text-ink">{t.name}</div>
-                      <div className="text-footnote text-muted mt-0.5">
+                      <div className="text-caption text-muted mt-0.5">
                         {t.short}
                       </div>
                       <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
@@ -177,14 +177,14 @@ export default function RecommendedTestsPage() {
                       >
                         <div className="px-5 pb-5">
                           <div className="rounded-[16px] bg-gold-50 border border-gold-200 p-4">
-                            <div className="text-eyebrow uppercase tracking-[0.14em] font-bold text-gold-800">
+                            <div className="text-micro uppercase tracking-[0.14em] font-bold text-gold-800">
                               Why this for you
                             </div>
                             {/* Hardcoded ink so the body stays dark on the
                                 gold background in BOTH themes. text-ink
                                 would invert to light in dark mode and the
                                 copy would vanish into the gold tile. */}
-                            <p className="mt-1.5 text-ui-sm leading-relaxed text-[#0F1422]">
+                            <p className="mt-1.5 text-body-sm leading-relaxed text-[#0F1422]">
                               {t.whyTemplate(quiz)}
                             </p>
                           </div>
@@ -196,7 +196,7 @@ export default function RecommendedTestsPage() {
                                 triggerRef.current = e.currentTarget;
                                 setOpenTestId(t.id);
                               }}
-                              className="mt-3 inline-flex items-center gap-1.5 text-footnote font-semibold text-indigo-700 hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-md px-1 -mx-1"
+                              className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-indigo-700 hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-md px-1 -mx-1"
                             >
                               Learn more about this panel
                               <ChevronRight size={14} />
@@ -204,7 +204,7 @@ export default function RecommendedTestsPage() {
                           )}
 
                           <div className="mt-4">
-                            <div className="text-eyebrow uppercase tracking-[0.14em] font-bold text-indigo-700">
+                            <div className="text-micro uppercase tracking-[0.14em] font-bold text-indigo-700">
                               What’s in this test
                             </div>
                             <ul className="mt-2 grid gap-2">
@@ -220,10 +220,10 @@ export default function RecommendedTestsPage() {
                                       className="text-indigo-600 mt-0.5 shrink-0"
                                     />
                                     <div className="flex-1 min-w-0">
-                                      <div className="font-semibold text-ui-sm">
+                                      <div className="font-semibold text-body-sm">
                                         {m.name}
                                       </div>
-                                      <div className="text-meta text-ink-soft leading-relaxed">
+                                      <div className="text-caption text-ink-soft leading-relaxed">
                                         {m.about}
                                       </div>
                                     </div>
@@ -270,10 +270,10 @@ export default function RecommendedTestsPage() {
                 <Upload size={16} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-indigo-900 text-ui-sm">
+                <div className="font-semibold text-indigo-900 text-body-sm">
                   Done at the lab?
                 </div>
-                <p className="mt-1 text-footnote text-indigo-700 leading-relaxed">
+                <p className="mt-1 text-caption text-indigo-700 leading-relaxed">
                   Upload your report and we’ll translate it into plain English.
                 </p>
                 <Button
@@ -294,10 +294,10 @@ export default function RecommendedTestsPage() {
                 <Printer size={16} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="font-semibold text-ink text-ui-sm">
+                <div className="font-semibold text-ink text-body-sm">
                   Not yet?
                 </div>
-                <p className="mt-1 text-footnote text-ink-soft leading-relaxed">
+                <p className="mt-1 text-caption text-ink-soft leading-relaxed">
                   Save this list to take to a lab — print it or screenshot it.
                 </p>
                 <Button
@@ -374,7 +374,7 @@ function RiskSummaryCard({ assessment }: { assessment: RiskAssessment }) {
           <Sparkles size={10} /> Why these tests
         </Pill>
       </div>
-      <p className="mt-2.5 text-ui-sm leading-relaxed text-ink-soft">
+      <p className="mt-2.5 text-body-sm leading-relaxed text-ink-soft">
         {lead}{' '}
         <span className="text-muted">
           Scores combine your symptom checks with their known clinical weight.
@@ -452,7 +452,7 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
           aria-hidden
         />
         <div className="min-w-0">
-          <div className="text-meta font-semibold text-ink leading-tight">
+          <div className="text-caption font-semibold text-ink leading-tight">
             {system.label}
           </div>
           <div className="mt-0.5 text-caption text-muted tabular-nums">
@@ -462,7 +462,7 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
         </div>
       </div>
       <div
-        className={`shrink-0 mt-0.5 inline-flex items-center px-2.5 h-6 rounded-full text-eyebrow font-bold uppercase tracking-[0.1em] ${tierStyles.badge}`}
+        className={`shrink-0 mt-0.5 inline-flex items-center px-2.5 h-6 rounded-full text-micro font-bold uppercase tracking-[0.1em] ${tierStyles.badge}`}
         aria-label={`${system.label}: ${tierStyles.label}`}
       >
         {tierStyles.label}

@@ -48,17 +48,17 @@ export default class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-dvh bg-canvas grid place-items-center px-6 py-12">
           <div className="max-w-md text-center">
             <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-concern-soft text-concern">
-              <span className="font-display text-h4 leading-none">!</span>
+              <span className="font-display text-display-md leading-none">!</span>
             </div>
-            <div className="mt-5 text-eyebrow uppercase tracking-[0.18em] font-bold text-concern">
+            <div className="mt-5 text-micro uppercase tracking-[0.18em] font-bold text-concern">
               {isChunkError ? 'New version available' : 'Something broke'}
             </div>
-            <h1 className="font-display text-h3-lg leading-tight mt-2 text-balance">
+            <h1 className="font-display text-display-md leading-tight mt-2 text-balance">
               {isChunkError
                 ? 'We just shipped an update.'
                 : 'A page render failed mid-flight.'}
             </h1>
-            <p className="mt-3 text-meta text-ink-soft leading-relaxed">
+            <p className="mt-3 text-caption text-ink-soft leading-relaxed">
               {isChunkError
                 ? "Your browser is still on the previous version of the app. Refresh to load the latest — you won't lose any saved reports."
                 : 'You hit a render error in the app. Try again to get back to a clean state — if it keeps happening on the same page, the message below is the clue to send back.'}
@@ -71,7 +71,7 @@ export default class ErrorBoundary extends Component<Props, State> {
             <button
               type="button"
               onClick={isChunkError ? hardReload : this.reset}
-              className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-indigo-600 text-white text-meta font-semibold shadow-clinical hover:bg-indigo-700 transition-colors"
+              className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-indigo-600 text-white text-caption font-semibold shadow-clinical hover:bg-indigo-700 transition-colors"
             >
               {isChunkError ? 'Refresh app' : 'Try again'}
             </button>

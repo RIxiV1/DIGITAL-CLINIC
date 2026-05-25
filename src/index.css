@@ -71,55 +71,41 @@
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
 
-  /* Type scale — semantic, rem-based.
+  /* Type scale — 8 semantic tokens, rem-based.
    *
-   * The previous code used 325 bracket-notation pixel values
-   * (text-[12.5px], text-[13.5px], etc.) sprinkled across 34 files.
-   * Two problems:
-   *   1. Pixel values ignore the user's browser font-size preference,
-   *      so anyone who scales up for readability got nothing.
-   *   2. Half-pixel values (12.5, 13.5) were iterative design churn,
-   *      not deliberate intent — the scale had no system.
+   * The original code used 325 bracket-notation pixel values
+   * (text-[12.5px] etc.) across 34 files; the first pass tokenized
+   * them into 20 named tokens; this pass collapses to 8 — the
+   * tightest scale that still covers every role in the product.
    *
-   * Replaced with rem-based tokens named for their *role*, not their
-   * pixel value, so a future "bump body text by one notch" flips one
-   * line instead of grep-and-pray across 325 classes. Half-pixel
-   * values snapped to the nearest integer pixel.
+   * Two design wins from the collapse:
+   *   1. Decisions become semantic ("this is body text"), not
+   *      pixel-precise ("this is 14.5px") — the per-instance churn
+   *      that produced half-pixel values can't recur.
+   *   2. A single Text component (components/Text.tsx) enforces the
+   *      scale at write time. New code uses `<Text variant="body">`,
+   *      old code keeps working through the same class names.
    *
    * Naming convention:
-   *   eyebrow-xs/eyebrow  — uppercase tracking-wide labels, badges
-   *   caption             — 11px small annotations
-   *   footnote            — 12px footnotes, meta info
-   *   meta                — 13px card meta, dense body
-   *   ui-sm/ui/ui-lg      — 14/15/16px UI body text
-   *   lead                — 17px lead paragraphs
-   *   body-lg             — 18px emphasised body
-   *   h4/h3/h3-lg         — 20/22/24px card + section titles
-   *   h2/h2-lg            — 26/28px section titles
-   *   h1/display          — 32/36px page titles
-   *   hero/hero-lg/hero-xl — 44/52/56px landing hero
+   *   micro         — 10px uppercase tracking-wide labels, badges
+   *   caption       — 12px captions, footnotes, dense meta
+   *   body-sm       — 14px small / compact body
+   *   body          — 15px default body, UI text
+   *   body-lg       — 17px lead paragraphs, emphasised body
+   *   display-md    — 24px card + section titles
+   *   display-lg    — 32px page titles
+   *   display-xl    — 56px landing hero
    *
-   * All sizes ramp from 16px = 1rem; numbers below assume that base. */
-  --text-eyebrow-xs: 0.5625rem;      /*  9px */
-  --text-eyebrow: 0.625rem;          /* 10px */
-  --text-caption: 0.6875rem;         /* 11px */
-  --text-footnote: 0.75rem;          /* 12px */
-  --text-meta: 0.8125rem;            /* 13px */
-  --text-ui-sm: 0.875rem;            /* 14px */
-  --text-ui: 0.9375rem;              /* 15px */
-  --text-ui-lg: 1rem;                /* 16px */
-  --text-lead: 1.0625rem;            /* 17px */
-  --text-body-lg: 1.125rem;          /* 18px */
-  --text-h4: 1.25rem;                /* 20px */
-  --text-h3: 1.375rem;               /* 22px */
-  --text-h3-lg: 1.5rem;              /* 24px */
-  --text-h2: 1.625rem;               /* 26px */
-  --text-h2-lg: 1.75rem;             /* 28px */
-  --text-h1: 2rem;                   /* 32px */
-  --text-display: 2.25rem;           /* 36px */
-  --text-hero: 2.75rem;              /* 44px */
-  --text-hero-lg: 3.25rem;           /* 52px */
-  --text-hero-xl: 3.5rem;            /* 56px */
+   * All sizes anchor to 16px = 1rem so browser font-size scaling
+   * works the way users expect. */
+  --text-micro: 0.625rem;            /* 10px */
+  --text-caption: 0.75rem;           /* 12px */
+  --text-body-sm: 0.875rem;          /* 14px */
+  --text-body: 0.9375rem;            /* 15px */
+  --text-body-lg: 1.0625rem;         /* 17px */
+  --text-display-md: 1.5rem;         /* 24px */
+  --text-display-lg: 2rem;           /* 32px */
+  --text-display-xl: 3.5rem;         /* 56px */
 
   /* Premium shadows */
   /* Elevation system. Four steps, used as:

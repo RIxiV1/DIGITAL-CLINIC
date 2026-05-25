@@ -38,7 +38,7 @@ export default function TrendRow({ marker, onLearnMore }: Props) {
     <div className="flex items-center gap-3 py-2.5 border-b border-line/60 last:border-0">
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5">
-          <div className="text-footnote font-semibold text-ink truncate">
+          <div className="text-caption font-semibold text-ink truncate">
             {marker.name}
           </div>
           {onLearnMore && (
@@ -54,18 +54,18 @@ export default function TrendRow({ marker, onLearnMore }: Props) {
           )}
         </div>
         {marker.simpleName && (
-          <div className="text-eyebrow text-muted leading-tight truncate">
+          <div className="text-micro text-muted leading-tight truncate">
             {marker.simpleName}
           </div>
         )}
         <div className="mt-0.5 flex items-baseline gap-1.5">
-          <span className="text-meta font-display text-ink tabular-nums">
+          <span className="text-caption font-display text-ink tabular-nums">
             {marker.value}
           </span>
-          <span className="text-eyebrow text-muted">{marker.unit}</span>
+          <span className="text-micro text-muted">{marker.unit}</span>
           {delta && (
             <span
-              className={`inline-flex items-center gap-0.5 text-eyebrow font-bold tabular-nums ${toneCls}`}
+              className={`inline-flex items-center gap-0.5 text-micro font-bold tabular-nums ${toneCls}`}
               title={prev !== undefined ? `Was ${prev} ${marker.unit}` : undefined}
             >
               <Icon size={10} strokeWidth={2.5} />

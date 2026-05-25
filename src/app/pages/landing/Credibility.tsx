@@ -45,7 +45,7 @@ export default function Credibility() {
         </div>
 
         <Reveal>
-          <div className="mt-10 flex items-center justify-center gap-2 text-meta text-muted text-center max-w-2xl mx-auto">
+          <div className="mt-10 flex items-center justify-center gap-2 text-caption text-muted text-center max-w-2xl mx-auto">
             <Sparkles size={14} className="text-blue-600 shrink-0" />
             <span>
               No testimonials, no fake user counts. Credibility comes from
@@ -80,14 +80,14 @@ function StatCard({
       }`}
     >
       <div
-        className={`font-sans font-bold text-hero-xl md:text-hero-xl leading-none tracking-[-0.03em] ${
+        className={`font-sans font-bold text-display-xl md:text-display-xl leading-none tracking-[-0.03em] ${
           accent ? 'text-white' : 'text-blue-700'
         }`}
       >
         {big}
       </div>
       <p
-        className={`mt-4 text-ui-lg md:text-lead leading-snug text-balance ${
+        className={`mt-4 text-body md:text-body-lg leading-snug text-balance ${
           accent ? 'text-white' : 'text-ink'
         }`}
       >

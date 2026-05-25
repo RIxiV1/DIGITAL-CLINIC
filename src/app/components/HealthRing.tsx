@@ -161,12 +161,12 @@ export default function HealthRing({
       <div className="absolute inset-0 grid place-items-center text-center">
         <div>
           <div
-            className={`font-display text-display leading-none tabular-nums ${primaryTextCls}`}
+            className={`font-display text-display-lg leading-none tabular-nums ${primaryTextCls}`}
           >
             {good}
           </div>
           <div
-            className={`text-eyebrow uppercase tracking-[0.16em] font-bold mt-1 ${subTextCls}`}
+            className={`text-micro uppercase tracking-[0.16em] font-bold mt-1 ${subTextCls}`}
           >
             of {total} on track
           </div>
