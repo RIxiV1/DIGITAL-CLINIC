@@ -77,13 +77,13 @@ export default function LearnMoreModal({
             <div className="flex items-start gap-3 px-6 pt-6 pb-4 border-b border-line/70">
               <div className="flex-1 min-w-0">
                 {subtitle && (
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-700 mb-1">
+                  <div className="text-eyebrow font-bold uppercase tracking-[0.18em] text-indigo-700 mb-1">
                     {subtitle}
                   </div>
                 )}
                 <h2
                   id={titleId}
-                  className="font-display text-[20px] sm:text-[22px] leading-tight text-ink"
+                  className="font-display text-h4 sm:text-h3 leading-tight text-ink"
                 >
                   {title}
                 </h2>
@@ -101,19 +101,19 @@ export default function LearnMoreModal({
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto px-6 py-5">
               <Section eyebrow="What it measures">
-                <p className="text-[14px] leading-relaxed text-ink-soft">
+                <p className="text-ui-sm leading-relaxed text-ink-soft">
                   {info.measures}
                 </p>
               </Section>
 
               <Section eyebrow="Why it matters">
-                <p className="text-[14px] leading-relaxed text-ink-soft">
+                <p className="text-ui-sm leading-relaxed text-ink-soft">
                   {info.importance}
                 </p>
               </Section>
 
               <Section eyebrow="How it affects you">
-                <p className="text-[14px] leading-relaxed text-ink-soft">
+                <p className="text-ui-sm leading-relaxed text-ink-soft">
                   {info.hormonalImpact}
                 </p>
               </Section>
@@ -126,7 +126,7 @@ export default function LearnMoreModal({
                         size={15}
                         className="text-indigo-600 shrink-0 mt-0.5"
                       />
-                      <span className="text-[14px] leading-relaxed text-ink-soft">
+                      <span className="text-ui-sm leading-relaxed text-ink-soft">
                         {line}
                       </span>
                     </li>
@@ -165,7 +165,7 @@ function Section({
 }) {
   return (
     <section className={last ? '' : 'mb-5 pb-5 border-b border-line/60'}>
-      <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-700 mb-2">
+      <div className="text-eyebrow font-bold uppercase tracking-[0.18em] text-indigo-700 mb-2">
         {eyebrow}
       </div>
       {children}

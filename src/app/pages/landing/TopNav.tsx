@@ -32,7 +32,7 @@ export default function TopNav({
           <Logo />
         </button>
         {variant === 'full' && (
-          <nav className="hidden md:flex items-center gap-7 text-[13.5px] text-ink-soft">
+          <nav className="hidden md:flex items-center gap-7 text-meta text-ink-soft">
             <a href="#connection" className="hover:text-ink transition-colors">
               The connection
             </a>
@@ -50,7 +50,7 @@ export default function TopNav({
         <div className="flex items-center gap-2">
           <button
             onClick={onSample}
-            className="hidden md:inline-flex items-center h-10 px-4 rounded-full text-[13px] font-semibold text-ink-soft hover:text-ink hover:bg-blue-50 transition-colors"
+            className="hidden md:inline-flex items-center h-10 px-4 rounded-full text-meta font-semibold text-ink-soft hover:text-ink hover:bg-blue-50 transition-colors"
           >
             See a sample report
           </button>
@@ -61,7 +61,7 @@ export default function TopNav({
           {onDashboard && (
             <button
               onClick={onDashboard}
-              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-[13px] font-semibold shadow-clinical transition-colors"
+              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-meta font-semibold shadow-clinical transition-colors"
             >
               <House size={14} />
               Go to dashboard
@@ -69,7 +69,7 @@ export default function TopNav({
           )}
           <button
             onClick={onStart}
-            className={`items-center gap-1.5 h-10 px-4 rounded-full text-[13px] font-semibold transition-colors ${
+            className={`items-center gap-1.5 h-10 px-4 rounded-full text-meta font-semibold transition-colors ${
               onDashboard
                 ? // Returning users — secondary styling, hidden on mobile to leave room
                   'hidden md:inline-flex border border-line text-ink-soft hover:text-ink hover:bg-blue-50'

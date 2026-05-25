@@ -56,10 +56,10 @@ export default function ProfilePage() {
 
       <Container size="wide" className="pt-5 lg:pt-10">
         <div className="hidden lg:block mb-7">
-          <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
+          <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
             Profile
           </div>
-          <h1 className="font-display text-[28px] lg:text-[34px] leading-tight mt-1">
+          <h1 className="font-display text-h2-lg lg:text-h1 leading-tight mt-1">
             Account & preferences
           </h1>
         </div>
@@ -90,10 +90,10 @@ export default function ProfilePage() {
                       </div>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="font-display text-[22px] leading-tight">
+                      <div className="font-display text-h3 leading-tight">
                         Your account
                       </div>
-                      <div className="text-[12px] text-indigo-100 mt-0.5">
+                      <div className="text-footnote text-indigo-100 mt-0.5">
                         Anonymous · stored in this browser
                       </div>
                     </div>
@@ -129,16 +129,16 @@ export default function ProfilePage() {
             <section>
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
+                  <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
                     Your priorities
                   </div>
-                  <h2 className="font-display text-[20px] leading-tight mt-1">
+                  <h2 className="font-display text-h4 leading-tight mt-1">
                     What we’re watching
                   </h2>
                 </div>
                 <button
                   onClick={() => navigate({ type: 'quiz' })}
-                  className="text-[11px] font-bold uppercase tracking-[0.12em] text-indigo-700 hover:text-indigo-800"
+                  className="text-caption font-bold uppercase tracking-[0.12em] text-indigo-700 hover:text-indigo-800"
                 >
                   Edit
                 </button>
@@ -147,7 +147,7 @@ export default function ProfilePage() {
               <Card className="mt-4">
                 {quiz.priorities.length === 0 ? (
                   <div>
-                    <p className="text-[13.5px] text-ink-soft leading-relaxed">
+                    <p className="text-meta text-ink-soft leading-relaxed">
                       You haven’t set priorities yet. Take the quiz so we can
                       tailor your dashboard.
                     </p>
@@ -176,10 +176,10 @@ export default function ProfilePage() {
           {/* RIGHT: Settings + sign out */}
           <div className="lg:col-span-7 grid gap-5">
             <section>
-              <div className="font-sans text-[11px] uppercase tracking-[0.2em] text-indigo-700 font-bold">
+              <div className="font-sans text-caption uppercase tracking-[0.2em] text-indigo-700 font-bold">
                 Settings
               </div>
-              <h2 className="font-display text-[20px] leading-tight mt-1">
+              <h2 className="font-display text-h4 leading-tight mt-1">
                 Account &amp; data
               </h2>
 
@@ -232,15 +232,15 @@ export default function ProfilePage() {
                         <row.Icon size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-[14px]">
+                        <div className="font-semibold text-ui-sm">
                           {row.label}
                         </div>
-                        <div className="text-[12px] text-muted truncate">
+                        <div className="text-footnote text-muted truncate">
                           {row.hint}
                         </div>
                       </div>
                       {!row.onClick && (
-                        <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-[10px] font-bold uppercase tracking-[0.1em] text-muted shrink-0">
+                        <span className="inline-flex items-center h-5 px-2 rounded-full bg-canvas border border-line text-eyebrow font-bold uppercase tracking-[0.1em] text-muted shrink-0">
                           Soon
                         </span>
                       )}
@@ -261,7 +261,7 @@ export default function ProfilePage() {
               Sign out
             </Button>
 
-            <p className="text-center lg:text-left text-[11px] text-muted">
+            <p className="text-center lg:text-left text-caption text-muted">
               Digital Clinic · v0.1.0
             </p>
           </div>
@@ -281,10 +281,10 @@ export default function ProfilePage() {
 function ProfileStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-[14px] bg-indigo-700/50 p-3 text-center">
-      <div className="font-display text-[16px] leading-tight text-white truncate">
+      <div className="font-display text-ui-lg leading-tight text-white truncate">
         {value}
       </div>
-      <div className="text-[10px] uppercase tracking-[0.12em] font-bold text-indigo-100 mt-1.5">
+      <div className="text-eyebrow uppercase tracking-[0.12em] font-bold text-indigo-100 mt-1.5">
         {label}
       </div>
     </div>

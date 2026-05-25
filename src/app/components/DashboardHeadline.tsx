@@ -32,25 +32,46 @@ function gradientForHour(h: number): string {
   return 'linear-gradient(135deg, var(--color-indigo-900) 0%, var(--color-indigo-700) 55%, var(--color-blue-800) 100%)';
 }
 
+/** ms remaining until the next time the gradient bucket actually
+ *  changes. There are exactly three transitions per day — 12:00,
+ *  18:00, 00:00 (midnight). Other hour boundaries are no-ops for the
+ *  gradient, so we don't bother waking up to handle them. */
+function msUntilNextGradientBoundary(now: Date = new Date()): number {
+  const h = now.getHours();
+  // Pick the next bucket-changing hour: morning ends at 12, afternoon
+  // ends at 18, evening rolls over to morning at 24 (midnight).
+  const nextHour = h < 12 ? 12 : h < 18 ? 18 : 24;
+  const next = new Date(now);
+  next.setHours(nextHour, 0, 0, 0);
+  return next.getTime() - now.getTime();
+}
+
 /** Time-of-day-aware gradient. Morning warms toward gold; afternoon is
  *  pure brand indigo; evening cools toward deep blue.
  *
- *  Recomputes once per hour while the page is open — without this, a
- *  user who opens the dashboard at 11:55am sees morning warmth past
- *  noon. The interval is light (one Date.getHours() check, ~no work)
- *  and is registered against the tab's wall clock so DST / sleep-wake
- *  don't desync it. */
+ *  Previously polled every 60s (≈60 wake-ups per hour, 1440 per day,
+ *  for what is at most 3 actual gradient changes). Now schedules a
+ *  single setTimeout to the next bucket boundary; on fire, updates
+ *  state and reschedules. Three wake-ups per day max, exact
+ *  transitions on the boundary. */
 function useGradientForTimeOfDay() {
   const [hour, setHour] = useState(() => new Date().getHours());
   useEffect(() => {
-    // Check once a minute — cheap, and avoids the "user crossed an
-    // hour boundary 59 minutes ago and the gradient is stale" race
-    // that a longer interval would introduce.
-    const id = window.setInterval(() => {
-      const h = new Date().getHours();
-      setHour((prev) => (prev === h ? prev : h));
-    }, 60_000);
-    return () => window.clearInterval(id);
+    let timeoutId: number | undefined;
+    const scheduleNext = () => {
+      timeoutId = window.setTimeout(() => {
+        setHour(new Date().getHours());
+        // Recalculate against the wall clock on each tick so sleep-
+        // wake and DST shifts re-converge automatically — the new
+        // timeout is always anchored to the current `now`, not to
+        // the previously-fired one.
+        scheduleNext();
+      }, msUntilNextGradientBoundary());
+    };
+    scheduleNext();
+    return () => {
+      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+    };
   }, []);
   return useMemo(() => gradientForHour(hour), [hour]);
 }
@@ -84,22 +105,22 @@ export default function DashboardHeadline({
     >
       <div className="relative grid lg:grid-cols-[1fr_auto] gap-5 lg:gap-8 lg:items-center">
         <div>
-          <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] font-bold text-indigo-100">
+          <div className="inline-flex items-center gap-1.5 text-eyebrow uppercase tracking-[0.18em] font-bold text-indigo-100">
             <Sparkles size={11} />
             {eyebrow}
           </div>
-          <h1 className="mt-2.5 font-display text-[22px] sm:text-[26px] lg:text-[32px] leading-[1.15] text-balance">
+          <h1 className="mt-2.5 font-display text-h3 sm:text-h2 lg:text-h1 leading-[1.15] text-balance">
             {headline}
           </h1>
           {sub && (
-            <p className="mt-2 text-[13.5px] lg:text-[14.5px] text-indigo-100 leading-relaxed max-w-[60ch]">
+            <p className="mt-2 text-meta lg:text-ui-sm text-indigo-100 leading-relaxed max-w-[60ch]">
               {sub}
             </p>
           )}
           <button
             type="button"
             onClick={onPrimaryCTA}
-            className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-[13.5px] font-semibold shadow-soft transition-colors whitespace-nowrap"
+            className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-meta font-semibold shadow-soft transition-colors whitespace-nowrap"
           >
             {ctaLabel}
             <ArrowRight size={14} />

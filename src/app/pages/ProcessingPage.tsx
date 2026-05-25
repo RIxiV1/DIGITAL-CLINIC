@@ -366,10 +366,10 @@ export default function ProcessingPage() {
           </motion.div>
         </motion.div>
 
-        <h1 className="font-display text-[26px] leading-tight mt-7 text-balance max-w-[22rem]">
+        <h1 className="font-display text-h2 leading-tight mt-7 text-balance max-w-[22rem]">
           Reading your report carefully.
         </h1>
-        <p className="mt-2 text-[14px] text-ink-soft max-w-[22rem] text-pretty">
+        <p className="mt-2 text-ui-sm text-ink-soft max-w-[22rem] text-pretty">
           {detailOverride ??
             parseSteps[stepIndex]?.detail ??
             'Almost done — getting your insights ready.'}
@@ -392,7 +392,7 @@ export default function ProcessingPage() {
               className="h-full bg-indigo-600 rounded-full"
             />
           </div>
-          <div className="mt-2 text-[11px] uppercase tracking-[0.14em] font-bold text-muted text-right tabular-nums">
+          <div className="mt-2 text-caption uppercase tracking-[0.14em] font-bold text-muted text-right tabular-nums">
             {Math.round(overall * 100)}%
           </div>
         </div>
@@ -430,11 +430,11 @@ export default function ProcessingPage() {
                         className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"
                       />
                     ) : (
-                      <span className="text-[11px] font-semibold">{i + 1}</span>
+                      <span className="text-caption font-semibold">{i + 1}</span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[14px] font-semibold text-ink leading-tight">
+                    <div className="text-ui-sm font-semibold text-ink leading-tight">
                       {s.label}
                     </div>
                     {state === 'active' && (
@@ -454,7 +454,7 @@ export default function ProcessingPage() {
           </div>
         </div>
 
-        <p className="mt-7 text-[11px] uppercase tracking-[0.14em] font-bold text-muted">
+        <p className="mt-7 text-caption uppercase tracking-[0.14em] font-bold text-muted">
           Usually under 60 seconds
         </p>
       </Container>
@@ -540,17 +540,17 @@ function ParseFailedView({
                 <AlertTriangle size={20} />
               </div>
               <div className="flex-1 min-w-0">
-                <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-concern">
+                <div className="text-eyebrow font-bold uppercase tracking-[0.18em] text-concern">
                   Parsing failed
                 </div>
-                <h2 className="font-display text-[22px] leading-tight text-ink mt-1">
+                <h2 className="font-display text-h3 leading-tight text-ink mt-1">
                   {copy.title}
                 </h2>
-                <p className="mt-2 text-[13.5px] leading-relaxed text-ink-soft">
+                <p className="mt-2 text-meta leading-relaxed text-ink-soft">
                   {copy.detail}
                 </p>
-                <div className="mt-3 rounded-[10px] bg-surface border border-line/70 px-3 py-2 text-[12px] text-muted break-all">
-                  <span className="font-bold uppercase tracking-[0.12em] text-[10px] text-muted block mb-0.5">
+                <div className="mt-3 rounded-[10px] bg-surface border border-line/70 px-3 py-2 text-footnote text-muted break-all">
+                  <span className="font-bold uppercase tracking-[0.12em] text-eyebrow text-muted block mb-0.5">
                     File
                   </span>
                   {failure.fileName}
@@ -564,8 +564,8 @@ function ParseFailedView({
                 {failure.ocrPagesAttempted &&
                   failure.ocrPagesSkipped !== undefined &&
                   failure.ocrPagesSkipped > 0 && (
-                    <div className="mt-3 rounded-[10px] bg-attention-soft/60 border border-attention/30 px-3 py-2 text-[12px] text-ink-soft">
-                      <span className="font-bold uppercase tracking-[0.12em] text-[10px] text-attention block mb-0.5">
+                    <div className="mt-3 rounded-[10px] bg-attention-soft/60 border border-attention/30 px-3 py-2 text-footnote text-ink-soft">
+                      <span className="font-bold uppercase tracking-[0.12em] text-eyebrow text-attention block mb-0.5">
                         Partial OCR
                       </span>
                       {failure.ocrPagesSkipped} of {failure.ocrPagesAttempted}{' '}
@@ -615,7 +615,7 @@ function ParseFailedView({
           </div>
 
           <div className="px-5 pb-5 -mt-1">
-            <p className="text-[11.5px] text-muted leading-relaxed">
+            <p className="text-caption text-muted leading-relaxed">
               {failure.reason === 'out-of-scope'
                 ? 'Your file looks like a viral panel, imaging report, or clinical exam — those aren’t something we interpret. If part of it has metabolic, hormone, or vitamin values, type them in via “Enter values manually”.'
                 : 'Our parser currently recognises hormone, metabolic, heart, thyroid, vitamin, liver, kidney, blood, electrolyte, inflammation, and fertility markers from text-layer PDFs and clear photos. Older scanned PDFs or non-standard lab layouts may not parse — we don’t guess.'}
@@ -708,12 +708,12 @@ function ConfirmExtractedValuesView({
           <Pill tone="gold" size="sm">
             <Check size={11} strokeWidth={3} /> Extraction complete
           </Pill>
-          <h1 className="font-display text-[28px] lg:text-[36px] leading-[1.05] mt-3 text-balance text-ink">
+          <h1 className="font-display text-h2-lg lg:text-display leading-[1.05] mt-3 text-balance text-ink">
             We found{' '}
             <span className="text-indigo-700">{biomarkers.length}</span>{' '}
             {biomarkers.length === 1 ? 'value' : 'values'} in your report.
           </h1>
-          <p className="mt-3 text-[14px] lg:text-[15px] text-ink-soft text-pretty max-w-xl">
+          <p className="mt-3 text-ui-sm lg:text-ui text-ink-soft text-pretty max-w-xl">
             Check each number against your report before continuing. We
             deliberately only show what we could pull out — if a marker
             you expected isn’t listed, it wasn’t in our catalog or our
@@ -743,10 +743,10 @@ function ConfirmExtractedValuesView({
               <FileText size={14} />
             </div>
             <div className="min-w-0">
-              <div className="text-[9.5px] uppercase tracking-[0.16em] font-bold text-muted leading-none">
+              <div className="text-eyebrow-xs uppercase tracking-[0.16em] font-bold text-muted leading-none">
                 File parsed
               </div>
-              <div className="mt-0.5 text-[13px] text-ink font-medium truncate">
+              <div className="mt-0.5 text-meta text-ink font-medium truncate">
                 {fileName}
               </div>
             </div>
@@ -763,14 +763,14 @@ function ConfirmExtractedValuesView({
             ocrPagesSkipped > 0 && (
               <Card padded={false} className="overflow-hidden border-attention/30">
                 <div className="px-5 py-4 bg-attention-soft/50 flex items-start gap-3">
-                  <span aria-hidden role="img" className="text-[18px] leading-none">
+                  <span aria-hidden role="img" className="text-body-lg leading-none">
                     ⚠️
                   </span>
                   <div className="flex-1 min-w-0">
-                    <div className="font-display text-[14px] leading-tight">
+                    <div className="font-display text-ui-sm leading-tight">
                       Some pages couldn’t be read
                     </div>
-                    <p className="mt-1 text-[12.5px] text-ink-soft leading-relaxed">
+                    <p className="mt-1 text-footnote text-ink-soft leading-relaxed">
                       {ocrPagesSkipped} of {ocrPagesAttempted} page{ocrPagesAttempted === 1 ? '' : 's'}{' '}
                       failed during text extraction (OCR timeout). Any values
                       on those pages aren’t in the list below. If the report
@@ -788,15 +788,15 @@ function ConfirmExtractedValuesView({
                   section covers without needing to expand it. */}
               <div className="px-5 pt-4 pb-4 flex items-center gap-3 bg-indigo-50/50 border-b border-line/60">
                 <div className="grid place-items-center w-10 h-10 rounded-2xl bg-white border border-line/60 shadow-soft shrink-0">
-                  <Emoji label={category.name} className="text-[18px] leading-none">
+                  <Emoji label={category.name} className="text-body-lg leading-none">
                     {category.icon}
                   </Emoji>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-display text-[16px] leading-tight text-ink">
+                  <div className="font-display text-ui-lg leading-tight text-ink">
                     {category.name}
                   </div>
-                  <div className="text-[11.5px] text-muted mt-0.5 truncate">
+                  <div className="text-caption text-muted mt-0.5 truncate">
                     {category.description}
                   </div>
                 </div>
@@ -825,15 +825,15 @@ function ConfirmExtractedValuesView({
           {ignoredCategory && (
             <Card padded={false} className="overflow-hidden border-indigo-200/70">
               <div className="px-5 pt-4 pb-3 border-b border-indigo-100 bg-indigo-50/40 flex items-center gap-2">
-                <span aria-hidden role="img" className="text-[15px] leading-none">
+                <span aria-hidden role="img" className="text-ui leading-none">
                   ℹ️
                 </span>
-                <div className="font-display text-[14px] leading-tight">
+                <div className="font-display text-ui-sm leading-tight">
                   We ignored some sections of this report
                 </div>
               </div>
               <div className="px-5 py-3">
-                <p className="text-[12.5px] text-ink-soft leading-relaxed">
+                <p className="text-footnote text-ink-soft leading-relaxed">
                   Your file also contained{' '}
                   <span className="font-semibold text-ink">
                     {ignoredCategory === 'viral'
@@ -859,10 +859,10 @@ function ConfirmExtractedValuesView({
           {unrecognizedRows && unrecognizedRows.length > 0 && (
             <Card padded={false} className="overflow-hidden border-amber-200/70">
               <div className="px-5 pt-4 pb-3 border-b border-amber-100 bg-amber-50/40 flex items-center gap-2">
-                <span aria-hidden role="img" className="text-[15px] leading-none">
+                <span aria-hidden role="img" className="text-ui leading-none">
                   🔍
                 </span>
-                <div className="font-display text-[14px] leading-tight">
+                <div className="font-display text-ui-sm leading-tight">
                   We saw these rows but couldn’t map them
                 </div>
                 <Pill tone="neutral" size="sm" className="ml-auto">
@@ -870,13 +870,13 @@ function ConfirmExtractedValuesView({
                 </Pill>
               </div>
               <div className="px-5 py-3">
-                <p className="text-[12.5px] text-ink-soft leading-relaxed mb-2">
+                <p className="text-footnote text-ink-soft leading-relaxed mb-2">
                   Your report mentioned these values, but they aren’t in
                   our catalog yet. Nothing was discarded — they just won’t
                   appear in the dashboard. If any of these look important
                   to you, let us know and we’ll add them.
                 </p>
-                <ul className="text-[12.5px] font-mono text-ink-soft space-y-1">
+                <ul className="text-footnote font-mono text-ink-soft space-y-1">
                   {unrecognizedRows.map((row, i) => (
                     <li key={`${row}-${i}`} className="break-words">
                       · {row}
@@ -896,11 +896,11 @@ function ConfirmExtractedValuesView({
               className="mt-2 group"
               onToggle={(e) => setShowRaw(e.currentTarget.open)}
             >
-              <summary className="cursor-pointer list-none flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-muted hover:text-ink transition-colors w-fit">
+              <summary className="cursor-pointer list-none flex items-center gap-1.5 text-caption font-bold uppercase tracking-[0.12em] text-muted hover:text-ink transition-colors w-fit">
                 {showRaw ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                 Show what we read from the file
               </summary>
-              <pre className="mt-3 p-3 bg-surface border border-line rounded-[12px] text-[11px] text-ink-soft leading-relaxed whitespace-pre-wrap max-h-[280px] overflow-y-auto font-mono">
+              <pre className="mt-3 p-3 bg-surface border border-line rounded-[12px] text-caption text-ink-soft leading-relaxed whitespace-pre-wrap max-h-[280px] overflow-y-auto font-mono">
                 {rawText.slice(0, 8000)}
                 {rawText.length > 8000 && '\n…(truncated)'}
               </pre>
@@ -924,7 +924,7 @@ function ConfirmExtractedValuesView({
               onClick={onReject}
               aria-label="Wrong file — start over"
               title="Wrong file — start over"
-              className="shrink-0 inline-flex items-center gap-1.5 h-14 px-4 sm:px-5 rounded-[14px] bg-surface border border-line text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 text-[14px] font-semibold shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+              className="shrink-0 inline-flex items-center gap-1.5 h-14 px-4 sm:px-5 rounded-[14px] bg-surface border border-line text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 text-ui-sm font-semibold shadow-soft transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
             >
               <RotateCcw size={16} />
               <span className="hidden sm:inline">Re-upload</span>
@@ -976,10 +976,10 @@ function SummaryChip({
       className={`inline-flex items-center gap-2 pl-2.5 pr-3.5 h-9 rounded-full ${bg}`}
     >
       <span className={`w-2 h-2 rounded-full ${dot}`} aria-hidden />
-      <span className={`font-display text-[16px] tabular-nums ${text} leading-none`}>
+      <span className={`font-display text-ui-lg tabular-nums ${text} leading-none`}>
         {count}
       </span>
-      <span className={`text-[12.5px] font-medium ${text} leading-none`}>
+      <span className={`text-footnote font-medium ${text} leading-none`}>
         {label}
       </span>
     </div>
@@ -1026,10 +1026,10 @@ function MarkerRow({
       <div className={`w-1 shrink-0 ${accentBg}`} aria-hidden />
       <div className="flex-1 min-w-0 px-5 py-4 flex items-start gap-4">
         <div className="flex-1 min-w-0">
-          <div className="text-[14px] font-semibold text-ink leading-tight">
+          <div className="text-ui-sm font-semibold text-ink leading-tight">
             {marker.name}
           </div>
-          <div className="text-[11.5px] text-muted mt-0.5">
+          <div className="text-caption text-muted mt-0.5">
             Reference {marker.min}–{marker.max}
             {marker.unit ? ` ${marker.unit}` : ''}
           </div>
@@ -1043,16 +1043,16 @@ function MarkerRow({
           </div>
         </div>
         <div className="text-right shrink-0 flex flex-col items-end gap-1.5">
-          <div className="font-display text-[22px] leading-none text-ink tabular-nums">
+          <div className="font-display text-h3 leading-none text-ink tabular-nums">
             {marker.value}
             {marker.unit && (
-              <span className="text-[12px] ml-1 text-muted font-sans font-medium">
+              <span className="text-footnote ml-1 text-muted font-sans font-medium">
                 {marker.unit}
               </span>
             )}
           </div>
           <div
-            className={`inline-flex items-center px-2 h-5 rounded-full text-[9.5px] font-bold uppercase tracking-[0.08em] ${c.bg} ${c.text}`}
+            className={`inline-flex items-center px-2 h-5 rounded-full text-eyebrow-xs font-bold uppercase tracking-[0.08em] ${c.bg} ${c.text}`}
           >
             {c.label}
           </div>

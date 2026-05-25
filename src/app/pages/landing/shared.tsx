@@ -48,14 +48,14 @@ export function SectionHeader({
 }) {
   return (
     <div className="max-w-3xl">
-      <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-blue-700">
+      <div className="inline-flex items-center gap-2 text-caption font-bold uppercase tracking-[0.18em] text-blue-700">
         <span className="w-6 h-px bg-blue-600" />
         {eyebrow}
       </div>
-      <h2 className="font-sans font-bold text-[28px] sm:text-[32px] md:text-[40px] lg:text-[46px] leading-[1.08] tracking-[-0.025em] mt-3 text-balance">
+      <h2 className="font-sans font-bold text-h2-lg sm:text-h1 md:text-display lg:text-hero leading-[1.08] tracking-[-0.025em] mt-3 text-balance">
         {title}
       </h2>
-      <p className="mt-4 text-[15px] sm:text-[15.5px] md:text-[16.5px] text-ink-soft leading-relaxed max-w-[44ch] text-pretty">
+      <p className="mt-4 text-ui sm:text-ui md:text-ui-lg text-ink-soft leading-relaxed max-w-[44ch] text-pretty">
         {subtitle}
       </p>
     </div>

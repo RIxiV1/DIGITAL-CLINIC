@@ -14,11 +14,11 @@ export default function MinimalWhy() {
     <section className="py-14 sm:py-18 md:py-22 bg-canvas">
       <div className="mx-auto w-full max-w-3xl px-5 md:px-8">
         <Reveal>
-          <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-700">
+          <div className="inline-flex items-center gap-2 text-caption font-bold uppercase tracking-[0.18em] text-indigo-700">
             <span className="w-6 h-px bg-indigo-600" />
             What you get
           </div>
-          <h2 className="font-sans font-bold text-[24px] sm:text-[30px] md:text-[36px] leading-[1.1] tracking-[-0.02em] mt-3 text-balance">
+          <h2 className="font-sans font-bold text-h3-lg sm:text-h2-lg md:text-display leading-[1.1] tracking-[-0.02em] mt-3 text-balance">
             Plain English, the right tests, your data — yours.
           </h2>
         </Reveal>
@@ -31,10 +31,10 @@ export default function MinimalWhy() {
                   <Icon size={18} />
                 </div>
                 <div className="min-w-0">
-                  <div className="font-semibold text-ink text-[15px]">
+                  <div className="font-semibold text-ink text-ui">
                     {title}
                   </div>
-                  <p className="mt-1 text-[13.5px] text-ink-soft leading-relaxed">
+                  <p className="mt-1 text-meta text-ink-soft leading-relaxed">
                     {body}
                   </p>
                 </div>

@@ -119,7 +119,7 @@ function PageHost() {
           reaching anything actionable. */}
       <a
         href="#main-content"
-        className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-3 focus-visible:left-3 focus-visible:z-[100] focus-visible:px-4 focus-visible:h-11 focus-visible:inline-flex focus-visible:items-center focus-visible:rounded-full focus-visible:bg-blue-600 focus-visible:text-white focus-visible:text-[13px] focus-visible:font-semibold focus-visible:shadow-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+        className="sr-only focus-visible:not-sr-only focus-visible:fixed focus-visible:top-3 focus-visible:left-3 focus-visible:z-[100] focus-visible:px-4 focus-visible:h-11 focus-visible:inline-flex focus-visible:items-center focus-visible:rounded-full focus-visible:bg-blue-600 focus-visible:text-white focus-visible:text-meta focus-visible:font-semibold focus-visible:shadow-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
       >
         Skip to main content
       </a>

@@ -47,10 +47,10 @@ const sizeClasses: Record<Size, string> = {
   // 44×44 touch-target floor. Visual delta is small enough that the
   // few sm callers (table-action rows in DataPanelModal, etc.) are
   // happy with the new height; the wider hit area only helps.
-  sm: 'h-11 px-4 text-[13px]',
-  md: 'h-11 px-5 text-[14px]',
-  lg: 'h-14 px-6 text-[15px]',
-  xl: 'h-[50px] px-6 text-[15px]',
+  sm: 'h-11 px-4 text-meta',
+  md: 'h-11 px-5 text-ui-sm',
+  lg: 'h-14 px-6 text-ui',
+  xl: 'h-[50px] px-6 text-ui',
 };
 
 const shapeClasses: Record<Shape, string> = {

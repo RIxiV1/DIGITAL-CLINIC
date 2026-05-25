@@ -138,7 +138,7 @@ export default function UploadPage() {
           className="mb-4 flex items-start gap-2.5 rounded-[14px] border border-indigo-200 bg-indigo-50/70 px-4 py-3"
         >
           <Info size={16} className="text-indigo-700 shrink-0 mt-0.5" />
-          <p className="text-[12.5px] leading-relaxed text-indigo-900">
+          <p className="text-footnote leading-relaxed text-indigo-900">
             <span className="font-semibold">PDFs and photos are parsed in your browser</span> —
             text extraction or OCR, all locally. OCR can take 10–30 seconds
             on a phone. If we can’t recognise anything in your file, you’ll
@@ -205,10 +205,10 @@ export default function UploadPage() {
             >
               {fileName ? <FileText size={28} /> : <UploadCloud size={28} />}
             </motion.div>
-            <div className="mt-4 font-display text-[18px] text-ink leading-tight break-words">
+            <div className="mt-4 font-display text-body-lg text-ink leading-tight break-words">
               {fileName ?? (dragging ? 'Drop it here' : 'Tap to choose a file')}
             </div>
-            <div className="mt-1.5 text-[13px] text-muted">
+            <div className="mt-1.5 text-meta text-muted">
               {fileName
                 ? 'Looks good. Hit start when you’re ready.'
                 : dragging
@@ -252,10 +252,10 @@ export default function UploadPage() {
               className="flex flex-col items-center gap-1 py-3 rounded-[14px] bg-surface border border-line text-blue-700 hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 transition-colors min-h-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
             >
               <FileText size={18} />
-              <div className="text-[13px] font-semibold leading-none">
+              <div className="text-meta font-semibold leading-none">
                 Pick a PDF
               </div>
-              <div className="text-[10.5px] text-muted leading-none">
+              <div className="text-eyebrow text-muted leading-none">
                 from your files
               </div>
             </button>
@@ -268,10 +268,10 @@ export default function UploadPage() {
               className="flex flex-col items-center gap-1 py-3 rounded-[14px] bg-surface border border-line text-blue-700 hover:bg-blue-50 hover:border-blue-200 active:bg-blue-100 transition-colors min-h-14 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
             >
               <ImageIcon size={18} />
-              <div className="text-[13px] font-semibold leading-none">
+              <div className="text-meta font-semibold leading-none">
                 Use photo
               </div>
-              <div className="text-[10.5px] text-muted leading-none">
+              <div className="text-eyebrow text-muted leading-none">
                 camera or roll
               </div>
             </button>
@@ -295,7 +295,7 @@ export default function UploadPage() {
               className="mt-3 flex items-start gap-2.5 rounded-[14px] border border-attention/30 bg-attention-soft/60 px-4 py-3"
             >
               <Info size={16} className="text-attention shrink-0 mt-0.5" />
-              <p className="text-[12.5px] text-ink leading-relaxed">
+              <p className="text-footnote text-ink leading-relaxed">
                 <span className="font-semibold">Heads up:</span> this is a
                 large file — text extraction may take 20–30 seconds, especially
                 on phones. Hang in there.
@@ -318,7 +318,7 @@ export default function UploadPage() {
               className="mt-3 flex items-start gap-2.5 rounded-[14px] border border-concern/30 bg-concern-soft px-4 py-3"
             >
               <AlertTriangle size={16} className="text-concern shrink-0 mt-0.5" />
-              <p className="text-[13px] text-concern leading-relaxed">
+              <p className="text-meta text-concern leading-relaxed">
                 {error?.message}
               </p>
             </motion.div>
@@ -332,10 +332,10 @@ export default function UploadPage() {
                 <ShieldCheck size={18} />
               </div>
               <div>
-                <div className="font-semibold text-[14.5px]">
+                <div className="font-semibold text-ui-sm">
                   Private, end to end
                 </div>
-                <p className="text-[13px] text-ink-soft mt-1 leading-relaxed">
+                <p className="text-meta text-ink-soft mt-1 leading-relaxed">
                   Reports are processed for your eyes only. You can delete any
                   upload at any time.
                 </p>
@@ -344,7 +344,7 @@ export default function UploadPage() {
           </Card>
 
           <div className="mt-2 px-1">
-            <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-muted mb-2">
+            <div className="text-eyebrow uppercase tracking-[0.14em] font-bold text-muted mb-2">
               Labs we read fluently
             </div>
             <div className="flex flex-wrap gap-1.5">
@@ -358,7 +358,7 @@ export default function UploadPage() {
               ].map((l) => (
                 <span
                   key={l}
-                  className="px-2.5 py-1 rounded-full bg-surface border border-line text-[11px] text-ink-soft"
+                  className="px-2.5 py-1 rounded-full bg-surface border border-line text-caption text-ink-soft"
                 >
                   {l}
                 </span>
@@ -373,7 +373,7 @@ export default function UploadPage() {
             <button
               type="button"
               onClick={() => navigate({ type: 'manualEntry' })}
-              className="text-[12.5px] text-indigo-700 hover:text-indigo-900 font-semibold underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors"
+              className="text-footnote text-indigo-700 hover:text-indigo-900 font-semibold underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors"
             >
               Or enter values manually instead →
             </button>

@@ -49,7 +49,7 @@ export default function Pill({
   // to grow from (callers can apply min-h-12 + flex sleeves to opt in
   // to a fully tappable variant).
   const sizeCls =
-    size === 'sm' ? 'px-2 h-6 text-[10.5px]' : 'px-2.5 h-7 text-[11.5px]';
+    size === 'sm' ? 'px-2 h-6 text-eyebrow' : 'px-2.5 h-7 text-caption';
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full font-semibold ${sizeCls} ${toneClasses[tone]} ${className}`}

@@ -7,13 +7,13 @@ export default function Footer() {
   const [legal, setLegal] = useState<LegalKind | null>(null);
   return (
     <footer className="border-t border-line/70 bg-white">
-      <div className="mx-auto w-full max-w-6xl px-5 md:px-8 py-12 grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-[13px]">
+      <div className="mx-auto w-full max-w-6xl px-5 md:px-8 py-12 grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-meta">
         <div className="sm:col-span-2">
           <Logo />
           <p className="mt-3 text-ink-soft max-w-xs leading-relaxed">
             Men’s hormonal health, finally explained. By ForMen.
           </p>
-          <div className="mt-4 flex items-center gap-3 text-[11.5px] text-muted">
+          <div className="mt-4 flex items-center gap-3 text-caption text-muted">
             <span className="inline-flex items-center gap-1">
               <Lock size={12} /> Anonymous by default
             </span>
@@ -85,7 +85,7 @@ export default function Footer() {
           </ul>
         </div>
       </div>
-      <div className="mx-auto w-full max-w-6xl px-5 md:px-8 py-6 border-t border-line/70 text-[11.5px] text-muted flex flex-wrap items-center justify-between gap-3">
+      <div className="mx-auto w-full max-w-6xl px-5 md:px-8 py-6 border-t border-line/70 text-caption text-muted flex flex-wrap items-center justify-between gap-3">
         <span>
           © {new Date().getFullYear()} ForMen · Digital Clinic. All rights
           reserved.

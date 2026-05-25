@@ -85,7 +85,7 @@ export default function BottomNav() {
                     }`}
                   >
                     <Icon size={18} strokeWidth={active ? 2.4 : 2} />
-                    <span className="text-[10px] font-semibold">{label}</span>
+                    <span className="text-eyebrow font-semibold">{label}</span>
                   </div>
                 </div>
               </button>

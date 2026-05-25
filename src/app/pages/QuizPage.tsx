@@ -260,7 +260,7 @@ export default function QuizPage() {
         {/* Progress strip — step counter + an unobtrusive swipe hint that
             only renders on touch contexts (hidden via the parent flex on
             very-small viewports otherwise). */}
-        <div className="mt-3 flex items-center justify-between text-[10px] font-bold uppercase tracking-[0.16em] text-muted">
+        <div className="mt-3 flex items-center justify-between text-eyebrow font-bold uppercase tracking-[0.16em] text-muted">
           <span className="hidden sm:inline opacity-70">
             Tip · arrow keys or swipe to move
           </span>
@@ -295,13 +295,13 @@ export default function QuizPage() {
                 transition: { duration: 0.18, ease: [0.4, 0, 1, 1] },
               }}
             >
-              <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-indigo-700 mb-2">
+              <div className="text-eyebrow font-bold uppercase tracking-[0.16em] text-indigo-700 mb-2">
                 {step.sectionLabel}
               </div>
-              <h1 className="font-display text-[30px] leading-tight text-balance">
+              <h1 className="font-display text-h2-lg leading-tight text-balance">
                 {step.title}
               </h1>
-              <p className="mt-2 text-[15px] text-ink-soft text-pretty">
+              <p className="mt-2 text-ui text-ink-soft text-pretty">
                 {step.subtitle}
               </p>
 
@@ -426,7 +426,7 @@ function CompoundOptions({
             transition: { delay: 0.1 + i * 0.08, duration: 0.32 },
           }}
         >
-          <div className="text-[15px] font-semibold text-ink leading-tight">
+          <div className="text-ui font-semibold text-ink leading-tight">
             {sub.question}
           </div>
           <div className="mt-3">
@@ -496,11 +496,11 @@ function ExitConfirm({
       >
         <div
           id={titleId}
-          className="font-display text-[20px] leading-tight text-ink"
+          className="font-display text-h4 leading-tight text-ink"
         >
           Exit the quiz?
         </div>
-        <p className="mt-2 text-[14px] text-ink-soft leading-relaxed">
+        <p className="mt-2 text-ui-sm text-ink-soft leading-relaxed">
           We won’t save your progress. You can always restart — it only takes
           two minutes.
         </p>
@@ -587,7 +587,7 @@ function PersonalizingOverlay({ onDone }: { onDone: () => void }) {
           </motion.div>
         </div>
 
-        <h2 className="font-display text-[24px] leading-tight mt-7 text-balance">
+        <h2 className="font-display text-h3-lg leading-tight mt-7 text-balance">
           Personalizing your insights…
         </h2>
 
@@ -599,7 +599,7 @@ function PersonalizingOverlay({ onDone }: { onDone: () => void }) {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -6 }}
               transition={{ duration: 0.3 }}
-              className="absolute inset-x-0 text-[13.5px] text-ink-soft"
+              className="absolute inset-x-0 text-meta text-ink-soft"
             >
               {personalizingSteps[tick]}
             </motion.p>
@@ -623,6 +623,15 @@ function PersonalizingOverlay({ onDone }: { onDone: () => void }) {
 /* Reusable option groups (no top margin — caller controls spacing)    */
 /* ------------------------------------------------------------------ */
 
+// Was `grid grid-cols-1 min-[370px]:grid-cols-2 sm:grid-cols-3`,
+// a 3-step breakpoint ladder with a hand-rolled `min-[370px]`
+// duct-tape stop just to make iPhone SE fit. Pills are inherently
+// compact (their width is set by their own padding + label, not by
+// the column track), so a `flex flex-wrap` layout flows them into
+// however many rows the viewport allows without needing any
+// breakpoint reasoning at all. Long labels stay readable, short
+// labels pack two per row on a phone, three+ on tablet+. No more
+// 370px landmark.
 function PillOptions({
   options,
   isSelected,
@@ -635,7 +644,7 @@ function PillOptions({
   multi: boolean;
 }) {
   return (
-    <div className="grid grid-cols-1 min-[370px]:grid-cols-2 sm:grid-cols-3 gap-2.5">
+    <div className="flex flex-wrap gap-2.5">
       {options.map((opt) => {
         const selected = isSelected(opt.id);
         return (
@@ -647,7 +656,7 @@ function PillOptions({
             whileHover={{ y: -1.5, scale: 1.01 }}
             transition={{ type: 'spring', stiffness: 500, damping: 25 }}
             onClick={() => toggle(opt.id)}
-            className={`relative inline-flex items-center justify-center gap-2 min-h-12 h-auto py-2.5 px-4 rounded-full font-semibold text-[13.5px] border transition-all text-center ${
+            className={`relative inline-flex items-center justify-center gap-2 min-h-12 h-auto py-2.5 px-4 rounded-full font-semibold text-meta border transition-all text-center ${
               selected
                 ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
                 : 'bg-surface border-line text-ink-soft hover:border-indigo-300 hover:text-indigo-700 shadow-soft'
@@ -716,7 +725,7 @@ function CardOptions({
                 <div className="font-semibold">{opt.label}</div>
                 {opt.hint && (
                   <div
-                    className={`text-[12px] mt-0.5 ${
+                    className={`text-footnote mt-0.5 ${
                       selected ? 'text-indigo-100' : 'text-muted'
                     }`}
                   >

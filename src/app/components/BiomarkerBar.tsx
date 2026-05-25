@@ -225,11 +225,11 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
         <div className="min-w-0">
           <div className="font-semibold text-ink truncate">{marker.name}</div>
           {marker.simpleName && (
-            <div className="text-[12px] text-ink-soft mt-0.5 truncate">
+            <div className="text-footnote text-ink-soft mt-0.5 truncate">
               {marker.simpleName}
             </div>
           )}
-          <div className="mt-1 text-[11px] text-muted uppercase tracking-[0.08em]">
+          <div className="mt-1 text-caption text-muted uppercase tracking-[0.08em]">
             Healthy range · {marker.min}–{marker.max} {marker.unit}
             {hasOptimal && (
               <>
@@ -242,21 +242,21 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           </div>
         </div>
         <div className="text-right shrink-0">
-          <div className="font-display text-[22px] leading-none text-ink">
+          <div className="font-display text-h3 leading-none text-ink">
             {marker.value}
-            <span className="text-[12px] ml-1 text-muted font-sans font-medium">
+            <span className="text-footnote ml-1 text-muted font-sans font-medium">
               {marker.unit}
             </span>
           </div>
           {/* Tri-tier tag — Optimal / Borderline / Critical. */}
           <div
-            className={`mt-1.5 inline-flex items-center gap-1 px-2 h-5 rounded-full text-[10px] font-bold uppercase tracking-[0.1em] ${tier.className}`}
+            className={`mt-1.5 inline-flex items-center gap-1 px-2 h-5 rounded-full text-eyebrow font-bold uppercase tracking-[0.1em] ${tier.className}`}
             aria-label={`${tier.label}: ${tier.caption}`}
           >
             {tier.label}
           </div>
           <div
-            className={`mt-1 text-[9px] uppercase tracking-[0.1em] font-bold ${colors.text}`}
+            className={`mt-1 text-eyebrow-xs uppercase tracking-[0.1em] font-bold ${colors.text}`}
           >
             {colors.label}
           </div>
@@ -322,7 +322,7 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
         />
       </div>
 
-      <div className="mt-2 flex justify-between text-[10px] font-semibold uppercase tracking-[0.08em] text-muted">
+      <div className="mt-2 flex justify-between text-eyebrow font-semibold uppercase tracking-[0.08em] text-muted">
         <span>Critical low</span>
         <span className="text-good">Healthy</span>
         <span>Critical high</span>
@@ -330,7 +330,7 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
 
       {/* Tier caption — explicit clinical-ish gloss for users who don't
           read the pill colour as meaning. */}
-      <div className="mt-2 text-[12px] text-ink-soft">
+      <div className="mt-2 text-footnote text-ink-soft">
         <span className="font-semibold text-ink">{tier.label}.</span>{' '}
         {tier.caption}.
       </div>
@@ -338,14 +338,14 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
       {/* What this means */}
       {!compact && (
         <div className="mt-4 pt-4 border-t border-line/70">
-          <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-indigo-700">
+          <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-indigo-700">
             What this means
           </div>
-          <p className="mt-1.5 text-[13.5px] leading-relaxed text-ink-soft">
+          <p className="mt-1.5 text-meta leading-relaxed text-ink-soft">
             {marker.plain}
           </p>
           {marker.problemId && onClick && (
-            <div className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-indigo-700">
+            <div className="mt-3 inline-flex items-center gap-1 text-footnote font-semibold text-indigo-700">
               Open the action plan <ChevronRight size={14} />
             </div>
           )}

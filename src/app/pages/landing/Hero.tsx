@@ -34,7 +34,7 @@ export default function Hero({
           {/* LEFT — Headline + CTAs */}
           <div className="lg:col-span-6">
             <motion.div variants={fadeUp}>
-              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white border border-blue-100 text-[11.5px] font-semibold uppercase tracking-[0.12em] text-blue-700 shadow-clinical">
+              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white border border-blue-100 text-caption font-semibold uppercase tracking-[0.12em] text-blue-700 shadow-clinical">
                 <span className="relative grid place-items-center w-3.5 h-3.5">
                   <span className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping" />
                   <span className="relative w-1.5 h-1.5 rounded-full bg-blue-600" />
@@ -45,7 +45,7 @@ export default function Hero({
 
             <motion.h1
               variants={fadeUp}
-              className="font-sans font-bold text-[34px] sm:text-[44px] md:text-[52px] lg:text-[56px] leading-[1.06] tracking-[-0.025em] mt-5 text-ink text-balance"
+              className="font-sans font-bold text-h1 sm:text-hero md:text-hero-lg lg:text-hero-xl leading-[1.06] tracking-[-0.025em] mt-5 text-ink text-balance"
             >
               Your hair loss, your fatigue, and your sex drive{' '}
               <span className="text-blue-700">might be the same problem.</span>
@@ -53,10 +53,11 @@ export default function Hero({
 
             <motion.p
               variants={fadeUp}
-              className="mt-4 text-[15px] md:text-[17px] leading-relaxed text-ink-soft max-w-[40ch] text-pretty"
+              className="mt-4 text-ui md:text-lead leading-relaxed text-ink-soft max-w-[40ch] text-pretty"
             >
               One hormonal system controls all three. Most Indian men have never
-              had it tested.
+              had it tested. Upload any lab report — we’ll translate the whole
+              panel, not just the hormones.
             </motion.p>
 
             <motion.div
@@ -80,7 +81,7 @@ export default function Hero({
               </Button>
               <button
                 onClick={onSample}
-                className="inline-flex items-center justify-center gap-1.5 px-1 sm:px-2 h-11 text-[14px] font-semibold text-ink-soft hover:text-blue-700 transition-colors"
+                className="inline-flex items-center justify-center gap-1.5 px-1 sm:px-2 h-11 text-ui-sm font-semibold text-ink-soft hover:text-blue-700 transition-colors"
               >
                 See a sample report
                 <ChevronRight size={14} />
@@ -90,7 +91,7 @@ export default function Hero({
             {/* Real credibility strip — no fake user counts */}
             <motion.div
               variants={fadeUp}
-              className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-[12.5px] text-muted"
+              className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-2 text-footnote text-muted"
             >
               <span className="inline-flex items-center gap-1.5">
                 <FlaskConical size={13} className="text-blue-600" />
@@ -138,7 +139,7 @@ function HeroVisual() {
             <span className="w-2 h-2 rounded-full bg-[#FEBC2E]" />
             <span className="w-2 h-2 rounded-full bg-[#28C840]" />
           </div>
-          <div className="text-[10.5px] font-semibold text-ink">
+          <div className="text-eyebrow font-semibold text-ink">
             Hormonal health map
           </div>
           <div className="w-10" />
@@ -167,7 +168,7 @@ function HeroVisual() {
             />
           </div>
 
-          <p className="mt-2.5 text-center font-sans text-[11.5px] font-semibold text-ink">
+          <p className="mt-2.5 text-center font-sans text-caption font-semibold text-ink">
             One system. Eight signals.
           </p>
         </div>
@@ -204,14 +205,14 @@ function MapRow({
         }`}
       >
         <div
-          className={`text-[11.5px] font-semibold leading-tight ${
+          className={`text-caption font-semibold leading-tight ${
             highlighted ? 'text-white' : 'text-ink'
           }`}
         >
           {organ}
         </div>
         <div
-          className={`text-[9.5px] font-bold uppercase tracking-[0.1em] leading-tight mt-0.5 ${
+          className={`text-eyebrow-xs font-bold uppercase tracking-[0.1em] leading-tight mt-0.5 ${
             highlighted ? 'text-blue-100' : 'text-blue-700'
           }`}
         >

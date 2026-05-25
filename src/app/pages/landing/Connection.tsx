@@ -89,18 +89,18 @@ export default function ConnectionSection({
           <div className="lg:col-span-5 lg:sticky lg:top-24">
             <Reveal delay={0.1}>
               <div className="rounded-2xl bg-white border border-line shadow-clinical p-6 md:p-7">
-                <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.16em] text-blue-700">
+                <div className="inline-flex items-center gap-2 text-caption font-bold uppercase tracking-[0.16em] text-blue-700">
                   <span className="w-5 h-px bg-blue-600" /> Why it matters
                 </div>
-                <h3 className="font-sans font-bold text-[20px] md:text-[22px] tracking-[-0.01em] mt-3 text-ink">
+                <h3 className="font-sans font-bold text-h4 md:text-h3 tracking-[-0.01em] mt-3 text-ink">
                   You’ve been treating these separately.
                 </h3>
-                <p className="mt-3 text-[14.5px] text-ink-soft leading-relaxed">
+                <p className="mt-3 text-ui-sm text-ink-soft leading-relaxed">
                   Hair clinic for the hair. Gym for the belly. A bad night
                   followed by another bad night. Each fix targeting one
                   symptom — none of them touching the source.
                 </p>
-                <ul className="mt-5 grid gap-2.5 text-[13.5px]">
+                <ul className="mt-5 grid gap-2.5 text-meta">
                   {[
                     'One bloodwork picture, not eight specialists.',
                     'Personalised to your symptoms, not a generic panel.',
@@ -117,7 +117,7 @@ export default function ConnectionSection({
                 </ul>
                 <button
                   onClick={onStart}
-                  className="mt-6 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-[13.5px] font-semibold shadow-clinical transition-colors"
+                  className="mt-6 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-meta font-semibold shadow-clinical transition-colors"
                 >
                   See what’s actually going on
                   <ArrowRight size={14} />
@@ -159,10 +159,10 @@ function CascadeBig() {
           <FlaskConical size={14} />
         </div>
         <div className="min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.22em] font-bold text-blue-700">
+          <div className="text-eyebrow uppercase tracking-[0.22em] font-bold text-blue-700">
             Your hormone chain
           </div>
-          <div className="text-[12.5px] text-ink-soft font-medium">
+          <div className="text-footnote text-ink-soft font-medium">
             Three glands. One signal that runs them all.
           </div>
         </div>
@@ -203,7 +203,7 @@ function CascadeBig() {
       {/* Branching divider */}
       <div className="mt-8 flex items-center gap-3">
         <span className="flex-1 h-px bg-blue-200" />
-        <span className="text-[10px] uppercase tracking-[0.2em] font-bold text-blue-700 whitespace-nowrap">
+        <span className="text-eyebrow uppercase tracking-[0.2em] font-bold text-blue-700 whitespace-nowrap">
           When the axis is off — you feel it as
         </span>
         <span className="flex-1 h-px bg-blue-200" />
@@ -218,7 +218,7 @@ function CascadeBig() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.35, delay: 1.2 + i * 0.05 }}
-            className="px-3 py-2.5 rounded-xl bg-white border border-line text-center font-semibold text-[12.5px] text-ink shadow-clinical"
+            className="px-3 py-2.5 rounded-xl bg-white border border-line text-center font-semibold text-footnote text-ink shadow-clinical"
           >
             {label}
           </motion.div>
@@ -272,14 +272,14 @@ function AxisStation({
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div
-                className={`text-[9.5px] uppercase tracking-[0.22em] font-bold ${
+                className={`text-eyebrow-xs uppercase tracking-[0.22em] font-bold ${
                   isOutput ? 'text-blue-200' : 'text-blue-700'
                 }`}
               >
                 Stage {num}
               </div>
               <div
-                className={`font-display text-[16px] md:text-[18px] leading-tight mt-1 ${
+                className={`font-display text-ui-lg md:text-body-lg leading-tight mt-1 ${
                   isOutput ? 'text-white' : 'text-ink'
                 }`}
               >
@@ -287,14 +287,14 @@ function AxisStation({
               </div>
             </div>
             {isOutput && (
-              <span className="shrink-0 inline-flex items-center px-2 h-5 rounded-full bg-white/15 text-[9px] font-bold uppercase tracking-[0.14em] text-blue-100">
+              <span className="shrink-0 inline-flex items-center px-2 h-5 rounded-full bg-white/15 text-eyebrow-xs font-bold uppercase tracking-[0.14em] text-blue-100">
                 Output
               </span>
             )}
           </div>
 
           <p
-            className={`mt-2 text-[12.5px] leading-relaxed ${
+            className={`mt-2 text-footnote leading-relaxed ${
               isOutput ? 'text-blue-100' : 'text-ink-soft'
             }`}
           >
@@ -307,14 +307,14 @@ function AxisStation({
             }`}
           >
             <span
-              className={`text-[9px] uppercase tracking-[0.18em] font-bold ${
+              className={`text-eyebrow-xs uppercase tracking-[0.18em] font-bold ${
                 isOutput ? 'text-blue-200' : 'text-blue-700'
               }`}
             >
               {verb}
             </span>
             <span
-              className={`font-sans font-bold text-[15px] md:text-[16px] tracking-[-0.01em] ${
+              className={`font-sans font-bold text-ui md:text-ui-lg tracking-[-0.01em] ${
                 isOutput ? 'text-white' : 'text-ink'
               }`}
             >
@@ -342,7 +342,7 @@ function AxisStation({
                 strokeWidth={2.5}
                 className="text-blue-600"
               />
-              <span className="text-[8.5px] uppercase tracking-[0.14em] font-bold text-blue-700">
+              <span className="text-eyebrow-xs uppercase tracking-[0.14em] font-bold text-blue-700">
                 {hormone}
               </span>
             </span>
@@ -469,14 +469,14 @@ function CascadeCompact() {
               >
                 <div className="flex-1 min-w-0">
                   <div
-                    className={`text-[11px] font-semibold leading-tight truncate ${
+                    className={`text-caption font-semibold leading-tight truncate ${
                       s.isOutput ? 'text-white' : 'text-ink'
                     }`}
                   >
                     {s.organ}
                   </div>
                   <div
-                    className={`text-[9px] font-bold uppercase tracking-[0.1em] mt-0.5 truncate ${
+                    className={`text-eyebrow-xs font-bold uppercase tracking-[0.1em] mt-0.5 truncate ${
                       s.isOutput ? 'text-blue-100' : 'text-blue-700'
                     }`}
                   >
@@ -492,7 +492,7 @@ function CascadeCompact() {
       {/* "Felt as" divider */}
       <div className="mt-3 flex items-center gap-2">
         <span className="flex-1 h-px bg-blue-100" />
-        <span className="text-[9px] uppercase tracking-[0.14em] font-bold text-blue-700">
+        <span className="text-eyebrow-xs uppercase tracking-[0.14em] font-bold text-blue-700">
           Felt as
         </span>
         <span className="flex-1 h-px bg-blue-100" />
@@ -502,12 +502,12 @@ function CascadeCompact() {
         {SYMPTOMS.slice(0, 5).map((label) => (
           <span
             key={label}
-            className="text-[9.5px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold"
+            className="text-eyebrow-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold"
           >
             {label}
           </span>
         ))}
-        <span className="text-[9.5px] text-muted px-1 py-0.5">+ 3 more</span>
+        <span className="text-eyebrow-xs text-muted px-1 py-0.5">+ 3 more</span>
       </div>
     </div>
   );

@@ -72,10 +72,10 @@ export default function WhatYoullGet() {
                       <Icon size={17} />
                     </div>
                     <div>
-                      <div className="font-semibold text-ink text-[14.5px]">
+                      <div className="font-semibold text-ink text-ui-sm">
                         {title}
                       </div>
-                      <div className="text-[13px] text-ink-soft leading-relaxed mt-0.5">
+                      <div className="text-meta text-ink-soft leading-relaxed mt-0.5">
                         {body}
                       </div>
                     </div>
@@ -91,10 +91,10 @@ export default function WhatYoullGet() {
                     <Download size={17} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-ink text-[14px]">
+                    <div className="font-semibold text-ink text-ui-sm">
                       Your health data, always accessible
                     </div>
-                    <div className="text-[12.5px] text-ink-soft mt-0.5">
+                    <div className="text-footnote text-ink-soft mt-0.5">
                       Download as PDF. Share with any doctor. Stored under your
                       anonymous ID.
                     </div>
@@ -121,17 +121,17 @@ function DoctorSummaryMockup() {
             <div className="flex items-center gap-2">
               <Logo size="sm" />
             </div>
-            <div className="text-[10px] uppercase tracking-[0.14em] font-bold text-blue-700">
+            <div className="text-eyebrow uppercase tracking-[0.14em] font-bold text-blue-700">
               Doctor Summary · v1
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-3">
-            <div className="font-sans font-bold text-[20px] tracking-[-0.01em]">
+            <div className="font-sans font-bold text-h4 tracking-[-0.01em]">
               Hormonal Health Snapshot
             </div>
-            <div className="text-[11px] text-muted">Patient: FM-A284</div>
+            <div className="text-caption text-muted">Patient: FM-A284</div>
           </div>
-          <div className="mt-1 text-[11.5px] text-muted">
+          <div className="mt-1 text-caption text-muted">
             For: Endocrinologist · 12 Apr 2026 · 1 page
           </div>
         </div>
@@ -143,10 +143,10 @@ function DoctorSummaryMockup() {
             <div className="rounded-2xl bg-blue-600 text-white p-5 shadow-clinical relative overflow-hidden">
               <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-blue-400/30 blur-2xl" />
               <div className="relative">
-                <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-100">
+                <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-blue-100">
                   Top-line read
                 </div>
-                <p className="mt-2 font-sans font-semibold text-[15px] leading-snug">
+                <p className="mt-2 font-sans font-semibold text-ui leading-snug">
                   Two hormone markers flagged — low free testosterone and
                   vitamin D. Likely connected to fatigue + low libido on
                   intake.
@@ -155,16 +155,16 @@ function DoctorSummaryMockup() {
             </div>
 
             <div className="rounded-2xl bg-white border border-line p-4">
-              <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-700">
+              <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-blue-700">
                 Specialist
               </div>
               <div className="mt-2 flex items-start gap-2">
                 <Microscope size={14} className="text-ink-soft mt-0.5 shrink-0" />
                 <div>
-                  <div className="text-[13px] font-semibold text-ink">
+                  <div className="text-meta font-semibold text-ink">
                     Endocrinologist
                   </div>
-                  <div className="text-[11.5px] text-ink-soft leading-snug mt-0.5">
+                  <div className="text-caption text-ink-soft leading-snug mt-0.5">
                     Bring this page. Ask about retest in 8 weeks.
                   </div>
                 </div>
@@ -177,10 +177,10 @@ function DoctorSummaryMockup() {
             <div className="rounded-2xl bg-white border border-line p-4 md:p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-700">
+                  <div className="text-eyebrow font-bold uppercase tracking-[0.14em] text-blue-700">
                     Recommended tests
                   </div>
-                  <div className="font-sans font-semibold text-[14.5px] mt-1">
+                  <div className="font-sans font-semibold text-ui-sm mt-1">
                     4 panels — ranked by impact
                   </div>
                 </div>
@@ -217,7 +217,7 @@ function DoctorSummaryMockup() {
         </div>
 
         {/* Footer ribbon */}
-        <div className="px-5 md:px-6 py-3 border-t border-line bg-blue-50/40 flex flex-wrap items-center justify-between gap-3 text-[11px] text-ink-soft">
+        <div className="px-5 md:px-6 py-3 border-t border-line bg-blue-50/40 flex flex-wrap items-center justify-between gap-3 text-caption text-ink-soft">
           <span className="inline-flex items-center gap-1.5">
             <Lock size={12} className="text-blue-600" />
             FM-A284 · Anonymous ID
@@ -251,25 +251,25 @@ function TestRow({
         : 'bg-blue-50 text-blue-700 border-blue-100';
   return (
     <div className="rounded-xl border border-line bg-canvas/40 p-3 flex items-start gap-3">
-      <span className="grid place-items-center shrink-0 w-7 h-7 rounded-lg bg-white border border-blue-100 text-blue-700 font-mono text-[10px] font-bold">
+      <span className="grid place-items-center shrink-0 w-7 h-7 rounded-lg bg-white border border-blue-100 text-blue-700 font-mono text-eyebrow font-bold">
         {index}
       </span>
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <span className="font-sans font-semibold text-[13px] text-ink leading-snug">
+          <span className="font-sans font-semibold text-meta text-ink leading-snug">
             {name}
           </span>
           <span
-            className={`text-[9.5px] font-bold uppercase tracking-[0.1em] px-1.5 h-4 rounded-full border inline-flex items-center shrink-0 ${flagTone}`}
+            className={`text-eyebrow-xs font-bold uppercase tracking-[0.1em] px-1.5 h-4 rounded-full border inline-flex items-center shrink-0 ${flagTone}`}
           >
             {flag}
           </span>
         </div>
         <div className="mt-1 flex items-start gap-1.5">
-          <span className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-blue-700 mt-0.5 shrink-0">
+          <span className="text-eyebrow-xs font-bold uppercase tracking-[0.1em] text-blue-700 mt-0.5 shrink-0">
             Why
           </span>
-          <span className="text-[12px] text-ink-soft leading-snug">
+          <span className="text-footnote text-ink-soft leading-snug">
             {reason}
           </span>
         </div>

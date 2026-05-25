@@ -104,12 +104,12 @@ export default function Header({
               </button>
               <div className="flex-1 min-w-0">
                 {title && (
-                  <div className="font-display text-[15px] text-ink leading-tight truncate">
+                  <div className="font-display text-ui text-ink leading-tight truncate">
                     {title}
                   </div>
                 )}
                 {subtitle && (
-                  <div className="text-[11px] text-muted truncate">
+                  <div className="text-caption text-muted truncate">
                     {subtitle}
                   </div>
                 )}
@@ -136,7 +136,7 @@ export default function Header({
             <Logo size="md" />
           </button>
 
-          <nav className="flex items-center gap-7 text-[13.5px]">
+          <nav className="flex items-center gap-7 text-meta">
             {NAV_SLOTS.map((slot) => {
               const isActive = slot.id === active;
               return (
@@ -167,11 +167,11 @@ export default function Header({
                 <ArrowLeft size={16} />
               </button>
               <div className="min-w-0">
-                <div className="text-[13.5px] font-semibold text-ink truncate max-w-[40ch]">
+                <div className="text-meta font-semibold text-ink truncate max-w-[40ch]">
                   {title}
                 </div>
                 {subtitle && (
-                  <div className="text-[10.5px] text-muted truncate max-w-[50ch]">
+                  <div className="text-eyebrow text-muted truncate max-w-[50ch]">
                     {subtitle}
                   </div>
                 )}
