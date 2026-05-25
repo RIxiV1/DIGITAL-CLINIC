@@ -348,13 +348,23 @@ async function runImageOcr(file: Blob): Promise<string> {
   }
 }
 
-async function runPdfOcr(pdf: PdfDoc): Promise<string> {
+type PdfOcrResult = {
+  text: string;
+  /** How many of the attempted pages OCR could not complete (timeout
+   *  or render failure). Surfaced in the confirm view so a partial
+   *  result doesn't masquerade as a complete one. */
+  pagesAttempted: number;
+  pagesSkipped: number;
+};
+
+async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
   const createWorker = await loadTesseract();
   const worker = await createWorker('eng');
   try {
     let fullText = '';
-    const pages = Math.min(pdf.numPages, OCR_MAX_PAGES);
-    for (let i = 1; i <= pages; i++) {
+    const pagesAttempted = Math.min(pdf.numPages, OCR_MAX_PAGES);
+    let pagesSkipped = 0;
+    for (let i = 1; i <= pagesAttempted; i++) {
       try {
         const imgData = await renderPageToImage(pdf, i);
         const result = await withTimeout(
@@ -367,9 +377,10 @@ async function runPdfOcr(pdf: PdfDoc): Promise<string> {
         // eslint-disable-next-line no-console
         console.warn(`Skipping page ${i}:`, pageErr);
         fullText += `\n[page ${i} skipped]\n`;
+        pagesSkipped += 1;
       }
     }
-    return fullText;
+    return { text: fullText, pagesAttempted, pagesSkipped };
   } finally {
     await worker.terminate();
   }
@@ -622,6 +633,16 @@ const OUT_OF_SCOPE_KEYWORDS: Record<OutOfScopeCategory, readonly string[]> = {
     'dengue igm',
     'dengue igg',
     'dengue',
+    // "Dengue Combo NS1+IgM+IgG" / "NS1+IgM/IgG" style row labels —
+    // some labs print them as a single combo line, so the
+    // dengue-specific keywords above only hit once. Adding the
+    // bare antibody fragments lifts the hit count past the
+    // 2-distinct gate. False-positive risk is low: ns1 and igm/igg
+    // outside an infectious-panel context are extremely rare in a
+    // metabolic/HPA report.
+    'ns1',
+    'igm/igg',
+    'igm+igg',
     'plasmodium',
     'malaria',
     'mp test',
@@ -717,7 +738,7 @@ const OUT_OF_SCOPE_KEYWORDS: Record<OutOfScopeCategory, readonly string[]> = {
 function countDistinctHits(text: string, keywords: readonly string[]): number {
   let hits = 0;
   for (const kw of keywords) {
-    if (kw.includes(' ') || kw.includes('-')) {
+    if (kw.includes(' ') || kw.includes('-') || kw.includes('/') || kw.includes('+')) {
       if (text.includes(kw)) hits += 1;
     } else {
       // Single-word — require non-letter boundary to avoid substring traps.
@@ -728,23 +749,60 @@ function countDistinctHits(text: string, keywords: readonly string[]): number {
   return hits;
 }
 
+/** Definitive single-hit terms. These keywords are specific enough that
+ *  a single appearance is sufficient to classify the document — they
+ *  essentially never show up in a metabolic / HPA-axis panel. The
+ *  2-hit-per-category default still applies to everything else, so a
+ *  routine panel that mentions "x-ray" once doesn't get misclassified. */
+const OUT_OF_SCOPE_DEFINITIVE: Record<OutOfScopeCategory, readonly string[]> = {
+  viral: [
+    'dengue',
+    'hbsag',
+    'anti-hcv',
+    'anti-hbs',
+    'widal',
+    'vdrl',
+    'tpha',
+    'chikungunya',
+    'plasmodium',
+  ],
+  imaging: [
+    'no focal opacity',
+    'no significant abnormality detected',
+    'computed tomography',
+    'sinus rhythm',
+    'qrs complex',
+  ],
+  'physical-exam': [
+    'audiometry',
+    'pure tone average',
+    'snellen',
+    'fundus examination',
+    'periodontal',
+    'caries',
+  ],
+};
+
 /**
  * Returns the strongest out-of-scope category if the text appears to be
- * dominated by it, or null otherwise. "Dominated" = 2+ distinct keyword
- * hits within a single category. Ties broken by the category with the
- * most hits (max threshold).
+ * dominated by it, or null otherwise. Two paths trigger:
  *
- * Pure function — accepts already-extracted text, no side effects, no
- * I/O. Safe to test against fixture strings.
+ *   - The text contains a "definitive" keyword from one category (1-hit
+ *     terms specific enough that a single appearance suffices).
+ *   - The text contains 2+ distinct keywords from one category.
+ *
+ * Ties broken by total hit count. Pure function — no side effects.
  */
 export function classifyOutOfScope(text: string): OutOfScopeCategory | null {
   if (!text) return null;
   const lowered = text.toLowerCase();
   let best: { category: OutOfScopeCategory; hits: number } | null = null;
   for (const category of Object.keys(OUT_OF_SCOPE_KEYWORDS) as OutOfScopeCategory[]) {
+    const definitiveHit =
+      countDistinctHits(lowered, OUT_OF_SCOPE_DEFINITIVE[category]) > 0;
     const hits = countDistinctHits(lowered, OUT_OF_SCOPE_KEYWORDS[category]);
-    if (hits >= 2 && (!best || hits > best.hits)) {
-      best = { category, hits };
+    if ((hits >= 2 || definitiveHit) && (!best || hits > best.hits)) {
+      best = { category, hits: Math.max(hits, definitiveHit ? 1 : 0) };
     }
   }
   return best?.category ?? null;
@@ -767,6 +825,12 @@ export type PdfParseResult = {
    *  catalog. Surface in the confirm step so the user knows whether a
    *  short list reflects an unusual report or a parser gap. */
   unrecognizedRows: string[];
+  /** OCR diagnostic — populated when source === 'pdf-ocr'. Lets the UI
+   *  warn the user that some pages couldn't be read (instead of letting
+   *  a partial result look complete). Undefined for the text-layer
+   *  path, since every page contributes text there. */
+  ocrPagesAttempted?: number;
+  ocrPagesSkipped?: number;
 };
 
 const EMPTY_RESULT: PdfParseResult = {
@@ -843,13 +907,15 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // If the text layer is empty, skip the text strategies and go
     // straight to OCR. Scanned PDFs hit this path.
     if (totalCharCount < MIN_USABLE_TEXT_LENGTH) {
-      const ocrText = await runPdfOcr(pdf);
-      const ocrBiomarkers = extractBiomarkersFromText(ocrText);
+      const ocr = await runPdfOcr(pdf);
+      const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
       return {
         biomarkers: ocrBiomarkers,
         source: 'pdf-ocr',
-        rawText: ocrText,
-        unrecognizedRows: findUnrecognizedRows(ocrText, ocrBiomarkers),
+        rawText: ocr.text,
+        unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
+        ocrPagesAttempted: ocr.pagesAttempted,
+        ocrPagesSkipped: ocr.pagesSkipped,
       };
     }
 
@@ -895,13 +961,15 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // Text layer present but zero catalog matches → try OCR. Scanned-
     // into-PDF reports with a thin text layer of metadata sometimes
     // hit this path.
-    const ocrText = await runPdfOcr(pdf);
-    const ocrBiomarkers = extractBiomarkersFromText(ocrText);
+    const ocr = await runPdfOcr(pdf);
+    const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
     return {
       biomarkers: ocrBiomarkers,
       source: 'pdf-ocr',
-      rawText: ocrText,
-      unrecognizedRows: findUnrecognizedRows(ocrText, ocrBiomarkers),
+      rawText: ocr.text,
+      unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
+      ocrPagesAttempted: ocr.pagesAttempted,
+      ocrPagesSkipped: ocr.pagesSkipped,
     };
   } finally {
     // Release pdfjs worker buffers. Without this, repeated uploads on

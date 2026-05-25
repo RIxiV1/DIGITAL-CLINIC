@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Database, Trash2, X } from 'lucide-react';
+import { Database, Download, Trash2, X } from 'lucide-react';
 import Button from './Button';
 import { useModalA11y } from '../utils/useModalA11y';
-import { getStorageStats, wipeAllData } from '../utils/persistence';
+import { exportAllData, getStorageStats, wipeAllData } from '../utils/persistence';
 import { formatBytes, formatDate } from '../utils/uiUtils';
 
 type Props = {
@@ -63,6 +63,27 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
     setWiped(true);
     setConfirming(false);
     onAfterWipe?.();
+  };
+
+  /** "Download my data" — round-trips the privacy story: the user owns
+   *  their data, and they should be able to take it with them. We dump
+   *  the entire dc_* namespace (reports, quiz answers, prefs) as a
+   *  single JSON file. Filename includes the date for self-archival. */
+  const handleDownload = () => {
+    const blob = new Blob([JSON.stringify(exportAllData(), null, 2)], {
+      type: 'application/json',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `digital-clinic-export-${stamp}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    // Revoke on next tick so the browser has a chance to finalize the
+    // download in single-threaded environments (Safari).
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
   return (
@@ -137,6 +158,21 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
                   />
                 </div>
               )}
+
+              {/* Download is always available — even after a wipe the
+                  button still works (just exports an empty payload),
+                  which is the right shape: never block the user from
+                  taking their own data out. */}
+              <Button
+                size="md"
+                variant="secondary"
+                responsiveFullWidth
+                leading={<Download size={14} />}
+                onClick={handleDownload}
+                disabled={stats?.keyCount === 0}
+              >
+                Download my data (JSON)
+              </Button>
 
               {wiped ? (
                 <div className="rounded-[14px] bg-good-soft border border-good/30 p-4 text-[13px] text-good leading-relaxed">

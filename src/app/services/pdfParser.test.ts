@@ -636,6 +636,26 @@ describe('classifyOutOfScope', () => {
     `;
     expect(classifyOutOfScope(text)).toBeNull();
   });
+
+  it('flags a single-row dengue combo panel via the definitive-term path', () => {
+    // Previously this single-line dengue header would only count as 1
+    // hit (multi-word "dengue ns1" might miss with non-space separators)
+    // and fall through to the generic "no values found" failure. The
+    // definitive-term path now lifts it to a viral classification.
+    const text = `
+      Dengue Combo NS1+IgM+IgG: All negative
+      Patient ID: 12345
+    `;
+    expect(classifyOutOfScope(text)).toBe('viral');
+  });
+
+  it('flags a hepatitis-B surface antigen report from a single definitive hit', () => {
+    const text = `
+      Specimen: Serum
+      HBsAg ELISA: Non-reactive
+    `;
+    expect(classifyOutOfScope(text)).toBe('viral');
+  });
 });
 
 /* ------------------------------------------------------------------ */

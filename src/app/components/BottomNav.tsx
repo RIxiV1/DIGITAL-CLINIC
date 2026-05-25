@@ -2,6 +2,7 @@ import { House, ClipboardList, User } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
+import { useIsLgUp } from '../utils/useMediaQuery';
 
 type ItemId = 'home' | 'quiz' | 'profile';
 
@@ -41,11 +42,17 @@ function navIdFor(page: Page): ItemId {
 
 export default function BottomNav() {
   const { page, navigate } = useNavigation();
+  // Skip mounting on lg+. The previous version used `lg:hidden` to hide
+  // the nav but still paid the DOM + framer-motion + event-listener cost
+  // on desktops where it was never visible. Mirrors Header's
+  // useIsLgUp-based gating, so both nav surfaces share one rule.
+  const isLgUp = useIsLgUp();
+  if (isLgUp) return null;
 
   const activeId: ItemId = navIdFor(page);
 
   return (
-    <nav className="lg:hidden no-print sticky bottom-0 z-30 safe-bottom">
+    <nav className="no-print sticky bottom-0 z-30 safe-bottom">
       <div className="mx-auto max-w-md px-4 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
         <div className="bg-surface/85 backdrop-blur-md rounded-full border border-line/70 shadow-pop flex items-center p-1.5">
           {items.map(({ id, label, page: target, Icon }) => {

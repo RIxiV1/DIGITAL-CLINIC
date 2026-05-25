@@ -149,6 +149,17 @@ export type ParsedReport = {
    *  Same persistence caveat as rawText — sits in dc_pendingConfirm
    *  between upload and confirm. Cleared on confirm/reject. */
   unrecognizedRows?: string[];
+  /** Out-of-scope category detected in the raw text. Non-null even on
+   *  the success path means the upload was a mixed document — e.g. a
+   *  CBC bundled with a viral panel. The confirm step uses this to
+   *  show a "we ignored these sections" note so the unrecognized-rows
+   *  panel doesn't make a deliberate skip look like a parser miss. */
+  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam';
+  /** OCR diagnostic — populated when the parser used Tesseract on a
+   *  PDF. Lets the confirm view warn the user when some pages couldn't
+   *  be read, so a partial extraction doesn't masquerade as complete. */
+  ocrPagesAttempted?: number;
+  ocrPagesSkipped?: number;
 };
 
 /**
@@ -172,6 +183,12 @@ export async function parseUploadedReport(
     stepIndex: number;
     stepProgress: number; // 0..1 within the current step
     overall: number;      // 0..1 across the whole pipeline
+    /** Optional copy override for the active step. The pipeline emits
+     *  this when the parser is still running well after the visual
+     *  stages finished — usually means we're mid-OCR on a phone.
+     *  Without it the user sits on the last stage's static line and
+     *  starts to wonder if the app froze. */
+    detailOverride?: string;
   }) => void,
 ): Promise<ParsedReport> {
   // Kick off real extraction immediately, in parallel with the stages.
@@ -179,7 +196,14 @@ export async function parseUploadedReport(
   // or image OCR depending on file.type. We don't await it yet — the
   // visual stages run regardless so the UX is paced.
   type ExtractionOutcome =
-    | { biomarkers: Biomarker[]; rawText: string; unrecognizedRows: string[] }
+    | {
+        biomarkers: Biomarker[];
+        rawText: string;
+        unrecognizedRows: string[];
+        ignoredCategory: 'viral' | 'imaging' | 'physical-exam' | null;
+        ocrPagesAttempted?: number;
+        ocrPagesSkipped?: number;
+      }
     | { biomarkers: null; reason: 'no-file' | 'no-matches' | 'parser-error' | 'out-of-scope'; message?: string; rawText?: string; unrecognizedRows?: string[] };
 
   let extractionDone = false;
@@ -190,10 +214,19 @@ export async function parseUploadedReport(
       ? parsePdfFile(input.file)
           .then((r): ExtractionOutcome => {
             if (r.biomarkers.length > 0) {
+              // Success-path: still classify the rawText. If a chunk of
+              // it looks viral/imaging/dental, the confirm view tells the
+              // user we deliberately ignored those sections — without
+              // this, deliberately skipped rows would surface in the
+              // "unrecognized rows" panel as if the parser had missed
+              // them.
               return {
                 biomarkers: r.biomarkers,
                 rawText: r.rawText,
                 unrecognizedRows: r.unrecognizedRows,
+                ignoredCategory: classifyOutOfScope(r.rawText),
+                ocrPagesAttempted: r.ocrPagesAttempted,
+                ocrPagesSkipped: r.ocrPagesSkipped,
               };
             }
             // Zero matches AND the text reads as a viral/imaging/dental
@@ -268,9 +301,22 @@ export async function parseUploadedReport(
     // Polite poll — render a heartbeat tick so framer-motion has
     // something to bind to even though the progress number isn't
     // moving. The UI's spinner is the actual "still working" cue.
+    // After ~5s of post-stage waiting we swap the detail copy to a
+    // candid "running OCR — this can take 30s on phone" message so
+    // the user doesn't assume the tab is frozen.
+    const waitStart = Date.now();
     while (!extractionDone) {
       await new Promise((r) => setTimeout(r, 250));
-      onProgress({ stepIndex: lastIdx, stepProgress: 0.9, overall: 0.95 });
+      const waited = Date.now() - waitStart;
+      onProgress({
+        stepIndex: lastIdx,
+        stepProgress: 0.9,
+        overall: 0.95,
+        detailOverride:
+          waited > 5_000
+            ? 'Running OCR on the file — this can take 20–30 seconds on a phone.'
+            : undefined,
+      });
     }
     onProgress({ stepIndex: lastIdx, stepProgress: 1, overall: 1 });
   }
@@ -300,6 +346,9 @@ export async function parseUploadedReport(
       parsedFromFile: true,
       rawText: outcome.rawText,
       unrecognizedRows: outcome.unrecognizedRows,
+      ignoredCategory: outcome.ignoredCategory ?? undefined,
+      ocrPagesAttempted: outcome.ocrPagesAttempted,
+      ocrPagesSkipped: outcome.ocrPagesSkipped,
     };
   }
   // outcome.biomarkers === null branch — narrow to the failure variant
@@ -324,7 +373,21 @@ export async function parseUploadedReport(
 
 const MAX_UPLOAD_BYTES = 20 * 1024 * 1024; // 20 MB — generous for lab PDFs
 const MAX_FILENAME_LENGTH = 200; // keep filenames under 200 chars in localStorage
-const ACCEPTED_MIME_PREFIXES = ['application/pdf', 'image/'];
+/** Explicit image-format allowlist. Previously we accepted any `image/*`
+ *  MIME type, which let TIFF/SVG/GIF reach Tesseract and surface as a
+ *  confusing "parser-error" downstream. The formats below are the ones
+ *  Tesseract handles cleanly through a `<canvas>` decode. HEIC/HEIF is
+ *  handled by `isHeic` earlier in the validator with a more specific
+ *  message about iOS Photos conversion. */
+const ACCEPTED_IMAGE_MIME = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+/** File extensions matched as a fallback when `file.type` is empty —
+ *  some Android share-sheet paths drop the MIME and only the filename
+ *  survives. Mirror of ACCEPTED_IMAGE_MIME above. */
+const ACCEPTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
 
 
 export type FileValidationError =
@@ -392,13 +455,25 @@ export function validateUpload(file: File | null): FileValidationResult {
       },
     };
   }
-  const okType = ACCEPTED_MIME_PREFIXES.some((p) => file.type.startsWith(p));
-  if (!okType) {
+  const mime = file.type.toLowerCase();
+  const lowerName = file.name.toLowerCase();
+  const isPdf = mime === 'application/pdf' || lowerName.endsWith('.pdf');
+  const isAllowedImage =
+    ACCEPTED_IMAGE_MIME.has(mime) ||
+    (mime === '' &&
+      ACCEPTED_IMAGE_EXTENSIONS.some((ext) => lowerName.endsWith(ext)));
+  if (!isPdf && !isAllowedImage) {
+    // Distinct copy for "image but not one we can decode" — TIFF / SVG /
+    // GIF would otherwise hit Tesseract and surface as a parser error
+    // with no actionable next step.
+    const isOtherImage = mime.startsWith('image/');
     return {
       ok: false,
       error: {
         kind: 'type',
-        message: 'We can read PDFs and photos of reports. That file type isn’t supported yet.',
+        message: isOtherImage
+          ? 'We accept JPEG, PNG, and WebP photos. Save your image as one of those formats and try again.'
+          : 'We can read PDFs and JPEG / PNG / WebP photos. That file type isn’t supported yet.',
       },
     };
   }

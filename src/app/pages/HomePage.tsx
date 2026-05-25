@@ -1,6 +1,6 @@
 import { useDeferredValue, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { AlertTriangle, FileText, Plus, Search, Upload, X } from 'lucide-react';
+import { AlertTriangle, FileText, Plus, Search, Trash2, Upload, X } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
@@ -14,6 +14,7 @@ import TrendRow from '../components/TrendRow';
 import LearnMoreModal from '../components/LearnMoreModal';
 import Emoji from '../components/Emoji';
 import { useNavigation, useReports } from '../AppContext';
+import { useModalA11y } from '../utils/useModalA11y';
 import {
   getTrend,
   type Biomarker,
@@ -50,8 +51,13 @@ const STATUS_FILTERS: Array<{ id: StatusFilter; label: string }> = [
 type LockerSort = 'newest' | 'oldest' | 'lab';
 
 export default function HomePage() {
-  const { reports, addReport, saveError, dismissSaveError } = useReports();
+  const { reports, addReport, removeReport, saveError, dismissSaveError } = useReports();
   const { navigate } = useNavigation();
+
+  /** Per-report delete dialog. State lives at the page level so the
+   *  one-modal-at-a-time invariant is easy to enforce. `null` ⇒ closed,
+   *  a report id ⇒ that row's confirm dialog is open. */
+  const [reportPendingDelete, setReportPendingDelete] = useState<string | null>(null);
 
   /** Loads the curated sample report into the user's locker so the
    *  empty dashboard becomes a populated dashboard in one click — no
@@ -486,6 +492,51 @@ export default function HomePage() {
         </Container>
       )}
 
+      {/* "What you'll see once you upload" preview — only when the
+          user has zero reports. Replaces the empty grey gap that used
+          to sit between the headline and the locker empty card on tall
+          viewports; doubles as a low-pressure pre-sell of the dashboard
+          they're about to populate. */}
+      {!ready && reports.length === 0 && (
+        <Container size="wide" className="mt-6 lg:mt-8">
+          <Pill tone="indigo" size="sm">
+            What you’ll see
+          </Pill>
+          <h2 className="font-display text-[22px] lg:text-[26px] leading-tight mt-2">
+            Your dashboard, once you upload
+          </h2>
+          <div className="mt-4 grid sm:grid-cols-3 gap-3">
+            {[
+              {
+                icon: '🎯',
+                title: 'Markers to act on first',
+                copy: 'Anything outside the healthy range is pulled up top — concern, then attention.',
+              },
+              {
+                icon: '📈',
+                title: 'Trends over time',
+                copy: 'Each marker gets a sparkline once you have two or more reports.',
+              },
+              {
+                icon: '🧭',
+                title: 'A plan, not a panel',
+                copy: 'Lab numbers translated into plain English — and what to do about them.',
+              },
+            ].map((s) => (
+              <Card key={s.title}>
+                <div className="text-[22px] leading-none">{s.icon}</div>
+                <div className="font-display text-[15px] leading-tight mt-3">
+                  {s.title}
+                </div>
+                <p className="mt-1.5 text-[12.5px] text-ink-soft leading-relaxed">
+                  {s.copy}
+                </p>
+              </Card>
+            ))}
+          </div>
+        </Container>
+      )}
+
       {/* ZONE 4 · Your locker */}
       <Container size="wide" className="mt-6 lg:mt-8">
         <SectionHeading
@@ -614,7 +665,7 @@ export default function HomePage() {
               // Per-row stagger removed — see #6.7. Card's whileHover/
               // whileTap still provides interactive feel without the
               // mount-time cost.
-              <div key={r.id}>
+              <div key={r.id} className="relative group">
                 <Card
                   // interactive must mirror onClick — both ready and
                   // processing entries are clickable (one opens results,
@@ -653,9 +704,38 @@ export default function HomePage() {
                           </Pill>
                         )}
                       </div>
+                      {/* Marker count — only on ready reports with values
+                          extracted. Lets the user pick "the richer one"
+                          when several reports are siblings rather than
+                          opening each to count. */}
+                      {r.status === 'ready' && r.biomarkers.length > 0 && (
+                        <div className="text-[11px] text-muted mt-0.5">
+                          {r.biomarkers.length} marker
+                          {r.biomarkers.length === 1 ? '' : 's'}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card>
+                {/* Per-row delete affordance. Hidden until hover/focus on
+                    desktop, always-on for sm-down where there's no
+                    hover state. Sample reports keep the icon — the
+                    user may want to clear demo data once they have a
+                    real report of their own. The button sits OUTSIDE
+                    the Card so its click doesn't bubble through the
+                    card's interactive onClick handler. */}
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setReportPendingDelete(r.id);
+                  }}
+                  aria-label={`Delete ${r.name}`}
+                  title="Delete this report"
+                  className="absolute top-2 right-2 grid place-items-center w-8 h-8 rounded-full bg-surface/90 backdrop-blur text-muted opacity-100 sm:opacity-0 sm:group-hover:opacity-100 sm:group-focus-within:opacity-100 focus-visible:opacity-100 hover:text-concern hover:bg-concern-soft transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-concern/60"
+                >
+                  <Trash2 size={14} />
+                </button>
               </div>
             ))
           )}
@@ -672,7 +752,113 @@ export default function HomePage() {
         info={openMarkerLM}
         onClose={closeLearnMore}
       />
+
+      <DeleteReportConfirm
+        report={reports.find((r) => r.id === reportPendingDelete) ?? null}
+        onCancel={() => setReportPendingDelete(null)}
+        onConfirm={() => {
+          if (reportPendingDelete) removeReport(reportPendingDelete);
+          setReportPendingDelete(null);
+        }}
+      />
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Per-report delete confirmation                                       */
+/*                                                                      */
+/* Lives at the page level (one modal at a time) rather than on each    */
+/* card so destruction-of-data is uniformly Esc/click-out dismissable   */
+/* and shares the focus-trap + scroll-lock contract with the rest of    */
+/* the app's modals. We mirror DataPanelModal's a11y wiring on purpose. */
+/* ------------------------------------------------------------------ */
+
+function DeleteReportConfirm({
+  report,
+  onCancel,
+  onConfirm,
+}: {
+  report: Report | null;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const cardRef = useRef<HTMLDivElement | null>(null);
+  useModalA11y({
+    open: !!report,
+    cardRef,
+    onClose: onCancel,
+    // No initialFocusRef — the hook lands on the first focusable in the
+    // card, which is the Cancel button (the safe default for destructive
+    // confirmations).
+  });
+
+  return (
+    <AnimatePresence>
+      {report && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onClick={onCancel}
+          className="fixed inset-0 z-50 grid place-items-center bg-ink/40 backdrop-blur-sm p-4"
+          role="presentation"
+        >
+          <motion.div
+            ref={cardRef}
+            initial={{ y: 20, opacity: 0, scale: 0.97 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            exit={{ y: 12, opacity: 0, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 360, damping: 30 }}
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="del-report-title"
+            className="w-full sm:max-w-sm bg-surface rounded-3xl shadow-pop border border-line p-5"
+          >
+            <div className="flex items-start gap-3">
+              <div className="grid place-items-center w-11 h-11 rounded-2xl bg-concern-soft text-concern shrink-0">
+                <Trash2 size={18} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <h2
+                  id="del-report-title"
+                  className="font-display text-[18px] leading-tight text-ink"
+                >
+                  Delete this report?
+                </h2>
+                <p className="mt-1.5 text-[13px] text-ink-soft leading-relaxed break-words">
+                  <span className="font-semibold text-ink">{report.name}</span>
+                  {' '}({report.lab}) will be removed from your locker. This
+                  can’t be undone.
+                </p>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-col-reverse sm:flex-row gap-2">
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={onCancel}
+                responsiveFullWidth
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                variant="primary"
+                onClick={onConfirm}
+                responsiveFullWidth
+                className="!bg-concern hover:!bg-concern/90"
+                leading={<Trash2 size={14} />}
+              >
+                Delete report
+              </Button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

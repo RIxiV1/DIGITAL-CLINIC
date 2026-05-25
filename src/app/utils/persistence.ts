@@ -112,6 +112,9 @@ export type PendingConfirmRecord<TBiomarker> = {
   biomarkers: TBiomarker[];
   rawText?: string;
   unrecognizedRows?: string[];
+  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam';
+  ocrPagesAttempted?: number;
+  ocrPagesSkipped?: number;
 };
 
 export function savePendingConfirm<T>(record: PendingConfirmRecord<T>): void {
@@ -261,6 +264,44 @@ export function getStorageStats() {
     keyCount,
     approxBytes,
     oldestDate: oldestTs === Infinity ? null : new Date(oldestTs),
+  };
+}
+
+/**
+ * Snapshot of every dc_* key in localStorage, suitable for export. We
+ * try to JSON-decode each value so the exported file is one nested
+ * object (not a map of stringified JSON), but fall back to the raw
+ * string when decoding fails — better to export-as-string than to drop
+ * data we don't recognise.
+ */
+export function exportAllData(): {
+  exportedAt: string;
+  /** Schema version so a future restore path can branch on the shape. */
+  schema: number;
+  entries: Record<string, unknown>;
+} {
+  const entries: Record<string, unknown> = {};
+  if (typeof window !== 'undefined') {
+    try {
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i);
+        if (!key || !key.startsWith(KEY_PREFIX)) continue;
+        const raw = window.localStorage.getItem(key);
+        if (raw == null) continue;
+        try {
+          entries[key] = JSON.parse(raw);
+        } catch {
+          entries[key] = raw;
+        }
+      }
+    } catch {
+      // localStorage unavailable — return what we have so far.
+    }
+  }
+  return {
+    exportedAt: new Date().toISOString(),
+    schema: 1,
+    entries,
   };
 }
 

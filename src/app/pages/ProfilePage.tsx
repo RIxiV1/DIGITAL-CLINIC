@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bell,
-  CreditCard,
   FileLock2,
   Home,
   Lock,
@@ -96,11 +95,6 @@ export default function ProfilePage() {
                       </div>
                       <div className="text-[12px] text-indigo-100 mt-0.5">
                         Anonymous · stored in this browser
-                      </div>
-                      <div className="mt-2 flex items-center gap-1.5">
-                        <Pill tone="gold" size="sm">
-                          <Sparkles size={10} /> Founder’s Circle
-                        </Pill>
                       </div>
                     </div>
                     <button
@@ -209,12 +203,6 @@ export default function ProfilePage() {
                       label: 'My data & exports',
                       hint: 'See what we store · delete everything',
                       onClick: () => setDataPanelOpen(true),
-                    },
-                    {
-                      Icon: CreditCard,
-                      label: 'Membership',
-                      hint: 'Founder’s Circle · active',
-                      onClick: undefined,
                     },
                     {
                       Icon: Lock,

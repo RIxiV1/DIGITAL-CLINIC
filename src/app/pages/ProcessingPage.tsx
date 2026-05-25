@@ -67,6 +67,16 @@ type ConfirmState = {
    *  Surfaced in the confirm step so a short extracted list reads as
    *  "your lab uses unusual markers" rather than "the parser is bad". */
   unrecognizedRows?: string[];
+  /** When the upload was a mixed document (e.g. CBC + Dengue panel),
+   *  the classifier flags the out-of-scope half so the confirm view can
+   *  say "we ignored these sections" rather than letting the deliberately
+   *  skipped rows show up in the unrecognized-rows panel. */
+  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam';
+  /** OCR diagnostic — non-zero `pagesSkipped` means the user's report
+   *  parsed partially. We surface a banner so a partial result isn't
+   *  mistaken for a complete one. */
+  ocrPagesAttempted?: number;
+  ocrPagesSkipped?: number;
 };
 
 export default function ProcessingPage() {
@@ -80,6 +90,10 @@ export default function ProcessingPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [stepProgress, setStepProgress] = useState(0);
   const [overall, setOverall] = useState(0);
+  /** Optional copy override pushed by the pipeline when the parser is
+   *  still running well after the visual stages finished — keeps users
+   *  on phones from assuming the tab froze during a long OCR. */
+  const [detailOverride, setDetailOverride] = useState<string | null>(null);
   const [failure, setFailure] = useState<FailureState | null>(null);
   /** Holds the parsed result after a successful extraction. We DON'T
    *  navigate to /results until the user confirms — previously the
@@ -147,6 +161,9 @@ export default function ProcessingPage() {
         fileName: persisted.fileName,
         rawText: persisted.rawText,
         unrecognizedRows: persisted.unrecognizedRows,
+        ignoredCategory: persisted.ignoredCategory,
+        ocrPagesAttempted: persisted.ocrPagesAttempted,
+        ocrPagesSkipped: persisted.ocrPagesSkipped,
       });
       return;
     }
@@ -159,10 +176,11 @@ export default function ProcessingPage() {
 
     void parseUploadedReport(
       { name: fileName, file },
-      ({ stepIndex, stepProgress, overall }) => {
+      ({ stepIndex, stepProgress, overall, detailOverride }) => {
         setStepIndex(stepIndex);
         setStepProgress(stepProgress);
         setOverall(overall);
+        setDetailOverride(detailOverride ?? null);
       },
     ).then((result) => {
       // Race guard: if a new upload superseded this one while we were
@@ -183,6 +201,9 @@ export default function ProcessingPage() {
           fileName,
           rawText: result.rawText,
           unrecognizedRows: result.unrecognizedRows,
+          ignoredCategory: result.ignoredCategory,
+          ocrPagesAttempted: result.ocrPagesAttempted,
+          ocrPagesSkipped: result.ocrPagesSkipped,
         };
         // Persist so a navigate-away-then-back can restore this view
         // without re-running the parser against the consumed file.
@@ -276,6 +297,9 @@ export default function ProcessingPage() {
         fileName={pendingConfirm.fileName}
         rawText={pendingConfirm.rawText}
         unrecognizedRows={pendingConfirm.unrecognizedRows}
+        ignoredCategory={pendingConfirm.ignoredCategory}
+        ocrPagesAttempted={pendingConfirm.ocrPagesAttempted}
+        ocrPagesSkipped={pendingConfirm.ocrPagesSkipped}
         onConfirm={confirmExtractedValues}
         onReject={rejectAndRetry}
       />
@@ -335,7 +359,8 @@ export default function ProcessingPage() {
           Reading your report carefully.
         </h1>
         <p className="mt-2 text-[14px] text-ink-soft max-w-[22rem] text-pretty">
-          {parseSteps[stepIndex]?.detail ??
+          {detailOverride ??
+            parseSteps[stepIndex]?.detail ??
             'Almost done — getting your insights ready.'}
         </p>
 
@@ -557,11 +582,9 @@ function ParseFailedView({
 
           <div className="px-5 pb-5 -mt-1">
             <p className="text-[11.5px] text-muted leading-relaxed">
-              Our parser currently recognises hormone, metabolic, heart, thyroid,
-              vitamin, liver, kidney, blood, electrolyte, inflammation, and
-              fertility markers from text-layer PDFs and clear photos. Older
-              scanned PDFs or non-standard lab layouts may not parse —
-              we don’t guess.
+              {failure.reason === 'out-of-scope'
+                ? 'Your file looks like a viral panel, imaging report, or clinical exam — those aren’t something we interpret. If part of it has metabolic, hormone, or vitamin values, type them in via “Enter values manually”.'
+                : 'Our parser currently recognises hormone, metabolic, heart, thyroid, vitamin, liver, kidney, blood, electrolyte, inflammation, and fertility markers from text-layer PDFs and clear photos. Older scanned PDFs or non-standard lab layouts may not parse — we don’t guess.'}
             </p>
           </div>
         </Card>
@@ -579,6 +602,9 @@ function ConfirmExtractedValuesView({
   fileName,
   rawText,
   unrecognizedRows,
+  ignoredCategory,
+  ocrPagesAttempted,
+  ocrPagesSkipped,
   onConfirm,
   onReject,
 }: {
@@ -586,6 +612,9 @@ function ConfirmExtractedValuesView({
   fileName: string;
   rawText?: string;
   unrecognizedRows?: string[];
+  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam';
+  ocrPagesAttempted?: number;
+  ocrPagesSkipped?: number;
   onConfirm: () => void;
   onReject: () => void;
 }) {
@@ -635,6 +664,33 @@ function ConfirmExtractedValuesView({
         </div>
 
         <div className="mt-6 lg:max-w-3xl lg:mx-auto grid gap-4">
+          {/* OCR skip banner — surfaces when Tesseract couldn't finish
+              one or more pages (timeout or render failure). Without
+              this, a partial result on a multi-page report looks
+              complete and the user trusts a half-extraction. */}
+          {ocrPagesAttempted &&
+            ocrPagesSkipped !== undefined &&
+            ocrPagesSkipped > 0 && (
+              <Card padded={false} className="overflow-hidden border-attention/30">
+                <div className="px-5 py-4 bg-attention-soft/50 flex items-start gap-3">
+                  <span aria-hidden role="img" className="text-[18px] leading-none">
+                    ⚠️
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display text-[14px] leading-tight">
+                      Some pages couldn’t be read
+                    </div>
+                    <p className="mt-1 text-[12.5px] text-ink-soft leading-relaxed">
+                      {ocrPagesSkipped} of {ocrPagesAttempted} page{ocrPagesAttempted === 1 ? '' : 's'}{' '}
+                      failed during text extraction (OCR timeout). Any values
+                      on those pages aren’t in the list below. If the report
+                      looks short, try re-uploading or use manual entry.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
           {grouped.map(({ category, markers }) => (
             <Card key={category.id} padded={false} className="overflow-hidden">
               <div className="px-5 pt-4 pb-3 border-b border-line/70 flex items-center gap-2">
@@ -689,6 +745,41 @@ function ConfirmExtractedValuesView({
               </ul>
             </Card>
           ))}
+
+          {/* "We ignored these sections" notice — appears when the
+              upload bundles in-scope panels (CBC, hormones, …) with an
+              out-of-scope panel (viral, imaging, dental). Without this,
+              the dengue/X-ray rows would surface in the unrecognized-
+              rows panel below as if the parser had missed them — but
+              we deliberately don't analyze those sections. */}
+          {ignoredCategory && (
+            <Card padded={false} className="overflow-hidden border-indigo-200/70">
+              <div className="px-5 pt-4 pb-3 border-b border-indigo-100 bg-indigo-50/40 flex items-center gap-2">
+                <span aria-hidden role="img" className="text-[15px] leading-none">
+                  ℹ️
+                </span>
+                <div className="font-display text-[14px] leading-tight">
+                  We ignored some sections of this report
+                </div>
+              </div>
+              <div className="px-5 py-3">
+                <p className="text-[12.5px] text-ink-soft leading-relaxed">
+                  Your file also contained{' '}
+                  <span className="font-semibold text-ink">
+                    {ignoredCategory === 'viral'
+                      ? 'infectious-disease / viral panel'
+                      : ignoredCategory === 'imaging'
+                        ? 'imaging or ECG'
+                        : 'physical-exam'}{' '}
+                    results
+                  </span>
+                  . Those aren’t part of the metabolic / HPA-axis analysis we
+                  cover, so we didn’t try to interpret them. The values above
+                  are everything we extracted from the in-scope sections.
+                </p>
+              </div>
+            </Card>
+          )}
 
           {/* Unrecognized-rows notice — lab values we detected (label +
               number + recognized unit) but didn't have in the catalog.

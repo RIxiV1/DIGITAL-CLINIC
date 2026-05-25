@@ -104,6 +104,13 @@ export default function UploadPage() {
   const isInlineError =
     error?.kind === 'type' || error?.kind === 'size' || error?.kind === 'empty';
 
+  /** Soft warning when the user picks a chunky file. Hard limit is 20MB
+   *  (size error blocks the upload), but anything >5MB will stall a
+   *  phone's tab for 20–30s during text extraction. Warning is
+   *  informational, not blocking. */
+  const fileSize = fileRef.current?.size ?? 0;
+  const showLargeFileWarning = fileSize > 5 * 1024 * 1024;
+
   return (
     <div className="min-h-dvh pb-32 bg-canvas">
       <Header
@@ -213,6 +220,32 @@ export default function UploadPage() {
                 </div>
               </Card>
         </motion.div>
+
+        {/* Soft warning — informational, not blocking. Shown when the
+            picked file is big enough to make phone parsing feel slow,
+            but still under the 20 MB hard limit. We surface it BEFORE
+            the inline-error block so a user who picks a 21 MB file
+            still sees the size error first. */}
+        <AnimatePresence>
+          {showLargeFileWarning && !isInlineError && (
+            <motion.div
+              key="large-file-note"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.2 }}
+              role="note"
+              className="mt-3 flex items-start gap-2.5 rounded-[14px] border border-attention/30 bg-attention-soft/60 px-4 py-3"
+            >
+              <Info size={16} className="text-attention shrink-0 mt-0.5" />
+              <p className="text-[12.5px] text-ink leading-relaxed">
+                <span className="font-semibold">Heads up:</span> this is a
+                large file — text extraction may take 20–30 seconds, especially
+                on phones. Hang in there.
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Inline alert for type/size errors — keeps the dropzone in
             place since these are usually one-character fixes the user
