@@ -1,87 +1,110 @@
 <div align="center">
 
-<img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/activity.svg" alt="Digital Clinic Logo" width="96" />
-
 # Digital Clinic
 
-**Medical-grade patient health dashboard.**
-Translate lab reports into plain English, score yourself across hormone / metabolic / vitamin axes, and track trends over time — all client-side, all in your browser.
+**A patient-facing health dashboard that turns lab reports into plain English — entirely in the browser.**
+
+Upload a PDF or photo of your blood work. The app parses it client-side (no server, no upload), scores you across hormonal / metabolic / cardiac / thyroid / vitamin axes, and shows trends over time. Pairs with a symptom quiz that recommends the right tests when you don't have a report yet.
 
 <p>
   <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React 18.3" /></a>
-  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 6.0" /></a>
   <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5.6" /></a>
+  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 6.0" /></a>
   <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" /></a>
   <a href="https://vitest.dev/"><img src="https://img.shields.io/badge/Vitest-4.1-7E9B4E?style=flat-square&logo=vitest&logoColor=white" alt="Vitest 4.1" /></a>
 </p>
+
+<sub><a href="https://digital-clinic-omega.vercel.app">Live demo</a> · built for <a href="https://formen.co.in">ForMen</a></sub>
 
 </div>
 
 ---
 
-Digital Clinic is a patient health dashboard that simplifies personal health management by translating complex lab results into easy-to-understand insights, providing diagnostic quizzes, and offering clear visual charts.
+<!-- Drop a 1:1 or 16:9 GIF / screenshot here once deployed: -->
+<p align="center"><img src="docs/preview.png" alt="Digital Clinic walkthrough" width="720" /></p>
 
-## Key Features
+## Why this exists
 
-- **Health Locker and Report Upload**: Upload digital lab reports (PDF) or scanned images. The app automatically extracts key health indicators (e.g., Cholesterol, Testosterone, Vitamin D) using PDF parsing and OCR.
-- **Symptom Quiz**: An interactive questionnaire that assesses symptoms and cross-references them with your lab reports to provide personalized recommendations.
-- **Clear Visualizations**: Demystifies medical jargon with plain-English explanations. Includes interactive health scores, color-coded biomarker bars, and trend charts.
+Most lab reports in India are 4–10 page PDFs with subset fonts, dense tables, and zero accessibility. Patients get the file, glance at the "out of range" highlights, and panic — or ignore it. Digital Clinic re-presents the same data the way a friend who happens to be a doctor would: a single dashboard score, marker-by-marker plain-English explanations, and a "what to do next" rather than a wall of numbers.
 
-## Tech Stack
+The whole thing runs in the browser. No file is ever uploaded to a server.
 
-- **Frontend**: React 18, TypeScript, Tailwind CSS v4
-- **Build & Test**: Vite 6, Vitest
-- **Document Parsing**: Tesseract.js (OCR), pdfjs-dist (PDFs)
+## Highlights (the parts worth reading the code for)
 
-## Project Structure
+**Multi-strategy PDF parser** — `src/app/services/pdfParser.ts`
+PDF text extraction is notoriously fragile. This pipeline runs three reconstruction strategies in parallel and picks the candidate that yields the most catalog matches:
+- Adaptive Y-tolerance line grouping (handles dense Indian-lab tables where rows pack tighter than pdfjs's default heuristic expects)
+- X-gap–aware token joining (so `43` doesn't get split into `4 3` by the renderer and parse as `4` — a real bug seen on Thyrocare/SRL/Metropolis output)
+- CID-keyed font handling via `cMapUrl` + `cMapPacked` for subset fonts
 
-- `src/app/components/` - Reusable UI components
-- `src/app/contexts/` - Global state management
-- `src/app/pages/` - Main application views (Dashboard, Quiz, Reports)
-- `src/app/services/` - Core logic (PDF extraction, OCR, API calls)
-- `src/app/utils/` - Helper functions
+**OCR fallback for scanned reports** — Tesseract.js renders each PDF page at 2.5× and re-extracts when the text layer is empty or yields no catalog hits. Per-page timeout, page cap, and OCR-artefact normalisation (`5 .` → `5.`) keep it from stalling on pathological inputs. Same path handles JPEG / PNG uploads.
 
-## Getting Started
+**Biomarker catalog with alias matching** — the catalog drives both parsing and rendering. Each marker knows its clinical aliases, reference ranges, optimal sub-ranges, and direction semantics (`band` / `up` / `down`) so a single component can correctly visualise "higher is better" (HDL) and "lower is better" (LDL) without per-marker branching.
 
-### Prerequisites
+**No backend, no auth, type-safe navigation** — a custom `NavigationContext` exposes a discriminated-union `Page` type on top of react-router primitives, so route params (`reportId`, `problemId`) are typed end-to-end and impossible-state navigations are caught at compile time. Pages are route-split via `React.lazy` with a stale-deploy guard: if a chunk fetch fails (user had the app open across a deploy), it hard-reloads instead of dropping them on an error boundary.
 
-- Node.js (>=20.11.0 <23.0.0)
+**Accessibility & motion** — `prefers-reduced-motion` cascaded through `MotionConfig` at the root so every framer-motion descendant collapses to 0ms without per-component checks. Skip-link to main content. Focus management on modals. Semantic landmarks throughout.
 
-### Installation
+## How it works
 
-1. Clone the repository and navigate into the directory:
-   ```bash
-   git clone <repository-url>
-   cd "DIGITAL CLINIC"
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-### Running Locally
-
-Start the development server:
-```bash
-npm run dev
 ```
-The app will be available at [http://localhost:5173](http://localhost:5173).
-
-### Testing
-
-Run the test suite:
-```bash
-npm run test
+PDF / image upload
+      │
+      ▼
+┌─────────────────────────────────────────────┐
+│  pdfjs text layer  ──► 3 reconstruction     │
+│                        strategies in parallel│
+│                                              │
+│  (fallback) ──────► Tesseract.js OCR        │
+└─────────────────────────────────────────────┘
+      │
+      ▼
+  Normalisation (OCR artefacts, unit fixes)
+      │
+      ▼
+  Biomarker catalog match (best candidate wins)
+      │
+      ▼
+  Persist to localStorage  ──►  Dashboard / Results / Trends
 ```
 
-### Production Build
+State lives in two React contexts (`QuizContext`, `ReportsContext`) with `localStorage` persistence. No network calls outside loading the PDF/OCR workers.
 
-Create an optimized build:
+## Stack
+
+- **UI** — React 18, TypeScript, Tailwind CSS v4, framer-motion, lucide-react
+- **Build** — Vite 6, route-level code splitting
+- **Parsing** — pdfjs-dist 5, tesseract.js 7
+- **Export** — jspdf for downloadable result reports
+- **Test** — Vitest + Testing Library + jsdom
+
+## Local development
+
+Requires Node `>=20.11 <23`.
+
 ```bash
-npm run build
+npm install
+npm run dev          # http://localhost:5173
+npm run test         # vitest run
+npm run build        # tsc --noEmit && vitest run && vite build
+npm run preview      # serve dist/
 ```
-Preview the production build locally:
-```bash
-npm run preview
+
+`npm run build` runs typecheck and tests before bundling — the build fails fast on either.
+
+## Project layout
+
 ```
+src/app/
+  components/   reusable UI (BiomarkerBar, HealthRing, Sparkline, modals)
+  contexts/    QuizContext, ReportsContext, NavigationContext
+  data/        biomarker catalog, test catalog, quiz definitions, problems
+  pages/       LandingPage, QuizPage, UploadPage, ProcessingPage,
+               HomePage, ReportResultsPage, ProblemDetailPage, …
+  services/    pdfParser (parsing pipeline), reportPdf (export), api
+  utils/       persistence, lazyWithReload, a11y hooks
+```
+
+## Status
+
+Built as a 3-month contract engagement. Production-grade build pipeline (typecheck + tests gating the bundle), deployable to any static host, currently configured for Vercel via `vercel.json`. PRs and forks welcome.
