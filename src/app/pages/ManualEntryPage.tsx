@@ -1,5 +1,11 @@
-import { useMemo, useState } from 'react';
-import { AlertTriangle, ArrowRight, Pencil, Plus } from 'lucide-react';
+import { useDeferredValue, useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Pencil,
+  Search,
+  X,
+} from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
@@ -41,23 +47,27 @@ function entryState(t: BiomarkerTemplate, raw: string): EntryState {
  * parser couldn't read, or who'd rather just enter the handful of
  * values they care about.
  *
- * Design constraints:
- *   - The catalog has 60+ markers; showing every input at once is
- *     overwhelming. The form groups by category and starts with the
- *     three most commonly-asked categories expanded (Metabolic, Heart,
- *     Vitamins). Others collapse so the page reads as scannable
- *     section headers.
- *   - We never persist empty values — only what the user typed
- *     produces Biomarkers in the resulting report.
- *   - Sanity bound (5x beyond healthy span) drops obvious typos
- *     before they hit the report, mirroring the parser's behavior.
+ * Previous version put every category behind a collapsible accordion
+ * with three default-open. That made sense for "discovery" but the
+ * actual user here is *transcribing* — they have a report in hand and
+ * know which markers exist on it. Speed beats discovery: forcing a
+ * tap-to-expand on every category they want to fill is friction.
+ *
+ * New layout:
+ *   - Sticky search input at the top. Filters across all categories
+ *     by name AND alias (so "TSH" matches "Thyroid Stimulating
+ *     Hormone"). Live, deferred for snappy typing.
+ *   - Continuous scroll, no accordions. Every input row is reachable
+ *     by scrolling — no click before typing.
+ *   - Sticky section headers so the user always knows which category
+ *     they're in while scanning.
+ *   - Empty-matches card when the search returns zero.
+ *   - Bottom bar uses `solid` so the gradient fade doesn't bleed over
+ *     white input rows. `bordered` for the hard top edge.
+ *
+ * Sanity bound (5x beyond healthy span) still drops obvious typos
+ * before they hit the report.
  */
-
-const INITIALLY_EXPANDED: ReadonlyArray<BiomarkerCategoryId> = [
-  'metabolic',
-  'heart',
-  'vitamins',
-];
 
 export default function ManualEntryPage() {
   const { navigate, replace } = useNavigation();
@@ -65,16 +75,19 @@ export default function ManualEntryPage() {
 
   const [values, setValues] = useState<Record<string, string>>({});
   const [reportName, setReportName] = useState('My lab report');
-  const [expanded, setExpanded] = useState<Set<BiomarkerCategoryId>>(
-    new Set(INITIALLY_EXPANDED),
-  );
+  const [searchQuery, setSearchQuery] = useState('');
+  /** Defer the query so typing stays snappy on phones — the filtered
+   *  list re-renders against a slightly stale value while the user is
+   *  mid-keystroke. */
+  const deferredQuery = useDeferredValue(searchQuery);
   /** Set on save() when the user typed values but every one of them was
    *  out of range — cleared when they edit any input. Prevents the
    *  silent-drop confusion where the save button does nothing because
    *  buildBiomarkers returned []. */
   const [saveError, setSaveError] = useState<string | null>(null);
 
-  // Group catalog by category, in canonical category order.
+  // Group catalog by category, in canonical category order. Computed
+  // once — the catalog is static.
   const grouped = useMemo(() => {
     const byCategory = new Map<BiomarkerCategoryId, BiomarkerTemplate[]>();
     for (const t of biomarkerCatalog) {
@@ -87,21 +100,36 @@ export default function ManualEntryPage() {
       .map((c) => ({ category: c, templates: byCategory.get(c.id) ?? [] }));
   }, []);
 
+  /** Search-filtered view. Empty query → return all groups untouched.
+   *  Non-empty query → keep templates whose name OR any alias contains
+   *  the query (case-insensitive), then drop categories whose templates
+   *  all filtered out. */
+  const filteredGrouped = useMemo(() => {
+    const q = deferredQuery.trim().toLowerCase();
+    if (!q) return grouped;
+    return grouped
+      .map(({ category, templates }) => ({
+        category,
+        templates: templates.filter((t) => {
+          if (t.name.toLowerCase().includes(q)) return true;
+          for (const alias of t.aliases) {
+            if (alias.toLowerCase().includes(q)) return true;
+          }
+          return false;
+        }),
+      }))
+      .filter(({ templates }) => templates.length > 0);
+  }, [grouped, deferredQuery]);
+
+  const hasSearchTerm = deferredQuery.trim().length > 0;
+  const noMatches = hasSearchTerm && filteredGrouped.length === 0;
+
   const updateValue = (id: string, v: string) => {
     setValues((prev) => ({ ...prev, [id]: v }));
     // Editing any input means the previous "everything was out of
     // range" verdict is stale — clear it so the user isn't yelled at
     // for a number they're currently fixing.
     if (saveError) setSaveError(null);
-  };
-
-  const toggleCategory = (id: BiomarkerCategoryId) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   };
 
   // Convert the typed values into a Biomarker[]. Skips empty / NaN /
@@ -194,50 +222,112 @@ export default function ManualEntryPage() {
             />
           </div>
         </div>
+      </Container>
 
-        <div className="mt-6 lg:max-w-3xl lg:mx-auto grid gap-4">
-          {grouped.map(({ category, templates }) => {
-            const isOpen = expanded.has(category.id);
-            const filledInCategory = templates.filter(
-              (t) => (values[t.id] ?? '').trim() !== '',
-            ).length;
-            return (
-              <Card key={category.id} padded={false} className="overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => toggleCategory(category.id)}
-                  aria-expanded={isOpen}
-                  className="w-full flex items-center gap-3 px-5 py-4 border-b border-line/70 hover:bg-canvas/60 transition-colors"
+      {/* Sticky search bar. Sits below the page Header (h-14 / h-16)
+          and stays visible while the user scrolls the long form. The
+          bg-canvas wrapper occludes content scrolling past underneath
+          so the input doesn't visually bleed into the form rows. The
+          padding adds breathing room around the input as it sticks. */}
+      <div className="sticky top-14 lg:top-16 z-20 bg-canvas">
+        <Container size="wide" className="pt-3 pb-3">
+          <div className="lg:max-w-3xl lg:mx-auto relative">
+            <Search
+              size={16}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
+              aria-hidden
+            />
+            <input
+              // `type="text"` not "search" so WebKit doesn't render its
+              // own cancel button next to our custom X (would be a
+              // double-X in Safari/Chrome).
+              type="text"
+              inputMode="search"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search markers — TSH, glucose, vitamin D…"
+              aria-label="Search markers by name or alias"
+              className="w-full h-12 pl-10 pr-12 rounded-[14px] bg-surface border border-line text-body-sm placeholder:text-muted text-ink focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+                className="absolute right-0 top-1/2 -translate-y-1/2 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-ink"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+        </Container>
+      </div>
+
+      <Container size="wide" className="pb-6">
+        {noMatches ? (
+          <div className="lg:max-w-3xl lg:mx-auto mt-4">
+            <Card className="text-center !py-10">
+              <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 mb-3">
+                <Search size={20} />
+              </div>
+              <div className="font-display text-display-md">
+                Nothing matched.
+              </div>
+              <p className="text-caption text-ink-soft mt-2 max-w-sm mx-auto leading-relaxed">
+                No marker in our catalog matches{' '}
+                <span className="font-semibold text-ink">
+                  “{deferredQuery.trim()}”
+                </span>
+                . Try a shorter term or a common abbreviation.
+              </p>
+              <div className="mt-5 flex justify-center">
+                <Button
+                  size="md"
+                  variant="secondary"
+                  onClick={() => setSearchQuery('')}
                 >
-                  <span
-                    aria-label={category.name}
-                    role="img"
-                    className="text-body-lg leading-none shrink-0"
-                  >
-                    {category.icon}
-                  </span>
-                  <div className="flex-1 min-w-0 text-left">
-                    <div className="font-display text-body leading-tight">
-                      {category.name}
-                    </div>
-                    <div className="text-caption text-muted mt-0.5 truncate">
-                      {category.description}
+                  Clear search
+                </Button>
+              </div>
+            </Card>
+          </div>
+        ) : (
+          <div className="lg:max-w-3xl lg:mx-auto">
+            {filteredGrouped.map(({ category, templates }) => {
+              const filledInCategory = templates.filter(
+                (t) => (values[t.id] ?? '').trim() !== '',
+              ).length;
+              return (
+                <section key={category.id} className="mt-2 first:mt-0">
+                  {/* Sticky section header — sits below the page Header
+                      and the search bar. The bg-canvas occlusion lets
+                      the form rows scroll past beneath without bleeding
+                      through the header. Border-bottom anchors the
+                      header visually to the rows it labels. */}
+                  <div className="sticky top-[6.5rem] lg:top-[7.5rem] z-10 bg-canvas pt-1 pb-2">
+                    <div className="flex items-center gap-3 border-b border-line/70 pb-2.5">
+                      <span
+                        aria-label={category.name}
+                        role="img"
+                        className="text-body-lg leading-none shrink-0"
+                      >
+                        {category.icon}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-display text-body leading-tight">
+                          {category.name}
+                        </div>
+                      </div>
+                      <Pill
+                        tone={filledInCategory > 0 ? 'good' : 'neutral'}
+                        size="sm"
+                        className="shrink-0"
+                      >
+                        {filledInCategory}/{templates.length}
+                      </Pill>
                     </div>
                   </div>
-                  <Pill tone={filledInCategory > 0 ? 'good' : 'neutral'} size="sm">
-                    {filledInCategory}/{templates.length}
-                  </Pill>
-                  <span
-                    aria-hidden
-                    className={`text-muted shrink-0 transition-transform ${
-                      isOpen ? 'rotate-180' : ''
-                    }`}
-                  >
-                    <Plus size={16} />
-                  </span>
-                </button>
-                {isOpen && (
-                  <div className="divide-y divide-line/60">
+                  <div className="mt-2 bg-surface rounded-[14px] border border-line/70 overflow-hidden divide-y divide-line/60">
                     {templates.map((t) => (
                       <MarkerInputRow
                         key={t.id}
@@ -248,11 +338,11 @@ export default function ManualEntryPage() {
                       />
                     ))}
                   </div>
-                )}
-              </Card>
-            );
-          })}
-        </div>
+                </section>
+              );
+            })}
+          </div>
+        )}
       </Container>
 
       {/* Sticky bottom CTA — counts entered values so the user knows
@@ -260,8 +350,11 @@ export default function ManualEntryPage() {
           out-of-range, the warning row spells out exactly how many
           will be excluded BEFORE the user clicks — otherwise the
           row-level red tint is easy to miss when scrolling and the
-          save silently drops 3 of 5. */}
-      <StickyBottomBar bordered>
+          save silently drops 3 of 5. `solid` swaps the default top-
+          fading gradient for an opaque `bg-canvas`: without it, the
+          gradient lets the white input rows above bleed through and
+          the CTAs read as floating mid-page. */}
+      <StickyBottomBar bordered solid>
         <Container size="narrow">
           {saveError && (
             <div
@@ -289,12 +382,12 @@ export default function ManualEntryPage() {
               </span>
             </div>
           )}
-          <div className="flex flex-col-reverse sm:flex-row items-stretch gap-2">
+          <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3">
             <Button
               size="lg"
               variant="secondary"
               onClick={() => navigate({ type: 'upload' })}
-              responsiveFullWidth
+              className="w-full sm:w-auto shrink-0"
             >
               Try uploading instead
             </Button>
@@ -303,15 +396,8 @@ export default function ManualEntryPage() {
               variant="primary"
               trailing={<ArrowRight size={18} />}
               onClick={save}
-              // Gated on validCount, not filledCount. With the old
-              // gate, a user could type 5 numbers, see 3 highlighted
-              // OOR, watch the label drop to "See my report (2
-              // values)", click anyway, and lose 3 entries silently.
-              // Now the button only enables when at least one value
-              // actually saves — and the amber warning above
-              // explains the diff if any were dropped.
               disabled={validCount === 0}
-              fullWidth
+              className="w-full sm:flex-1"
             >
               {filledCount === 0
                 ? 'Enter at least one value'
