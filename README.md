@@ -92,17 +92,17 @@ npm run preview      # serve dist/
 
 `npm run build` runs typecheck and tests before bundling — the build fails fast on either.
 
-## Project layout
+## Project Structure
 
-```
-src/app/
-  components/   reusable UI (BiomarkerBar, HealthRing, Sparkline, modals)
-  contexts/    QuizContext, ReportsContext, NavigationContext
-  data/        biomarker catalog, test catalog, quiz definitions, problems
-  pages/       LandingPage, QuizPage, UploadPage, ProcessingPage,
-               HomePage, ReportResultsPage, ProblemDetailPage, …
-  services/    pdfParser (parsing pipeline), reportPdf (export), api
-  utils/       persistence, lazyWithReload, a11y hooks
+```text
+src/
+└── app/
+    ├── components/  # Reusable UI (BiomarkerBar, HealthRing, Sparkline, modals)
+    ├── contexts/    # React Contexts (Quiz, Reports, Navigation)
+    ├── data/        # Static catalogs (biomarkers, tests, quiz questions)
+    ├── pages/       # Route-level page components (Landing, Quiz, Upload, HomePage, etc.)
+    ├── services/    # Client-side services (PDF parser pipeline, PDF report exporter, API)
+    └── utils/       # Global utilities (localStorage helpers, lazy reloading, a11y hooks)
 ```
 
 ## Status
