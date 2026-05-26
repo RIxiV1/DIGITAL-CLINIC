@@ -63,6 +63,14 @@ type FailureState = {
    *  parser hit a wall — retry might work." */
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
+  /** Raw extracted text from the parser, when one ran. Surfaced on
+   *  failure under a "Show what we read from the file" disclosure —
+   *  same pattern the confirm view uses on success. Lets the user
+   *  (and us, when they share it) see WHY the catalog matcher found
+   *  nothing: OCR garbled the marker names? Layout flattened the
+   *  columns? Empty extraction? Without this the failure was a black
+   *  box. Undefined when the parser didn't run at all (no-file path). */
+  rawText?: string;
 };
 
 /** Success-but-unconfirmed: the parser produced N markers and we're
@@ -234,6 +242,7 @@ export default function ProcessingPage() {
         fileName,
         ocrPagesAttempted: result.ocrPagesAttempted,
         ocrPagesSkipped: result.ocrPagesSkipped,
+        rawText: result.rawText,
       });
     });
   }, [
@@ -620,6 +629,31 @@ function ParseFailedView({
                 : 'Our parser currently recognises hormone, metabolic, heart, thyroid, vitamin, liver, kidney, blood, electrolyte, inflammation, and fertility markers from text-layer PDFs and clear photos. Older scanned PDFs or non-standard lab layouts may not parse — we don’t guess.'}
             </p>
           </div>
+
+          {/* Raw-text diagnostic. Same disclosure pattern the confirm
+              view uses on success — on failure it's even more useful
+              because the user (and us) can see WHY the catalog matcher
+              found nothing. If the marker names + values are in the
+              text but the matcher missed them, the matcher's the bug.
+              If the text is empty or garbled, OCR/text-layer
+              extraction is the bug. Without this disclosure every
+              failure was a black box. */}
+          {failure.rawText && (
+            <details className="group border-t border-line/70">
+              <summary className="cursor-pointer list-none px-5 py-3 flex items-center gap-1.5 text-caption font-bold uppercase tracking-label text-muted hover:text-ink hover:bg-canvas/40 transition-colors">
+                <ChevronDown
+                  size={12}
+                  className="transition-transform duration-200 group-open:rotate-180"
+                  aria-hidden
+                />
+                Show what we read from the file
+              </summary>
+              <pre className="px-5 pb-5 text-caption text-ink-soft leading-relaxed whitespace-pre-wrap font-mono break-words max-h-[320px] overflow-y-auto">
+                {failure.rawText.slice(0, 8000)}
+                {failure.rawText.length > 8000 && '\n…(truncated)'}
+              </pre>
+            </details>
+          )}
         </Card>
       </Container>
     </div>
