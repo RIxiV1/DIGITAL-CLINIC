@@ -333,12 +333,68 @@ async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
+/**
+ * Preprocess a photo/screenshot of a lab report before handing it to
+ * Tesseract. Two passes:
+ *   1. Grayscale conversion (Rec. 601 luma).
+ *   2. Fixed-threshold binarization at 160 → pure B&W.
+ *
+ * Why: many Indian lab templates (Dr Lal PathLabs, Crystal Data Inc.,
+ * Thyrocare) use a yellow or pale-blue tint behind the table. Tesseract
+ * reads colored-on-colored text poorly — value cells like "12.00" come
+ * back as "Taw", "37.70" as "sre". Reducing to pure black-on-white
+ * eliminates the tint as a confounder. The threshold (160/255) is
+ * tuned for the typical Indian lab template's light background +
+ * black text contrast; aggressive enough to remove most tints, gentle
+ * enough not to erode thin digit strokes.
+ *
+ * Falls back to the original blob on any failure — preprocessing
+ * helping is gravy, not contractual.
+ */
+async function preprocessImageForOcr(file: Blob): Promise<Blob> {
+  try {
+    if (typeof createImageBitmap === 'undefined') return file;
+    const bmp = await createImageBitmap(file);
+    const canvas = document.createElement('canvas');
+    canvas.width = bmp.width;
+    canvas.height = bmp.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return file;
+    ctx.drawImage(bmp, 0, 0);
+    bmp.close?.();
+    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    const px = imageData.data;
+    for (let i = 0; i < px.length; i += 4) {
+      const gray = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
+      const v = gray > 160 ? 255 : 0;
+      px[i] = v;
+      px[i + 1] = v;
+      px[i + 2] = v;
+    }
+    ctx.putImageData(imageData, 0, 0);
+    return await new Promise<Blob>((resolve) => {
+      canvas.toBlob((b) => resolve(b ?? file), 'image/png');
+    });
+  } catch {
+    return file;
+  }
+}
+
 async function runImageOcr(file: Blob): Promise<string> {
   const createWorker = await loadTesseract();
   const worker = await createWorker('eng');
   try {
+    // PSM 6 = "assume a single uniform block of text". Default PSM 3
+    // (Fully Automatic) often over-segments lab-report tables — it
+    // treats each row as its own zone and tries to identify column
+    // structure, which goes badly when the row borders are thin or
+    // missing. PSM 6 trusts that the whole page is one block and reads
+    // it left-to-right, top-to-bottom — closer to how a human scans
+    // a lab table.
+    await worker.setParameters({ tessedit_pageseg_mode: '6' as never });
+    const preprocessed = await preprocessImageForOcr(file);
     const result = await withTimeout(
-      worker.recognize(file),
+      worker.recognize(preprocessed),
       OCR_PAGE_TIMEOUT_MS,
       'OCR',
     );
@@ -428,13 +484,26 @@ function extractMarkerValue(
 ): number | null {
   const between = '[\\s\\S]{0,80}?';
   const numPattern = '(-?\\d+(?:\\.\\d+)?)';
-  // Between number and unit: no digits or newlines allowed. Without this
-  // restriction, "Vitamin D (25-OH)    28      ng/mL" matched by the bare
-  // 'Vitamin D' alias would capture '25' (from '25-OH') as the value
-  // because 'ng/mL' appears within 30 chars later. Disallowing digits
-  // in the tail forces the regex to either bind to the value
-  // immediately or fail this alias and move on.
-  const tail = '[^\\d\\n]{0,30}?';
+  // Between number and unit: up to 30 non-digit chars, OPTIONALLY
+  // followed by a reference-range shape ("12-14", "150 to 450",
+  // "80–99") and then up to 30 more non-digit chars before the unit.
+  //
+  // Why the optional ref-range slot exists: many Indian lab reports
+  // (and older British/Commonwealth formats) print the row as
+  // `Marker  Value  RefMin - RefMax  Unit` — the reference range sits
+  // BETWEEN the value and the unit, not after them. The previous tail
+  // ([^\d\n]{0,30}?) refused to span digits, so it either failed the
+  // match (best case) or captured the ref-range max as the value
+  // (worst case, e.g. "Hemoglobin 15 male: 14 - 16 g%" captured 16).
+  //
+  // The optional ref-range is shaped strictly — `\d+(.\d+)? sep \d+(.\d+)?`
+  // where sep is a hyphen/en-dash/em-dash or the literal word "to" —
+  // so it only absorbs digits that LOOK like a range. The original
+  // protection against "Vitamin D (25-OH) 28 ng/mL" capturing "25" is
+  // preserved because "(25-OH)" doesn't match the ref-range shape:
+  // the engine then backtracks and captures 28 correctly.
+  const tail =
+    '[^\\d\\n]{0,30}?(?:\\d+(?:\\.\\d+)?\\s*(?:[-–—]|to)\\s*\\d+(?:\\.\\d+)?[^\\d\\n]{0,30}?)?';
 
   // normalizeMu on the catalog side mirrors the call inside normalize()
   // for the input text — without both sides agreeing on µ vs μ, units

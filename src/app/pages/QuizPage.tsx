@@ -18,7 +18,7 @@ type Field = 'age' | 'activity' | 'priorities' | 'symptoms';
 const SWIPE_THRESHOLD_PX = 60;
 
 export default function QuizPage() {
-  const { quiz, setQuiz, hasCompletedQuiz } = useQuiz();
+  const { quiz, setQuiz, hasCompletedQuiz, resetQuiz } = useQuiz();
   const { replace, back } = useNavigation();
   const [stepIndex, setStepIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
@@ -468,7 +468,13 @@ export default function QuizPage() {
       {/* Exit confirmation. `pendingExit` carries the action that
           fires on "Yes, leave" — doExit for X/Logo (forces to
           home/landing) or `back` for the step-0 back arrow (honours
-          history). */}
+          history). `onStartOver` is the deliberate global-reset path:
+          wipes answers (resetQuiz) then runs the same exit action.
+          Sits as a tertiary link below the main buttons because the
+          frequency curve is one-sided — most users want to come back
+          to their answers, only a small minority truly want to start
+          fresh, and a destructive action that big belongs behind the
+          smaller affordance. */}
       <AnimatePresence>
         {pendingExit && (
           <ExitConfirm
@@ -476,6 +482,12 @@ export default function QuizPage() {
             onConfirm={() => {
               const action = pendingExit;
               setPendingExit(null);
+              action();
+            }}
+            onStartOver={() => {
+              const action = pendingExit;
+              setPendingExit(null);
+              resetQuiz();
               action();
             }}
           />
@@ -551,9 +563,16 @@ function CompoundOptions({
 function ExitConfirm({
   onCancel,
   onConfirm,
+  onStartOver,
 }: {
   onCancel: () => void;
   onConfirm: () => void;
+  /** Tertiary action: clears every quiz answer (resetQuiz) and exits.
+   *  Distinct from `onConfirm` which exits but preserves answers so
+   *  the user can resume on next visit. Optional so the component
+   *  stays usable in any future exit-flow that doesn't expose the
+   *  reset path. */
+  onStartOver?: () => void;
 }) {
   const titleId = useId();
   const cardRef = useRef<HTMLDivElement | null>(null);
@@ -593,9 +612,16 @@ function ExitConfirm({
         >
           Exit the quiz?
         </div>
+        {/* Copy correction: QuizContext persists answers to localStorage
+            on every setQuiz, so exiting does NOT lose them — a returning
+            user lands back on the same partial state. The previous "We
+            won't save your progress" line was a leftover from before
+            persistence existed and conflicted with the actual behavior.
+            Honest framing also sets up the tertiary Start over below
+            ("answers ARE saved → here's how to clear them deliberately"). */}
         <p className="mt-2 text-body-sm text-ink-soft leading-relaxed">
-          We won’t save your progress. You can always restart — it only takes
-          two minutes.
+          Your answers are saved — come back any time to pick up where you
+          left off.
         </p>
         <div className="mt-5 flex flex-col-reverse sm:flex-row gap-2.5">
           <Button
@@ -610,6 +636,22 @@ function ExitConfirm({
             Yes, exit
           </Button>
         </div>
+        {/* Tertiary global reset. Rendered as a low-emphasis text link
+            so it doesn't compete with the two primary actions — most
+            users want "exit and resume," only a few want "wipe and
+            start fresh." min-h-11 keeps the WCAG 2.5.5 hit area even
+            though the visible glyph is small. */}
+        {onStartOver && (
+          <div className="mt-4 flex justify-center">
+            <button
+              type="button"
+              onClick={onStartOver}
+              className="inline-flex items-center gap-1 min-h-11 px-2 -mx-2 text-caption font-semibold text-muted hover:text-concern underline-offset-2 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-concern/60 rounded-sm"
+            >
+              Or clear my answers and start over
+            </button>
+          </div>
+        )}
       </motion.div>
     </motion.div>
   );

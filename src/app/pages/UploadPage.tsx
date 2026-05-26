@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -21,6 +21,70 @@ import {
   type FileValidationError,
 } from '../services/api';
 import { clearPendingConfirm } from '../utils/persistence';
+
+/**
+ * Best-effort extraction of a File from a drop event's DataTransfer.
+ *
+ * Native file drags (Finder/Explorer/photo library) populate
+ * `dataTransfer.files` — the cheap, always-correct path. But images
+ * dragged from another browser tab arrive with `files` empty and the
+ * source URL in `text/uri-list` instead, which is why the old handler
+ * silently no-op'd on browser-tab drags. We now try:
+ *
+ *   1. `dataTransfer.files`         — native file drag (works always)
+ *   2. `dataTransfer.items` files   — some browsers expose Files via
+ *                                     items even when `files` is empty
+ *   3. `text/uri-list` URL fetch    — last-resort for tab-to-tab drags;
+ *                                     subject to CORS, so many image
+ *                                     hosts will block it
+ *
+ * Returns `null` if none of the paths yield a File — the caller surfaces
+ * a user-facing error explaining the cross-tab limitation. We don't try
+ * to be heroic about CORS-blocked fetches; we just tell the user to
+ * save the image to their device and drop the file instead.
+ */
+async function extractDroppedFile(dt: DataTransfer): Promise<File | null> {
+  if (dt.files && dt.files.length > 0) return dt.files[0];
+
+  if (dt.items) {
+    for (let i = 0; i < dt.items.length; i++) {
+      const item = dt.items[i];
+      if (item.kind === 'file') {
+        const f = item.getAsFile();
+        if (f) return f;
+      }
+    }
+  }
+
+  const raw = (dt.getData('text/uri-list') || dt.getData('text/plain') || '').trim();
+  // First non-blank line — text/uri-list can have multiple URLs + comments.
+  const url = raw.split(/\r?\n/).find((line) => line && !line.startsWith('#'));
+  if (!url || !/^https?:/i.test(url)) return null;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) return null;
+    const blob = await response.blob();
+    // Infer a filename from the URL path. Fall back to "image.jpg" when
+    // the URL has no path component (rare; e.g., `https://host/`). The
+    // extension matters because validateUpload's last-resort check uses
+    // the filename when the blob's MIME type is missing.
+    let name = 'image.jpg';
+    try {
+      const parsed = new URL(url, window.location.href);
+      const last = parsed.pathname.split('/').filter(Boolean).pop();
+      if (last) name = decodeURIComponent(last);
+      if (!name.includes('.')) name = `${name}.jpg`;
+    } catch {
+      // Bad URL; keep the fallback name.
+    }
+    return new File([blob], name, { type: blob.type || 'image/jpeg' });
+  } catch {
+    // CORS, network failure, etc. The caller turns this into a user
+    // message — silent failure is what was broken before.
+    return null;
+  }
+}
 
 /**
  * Selecting + validating a lab report before handing it off to the
@@ -102,6 +166,49 @@ export default function UploadPage() {
     setFileName(result.safeName);
     fileRef.current = result.file;
   };
+
+  // Paste support — handles the "I want to use an image from another
+  // tab without saving it first" workflow that drag-from-online
+  // can't deliver. When a user right-clicks an image online and picks
+  // "Copy Image", the browser puts the image *bytes* (not just the URL)
+  // on the clipboard. A paste event then exposes those bytes as a File
+  // via clipboardData.items, with no CORS involvement — the user
+  // explicitly authorised the copy, so origin restrictions don't apply.
+  //
+  // Listener lives on window so the user doesn't have to focus the
+  // dropzone first. We ignore paste while no upload context applies
+  // (typing in an input on this page is the common false-positive —
+  // the active element check skips those).
+  useEffect(() => {
+    const onPaste = (e: ClipboardEvent) => {
+      // Skip paste when the user is typing in a text field; let the
+      // native paste-into-input behavior run.
+      const active = document.activeElement;
+      if (
+        active &&
+        (active.tagName === 'INPUT' ||
+          active.tagName === 'TEXTAREA' ||
+          (active as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+      if (!e.clipboardData) return;
+      for (let i = 0; i < e.clipboardData.items.length; i++) {
+        const item = e.clipboardData.items[i];
+        if (item.kind === 'file') {
+          const f = item.getAsFile();
+          if (f) {
+            e.preventDefault();
+            onSelect(f);
+            return;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const startProcessing = () => {
     // Sweep any existing 'processing' placeholder reports before adding
@@ -226,10 +333,28 @@ export default function UploadPage() {
               e.preventDefault();
               setDragDepth((d) => Math.max(0, d - 1));
             }}
-            onDrop={(e) => {
+            onDrop={async (e) => {
               e.preventDefault();
               setDragDepth(0);
-              onSelect(e.dataTransfer.files?.[0] ?? null);
+              // Stash the DataTransfer reference before the await — the
+              // event object is reused by the browser after the
+              // handler returns synchronously, so `e.dataTransfer`
+              // can be null by the time the fetch resolves.
+              const dt = e.dataTransfer;
+              const file = await extractDroppedFile(dt);
+              if (file) {
+                onSelect(file);
+                return;
+              }
+              // Nothing usable. Most common cause: an image dragged
+              // from another browser tab that we can't fetch
+              // cross-origin. Tell the user how to get past it
+              // instead of silently doing nothing (the old behavior).
+              setError({
+                kind: 'type',
+                message:
+                  'We couldn’t read what you dropped. Most images dragged from another browser tab are blocked by the source site for cross-origin reasons. Try right-clicking the image → Copy Image, then paste here (Cmd/Ctrl + V) — that works for almost everything. Or save the image to your device and drop the file.',
+              });
             }}
             onClick={() => openPicker(inputRef)}
             aria-label={
@@ -268,7 +393,7 @@ export default function UploadPage() {
                 ? 'Looks good. Hit start when you’re ready.'
                 : dragging
                   ? 'Release to upload'
-                  : 'or drag and drop a PDF / photo here'}
+                  : 'or drag and drop a PDF / photo — paste also works'}
             </div>
             <input
               ref={inputRef}

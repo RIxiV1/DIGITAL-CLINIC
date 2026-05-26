@@ -362,6 +362,63 @@ describe('extractBiomarkersFromText — Vitamin D (25-OH) value capture', () => 
 });
 
 /* ------------------------------------------------------------------ */
+/* Indian-format "Marker Value RefMin - RefMax Unit"                   */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — value/ref-range/unit order', () => {
+  // Many Indian and older British/Commonwealth lab templates print
+  // each row as `Marker  Value  RefMin - RefMax  Unit` — the reference
+  // range sits BETWEEN the value and the unit, not after them. The
+  // tail regex had to be loosened to allow an optional ref-range-shaped
+  // span between value and unit, OR every CBC report from a Crystal
+  // Data / Thyrocare / Dr. Lal era template would silently fail to
+  // parse. These tests pin the fix.
+
+  it('extracts Hemoglobin with the value-then-range-then-unit layout', () => {
+    // Mirrors the row format on a real Crystal Data Inc. CBC report:
+    //   "Haemoglobin    15    male : 14 - 16 g%"
+    // - "g%" is the Indian notation for g/dL (same magnitude)
+    // - The ref range "14 - 16" sits between the value and the unit
+    const text = 'Haemoglobin    15    male : 14 - 16 g%';
+    const result = extractBiomarkersFromText(text);
+    const hb = result.find((m) => m.id === 'hb');
+    expect(hb?.value).toBe(15);
+  });
+
+  it('extracts Platelet Count with /cu.mm Indian notation + ref range between', () => {
+    const text = 'Platelet Count    1550000    150000 - 450000 / cu.mm';
+    const result = extractBiomarkersFromText(text);
+    const plt = result.find((m) => m.id === 'platelets');
+    expect(plt?.value).toBe(1550000);
+  });
+
+  it('extracts MCV when fl is separated from value by the ref range', () => {
+    const text = 'MCV    72.00    80 - 99 fl';
+    const result = extractBiomarkersFromText(text);
+    const mcv = result.find((m) => m.id === 'mcv');
+    expect(mcv?.value).toBe(72);
+  });
+
+  it('extracts WBC with /cu.mm and ref-range-between', () => {
+    const text = 'Total WBC Count    5500    4000 - 11000 / cu.mm';
+    const result = extractBiomarkersFromText(text);
+    const wbc = result.find((m) => m.id === 'wbc');
+    expect(wbc?.value).toBe(5500);
+  });
+
+  it('still captures Vitamin D as 28 (not the parenthesized 25 or any ref-range bound)', () => {
+    // The relaxed tail mustn't break the pre-existing Vitamin D
+    // protection. The "(25-OH)" pattern is NOT a ref-range shape
+    // (no `digit sep digit`), so the engine can't absorb it as ref
+    // range and capture 25 — it backtracks to 28 as before.
+    const text = 'Vitamin D (25-OH)    28    25 - 75 ng/mL';
+    const result = extractBiomarkersFromText(text);
+    const vitD = result.find((m) => m.id === 'vit-d');
+    expect(vitD?.value).toBe(28);
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* findUnrecognizedRows                                                */
 /* ------------------------------------------------------------------ */
 

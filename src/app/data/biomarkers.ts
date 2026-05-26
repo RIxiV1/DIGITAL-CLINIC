@@ -901,7 +901,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     id: 'hb',
     name: 'Hemoglobin',
     aliases: ['Hemoglobin', 'Haemoglobin', 'Hb'],
-    unit: 'g/dL', unitAliases: ['g/dl', 'gm/dL', 'gm/dl'],
+    // g% is older Indian/British notation for "grams per 100 mL" =
+    // g/dL — identical units, different glyph. Adding it as an alias
+    // (along with the spaced "g %" variant) so reports from labs that
+    // never updated their templates still parse correctly.
+    unit: 'g/dL', unitAliases: ['g/dl', 'gm/dL', 'gm/dl', 'g%', 'g %', 'gm%', 'gm %', 'grams%', 'grams %'],
     min: 13.5, max: 17.5,
     category: 'blood', direction: 'band',
     simpleName: 'Your blood’s oxygen carrier',
@@ -1255,7 +1259,16 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     id: 'wbc',
     name: 'WBC (Total Count)',
     aliases: ['Total Leucocyte Count', 'Total Leukocyte Count', 'White Blood Cells', 'White Blood Cell Count', 'Total WBC Count', 'WBC Count', 'TLC', 'WBC'],
-    unit: '/cumm', unitAliases: ['cells/cumm', 'cells/μL', '/μL', '10^3/μL', 'thousand/μL'],
+    // /cu.mm, cu.mm, /cu mm are the Indian/older-British notations for
+    // /cumm (cells per cubic millimeter). Same magnitude, different
+    // punctuation. Lab templates from the 90s-2000s era still print
+    // it with the period; adding both forms so they all parse.
+    // /cu.mm, cu.mm, /cu mm are the Indian/older-British notations for
+    // /cumm. thou/mm3 + thou/mm³ are the Dr Lal PathLabs / NABL
+    // convention. Numerically identical; we collect all the glyph
+    // variants so reports from any of the major Indian lab chains
+    // (Thyrocare, Lal, Metropolis, SRL) parse without bespoke fixes.
+    unit: '/cumm', unitAliases: ['cells/cumm', 'cells/μL', '/μL', '10^3/μL', 'thousand/μL', '/cu.mm', 'cu.mm', '/cu mm', 'cu mm', 'cumm', 'cells/cu.mm', 'cells/cu mm', 'thou/mm3', 'thou/mm³', 'thousand/mm3', 'thousand/mm³'],
     min: 4000, max: 11000,
     category: 'blood', direction: 'band',
     simpleName: 'Your infection-fighting cells',
@@ -1265,7 +1278,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     id: 'rbc',
     name: 'RBC (Total Count)',
     aliases: ['Total Red Cell Count', 'Red Blood Cells', 'RBC Count', 'Total RBC Count', 'Erythrocyte Count', 'RBC'],
-    unit: 'million/cumm', unitAliases: ['mill/cumm', 'million/μL', 'M/μL', '10^6/μL'],
+    // mill/mm3 + mill/mm³ are the Dr Lal PathLabs / NABL convention
+    // (per-mm³ instead of per-cubic-millimeter). Numerically identical
+    // to million/cumm; just different glyphs.
+    unit: 'million/cumm', unitAliases: ['mill/cumm', 'million/μL', 'M/μL', '10^6/μL', 'mill/mm3', 'mill/mm³', 'million/mm3', 'million/mm³', 'mil/cu mm', 'mill/cu mm'],
     min: 4.5, max: 5.9,
     category: 'blood', direction: 'band',
     simpleName: 'Your oxygen-carrying cells',
@@ -1275,8 +1291,20 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     id: 'platelets',
     name: 'Platelet Count',
     aliases: ['Platelet Count', 'Platelets', 'Thrombocyte Count', 'PLT'],
-    unit: '/cumm', unitAliases: ['cells/cumm', 'cells/μL', '/μL', '10^3/μL', 'lakh/cumm'],
+    // Same /cu.mm-with-period family as WBC above — the Indian /
+    // older-British lab template convention.
+    unit: '/cumm', unitAliases: ['cells/cumm', 'cells/μL', '/μL', '10^3/μL', '/cu.mm', 'cu.mm', '/cu mm', 'cu mm', 'cumm', 'cells/cu.mm', 'thou/mm3', 'thou/mm³', 'thousand/mm3', 'thousand/mm³'],
     min: 150000, max: 450000,
+    category: 'blood', direction: 'band',
+    simpleName: 'Your clotting cells',
+    plain: 'Low platelets risk bleeding; high platelets risk clotting. Both ends warrant medical follow-up.',
+  },
+  {
+    id: 'platelets_lakh',
+    name: 'Platelet Count',
+    aliases: ['Platelet Count', 'Platelets', 'Thrombocyte Count', 'PLT'],
+    unit: 'lakh/cumm', unitAliases: ['lak/cumm', 'lakhs/cumm'],
+    min: 1.5, max: 4.5,
     category: 'blood', direction: 'band',
     simpleName: 'Your clotting cells',
     plain: 'Low platelets risk bleeding; high platelets risk clotting. Both ends warrant medical follow-up.',
@@ -1284,8 +1312,8 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'hematocrit',
     name: 'Hematocrit (PCV)',
-    aliases: ['Hematocrit', 'Haematocrit', 'Packed Cell Volume', 'PCV', 'HCT'],
-    unit: '%',
+    aliases: ['Hematocrit', 'Haematocrit', 'Haemoticrit', 'Haemoticrit (PCV)', 'Packed Cell Volume', 'PCV', 'HCT'],
+    unit: '%', unitAliases: ['vol%'],
     min: 41, max: 50,
     category: 'blood', direction: 'band',
     simpleName: '% of your blood that is red cells',
@@ -1315,7 +1343,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     id: 'mchc',
     name: 'MCHC',
     aliases: ['MCHC', 'Mean Corpuscular Hemoglobin Concentration', 'Mean Corpuscular Haemoglobin Concentration'],
-    unit: 'g/dL', unitAliases: ['g/dl', 'gm/dL'],
+    // MCHC is dimensionally g/dL (mass per volume), but many Indian
+    // and older Commonwealth labs report it as % — both notations are
+    // numerically interchangeable (g/dL × 1 = g/100mL → expressed as %).
+    // Adding "%" so those reports parse without changing the canonical
+    // unit used for display.
+    unit: 'g/dL', unitAliases: ['g/dl', 'gm/dL', '%', 'gms/dl'],
     min: 32, max: 36,
     category: 'blood', direction: 'band',
     simpleName: 'Hemoglobin density per red cell',
