@@ -423,17 +423,56 @@ export function statusColor(s: BiomarkerStatus) {
         text: 'text-attention',
         bg: 'bg-attention-soft',
         dot: 'bg-attention',
-        label: 'NEEDS ATTENTION',
+        // "BORDERLINE" replaces the older "NEEDS ATTENTION". Same data
+        // class, shorter glyph (BORDERLINE = 10 chars vs NEEDS ATTENTION
+        // = 15) so it fits better in compact card badges, and softer
+        // for an anxious health-data context — describes the value's
+        // position relative to the range instead of issuing a triage
+        // verb. The filter-pill label uses the same "Borderline" in
+        // title case (see STATUS_FILTER_OPTIONS).
+        label: 'BORDERLINE',
       };
     case 'concern':
       return {
         text: 'text-concern',
         bg: 'bg-concern-soft',
         dot: 'bg-concern',
+        // Badge keeps "NEEDS CARE" — compact (10 chars) and clinically
+        // honest about urgency. The corresponding filter-pill label
+        // softens to "Worth a check-in" because the chooser surface
+        // has room for a verbose action-oriented phrase.
         label: 'NEEDS CARE',
       };
   }
 }
+
+/** ID type for filter chooser surfaces (status filter pills + sidebars).
+ *  Includes the 'all' bucket alongside the three real statuses. */
+export type StatusFilterId = 'all' | BiomarkerStatus;
+
+/** Single source of truth for the status-filter chooser pills.
+ *
+ *  Consumed by HomePage's "See all markers" disclosure and
+ *  ReportResultsPage's mobile + desktop filter surfaces — three call
+ *  sites that used to maintain three identical inline arrays, with
+ *  predictable drift when one was updated and the others weren't.
+ *
+ *  Vocabulary is deliberately softer than the badge labels above. A
+ *  filter pill is a chooser, not a diagnostic — "Worth a check-in" /
+ *  "Borderline" frame the same statuses as action categories instead
+ *  of triage tags, which read better to anxious users browsing their
+ *  own data. The badge labels (`statusColor().label`) keep their
+ *  clinical caps treatment because that's where the brain expects a
+ *  compact status signal. */
+export const STATUS_FILTER_OPTIONS: ReadonlyArray<{
+  id: StatusFilterId;
+  label: string;
+}> = [
+  { id: 'all', label: 'All markers' },
+  { id: 'concern', label: 'Worth a check-in' },
+  { id: 'attention', label: 'Borderline' },
+  { id: 'good', label: 'On track' },
+];
 
 export function biomarkersByCategory(markers: Biomarker[] = sampleBiomarkers) {
   return categories

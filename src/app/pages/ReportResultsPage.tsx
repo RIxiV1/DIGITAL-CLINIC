@@ -15,17 +15,21 @@ import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
 import Emoji from '../components/Emoji';
+import { Reveal } from './landing/shared';
+import { useIsMdUp } from '../utils/useMediaQuery';
 import { useNavigation, useReports } from '../AppContext';
 import {
   biomarkersByCategory,
   bottomLineFor,
   categories,
   statusColor,
+  STATUS_FILTER_OPTIONS,
   summarizeStatuses,
+  type StatusFilterId,
 } from '../data/biomarkers';
 import { findReport } from '../data/reports';
 
-type Filter = 'all' | 'concern' | 'attention' | 'good';
+type Filter = StatusFilterId;
 
 export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const { reports } = useReports();
@@ -34,6 +38,13 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   // like /results/rep-001 keep working even though the user's locker
   // starts empty.
   const report = findReport(reports, reportId);
+  // Single source of truth for the md+ layout switch. Mirrors the
+  // BottomNav pattern: viewport-class branches mount different DOM
+  // subtrees, instead of shipping both and hiding one with `md:hidden`
+  // / `hidden md:block`. The Deep Dives card and the desktop sidebar
+  // both consume this so we never pay the DOM + event-listener cost
+  // for the invisible variant.
+  const isMdUp = useIsMdUp();
   const [filter, setFilter] = useState<Filter>('all');
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
@@ -204,42 +215,45 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 {bottomLine}
               </p>
 
-              {/* Status-count dot strip. Same counts the tiles used to
-                  show, rendered as a single line of caption-sized
-                  metadata. Skipped counts (`good === 0` etc.) are
-                  hidden — no empty `0 on track` chip. */}
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption font-semibold text-indigo-900/80">
-                {summary.concern > 0 && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span
-                      className="w-2 h-2 rounded-full bg-concern"
-                      aria-hidden
-                    />
-                    <span className="tabular-nums">{summary.concern}</span>
-                    <span>need care</span>
-                  </span>
-                )}
-                {summary.attention > 0 && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span
-                      className="w-2 h-2 rounded-full bg-attention"
-                      aria-hidden
-                    />
-                    <span className="tabular-nums">{summary.attention}</span>
-                    <span>borderline</span>
-                  </span>
-                )}
-                {summary.good > 0 && (
-                  <span className="inline-flex items-center gap-1.5">
-                    <span
-                      className="w-2 h-2 rounded-full bg-good"
-                      aria-hidden
-                    />
-                    <span className="tabular-nums">{summary.good}</span>
-                    <span>on track</span>
-                  </span>
-                )}
-              </div>
+              {/* Status-count signal. Kept the inline dot+number+label
+                  pattern (integrates with the gold hero's text-indigo-900
+                  treatment) but dropped the "N on track" branch and
+                  hide the whole row when nothing is flagged.
+                  Why not a single Pill atom: a `tone="concern"` Pill
+                  renders bg-concern-soft (light red) on top of bg-gold-500,
+                  and the two warm-ish wash colors clash. Inline dots
+                  in the existing dark-text-on-gold register read as
+                  metadata on the hero — not a second focal element.
+                  Drop reason: the old strip broadcast all three status
+                  buckets in parallel with the headline + the per-marker
+                  pills further down. Three encodings of one axis →
+                  Von Restorff fails. "12 on track" alongside a
+                  triumphant headline reads like a participation trophy
+                  and dilutes the flagged counts when they exist. */}
+              {(summary.concern > 0 || summary.attention > 0) && (
+                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption font-semibold text-indigo-900/80 no-print">
+                  {summary.concern > 0 && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full bg-concern"
+                        aria-hidden
+                      />
+                      <span className="tabular-nums">{summary.concern}</span>
+                      <span>{summary.concern === 1 ? 'needs' : 'need'} care</span>
+                    </span>
+                  )}
+                  {summary.attention > 0 && (
+                    <span className="inline-flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full bg-attention"
+                        aria-hidden
+                      />
+                      <span className="tabular-nums">{summary.attention}</span>
+                      <span>borderline</span>
+                    </span>
+                  )}
+                </div>
+              )}
 
               <div className="mt-5 flex flex-wrap items-center gap-2 no-print">
                 <Button
@@ -265,13 +279,14 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
       {/* Mobile-only "Suggested deep dives" — promoted above the marker
           categories so the action items sit directly under the Bottom
           Line, before the reference data. Desktop has the same content
-          in the sticky sidebar (always visible while scrolling), so
-          this block is md:hidden. Previously sat at the bottom of the
-          page; a user with 8 categories × 4 markers each had to scroll
-          through 32 rows of in-range markers to reach the 3 cards that
-          answered "what should I do." */}
-      {deepDives.length > 0 && (
-        <Container size="wide" className="mt-6 md:hidden no-print">
+          in the sticky sidebar (always visible while scrolling).
+          Previously both blocks shipped to the DOM with `md:hidden` /
+          `hidden md:block` deciding which was visible — same JSX
+          shipped twice. Now we mount exactly one tree based on the
+          `useIsMdUp` viewport check (the BottomNav pattern), so the
+          invisible variant doesn't cost DOM + event-listener overhead. */}
+      {!isMdUp && deepDives.length > 0 && (
+        <Container size="wide" className="mt-6 no-print">
           <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
             Suggested deep dives
           </div>
@@ -323,12 +338,13 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         <div className="grid md:grid-cols-12 gap-6 md:gap-8">
           {/* LEFT — Biomarker groups */}
           <main className="md:col-span-8">
-            <div className="mb-6 rounded-xl bg-indigo-50/50 border border-indigo-100 p-3 flex items-start gap-2.5 print-shadow-none">
-              <Info size={16} className="text-indigo-600 shrink-0 mt-0.5" />
-              <p className="text-caption text-indigo-900 leading-snug">
-                <strong>Not a diagnosis.</strong> We translate your report, but you should always consult a doctor before acting on these results.
-              </p>
-            </div>
+            {/* "Not a diagnosis" disclaimer used to sit here, above the
+                filters and markers. Demoted to a footnote below the
+                marker list — the message is necessary, but blocking
+                the data the user came for with a re-read-it-every-time
+                banner inverts progressive disclosure. The disclaimer
+                belongs adjacent to the data it disclaims, not gating
+                access to it. */}
 
             {/* Mobile/tablet status filter strip. The matching CATEGORY
                 chip strip used to sit below this — now removed: once
@@ -342,14 +358,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             <div className="md:hidden no-print">
               <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
                 <div className="flex gap-2 w-max">
-                  {(
-                    [
-                      { id: 'all', label: 'All markers' },
-                      { id: 'concern', label: 'Needs care' },
-                      { id: 'attention', label: 'Needs attention' },
-                      { id: 'good', label: 'On track' },
-                    ] satisfies Array<{ id: Filter; label: string }>
-                  ).map((f) => {
+                  {STATUS_FILTER_OPTIONS.map((f) => {
                     const active = filter === f.id;
                     return (
                       <button
@@ -379,7 +388,18 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 </p>
               </Card>
             ) : (
-              <div className="grid gap-4 mt-4 md:mt-0">
+              // Single Reveal at the marker-zone level. The previous
+              // implementation gave EACH category card its own
+              // motion.div initial/animate — on a 5-8 category report
+              // that meant 5-8 parallel fade-ups firing on first paint,
+              // plus the Bottom Line hero's own transition. The brain
+              // can't decide where to settle when that many things
+              // arrive simultaneously. One sectional Reveal lets the
+              // marker zone enter as a single chunk and inherits the
+              // app-level MotionConfig reducedMotion="user" cascade
+              // automatically.
+              <Reveal className="mt-4 md:mt-0">
+              <div className="grid gap-4">
                 {groups.map(({ category, markers }) => {
                   // Collapsed categories hide the BiomarkerBar list to
                   // keep the report scannable. The header still carries
@@ -388,10 +408,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   // has 1 concern and 2 in range" without opening it.
                   // Default-open: any category with a concern marker
                   // (set in expandedCategoryIds at mount). Default-
-                  // closed: everything else. The previous always-on
-                  // render produced 30+ BiomarkerBar rows on a typical
-                  // report, which buried the actually-flagged markers
-                  // under reference data.
+                  // closed: everything else.
                   const open = isCategoryOpen(category.id);
                   const counts = {
                     concern: markers.filter((m) => m.status === 'concern')
@@ -401,12 +418,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                     good: markers.filter((m) => m.status === 'good').length,
                   };
                   return (
-                    <motion.div
-                      key={category.id}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3 }}
-                    >
+                    <div key={category.id}>
                       <Card padded={false}>
                         <button
                           type="button"
@@ -514,29 +526,42 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                           </div>
                         )}
                       </Card>
-                    </motion.div>
+                    </div>
                   );
                 })}
               </div>
+              </Reveal>
             )}
+            {/* The mid-page "Download report as PDF" button used to sit
+                here. Removed: the Header's Download icon and the Bottom
+                Line's dark Download CTA already cover this action from
+                two positionally useful spots. A third button buys no
+                capability — it only adds a competing CTA below the
+                action items. */}
 
-
-
-            <div className="mt-5 no-print">
-              <Button
-                size="lg"
-                fullWidth
-                variant="outline"
-                leading={<Download size={16} />}
-                onClick={handleDownload}
-              >
-                Download report as PDF
-              </Button>
+            {/* "Not a diagnosis" footnote. This block used to sit at
+                the TOP of the marker zone, blocking the data on every
+                visit. Moved here so it reads as a closing footnote
+                next to the data it disclaims — the user gets the
+                clinical context after they've absorbed the actual
+                values, not before. Same atoms (rounded box + Info
+                icon + text-caption), same wording, demoted position. */}
+            <div className="mt-6 rounded-xl bg-indigo-50/50 border border-indigo-100 p-3 flex items-start gap-2.5 print-shadow-none">
+              <Info size={16} className="text-indigo-600 shrink-0 mt-0.5" />
+              <p className="text-caption text-indigo-900 leading-snug">
+                <strong>Not a diagnosis.</strong> We translate your report, but you should always consult a doctor before acting on these results.
+              </p>
             </div>
           </main>
 
-          {/* RIGHT — Sticky sidebar (filters + deep dives) */}
-          <aside className="hidden md:block md:col-span-4 no-print">
+          {/* RIGHT — Sticky sidebar (filters + deep dives). Mounted only
+              when the viewport is md+; the mobile filter strip and the
+              mobile Deep Dives block carry the same affordances on
+              narrower screens. The `md:col-span-4` keeps the grid track
+              correct when this aside is present; on mobile the aside is
+              absent, the main column naturally spans full width. */}
+          {isMdUp && (
+          <aside className="md:col-span-4 no-print">
             <div className="sticky top-24 grid gap-5">
               <Card padded={false} className="overflow-hidden">
                 <div className="px-5 pt-5 pb-3 border-b border-line">
@@ -547,24 +572,29 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                     Refine view
                   </div>
                 </div>
-                <div className="p-4 grid gap-1.5">
-                  {(
-                    [
-                      { id: 'all', label: 'All markers' },
-                      { id: 'concern', label: 'Needs care' },
-                      { id: 'attention', label: 'Needs attention' },
-                      { id: 'good', label: 'On track' },
-                    ] satisfies Array<{ id: Filter; label: string }>
-                  ).map((f) => {
+                {/* Horizontal-wrap pill row. The previous treatment
+                    here was a vertical stack of rounded-xl buttons with
+                    left-aligned labels — a control vocabulary used
+                    nowhere else in the app. Switched to the same
+                    rounded-full pills as the mobile filter strip and
+                    the dashboard's "See all markers" filter, so the
+                    chooser metaphor is one-and-the-same across every
+                    surface. Reduces the cognitive context-switch when
+                    a tablet user rotates between portrait and
+                    landscape and watches the controls jump from one
+                    layout to another. */}
+                <div className="p-4 flex flex-wrap gap-1.5">
+                  {STATUS_FILTER_OPTIONS.map((f) => {
                     const active = filter === f.id;
                     return (
                       <button
                         key={f.id}
                         onClick={() => setFilter(f.id)}
-                        className={`w-full text-left px-3 h-10 rounded-xl text-caption font-semibold transition-colors ${
+                        aria-pressed={active}
+                        className={`inline-flex items-center px-3 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
                           active
-                            ? 'bg-indigo-600 text-white'
-                            : 'bg-canvas/60 text-ink-soft hover:bg-indigo-50'
+                            ? 'bg-indigo-600 text-white shadow-soft'
+                            : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
                         }`}
                       >
                         {f.label}
@@ -646,6 +676,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               )}
             </div>
           </aside>
+          )}
         </div>
 
         {/* Mobile-only "Suggested deep dives" used to live here at the

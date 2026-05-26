@@ -744,20 +744,29 @@ function ConfirmExtractedValuesView({
             parser couldn’t find a match.
           </p>
 
-          {/* Status summary — three chips, color-coded, only render the
-              non-zero ones. The order is severity-first so users see
-              "needs care" before scanning past it. */}
-          <div className="mt-5 flex flex-wrap gap-2">
-            {counts.concern > 0 && (
-              <SummaryChip tone="concern" count={counts.concern} label="need care" />
-            )}
-            {counts.attention > 0 && (
-              <SummaryChip tone="attention" count={counts.attention} label="need attention" />
-            )}
-            {counts.good > 0 && (
-              <SummaryChip tone="good" count={counts.good} label="on track" />
-            )}
-          </div>
+          {/* Status summary chips. Rendered ONLY when the category-card
+              grid below would otherwise be empty (e.g., parser returned
+              markers whose category IDs aren't in biomarkerCategories,
+              so `grouped` is empty but `counts` is non-zero — an edge
+              case, but real). In the normal case the category cards
+              below already carry status via colored borders + per-card
+              count pills, so showing chips here too is double-coding
+              the same totals on the same screen. Single source of
+              count signal in the dominant case; safety net in the
+              degenerate one. */}
+          {grouped.length === 0 && (
+            <div className="mt-5 flex flex-wrap gap-2">
+              {counts.concern > 0 && (
+                <SummaryChip tone="concern" count={counts.concern} label="need care" />
+              )}
+              {counts.attention > 0 && (
+                <SummaryChip tone="attention" count={counts.attention} label="borderline" />
+              )}
+              {counts.good > 0 && (
+                <SummaryChip tone="good" count={counts.good} label="on track" />
+              )}
+            </div>
+          )}
 
           {/* File pill — replaces the bare "FILE filename" line. The
               card-shaped container gives the metadata real visual
@@ -1106,8 +1115,14 @@ function MarkerRow({
               where the value sits. Same piecewise math as
               BiomarkerBar (healthy band always at the visual centre)
               so a low value on HbA1c and a low value on testosterone
-              read the same way at a glance. */}
-          <div className="mt-2.5 max-w-[220px]">
+              read the same way at a glance.
+              Hidden below sm (≤640px): the confirm view's job is
+              "does this number match your report?" — value + reference
+              are sufficient. The in-range visualisation belongs on
+              ReportResultsPage where the job is "is it in range?".
+              On phones the mini-range was getting clipped to ~120px
+              inside an already-cramped flex row anyway. */}
+          <div className="hidden sm:block mt-2.5 max-w-[220px]">
             <MiniRange marker={marker} />
           </div>
         </div>

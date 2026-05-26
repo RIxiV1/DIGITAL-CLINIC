@@ -1,5 +1,4 @@
 import { useMemo, useRef, useState } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertCircle,
   AlertTriangle,
@@ -28,7 +27,7 @@ import {
   type RiskAssessment,
   type RiskSystemResult,
 } from '../contexts/QuizContext';
-import { recommendTestsFor } from '../data/tests';
+import { recommendTestsFor, type RecommendedTest } from '../data/tests';
 import { getMarkerInfo } from '../data/markerInfo';
 import { getTestInfo } from '../data/testInfo';
 
@@ -41,7 +40,35 @@ export default function RecommendedTestsPage() {
   // symptoms question — empty symptoms means there's nothing to
   // interpret and a "your symptoms suggest..." card would feel dishonest.
   const showRiskCard = quiz.symptoms.length > 0;
-  const [expanded, setExpanded] = useState<string | null>(tests[0]?.id ?? null);
+  // Default to collapsed. Was: open the first test on mount, which
+  // dumped 6+ marker rows on the user's first paint without them
+  // asking for it. The page's job is to show *what we'd test*; the
+  // marker drill-down is intent-driven and belongs behind a tap.
+  const [expanded, setExpanded] = useState<string | null>(null);
+  // Risk-card disclosure. Default-collapsed so the test list (the
+  // actual content the user came for) isn't gated by a ~120px-tall
+  // metadata panel explaining *why* the tests were picked. The
+  // collapsed trigger still surfaces the headline finding ("Your
+  // symptoms point strongest to...") so the reasoning isn't hidden
+  // entirely — just the per-system breakdown.
+  const [riskOpen, setRiskOpen] = useState(false);
+
+  // Panel summary metrics for the hero footer pill row. Computed
+  // from the live `tests` list so adding/removing categories in
+  // recommendTestsFor() flows through automatically — no hand-coded
+  // counts to drift.
+  const totalMarkers = tests.reduce((sum, t) => sum + t.includes.length, 0);
+
+  // Split the recommendation into the universal foundation + the
+  // quiz-driven additions. The two groups get DIFFERENT layouts: the
+  // Starter Check renders as a standalone hero card; the others
+  // collapse into a single divide-y row-list inside one shared Card.
+  // Previously all 6 were equal-weight Cards in a flat stack — visually
+  // democratic but psychologically wrong: the Starter Check is the
+  // panel everyone gets, the others are contextual. Treating them as
+  // peers blurred that.
+  const starter = tests.find((t) => t.id === 'foundational') ?? null;
+  const others = tests.filter((t) => t.id !== 'foundational');
 
   /* Learn More state — only one of these is non-null at a time. */
   const [openTestId, setOpenTestId] = useState<string | null>(null);
@@ -76,7 +103,7 @@ export default function RecommendedTestsPage() {
             left iPad portrait centered without a max-width cap, so
             the content stretched to whatever the wide Container
             offered. */}
-        <div className="lg:max-w-3xl lg:mx-auto">
+        <div className="lg:max-w-3xl">
           <Pill tone="gold" size="md">
             <Sparkles size={11} />
             Personalised for you
@@ -89,6 +116,20 @@ export default function RecommendedTestsPage() {
             Tap any test to see <em>why</em> we picked it and <em>what</em>’s
             actually measured.
           </p>
+
+          {/* Panel scale, surfaced upfront. Lets a user know what they're
+              committing to before they scroll through 6 collapsed cards —
+              "how many tests is this and how many markers do they cover?"
+              is the natural first question the headline doesn't answer. */}
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-caption font-semibold text-ink-soft">
+            <span className="tabular-nums">
+              {tests.length} {tests.length === 1 ? 'test' : 'tests'}
+            </span>
+            <span aria-hidden className="text-line">·</span>
+            <span className="tabular-nums">
+              {totalMarkers} markers
+            </span>
+          </div>
         </div>
 
         {/* High-tier intercept — when the symptom cluster is strong, the
@@ -119,147 +160,263 @@ export default function RecommendedTestsPage() {
           </div>
         )}
 
+        {/* "Why these tests" — the screening-signal breakdown. Used to
+            sit always-open as a ~120px tall card above the test list,
+            forcing every visitor to scroll past the reasoning to reach
+            the actual tests. Now a disclosure: collapsed trigger shows
+            the headline finding ("symptoms point strongest to X") so
+            the reasoning isn't hidden; full per-system breakdown sits
+            behind a tap. Same atoms, same data, ~half the default
+            vertical footprint. */}
         {showRiskCard && (
-          <div className="mt-6 lg:max-w-3xl">
-            <RiskSummaryCard assessment={riskAssessment} />
+          <div className="mt-5 lg:max-w-3xl">
+            <RiskDisclosure
+              assessment={riskAssessment}
+              open={riskOpen}
+              onToggle={() => setRiskOpen((v) => !v)}
+            />
           </div>
         )}
 
-        <div className="mt-7 grid gap-3 lg:max-w-3xl">
-          {tests.map((t, i) => {
-            const open = expanded === t.id;
-            return (
-              // Per-row entrance animation removed — see #6.7. With 4-6
-              // tests in the list, stagger added ~250ms of perceived
-              // wait on mid-tier devices without conveying useful
-              // information. The section-level Reveal on the heading
-              // still anchors the page transition.
-              <div key={t.id}>
-                <Card padded={false} className="overflow-hidden">
-                  <button
-                    onClick={() => setExpanded(open ? null : t.id)}
-                    className="w-full text-left p-5 flex items-start gap-3"
-                  >
-                    <div className="grid place-items-center w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 font-display text-body shrink-0">
-                      {String(i + 1).padStart(2, '0')}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-ink">{t.name}</div>
-                      <div className="text-caption text-muted mt-0.5">
-                        {t.short}
-                      </div>
-                      <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-                        {t.fasting && (
-                          <Pill tone="gold" size="sm">
-                            <Coffee size={10} /> Fasting
-                          </Pill>
-                        )}
-                        <Pill tone="indigo" size="sm">
-                          <Clock size={10} /> {t.turnaround}
-                        </Pill>
-                        <Pill tone="neutral" size="sm">
-                          {t.includes.length} markers
-                        </Pill>
-                      </div>
-                    </div>
-                    <div className="text-indigo-700 shrink-0 mt-1">
-                      {open ? (
-                        <ChevronUp size={20} />
-                      ) : (
-                        <ChevronDown size={20} />
-                      )}
-                    </div>
-                  </button>
+        {/* ============================================================ */}
+        {/* TEST LIST — STARTER HERO + COMPACT ROW LIST                    */}
+        {/*                                                                */}
+        {/* Two zones, not one flat stack:                                 */}
+        {/*  · Starter Check: standalone Card with hero treatment (gold    */}
+        {/*    ring, gold "01" badge, "Start here" pill, marker preview    */}
+        {/*    line). Substantial — visually says "this is the foundation."*/}
+        {/*  · Secondary tests: a SINGLE shared Card with divide-y rows.   */}
+        {/*    No numbered badges per row, tight px-4 py-3.5 padding,      */}
+        {/*    title + subtitle + 2 meta pills. Reads as a scannable list, */}
+        {/*    not a wall of cards.                                        */}
+        {/*                                                                */}
+        {/* The previous flat 6-card stack treated the universal Starter   */}
+        {/* and the quiz-driven additions as visual peers. They aren't —   */}
+        {/* the Starter is the foundation everyone gets, the rest are      */}
+        {/* contextual. This split surfaces that hierarchy at a glance.    */}
+        {/* ============================================================ */}
 
-                  <AnimatePresence initial={false}>
-                    {open && (
-                      <motion.div
-                        key="content"
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                        className="overflow-hidden"
+        {/* Shared expanded-body renderer — captures quiz/refs/setters from
+            the enclosing scope so we don't have to plumb 5 props into a
+            sub-component. Used by both the Starter card and each row of
+            the secondary list, with different padding classes so the body
+            content aligns under each layout's collapsed title. */}
+        {(() => {
+          const renderExpandedBody = (
+            t: RecommendedTest,
+            padClass: string,
+          ) => (
+            <div className={padClass}>
+              {/* "Why this for you" — left-accent treatment (no background
+                  wash) so the personalised reasoning sits flush with the
+                  rest of the expanded body. */}
+              <div className="border-l-2 border-l-gold-500 pl-3.5">
+                <div className="text-micro uppercase tracking-label font-bold text-gold-800">
+                  Why this for you
+                </div>
+                <p className="mt-1 text-body-sm leading-relaxed text-ink">
+                  {t.whyTemplate(quiz)}
+                </p>
+              </div>
+
+              {getTestInfo(t.id) && (
+                <button
+                  onClick={(e) => {
+                    triggerRef.current = e.currentTarget;
+                    setOpenTestId(t.id);
+                  }}
+                  className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-indigo-700 hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-md px-1 -mx-1"
+                >
+                  Learn more about this panel
+                  <ChevronRight size={14} />
+                </button>
+              )}
+
+              <div className="mt-4">
+                <div className="text-micro uppercase tracking-label font-bold text-indigo-700">
+                  What’s in this test
+                </div>
+                <ul className="mt-2 grid gap-2">
+                  {t.includes.map((m) => {
+                    const hasInfo = !!getMarkerInfo(m.name);
+                    return (
+                      <li
+                        key={m.name}
+                        className="flex items-start gap-3 py-2 border-b border-line/70 last:border-0"
                       >
-                        <div className="px-5 pb-5">
-                          <div className="rounded-[16px] bg-gold-50 border border-gold-200 p-4">
-                            <div className="text-micro uppercase tracking-label font-bold text-gold-800">
-                              Why this for you
-                            </div>
-                            <p className="mt-1.5 text-body-sm leading-relaxed text-ink">
-                              {t.whyTemplate(quiz)}
-                            </p>
+                        <CheckCircle2
+                          size={16}
+                          className="text-indigo-600 mt-0.5 shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-semibold text-body-sm">
+                            {m.name}
                           </div>
-
-                          {/* Test-level Learn More — only shows if testInfo has an entry */}
-                          {getTestInfo(t.id) && (
-                            <button
-                              onClick={(e) => {
-                                triggerRef.current = e.currentTarget;
-                                setOpenTestId(t.id);
-                              }}
-                              className="mt-3 inline-flex items-center gap-1.5 text-caption font-semibold text-indigo-700 hover:text-indigo-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-md px-1 -mx-1"
-                            >
-                              Learn more about this panel
-                              <ChevronRight size={14} />
-                            </button>
-                          )}
-
-                          <div className="mt-4">
-                            <div className="text-micro uppercase tracking-label font-bold text-indigo-700">
-                              What’s in this test
-                            </div>
-                            <ul className="mt-2 grid gap-2">
-                              {t.includes.map((m) => {
-                                const hasInfo = !!getMarkerInfo(m.name);
-                                return (
-                                  <li
-                                    key={m.name}
-                                    className="flex items-start gap-3 py-2 border-b border-line/70 last:border-0"
-                                  >
-                                    <CheckCircle2
-                                      size={16}
-                                      className="text-indigo-600 mt-0.5 shrink-0"
-                                    />
-                                    <div className="flex-1 min-w-0">
-                                      <div className="font-semibold text-body-sm">
-                                        {m.name}
-                                      </div>
-                                      <div className="text-caption text-ink-soft leading-relaxed">
-                                        {m.about}
-                                      </div>
-                                    </div>
-                                    {hasInfo && (
-                                      <button
-                                        onClick={(e) => {
-                                          triggerRef.current = e.currentTarget;
-                                          setOpenMarkerName(m.name);
-                                        }}
-                                        aria-label={`Learn more about ${m.name}`}
-                                        title={`Learn more about ${m.name}`}
-                                        // 48x48 hit area; visible glyph stays
-                                        // small via inner grid centering. -m-2
-                                        // pulls the larger target back into
-                                        // the row so it doesn't shove layout.
-                                        className="shrink-0 -m-3 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
-                                      >
-                                        <Info size={14} />
-                                      </button>
-                                    )}
-                                  </li>
-                                );
-                              })}
-                            </ul>
+                          <div className="text-caption text-ink-soft leading-relaxed">
+                            {m.about}
                           </div>
                         </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </Card>
+                        {hasInfo && (
+                          <button
+                            onClick={(e) => {
+                              triggerRef.current = e.currentTarget;
+                              setOpenMarkerName(m.name);
+                            }}
+                            aria-label={`Learn more about ${m.name}`}
+                            title={`Learn more about ${m.name}`}
+                            className="shrink-0 -m-3 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 transition-colors"
+                          >
+                            <Info size={14} />
+                          </button>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          );
+
+          return (
+            <div className="mt-7 grid gap-4 lg:max-w-3xl">
+              {/* === STARTER CHECK — HERO CARD === */}
+              {starter && (() => {
+                const open = expanded === starter.id;
+                return (
+                  <Card
+                    padded={false}
+                    className="border-gold-500/40 ring-1 ring-gold-500/30 overflow-hidden"
+                  >
+                    <button
+                      onClick={() =>
+                        setExpanded(open ? null : starter.id)
+                      }
+                      className="w-full text-left flex items-start gap-3 p-5"
+                    >
+                      <div className="grid place-items-center w-11 h-11 rounded-2xl font-display text-body shrink-0 bg-gold-500 text-indigo-900">
+                        01
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="font-semibold text-ink">
+                            {starter.name}
+                          </div>
+                          <Pill tone="gold" size="sm">
+                            Start here
+                          </Pill>
+                        </div>
+                        <div className="text-caption text-muted mt-0.5">
+                          {starter.short}
+                        </div>
+                        <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                          {starter.fasting && (
+                            <Pill tone="gold" size="sm">
+                              <Coffee size={10} /> Fasting
+                            </Pill>
+                          )}
+                          <Pill tone="indigo" size="sm">
+                            <Clock size={10} /> {starter.turnaround}
+                          </Pill>
+                          <Pill tone="neutral" size="sm">
+                            {starter.includes.length} markers
+                          </Pill>
+                        </div>
+                        {starter.includes.length > 0 && (
+                          <div className="mt-2 text-caption text-ink-soft leading-relaxed">
+                            <span className="font-semibold">Includes:</span>{' '}
+                            <span className="text-muted">
+                              {starter.includes
+                                .slice(0, 3)
+                                .map((m) => m.name)
+                                .join(', ')}
+                              {starter.includes.length > 3 &&
+                                ` +${starter.includes.length - 3} more`}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-indigo-700 shrink-0 mt-1">
+                        {open ? (
+                          <ChevronUp size={20} />
+                        ) : (
+                          <ChevronDown size={20} />
+                        )}
+                      </div>
+                    </button>
+                    {open && renderExpandedBody(starter, 'px-5 pb-5')}
+                  </Card>
+                );
+              })()}
+
+              {/* === DIVIDER EYEBROW === */}
+              {starter && others.length > 0 && (
+                <div className="flex items-center gap-3">
+                  <div className="h-px bg-line flex-1" />
+                  <span className="text-micro uppercase tracking-eyebrow font-bold text-muted shrink-0">
+                    Based on your quiz
+                  </span>
+                  <div className="h-px bg-line flex-1" />
+                </div>
+              )}
+
+              {/* === SECONDARY TESTS — COMPACT ROW LIST ===
+                  All quiz-driven additions inside ONE Card with divide-y
+                  rows. Each row is a tighter button (px-4 py-3.5, no
+                  numbered badge) — they read as a list of related items
+                  under the Starter Check, not as peers of it. The
+                  expanded body uses the same renderer as the Starter so
+                  the drill-down content is identical. */}
+              {others.length > 0 && (
+                <Card padded={false} className="overflow-hidden">
+                  {others.map((t, i) => {
+                    const open = expanded === t.id;
+                    return (
+                      <div
+                        key={t.id}
+                        className={i > 0 ? 'border-t border-line/70' : ''}
+                      >
+                        <button
+                          onClick={() => setExpanded(open ? null : t.id)}
+                          className="w-full text-left flex items-start gap-3 px-4 py-3.5 hover:bg-canvas/40 transition-colors focus-visible:outline-none focus-visible:bg-canvas/40"
+                        >
+                          <div className="flex-1 min-w-0">
+                            <div className="font-semibold text-ink">
+                              {t.name}
+                            </div>
+                            <div className="text-caption text-muted mt-0.5">
+                              {t.short}
+                            </div>
+                            <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                              {t.fasting && (
+                                <Pill tone="gold" size="sm">
+                                  <Coffee size={10} /> Fasting
+                                </Pill>
+                              )}
+                              <Pill tone="indigo" size="sm">
+                                <Clock size={10} /> {t.turnaround}
+                              </Pill>
+                              <Pill tone="neutral" size="sm">
+                                {t.includes.length} markers
+                              </Pill>
+                            </div>
+                          </div>
+                          <div className="text-indigo-700 shrink-0 mt-1">
+                            {open ? (
+                              <ChevronUp size={20} />
+                            ) : (
+                              <ChevronDown size={20} />
+                            )}
+                          </div>
+                        </button>
+                        {open && renderExpandedBody(t, 'px-4 pb-4')}
+                      </div>
+                    );
+                  })}
+                </Card>
+              )}
+            </div>
+          );
+        })()}
 
         {/* "What now?" — two clear paths forward. Most users haven't
             done their bloods at this point, so the previous single
@@ -346,20 +503,31 @@ export default function RecommendedTestsPage() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Risk summary — visible expression of the QuizContext risk algorithm */
+/* Risk disclosure — collapsible expression of the QuizContext risk    */
+/* algorithm.                                                          */
+/*                                                                      */
+/* Trigger (always visible): a Card-like button showing the "Why these */
+/* tests" eyebrow + the lead sentence (tier-aware copy summarising the */
+/* top signal). Chevron rotates 180° when open.                        */
+/*                                                                      */
+/* Body (visible when open): the three-row per-system breakdown + the  */
+/* "screening signal — not a diagnosis" disclaimer.                    */
+/*                                                                      */
+/* The lead sentence stays on the trigger so the reasoning isn't       */
+/* hidden — only the per-system detail is. Users who care about the    */
+/* score breakdown tap once; users who just want the test list scroll  */
+/* past a single Card-height row instead of a 120px-tall panel.        */
 /* ------------------------------------------------------------------ */
 
-/**
- * Renders the three-system risk assessment from the quiz answers as a
- * short, ranked card. The lead copy adapts to the highest tier so that
- * a low-signal assessment doesn't claim symptoms "strongly point to"
- * anything.
- *
- * The card is intentionally framed as a *screening signal* — every
- * surface that talks about risk in this product must do the same so we
- * don't misrepresent the algorithm as a diagnosis.
- */
-function RiskSummaryCard({ assessment }: { assessment: RiskAssessment }) {
+function RiskDisclosure({
+  assessment,
+  open,
+  onToggle,
+}: {
+  assessment: RiskAssessment;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const top = assessment.rankedSystems[0];
 
   const lead =
@@ -370,30 +538,45 @@ function RiskSummaryCard({ assessment }: { assessment: RiskAssessment }) {
         : `Your symptoms cluster strongly around ${top.label.toLowerCase()}. Worth bringing this to a doctor before assuming what it means.`;
 
   return (
-    <Card className="border-indigo-100/80">
-      <div className="flex items-center gap-2">
-        <Pill tone="indigo" size="sm">
-          <Sparkles size={10} /> Why these tests
-        </Pill>
-      </div>
-      <p className="mt-2.5 text-body-sm leading-relaxed text-ink-soft">
-        {lead}{' '}
-        <span className="text-muted">
-          Scores combine your symptom checks with their known clinical weight.
+    <div className="rounded-[20px] bg-surface border border-line/70 shadow-soft overflow-hidden">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="w-full text-left p-5 flex items-start gap-3 hover:bg-canvas/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+      >
+        <div className="flex-1 min-w-0">
+          <Pill tone="indigo" size="sm">
+            <Sparkles size={10} /> Why these tests
+          </Pill>
+          <p className="mt-2.5 text-body-sm leading-relaxed text-ink-soft">
+            {lead}
+          </p>
+        </div>
+        <span
+          className={`grid place-items-center w-9 h-9 rounded-full bg-indigo-50 text-indigo-700 shrink-0 transition-transform duration-200 ${
+            open ? 'rotate-180' : ''
+          }`}
+          aria-hidden
+        >
+          <ChevronDown size={16} />
         </span>
-      </p>
+      </button>
+      {open && (
+        <div className="px-5 pb-5 border-t border-line/70">
+          <div className="mt-4 grid gap-1.5">
+            {assessment.rankedSystems.map((system) => (
+              <RiskRow key={system.id} system={system} />
+            ))}
+          </div>
 
-      <div className="mt-4 grid gap-1.5">
-        {assessment.rankedSystems.map((system) => (
-          <RiskRow key={system.id} system={system} />
-        ))}
-      </div>
-
-      <p className="mt-3.5 text-caption text-muted leading-relaxed">
-        This is a screening signal — not a diagnosis. The tests below cover
-        the markers that would confirm or rule out each system.
-      </p>
-    </Card>
+          <p className="mt-3.5 text-caption text-muted leading-relaxed">
+            This is a screening signal — not a diagnosis. The tests below cover
+            the markers that would confirm or rule out each system.
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -457,9 +640,11 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
           <div className="text-caption font-semibold text-ink leading-tight">
             {system.label}
           </div>
+          {/* "screening only" tail used to live on every row. Dropped:
+              the bottom-of-card disclaimer already carries that caveat
+              once for the whole card. Repeating it per row was noise. */}
           <div className="mt-0.5 text-caption text-muted tabular-nums">
-            Score {system.score} / {maxScore}{' '}
-            <span className="not-italic">·</span> screening only
+            Score {system.score} / {maxScore}
           </div>
         </div>
       </div>
