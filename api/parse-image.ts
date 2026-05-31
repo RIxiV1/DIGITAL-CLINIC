@@ -94,6 +94,38 @@ function isOriginAllowed(origin: string): boolean {
   return false;
 }
 
+/**
+ * Same-origin POSTs are trusted regardless of the literal allowlist.
+ *
+ * Rationale: the SPA always POSTs from the deployment's own hostname.
+ * On a Vercel preview deploy (URL like
+ * `digital-clinic-omega-git-feat-…-shaik.vercel.app`), the browser
+ * sends `Origin: https://<that-preview-host>` and `Host: <that-preview-host>`.
+ * Comparing the two lets every preview deploy work out of the box
+ * without per-branch `ALLOWED_ORIGINS` env config.
+ *
+ * Safety: cross-origin attackers send a DIFFERENT Origin (their own
+ * site) while Host still resolves to OUR deployment. Origin !== Host
+ * → rejected by this check AND the literal allowlist. So same-origin
+ * trust doesn't weaken the gate.
+ *
+ * Caveat: `req.headers.host` can be set by reverse proxies and is
+ * tampered with in some misconfigurations. On Vercel the platform
+ * sets it from the actual hostname being served; an attacker who
+ * could spoof Host would also need to clear the literal allowlist
+ * AND defeat browser SOP — well outside the threat model we cover.
+ */
+function isSameOriginRequest(
+  origin: string,
+  host: string | undefined,
+): boolean {
+  if (!host) return false;
+  // Vercel deployments are always HTTPS. Localhost dev can be either,
+  // but the localhost entries in DEFAULT_ALLOWED_ORIGINS already cover
+  // those — same-origin trust only matters for preview/prod deploys.
+  return origin === `https://${host}`;
+}
+
 const allowNoOrigin = process.env.ALLOW_NO_ORIGIN === '1';
 
 /** MIME types Gemini can ingest as inline image data and that match
@@ -174,8 +206,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // limiting (a determined attacker can spoof Origin via curl), but it
   // closes the easy-browser-abuse vector.
   const origin = req.headers.origin;
+  const host = typeof req.headers.host === 'string' ? req.headers.host : undefined;
   if (typeof origin === 'string' && origin.length > 0) {
-    if (!isOriginAllowed(origin)) {
+    if (!isOriginAllowed(origin) && !isSameOriginRequest(origin, host)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
   } else if (!allowNoOrigin) {
