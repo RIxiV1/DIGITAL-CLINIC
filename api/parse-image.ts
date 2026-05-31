@@ -33,6 +33,46 @@ export const config = {
 const apiKey = process.env.GEMINI_API_KEY;
 
 /**
+ * Origin allowlist for the parser endpoint. Configurable via
+ * `ALLOWED_ORIGINS` (comma-separated). Falls back to the production
+ * Vercel host + localhost for dev. Vercel preview deployments (where
+ * the URL changes per commit) need to be added explicitly via the env
+ * var — silent acceptance of any *.vercel.app would defeat the purpose.
+ *
+ * Note: Origin can be omitted (e.g., direct curl from the user's own
+ * shell, server-to-server, some Android WebViews). When Origin is
+ * missing we apply the stricter posture: reject unless the env var
+ * sets `ALLOW_NO_ORIGIN=1` — preview deploys + local CLI tests can
+ * opt in deliberately.
+ */
+const DEFAULT_ALLOWED_ORIGINS = [
+  'https://digital-clinic-omega.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:4173',
+];
+
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const allowedOrigins = ALLOWED_ORIGINS.length
+  ? ALLOWED_ORIGINS
+  : DEFAULT_ALLOWED_ORIGINS;
+
+const allowNoOrigin = process.env.ALLOW_NO_ORIGIN === '1';
+
+/** MIME types Gemini can ingest as inline image data and that match
+ *  our client-side allowlist. Anything else gets rejected before it
+ *  reaches the model — the client downscales to JPEG so this is
+ *  belt-and-braces. */
+const ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+]);
+
+/**
  * Strict JSON shape the model returns. Matches what the client maps
  * onto our Biomarker template via the catalog alias resolver — the
  * model captures whatever name the lab printed (e.g., "Haemoglobin"),
@@ -93,6 +133,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'POST only' });
   }
 
+  // Origin gate. Browsers send Origin on cross-origin POSTs; the same-
+  // origin XHR from our SPA also sends it. Reject anything that doesn't
+  // match the allowlist so the endpoint can't be abused as a free
+  // Gemini relay from random sites. This is NOT a substitute for rate-
+  // limiting (a determined attacker can spoof Origin via curl), but it
+  // closes the easy-browser-abuse vector.
+  const origin = req.headers.origin;
+  if (typeof origin === 'string' && origin.length > 0) {
+    if (!allowedOrigins.includes(origin)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+  } else if (!allowNoOrigin) {
+    return res.status(403).json({ error: 'Forbidden' });
+  }
+
   if (!apiKey) {
     return res
       .status(500)
@@ -111,6 +166,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .json({ error: 'Missing imageBase64 or mimeType in body' });
     }
 
+    // MIME-type allowlist. Gemini accepts a wider set than we want to
+    // expose — restricting to JPEG/PNG/WebP matches the client-side
+    // validateUpload allowlist and stops surprising formats (TIFF, SVG
+    // with embedded scripts, etc.) reaching the model. The downscaler
+    // re-encodes to JPEG anyway, so this should never trip for our own
+    // client; it catches direct API callers and any future client bug.
+    if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+      return res.status(400).json({
+        error: 'Unsupported image type. Use JPEG, PNG, or WebP.',
+      });
+    }
+
     // Defensive payload-size cap. Vercel Hobby tier serverless body
     // limit is 4.5MB; base64-encoded images run ~33% larger than the
     // original bytes, so refuse anything >4MB encoded with a clear
@@ -122,6 +189,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error:
           'Image too large after base64 encoding. The client should downscale before upload.',
       });
+    }
+
+    // Light base64 shape check: reject anything that isn't a plain
+    // base64 string. Prevents accidentally feeding Gemini a data-URL
+    // prefix (`data:image/jpeg;base64,…`) which the SDK quietly mangles
+    // — and rejects garbage strings before we burn a Gemini call.
+    if (!/^[A-Za-z0-9+/=\r\n]+$/.test(imageBase64)) {
+      return res.status(400).json({ error: 'Invalid imageBase64 encoding.' });
     }
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -159,10 +234,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
       parsed = JSON.parse(text);
     } catch {
-      // Gemini's structured-output should make this impossible, but if
-      // the model ever returns commentary alongside the JSON, fall
-      // through to validation-fail with the raw text logged.
-      console.error('parse-image: non-JSON response from Gemini:', text);
+      // Gemini's structured-output should make this impossible. Log a
+      // length-only diagnostic — we deliberately do NOT log `text`
+      // because it contains the user's lab values (PII).
+      console.error(
+        'parse-image: non-JSON response from Gemini, length =',
+        text.length,
+      );
       return res
         .status(502)
         .json({ error: 'Upstream returned non-JSON response' });
@@ -170,7 +248,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const validated = ResponseSchema.safeParse(parsed);
     if (!validated.success) {
-      console.error('parse-image: schema validation failed', validated.error);
+      // Log only the zod issue paths — the issue messages can echo
+      // the value that failed validation (which is the user's PII).
+      console.error(
+        'parse-image: schema validation failed at paths',
+        validated.error.issues.map((i) => i.path.join('.')).join(','),
+      );
       return res.status(502).json({
         error: 'Upstream JSON did not match expected schema',
       });
@@ -178,9 +261,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json(validated.data);
   } catch (err) {
-    console.error('parse-image: unhandled error', err);
+    // Log the error class server-side but DO NOT leak `err.message` to
+    // the client — Gemini SDK errors can include URL fragments, key
+    // hints, and request-id headers we don't want crossing the trust
+    // boundary. Generic message + opaque code is the right posture.
+    console.error(
+      'parse-image: unhandled error',
+      err instanceof Error ? err.name : typeof err,
+      err instanceof Error ? err.message : '',
+    );
     return res.status(500).json({
-      error: err instanceof Error ? err.message : 'Unknown error',
+      error: 'Internal error while parsing the image. Please try again.',
     });
   }
 }

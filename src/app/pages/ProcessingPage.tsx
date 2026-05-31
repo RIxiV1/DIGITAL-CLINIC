@@ -140,6 +140,19 @@ export default function ProcessingPage() {
   // state or leave an orphan pendingConfirm record tagged with the
   // dead processingId.
   const activeProcessingIdRef = useRef<string | null>(null);
+  // Mount guard for async paths whose state mutations would otherwise
+  // run after the component has been removed from the tree — e.g., the
+  // user clicks "Try AI parser" and immediately navigates to manual
+  // entry. The AI call resolves seconds later; without this guard it
+  // would call addReport (creating an orphan placeholder in the locker)
+  // and setPendingConfirm (no-op on unmounted, but logs a warning).
+  const mountedRef = useRef(true);
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+    },
+    [],
+  );
 
   // Refresh / deep-link guard: someone lands on /?page=processing
   // directly, but there's no pending processing report (refreshed
@@ -303,6 +316,14 @@ export default function ProcessingPage() {
   const tryAiParser = async (file: File): Promise<{ error?: string }> => {
     try {
       const result = await parseWithAi(file);
+      // Race guard: if the component unmounted while the AI call was
+      // in flight (user clicked Try AI parser, then navigated away or
+      // hit "Enter values manually"), bail before we mutate global
+      // state. Without this, addReport would land an orphan
+      // 'processing' report in the locker that the user never asked
+      // for. Return a benign empty result so the caller doesn't paint
+      // an error message either — the user has moved on.
+      if (!mountedRef.current) return {};
       if (result.biomarkers.length === 0) {
         return {
           error:
@@ -330,6 +351,7 @@ export default function ProcessingPage() {
       setFailure(null);
       return {};
     } catch (err) {
+      if (!mountedRef.current) return {};
       return {
         error:
           err instanceof Error
