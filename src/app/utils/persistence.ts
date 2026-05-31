@@ -7,30 +7,191 @@
  *
  * Everything is opt-in per key. Components don't need to know how
  * localStorage works — they just call save/load helpers below.
+ *
+ * Every load path validates the persisted JSON against a zod schema and
+ * returns the fallback when it doesn't match. localStorage is an
+ * attacker-and-accident-controlled trust boundary (browser extensions,
+ * past-buggy-version writes, hostile devtools sessions on shared
+ * devices); without schema validation, a poisoned `dc_*` key crashes
+ * the app on every load with no in-app recovery. The validation also
+ * means a future catalog refactor that retires a Biomarker field
+ * doesn't silently inject stale shapes into renders.
  */
+
+import { z } from 'zod';
 
 const KEY_PREFIX = 'dc_';
 export const REPORTS_KEY = `${KEY_PREFIX}reports`;
-const QUIZ_KEY = `${KEY_PREFIX}quiz`;
-const QUIZ_COMPLETE_KEY = `${KEY_PREFIX}quizComplete`;
+export const QUIZ_KEY = `${KEY_PREFIX}quiz`;
+export const QUIZ_COMPLETE_KEY = `${KEY_PREFIX}quizComplete`;
 const PENDING_CONFIRM_KEY = `${KEY_PREFIX}pendingConfirm`;
 
 /** Reports older than this get cleaned up on next app load. 6 months. */
 const REPORT_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 
+/** Maximum reports retained in persistence. Hard cap to prevent a
+ *  long-running locker from chewing through localStorage quota — without
+ *  this, a user who imports 50 historical PDFs hits the ~5 MB cap and
+ *  every subsequent save silently fails. */
+const MAX_REPORTS = 200;
+
+/* ------------------------------------------------------------------ */
+/* zod schemas for every dc_* shape — validation at the trust boundary  */
+/* ------------------------------------------------------------------ */
+
+/** Biomarker categories — must stay in sync with `BiomarkerCategoryId`
+ *  in data/biomarkers.ts. Listed explicitly here (not imported) so the
+ *  persistence layer doesn't pull the whole catalog into bundle paths
+ *  that don't need it. Validation tolerates additions: an unknown
+ *  category id in a persisted report fails the schema → fallback to
+ *  empty state for that key, which is the safer posture than admitting
+ *  unknown enums. */
+const BiomarkerCategorySchema = z.enum([
+  'hormones',
+  'metabolic',
+  'heart',
+  'thyroid',
+  'vitamins',
+  'liver',
+  'kidney',
+  'blood',
+  'fertility',
+  'electrolytes',
+  'inflammation',
+]);
+
+const BiomarkerStatusSchema = z.enum(['good', 'attention', 'concern']);
+
+const OptimalSourceSchema = z.object({
+  label: z.string().max(200),
+  url: z.string().url().max(500).optional(),
+  audience: z.string().max(100).optional(),
+});
+
+const BiomarkerReadingSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  value: z.number().finite(),
+});
+
+const BiomarkerSchema = z.object({
+  id: z.string().min(1).max(80),
+  name: z.string().min(1).max(120),
+  simpleName: z.string().max(120).optional(),
+  value: z.number().finite(),
+  unit: z.string().max(40),
+  min: z.number().finite(),
+  max: z.number().finite(),
+  optimalMin: z.number().finite().optional(),
+  optimalMax: z.number().finite().optional(),
+  optimalSource: OptimalSourceSchema.optional(),
+  status: BiomarkerStatusSchema,
+  category: BiomarkerCategorySchema,
+  direction: z.enum(['band', 'up', 'down']).optional(),
+  plain: z.string().max(2000),
+  problemId: z.string().max(80).optional(),
+  history: z.array(BiomarkerReadingSchema).max(50).optional(),
+  /** Catalog version stamped at write time. Lets the history merger
+   *  refuse to fuse old-schema readings with new-schema templates after
+   *  a catalog rename (see [[reports-merge-history]]). Optional for
+   *  backward compat with reports persisted before the field landed. */
+  catalogVersion: z.number().int().nonnegative().optional(),
+});
+
+const ReportSchema = z.object({
+  id: z.string().min(1).max(80),
+  name: z.string().min(1).max(200),
+  lab: z.string().max(200),
+  uploadedOn: z.string().max(40),
+  uploadedAt: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  status: z.enum(['processing', 'ready']),
+  badge: z.enum(['processing', 'ready', 'analyzed']).optional(),
+  isSample: z.boolean().optional(),
+  biomarkers: z.array(BiomarkerSchema).max(120),
+});
+
+const StoredReportsSchema = z.object({
+  savedAt: z.string(),
+  reports: z.array(ReportSchema).max(MAX_REPORTS),
+});
+
+const QuizAnswersSchema = z.object({
+  age: z.string().max(40).optional(),
+  activity: z.string().max(40).optional(),
+  priorities: z.array(z.string().max(80)).max(40),
+  symptoms: z.array(z.string().max(80)).max(40),
+});
+
+const QuizCompleteSchema = z.boolean();
+
+const PendingConfirmSchema = z.object({
+  processingId: z.string().min(1).max(80),
+  fileName: z.string().min(1).max(400),
+  biomarkers: z.array(BiomarkerSchema).max(120),
+  rawText: z.string().max(200_000).optional(),
+  unrecognizedRows: z.array(z.string().max(500)).max(50).optional(),
+  ignoredCategory: z.enum(['viral', 'imaging', 'physical-exam']).optional(),
+  ocrPagesAttempted: z.number().int().nonnegative().max(50).optional(),
+  ocrPagesSkipped: z.number().int().nonnegative().max(50).optional(),
+});
+
 /* ------------------------------------------------------------------ */
 /* Tiny JSON-safe wrappers — callers don't repeat try/catch boilerplate */
 /* ------------------------------------------------------------------ */
 
-function readJSON<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
+function rawRead(key: string): string | null {
+  if (typeof window === 'undefined') return null;
   try {
-    const raw = window.localStorage.getItem(key);
-    if (!raw) return fallback;
-    return JSON.parse(raw) as T;
+    return window.localStorage.getItem(key);
   } catch {
+    return null;
+  }
+}
+
+/**
+ * Read + zod-validate. On parse OR validation failure, the key is
+ * cleared (so the app boots cleanly on the next mount) and the
+ * fallback is returned. Logs a single warn so corruption is debuggable
+ * without spamming the console on every read.
+ */
+function readValidated<T>(
+  key: string,
+  schema: z.ZodType<T>,
+  fallback: T,
+): T {
+  const raw = rawRead(key);
+  if (!raw) return fallback;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    // eslint-disable-next-line no-console
+    console.warn(`persistence: ${key} contains non-JSON; clearing.`);
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      /* storage disabled */
+    }
     return fallback;
   }
+  const result = schema.safeParse(parsed);
+  if (!result.success) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `persistence: ${key} failed validation at`,
+      result.error.issues.map((i) => i.path.join('.')).join(','),
+      '— clearing.',
+    );
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      /* storage disabled */
+    }
+    return fallback;
+  }
+  return result.data;
 }
 
 function writeJSON(key: string, value: unknown): boolean {
@@ -49,12 +210,12 @@ function writeJSON(key: string, value: unknown): boolean {
 /* Typed per-domain accessors                                          */
 /* ------------------------------------------------------------------ */
 
-type StoredReports<T> = { savedAt: string; reports: T[] };
-
-export function loadReports<T>(): T[] {
-  const stored = readJSON<StoredReports<T> | null>(REPORTS_KEY, null);
-  if (!stored || !Array.isArray(stored.reports)) return [];
-  return stored.reports;
+export function loadReports<T = z.infer<typeof ReportSchema>>(): T[] {
+  const stored = readValidated(REPORTS_KEY, StoredReportsSchema, null as
+    | z.infer<typeof StoredReportsSchema>
+    | null);
+  if (!stored) return [];
+  return stored.reports as unknown as T[];
 }
 
 /**
@@ -64,14 +225,21 @@ export function loadReports<T>(): T[] {
  * warning — silent loss on tab-close is the worst failure mode.
  */
 export function saveReports<T>(reports: T[]): boolean {
+  // Hard cap — defense against runaway state (a future bug that
+  // duplicates reports on every render would otherwise quietly chew
+  // through quota until the next save fails). The slice is newest-first
+  // because callers prepend (see ReportsContext.addReport).
+  const capped = reports.slice(0, MAX_REPORTS);
   return writeJSON(REPORTS_KEY, {
     savedAt: new Date().toISOString(),
-    reports,
+    reports: capped,
   });
 }
 
-export function loadQuiz<T>(): T | null {
-  return readJSON<T | null>(QUIZ_KEY, null);
+export function loadQuiz<T = z.infer<typeof QuizAnswersSchema>>(): T | null {
+  return readValidated(QUIZ_KEY, QuizAnswersSchema, null as
+    | z.infer<typeof QuizAnswersSchema>
+    | null) as T | null;
 }
 
 export function saveQuiz<T>(quiz: T): void {
@@ -79,7 +247,7 @@ export function saveQuiz<T>(quiz: T): void {
 }
 
 export function loadQuizComplete(): boolean {
-  return readJSON<boolean>(QUIZ_COMPLETE_KEY, false);
+  return readValidated(QUIZ_COMPLETE_KEY, QuizCompleteSchema, false);
 }
 
 export function saveQuizComplete(complete: boolean): void {
@@ -103,6 +271,13 @@ export function saveQuizComplete(complete: boolean): void {
 /* Persisting the confirm record fixes that: ProcessingPage checks for  */
 /* a stored confirm matching the current processingId on mount and      */
 /* restores the view without re-parsing. Cleared on confirm/reject.     */
+/*                                                                      */
+/* Validation note: this record short-circuits straight into the        */
+/* dashboard's "your report" surface via markReportReady — without zod  */
+/* validation, an attacker (or an old buggy build) writing to           */
+/* dc_pendingConfirm could inject fabricated lab values labelled as the */
+/* user's own. The schema below is enforced on read; load returns null  */
+/* on any deviation, and ProcessingPage falls back to re-parsing.       */
 /* ------------------------------------------------------------------ */
 
 export type PendingConfirmRecord<TBiomarker> = {
@@ -121,8 +296,15 @@ export function savePendingConfirm<T>(record: PendingConfirmRecord<T>): void {
   writeJSON(PENDING_CONFIRM_KEY, record);
 }
 
-export function loadPendingConfirm<T>(): PendingConfirmRecord<T> | null {
-  return readJSON<PendingConfirmRecord<T> | null>(PENDING_CONFIRM_KEY, null);
+export function loadPendingConfirm<T = z.infer<typeof BiomarkerSchema>>():
+  | PendingConfirmRecord<T>
+  | null {
+  const result = readValidated(
+    PENDING_CONFIRM_KEY,
+    PendingConfirmSchema,
+    null as z.infer<typeof PendingConfirmSchema> | null,
+  );
+  return result as unknown as PendingConfirmRecord<T> | null;
 }
 
 export function clearPendingConfirm(): void {
@@ -161,6 +343,12 @@ type ExpirableReport = {
  *     locales). Legacy reports predating the uploadedAt field are a
  *     closed set; we err on "keep" rather than risk silent data loss.
  *   - Reports with a malformed uploadedAt are kept for the same reason.
+ *   - Date math anchors on UTC midnight so the 180-day boundary doesn't
+ *     drift by ±24h based on the user's timezone. Previously
+ *     `Date.parse('2025-12-04')` returned UTC midnight but
+ *     `Date.now()` is timezone-sensitive — the inconsistency could
+ *     prune a report a day early or late depending on tz at the
+ *     boundary.
  */
 export function pruneExpiredReports<T extends ExpirableReport>(
   reports: T[],
@@ -169,7 +357,7 @@ export function pruneExpiredReports<T extends ExpirableReport>(
   const kept = reports.filter((r) => {
     if (r.isSample) return true;
     if (!r.uploadedAt) return true;
-    const ts = Date.parse(r.uploadedAt);
+    const ts = Date.parse(`${r.uploadedAt}T00:00:00Z`);
     if (Number.isNaN(ts)) return true;
     return now - ts <= REPORT_TTL_MS;
   });
@@ -183,19 +371,23 @@ export function pruneExpiredReports<T extends ExpirableReport>(
  * Failures are swallowed silently so a corrupt entry can't brick the
  * app on launch.
  *
- * Returns the count of pruned reports.
+ * Returns `{ pruned, quotaError }`. Callers can promote `quotaError`
+ * into a user-visible banner so the storage-full case isn't silent
+ * (previously the cleanup write was ignored — the in-memory state
+ * continued as if pruning had succeeded, and the next save error came
+ * from an unrelated path).
  */
-export function cleanupExpiredReports(now: number = Date.now()): number {
-  const stored = readJSON<StoredReports<ExpirableReport> | null>(
-    REPORTS_KEY,
-    null,
-  );
-  if (!stored || !Array.isArray(stored.reports)) return 0;
+export function cleanupExpiredReports(
+  now: number = Date.now(),
+): { pruned: number; quotaError: boolean } {
+  const stored = readValidated(REPORTS_KEY, StoredReportsSchema, null as
+    | z.infer<typeof StoredReportsSchema>
+    | null);
+  if (!stored) return { pruned: 0, quotaError: false };
   const { kept, pruned } = pruneExpiredReports(stored.reports, now);
-  if (pruned > 0) {
-    writeJSON(REPORTS_KEY, { savedAt: stored.savedAt, reports: kept });
-  }
-  return pruned;
+  if (pruned === 0) return { pruned: 0, quotaError: false };
+  const ok = writeJSON(REPORTS_KEY, { savedAt: stored.savedAt, reports: kept });
+  return { pruned, quotaError: !ok };
 }
 
 /**
@@ -211,37 +403,50 @@ export function cleanupExpiredReports(now: number = Date.now()): number {
  * re-parsing. Keep that one report so the restore path can find it.
  *
  * Called once on app boot, BEFORE loadReports, so orphans never reach
- * UI state. Returns the count of reports cleaned up.
+ * UI state. Returns `{ pruned, quotaError }` — see cleanupExpiredReports.
  */
-export function cleanupOrphanProcessing(): number {
-  const stored = readJSON<StoredReports<{ status?: string; id?: string }> | null>(
-    REPORTS_KEY,
-    null,
-  );
-  if (!stored || !Array.isArray(stored.reports)) return 0;
-  const pending = readJSON<{ processingId?: string } | null>(
+export function cleanupOrphanProcessing(): {
+  pruned: number;
+  quotaError: boolean;
+} {
+  const stored = readValidated(REPORTS_KEY, StoredReportsSchema, null as
+    | z.infer<typeof StoredReportsSchema>
+    | null);
+  if (!stored) return { pruned: 0, quotaError: false };
+  const pending = readValidated(
     PENDING_CONFIRM_KEY,
-    null,
+    PendingConfirmSchema,
+    null as z.infer<typeof PendingConfirmSchema> | null,
   );
   const keepId = pending?.processingId;
   const kept = stored.reports.filter(
     (r) =>
-      r?.status !== 'processing' ||
-      (keepId !== undefined && r?.id === keepId),
+      r.status !== 'processing' ||
+      (keepId !== undefined && r.id === keepId),
   );
-  if (kept.length === stored.reports.length) return 0;
-  writeJSON(REPORTS_KEY, { savedAt: stored.savedAt, reports: kept });
-  return stored.reports.length - kept.length;
+  if (kept.length === stored.reports.length) {
+    return { pruned: 0, quotaError: false };
+  }
+  const ok = writeJSON(REPORTS_KEY, { savedAt: stored.savedAt, reports: kept });
+  return { pruned: stored.reports.length - kept.length, quotaError: !ok };
 }
 
-/** Per-prefix summary for the Profile "My data" panel. */
+/** Per-prefix summary for the Profile "My data" panel.
+ *
+ *  Reads only the reports key for the savedAt timestamp — the previous
+ *  implementation JSON.parsed every dc_* key on every Profile open to
+ *  look for `.savedAt`, which meant parsing the entire reports blob
+ *  (often 100KB+) just to read a four-char ISO date prefix. Now we
+ *  pull only the reports key and substring-scan for `"savedAt":"…"`
+ *  without parsing — same answer, an order of magnitude less work,
+ *  and zero data exposure if a key gets poisoned. */
 export function getStorageStats() {
   if (typeof window === 'undefined') {
     return { keyCount: 0, approxBytes: 0, oldestDate: null as Date | null };
   }
   let keyCount = 0;
   let approxBytes = 0;
-  let oldestTs = Infinity;
+  let oldestDate: Date | null = null;
   try {
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i);
@@ -250,21 +455,19 @@ export function getStorageStats() {
       const raw = window.localStorage.getItem(key) ?? '';
       // UTF-16 in-memory ≈ 2 bytes per char
       approxBytes += (key.length + raw.length) * 2;
-      try {
-        const ts = Date.parse(JSON.parse(raw)?.savedAt ?? '');
-        if (!Number.isNaN(ts) && ts < oldestTs) oldestTs = ts;
-      } catch {
-        // not a savedAt-shaped entry — fine
+    }
+    const reportsRaw = window.localStorage.getItem(REPORTS_KEY);
+    if (reportsRaw) {
+      const match = reportsRaw.match(/"savedAt"\s*:\s*"([^"]+)"/);
+      if (match) {
+        const ts = Date.parse(match[1]);
+        if (!Number.isNaN(ts)) oldestDate = new Date(ts);
       }
     }
   } catch {
     // localStorage unavailable
   }
-  return {
-    keyCount,
-    approxBytes,
-    oldestDate: oldestTs === Infinity ? null : new Date(oldestTs),
-  };
+  return { keyCount, approxBytes, oldestDate };
 }
 
 /**
@@ -305,7 +508,9 @@ export function exportAllData(): {
   };
 }
 
-/** Removes every dc_* key from localStorage. Used by Profile › My data. */
+/** Removes every dc_* key from localStorage. Used by Profile › My data,
+ *  and by the ErrorBoundary's repeat-crash recovery path so a poisoned
+ *  persistence record can't permanently brick the app. */
 export function wipeAllData(): number {
   if (typeof window === 'undefined') return 0;
   try {

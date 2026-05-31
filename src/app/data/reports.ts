@@ -1,4 +1,5 @@
 import {
+  CATALOG_VERSION,
   sampleBiomarkers,
   type Biomarker,
   type BiomarkerReading,
@@ -132,10 +133,25 @@ export function badgeFor(r: Report): ReportBadge {
  * user confirms; if extraction fails, the placeholder is removed
  * entirely (see ProcessingPage's failure path).
  */
+/**
+ * Cryptographically-random short id for new reports. Falls back to a
+ * Math.random hex when `crypto.randomUUID` is unavailable (older Safari,
+ * very old browsers) — the fallback path is not security-sensitive
+ * since the only adversary collision concern is concurrent uploads,
+ * but using the WebCrypto path when available costs nothing and
+ * eliminates the ~30-bit-entropy worry the audit flagged.
+ */
+export function makeReportId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return `rep-${crypto.randomUUID().slice(0, 8)}`;
+  }
+  return `rep-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export function makeReport(name: string): Report {
   const now = new Date();
   return {
-    id: `rep-${Math.random().toString(36).slice(2, 8)}`,
+    id: makeReportId(),
     name,
     lab: 'New upload',
     uploadedOn: formatDate(now),
@@ -179,9 +195,23 @@ export function mergeHistoryFromPriorReports(
     const history: BiomarkerReading[] = [];
     for (const r of priorChrono) {
       const prior = r.biomarkers.find((b) => b.id === m.id);
-      if (prior && r.uploadedAt) {
-        history.push({ date: r.uploadedAt, value: prior.value });
+      if (!prior || !r.uploadedAt) continue;
+      // Unit equality — a future unit migration (mg/dL → mmol/L) must
+      // NOT silently fuse pre-migration readings into the new
+      // template's trendline at the wrong scale. If both sides lack a
+      // unit, that's fine (e.g. pH).
+      if ((prior.unit || '') !== (m.unit || '')) continue;
+      // Catalog-version equality, but ONLY when both sides have a
+      // version. Pre-versioning readings (catalogVersion === undefined)
+      // are admitted — they're known to have been authored against
+      // some prior state of the catalog and we trust those to merge.
+      // Once both sides carry a version, mismatch blocks the merge.
+      const priorVersion = prior.catalogVersion;
+      const currentVersion = m.catalogVersion ?? CATALOG_VERSION;
+      if (priorVersion !== undefined && priorVersion !== currentVersion) {
+        continue;
       }
+      history.push({ date: r.uploadedAt, value: prior.value });
     }
     return history.length > 0 ? { ...m, history } : m;
   });

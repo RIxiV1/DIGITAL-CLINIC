@@ -58,6 +58,21 @@ const MIN_USABLE_TEXT_LENGTH = 50;
  *  user gives up and refreshes". */
 const OCR_PAGE_TIMEOUT_MS = 45_000;
 
+/** Worker-init timeout. Tesseract pulls ~12MB of eng.traineddata on
+ *  first use; on a flaky mobile network this can stall indefinitely
+ *  with no signal to the UI. 60s is generous enough for slow 3G but
+ *  short enough that the user sees a real error instead of an infinite
+ *  spinner. */
+const OCR_WORKER_INIT_TIMEOUT_MS = 60_000;
+
+/** Hard cap on input to the unknown-row matcher. Defensive — the regex
+ *  is bounded (`{0,50}?` on the label window), but `matchAll` over a
+ *  100 KB OCR blob with adversarial structure can still spike a phone
+ *  CPU. 80 KB is well above any real lab report (a normal extraction
+ *  is 2-15 KB) and well below the size where the matcher becomes
+ *  noticeable. */
+const UNKNOWN_ROW_INPUT_CAP = 80_000;
+
 /* ------------------------------------------------------------------ */
 /* Lazy loaders for heavy deps                                          */
 /* ------------------------------------------------------------------ */
@@ -382,7 +397,11 @@ async function preprocessImageForOcr(file: Blob): Promise<Blob> {
 
 async function runImageOcr(file: Blob): Promise<string> {
   const createWorker = await loadTesseract();
-  const worker = await createWorker('eng');
+  const worker = await withTimeout(
+    createWorker('eng'),
+    OCR_WORKER_INIT_TIMEOUT_MS,
+    'OCR worker init',
+  );
   try {
     // PSM 6 = "assume a single uniform block of text". Default PSM 3
     // (Fully Automatic) often over-segments lab-report tables — it
@@ -413,9 +432,49 @@ type PdfOcrResult = {
   pagesSkipped: number;
 };
 
+/**
+ * Page-boundary sentinel for OCR concat. Anchored by zero-width
+ * non-printing markers + a literal token that's deliberately
+ * un-matchable by the catalog matcher (no biomarker alias contains
+ * `===` or `PAGE_BOUNDARY`). Used as a split point downstream so a
+ * skipped page can't glue a marker on page 1 to a digit on page 3
+ * through the [^\n]{0,80}? between-window.
+ *
+ * Kept private — callers should use `splitOnPageBoundary()` rather
+ * than reach for the string literal.
+ */
+const PAGE_BOUNDARY_SENTINEL = '\n\n===PAGE_BOUNDARY===\n\n';
+
+export function splitOnPageBoundary(text: string): string[] {
+  return text.split(PAGE_BOUNDARY_SENTINEL);
+}
+
+/**
+ * Strip the internal page-boundary sentinel from text headed to the
+ * user-facing "show what we read" disclosure. The sentinel is meaningful
+ * to the matcher (it's a hard line break that the bounded between-window
+ * can't cross) but ugly in the UI. Replacement preserves the visual
+ * page-break for the reader.
+ */
+function rawTextForDisplay(text: string): string {
+  return text.replace(
+    new RegExp(escapeRegex(PAGE_BOUNDARY_SENTINEL), 'g'),
+    '\n\n— page break —\n\n',
+  );
+}
+
 async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
   const createWorker = await loadTesseract();
-  const worker = await createWorker('eng');
+  // H6: Worker init can stall on a flaky mobile connection while the
+  // ~12 MB eng.traineddata downloads. Cap it. On timeout, the error
+  // bubbles up to parsePdfFile and surfaces as parser-error with a
+  // clear "couldn't download the OCR engine" message rather than the
+  // UI stalling at the last visible stage forever.
+  const worker = await withTimeout(
+    createWorker('eng'),
+    OCR_WORKER_INIT_TIMEOUT_MS,
+    'OCR worker init',
+  );
   try {
     let fullText = '';
     const pagesAttempted = Math.min(pdf.numPages, OCR_MAX_PAGES);
@@ -428,11 +487,19 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
           OCR_PAGE_TIMEOUT_MS,
           `OCR page ${i}`,
         );
-        fullText += result.data.text + '\n';
+        fullText += result.data.text;
+        // Page boundary sentinel. Catalog matcher splits on this so a
+        // marker on page N can't glue to a number on page N+1 via the
+        // [^\n]{0,80}? between-window.
+        if (i < pagesAttempted) fullText += PAGE_BOUNDARY_SENTINEL;
       } catch (pageErr) {
         // eslint-disable-next-line no-console
         console.warn(`Skipping page ${i}:`, pageErr);
-        fullText += `\n[page ${i} skipped]\n`;
+        // Skipped page → emit the boundary sentinel instead of a
+        // human-readable placeholder. The boundary is invisible to
+        // the user-facing rawText display (we strip it before render)
+        // but enforces a hard page-break for the matcher.
+        if (i < pagesAttempted) fullText += PAGE_BOUNDARY_SENTINEL;
         pagesSkipped += 1;
       }
     }
@@ -482,7 +549,24 @@ function extractMarkerValue(
   text: string,
   template: BiomarkerTemplate,
 ): number | null {
-  const between = '[\\s\\S]{0,80}?';
+  // Bounded between-window: allow AT MOST one newline between the
+  // alias and the number. Cross-row glue matches were a real false-
+  // positive vector — a marker on row N could pair with a number on
+  // row N+5 if both fell within 80 chars under the old `[\\s\\S]`
+  // version. We still need to admit the common "label on its own line,
+  // value on the next line" layout (Indian-lab tabular reports use it
+  // heavily after reconstructByPosition splits cells onto separate
+  // lines), so we permit exactly one `\n` with a tight pre-newline
+  // budget. The PAGE_BOUNDARY_SENTINEL emitted by OCR carries `\n\n`
+  // around it, which this pattern can't cross — page-skip glue is
+  // structurally prevented.
+  // Make the optional cross-newline alternation LAZY (`??`) so the
+  // engine prefers same-line matches when one is available. Without
+  // the lazy quantifier the greedy `?` would happily skip a digit on
+  // the current line to land on a digit on the next line — turning
+  // "Total WBC Count 7200 /cumm\nTotal RBC Count 5.2 …" into a WBC
+  // match for "5.2" when the right answer is "7200" on the same line.
+  const between = '(?:[^\\n]{0,40}?\\n)??[^\\n]{0,80}?';
   const numPattern = '(-?\\d+(?:\\.\\d+)?)';
   // Between number and unit: up to 30 non-digit chars, OPTIONALLY
   // followed by a reference-range shape ("12-14", "150 to 450",
@@ -518,8 +602,16 @@ function extractMarkerValue(
   for (const alias of template.aliases) {
     const aliasEsc = escapeRegex(alias);
     const skipUnit = !template.unit || aliasContainsUnit(alias, template);
+    // L-8: Even when we skip the unit gate (alias names its own unit, or
+    // the template is unitless), require the number to end on a non-word
+    // boundary. Without this, "Density (million per ml) reading 2024"
+    // would capture the year 2024 as a value — the surrounding word
+    // characters were valid as a number boundary under the looser
+    // version of the pattern. Adding `(?!\\w)` makes the engine reject
+    // a digit run that abuts a letter on the right, which catches the
+    // metadata-row false positives.
     const pattern = skipUnit
-      ? `${aliasEsc}${between}${numPattern}`
+      ? `${aliasEsc}${between}${numPattern}(?!\\w)`
       : `${aliasEsc}${between}${numPattern}${tail}${unitGate}`;
     const m = text.match(new RegExp(pattern, 'i'));
     if (!m) continue;
@@ -541,13 +633,15 @@ function extractMarkerValue(
 export function extractBiomarkersFromText(text: string): Biomarker[] {
   const normalized = normalize(text);
   const found: Biomarker[] = [];
-  const seen = new Set<string>();
   for (const template of biomarkerCatalog) {
-    if (seen.has(template.id)) continue;
+    // biomarkerCatalog contains each template exactly once — the prior
+    // `seen` Set/dedup was dead code that suggested an enforced
+    // invariant the loop body didn't need. Dropped to keep the loop
+    // readable; if catalog duplication ever needs to be defended
+    // against, dedupe at the catalog source, not here.
     const value = extractMarkerValue(normalized, template);
     if (value === null) continue;
     found.push(markerFromTemplate(template, value));
-    seen.add(template.id);
   }
   return found;
 }
@@ -561,13 +655,19 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
  * gating on known units kills almost all the false positives without
  * needing a more sophisticated layout parser.
  */
-// Caches the unit-anchored row regex once per module load. Built from
-// the *normalized* (U+03BC) form of every catalog unit so it agrees
-// with the text returned from normalize(). If you ever start mutating
-// biomarkerCatalog at runtime, invalidate this cache too.
-let unknownRowRegex: RegExp | null = null;
+// Caches the unit-anchored row regex per `biomarkerCatalog` reference
+// — WeakMap keyed on the catalog array means HMR or a future test that
+// swaps the catalog gets a fresh regex automatically, without us having
+// to remember to invalidate. Built from the *normalized* (U+03BC) form
+// of every catalog unit so it agrees with the text returned from
+// normalize().
+const UNKNOWN_ROW_REGEX_CACHE: WeakMap<
+  typeof biomarkerCatalog,
+  RegExp
+> = new WeakMap();
 function getUnknownRowRegex(): RegExp {
-  if (unknownRowRegex) return unknownRowRegex;
+  const cached = UNKNOWN_ROW_REGEX_CACHE.get(biomarkerCatalog);
+  if (cached) return cached;
   const units = new Set<string>();
   for (const t of biomarkerCatalog) {
     if (t.unit) units.add(normalizeMu(t.unit));
@@ -581,11 +681,12 @@ function getUnknownRowRegex(): RegExp {
     .sort((a, b) => b.length - a.length)
     .map(escapeRegex)
     .join('|');
-  unknownRowRegex = new RegExp(
+  const re = new RegExp(
     `([A-Za-z][\\w\\s\\(\\)\\-\\/\\.,'#]{2,50}?)(?:\\s*[:\\-=\\u2013\\u2212]\\s*|\\s+)(-?\\d+(?:\\.\\d+)?)\\s*(${unitPattern})(?![A-Za-z0-9])`,
     'gi',
   );
-  return unknownRowRegex;
+  UNKNOWN_ROW_REGEX_CACHE.set(biomarkerCatalog, re);
+  return re;
 }
 
 /**
@@ -605,7 +706,13 @@ export function findUnrecognizedRows(
   text: string,
   extracted: Biomarker[],
 ): string[] {
-  const normalized = normalize(text);
+  // M-4: Cap the input size so matchAll doesn't run a 50ms+ scan over
+  // an adversarial blob on phones. Real lab extractions are well under
+  // the cap; anything beyond is either junk OCR output or a deliberately
+  // crafted hostile input — neither case benefits from a complete
+  // scan. The truncation is invisible to the user since the function
+  // returns at most 10 rows anyway.
+  const normalized = normalize(text).slice(0, UNKNOWN_ROW_INPUT_CAP);
   const extractedByUnit = new Map<string, Set<number>>();
   for (const m of extracted) {
     const unit = (m.unit || '').toLowerCase();
@@ -1032,7 +1139,7 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
       return {
         biomarkers: ocrBiomarkers,
         source: 'pdf-ocr',
-        rawText: ocr.text,
+        rawText: rawTextForDisplay(ocr.text),
         unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
         ocrPagesAttempted: ocr.pagesAttempted,
         ocrPagesSkipped: ocr.pagesSkipped,

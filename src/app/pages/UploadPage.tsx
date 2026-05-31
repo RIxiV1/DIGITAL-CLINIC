@@ -16,6 +16,7 @@ import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useReports } from '../AppContext';
 import { makeReport } from '../data/reports';
 import {
+  clearPendingUpload,
   setPendingUpload,
   validateUpload,
   type FileValidationError,
@@ -182,6 +183,26 @@ export default function UploadPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** True once the user has tapped "Start analysing" — flips the
+   *  unmount cleanup below into "don't clear pendingUpload, the next
+   *  page is about to consume it." Without this flag, unmount would
+   *  wipe the File handoff a tick before ProcessingPage's mount runs
+   *  consumePendingUpload(). */
+  const handedOffRef = useRef(false);
+  useEffect(
+    () => () => {
+      if (!handedOffRef.current) {
+        // User abandoned the upload flow (back gesture, locker tap,
+        // anything that unmounts this page) WITHOUT confirming the
+        // upload. Drop the File handle so it doesn't linger in module
+        // state and resurface on a future upload — both a memory and
+        // PII-retention concern.
+        clearPendingUpload();
+      }
+    },
+    [],
+  );
+
   const startProcessing = () => {
     // Sweep any existing 'processing' placeholder reports before adding
     // a new one. Scenario: user starts upload A → navigates away mid-
@@ -207,6 +228,7 @@ export default function UploadPage() {
     // ProcessingPage will consume it on mount. Persisted state can't
     // hold a File so this is the lightest-weight handoff that works.
     setPendingUpload(fileRef.current);
+    handedOffRef.current = true;
     replace({ type: 'processing' });
   };
 

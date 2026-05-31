@@ -58,6 +58,13 @@ export type Biomarker = {
   problemId?: string;
   /** Earlier readings (earliest → latest, exclusive of `value`). */
   history?: BiomarkerReading[];
+  /** Catalog version this reading was stamped with at write time.
+   *  `mergeHistoryFromPriorReports` uses it to refuse to merge readings
+   *  written against an old catalog version into a new template — see
+   *  CATALOG_VERSION + reports.ts:mergeHistoryFromPriorReports. Optional
+   *  for backward compat with reports persisted before the field
+   *  existed. */
+  catalogVersion?: number;
 };
 
 export type BiomarkerCategoryId =
@@ -738,6 +745,22 @@ export function statusForValue(
 }
 
 /**
+ * Schema version stamped onto every Biomarker we construct from a
+ * template. Bump this whenever a future catalog refactor renames an
+ * id, retires a marker, or changes a unit — the trend-history merger
+ * uses this version to refuse to fuse old-schema readings into a new-
+ * schema template, which would otherwise silently corrupt the user's
+ * trendlines after a release.
+ *
+ * Backward compat: Biomarkers persisted before this field existed have
+ * `catalogVersion: undefined`. The merger admits those into history
+ * (they were authored against the same catalog they're now being
+ * merged with — by definition). Only on a future bump does the gate
+ * activate.
+ */
+export const CATALOG_VERSION = 1;
+
+/**
  * Construct a fully-typed Biomarker from a catalog template plus a
  * measured value. Used by the parser when it pulls a value out of an
  * uploaded report.
@@ -762,6 +785,7 @@ export function markerFromTemplate(
     direction: template.direction,
     plain: template.plain,
     problemId: template.problemId,
+    catalogVersion: CATALOG_VERSION,
   };
 }
 

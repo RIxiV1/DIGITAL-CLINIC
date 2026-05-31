@@ -286,12 +286,16 @@ export default function ProcessingPage() {
   };
 
   const useSampleReport = () => {
-    const sample = sampleReports[0];
-    if (!reports.some((r) => r.id === sample.id)) {
-      addReport(sample);
-    }
+    // Navigate to the sample report's id WITHOUT calling addReport.
+    // findReport(userReports, id) falls back to the curated sample
+    // pool, so navigation works without us injecting sample data into
+    // the user's persistent locker. The previous addReport(sample)
+    // wrote 'rep-001' (carrying canned testosterone 280 ng/dL, etc.)
+    // into dc_reports as if the user owned it — turning what the
+    // dashboard treated as "the user's most recent report" into
+    // sample data labelled as theirs.
     setFailure(null);
-    navigate({ type: 'results', reportId: sample.id });
+    navigate({ type: 'results', reportId: sampleReports[0].id });
   };
 
   const enterManually = () => {

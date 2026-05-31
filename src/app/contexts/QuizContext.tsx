@@ -10,6 +10,8 @@ import {
 } from 'react';
 import type { QuizAnswers } from './types';
 import {
+  QUIZ_COMPLETE_KEY,
+  QUIZ_KEY,
   loadQuiz,
   loadQuizComplete,
   saveQuiz,
@@ -279,24 +281,70 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   }, [quiz.age, quiz.activity, quiz.priorities.length]);
 
   // Persist on every change (skipping the first render so we don't
-  // overwrite the freshly-hydrated localStorage).
+  // overwrite the freshly-hydrated localStorage). The skipNextPersistRef
+  // pair lets the cross-tab `storage` listener apply an external update
+  // without immediately writing it back and pinging the other tab in a
+  // loop — same pattern as ReportsContext.
   const firstQuiz = useRef(true);
+  const skipNextQuizPersistRef = useRef(false);
   useEffect(() => {
     if (firstQuiz.current) {
       firstQuiz.current = false;
+      return;
+    }
+    if (skipNextQuizPersistRef.current) {
+      skipNextQuizPersistRef.current = false;
       return;
     }
     saveQuiz(quiz);
   }, [quiz]);
 
   const firstComplete = useRef(true);
+  const skipNextCompletePersistRef = useRef(false);
   useEffect(() => {
     if (firstComplete.current) {
       firstComplete.current = false;
       return;
     }
+    if (skipNextCompletePersistRef.current) {
+      skipNextCompletePersistRef.current = false;
+      return;
+    }
     saveQuizComplete(hasCompletedQuiz);
   }, [hasCompletedQuiz]);
+
+  /* Cross-tab sync. ReportsContext already listens for dc_reports
+   * changes; the same problem applies to quiz state — a user editing
+   * symptoms in tab A would otherwise have those overwritten by tab B's
+   * stale-in-memory copy on its next save. Listen for `storage` events
+   * on dc_quiz / dc_quizComplete and rehydrate from localStorage.
+   *
+   * `storage` events only fire on OTHER tabs in the same origin, so we
+   * don't need to filter our own writes. The skip-refs prevent the
+   * applied update from looping back through saveQuiz/saveQuizComplete. */
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === QUIZ_KEY) {
+        const fresh = loadQuiz<QuizAnswers>();
+        const merged: QuizAnswers = fresh
+          ? {
+              ...emptyQuiz,
+              ...fresh,
+              priorities: Array.isArray(fresh.priorities) ? fresh.priorities : [],
+              symptoms: Array.isArray(fresh.symptoms) ? fresh.symptoms : [],
+            }
+          : emptyQuiz;
+        skipNextQuizPersistRef.current = true;
+        setQuizState(merged);
+      } else if (e.key === QUIZ_COMPLETE_KEY) {
+        skipNextCompletePersistRef.current = true;
+        setHasCompletedQuiz(loadQuizComplete());
+      }
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, []);
 
   const resetQuiz = useCallback(() => {
     setQuizState(emptyQuiz);

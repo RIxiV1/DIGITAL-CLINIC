@@ -37,7 +37,11 @@ const apiKey = process.env.GEMINI_API_KEY;
  * `ALLOWED_ORIGINS` (comma-separated). Falls back to the production
  * Vercel host + localhost for dev. Vercel preview deployments (where
  * the URL changes per commit) need to be added explicitly via the env
- * var — silent acceptance of any *.vercel.app would defeat the purpose.
+ * var — the regex prefix `re:` lets you cover preview hosts with one
+ * entry (e.g. `re:^https://digital-clinic-omega-git-.+\\.vercel\\.app$`)
+ * without opening the gate to every Vercel-hosted app. Anything that
+ * starts with `re:` is parsed as a regex; everything else is a literal
+ * match.
  *
  * Note: Origin can be omitted (e.g., direct curl from the user's own
  * shell, server-to-server, some Android WebViews). When Origin is
@@ -51,14 +55,44 @@ const DEFAULT_ALLOWED_ORIGINS = [
   'http://localhost:4173',
 ];
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
+const RAW_ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
 
-const allowedOrigins = ALLOWED_ORIGINS.length
-  ? ALLOWED_ORIGINS
-  : DEFAULT_ALLOWED_ORIGINS;
+const allowedOriginEntries = (
+  RAW_ALLOWED_ORIGINS.length ? RAW_ALLOWED_ORIGINS : DEFAULT_ALLOWED_ORIGINS
+).map((entry): { kind: 'literal'; value: string } | { kind: 'regex'; value: RegExp } => {
+  if (entry.startsWith('re:')) {
+    try {
+      return { kind: 'regex', value: new RegExp(entry.slice(3)) };
+    } catch {
+      // A malformed pattern would otherwise open-fail to "always
+      // reject" silently. Log + fall back to literal so misconfig
+      // surfaces in deploy logs rather than 100% of users getting
+      // 403s with no diagnostic.
+      // eslint-disable-next-line no-console
+      console.error(
+        'parse-image: invalid regex in ALLOWED_ORIGINS:',
+        entry,
+        '— treating as literal.',
+      );
+      return { kind: 'literal', value: entry };
+    }
+  }
+  return { kind: 'literal', value: entry };
+});
+
+function isOriginAllowed(origin: string): boolean {
+  for (const entry of allowedOriginEntries) {
+    if (entry.kind === 'literal') {
+      if (entry.value === origin) return true;
+    } else if (entry.value.test(origin)) {
+      return true;
+    }
+  }
+  return false;
+}
 
 const allowNoOrigin = process.env.ALLOW_NO_ORIGIN === '1';
 
@@ -141,7 +175,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // closes the easy-browser-abuse vector.
   const origin = req.headers.origin;
   if (typeof origin === 'string' && origin.length > 0) {
-    if (!allowedOrigins.includes(origin)) {
+    if (!isOriginAllowed(origin)) {
       return res.status(403).json({ error: 'Forbidden' });
     }
   } else if (!allowNoOrigin) {

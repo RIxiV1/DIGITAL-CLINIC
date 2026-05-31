@@ -21,7 +21,7 @@ import {
   type BiomarkerCategoryId,
   type BiomarkerTemplate,
 } from '../data/biomarkers';
-import type { Report } from '../data/reports';
+import { makeReportId, type Report } from '../data/reports';
 import { formatDate } from '../utils/uiUtils';
 
 /**
@@ -172,7 +172,7 @@ export default function ManualEntryPage() {
     // ISO date.
     const now = new Date();
     const report: Report = {
-      id: `rep-${Math.random().toString(36).slice(2, 8)}`,
+      id: makeReportId(),
       name: reportName.trim() || 'My lab report',
       lab: 'Manual entry',
       uploadedOn: formatDate(now),

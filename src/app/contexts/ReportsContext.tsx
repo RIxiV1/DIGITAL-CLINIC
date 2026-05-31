@@ -51,19 +51,38 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   // Initial state pulls from localStorage if anything is there; otherwise
   // falls back to initialReports (currently empty). Stale entries are
   // pruned first so a corrupted save doesn't haunt forever.
-  const [reports, setReports] = useState<Report[]>(() => {
-    if (typeof window === 'undefined') return initialReports;
-    cleanupExpiredReports();
-    // Drop reports stuck in 'processing' from a previous tab — the File
-    // handle behind them is gone, so they'd render as a "nothing to parse"
-    // error on first visit. See cleanupOrphanProcessing for the full story.
-    cleanupOrphanProcessing();
-    const persisted = loadReports<Report>();
-    if (persisted.length > 0) return persisted;
-    return initialReports;
-  });
+  //
+  // Both cleanups return `{ pruned, quotaError }` — if either tried to
+  // write but couldn't (quota exceeded), we promote that into the
+  // saveError state immediately so the banner appears on first paint
+  // rather than only after the user's next write. Previously the
+  // cleanup writes failed silently and the saveError flag only set on
+  // the NEXT save attempt, which could be hours later.
+  const [{ reports: initialBootstrapReports, initialSaveError }] = useState(
+    () => {
+      if (typeof window === 'undefined') {
+        return {
+          reports: initialReports,
+          initialSaveError: null as 'quota' | null,
+        };
+      }
+      const ttlResult = cleanupExpiredReports();
+      // Drop reports stuck in 'processing' from a previous tab — the File
+      // handle behind them is gone, so they'd render as a "nothing to parse"
+      // error on first visit. See cleanupOrphanProcessing for the full story.
+      const orphanResult = cleanupOrphanProcessing();
+      const persisted = loadReports<Report>();
+      const quotaError =
+        ttlResult.quotaError || orphanResult.quotaError ? 'quota' : null;
+      return {
+        reports: persisted.length > 0 ? persisted : initialReports,
+        initialSaveError: quotaError as 'quota' | null,
+      };
+    },
+  );
+  const [reports, setReports] = useState<Report[]>(initialBootstrapReports);
 
-  const [saveError, setSaveError] = useState<'quota' | null>(null);
+  const [saveError, setSaveError] = useState<'quota' | null>(initialSaveError);
   const dismissSaveError = useCallback(() => setSaveError(null), []);
 
   // Skip persistence on the initial render (which would overwrite the
