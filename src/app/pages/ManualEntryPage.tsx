@@ -23,6 +23,7 @@ import {
 } from '../data/biomarkers';
 import { makeReportId, type Report } from '../data/reports';
 import { formatDate } from '../utils/uiUtils';
+import { sanitizeFilename } from '../utils/sanitizeFilename';
 
 /**
  * Returns 'out-of-range' when the typed value is beyond the parser's
@@ -170,10 +171,17 @@ export default function ManualEntryPage() {
     // values then later uploads a real PDF wouldn't see any trend
     // because mergeHistoryFromPriorReports skips reports without an
     // ISO date.
+    // Sanitize user-typed name through the same gate uploads use: cap
+    // length, strip control / bidi / HTML-suspicious chars, collapse
+    // whitespace. Without this a 250-char paste survives in memory but
+    // fails ReportSchema.name.max(200) on next app boot — the tolerant
+    // loader would drop only this report, but the user would silently
+    // lose their manual entry after a refresh.
+    const safeName = sanitizeFilename(reportName.trim() || 'My lab report', 200);
     const now = new Date();
     const report: Report = {
       id: makeReportId(),
-      name: reportName.trim() || 'My lab report',
+      name: safeName,
       lab: 'Manual entry',
       uploadedOn: formatDate(now),
       uploadedAt: now.toISOString().slice(0, 10),
