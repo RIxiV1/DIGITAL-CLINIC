@@ -118,11 +118,19 @@ const ReportSchema = z.object({
   biomarkers: z.array(BiomarkerSchema).max(300),
 });
 
+/** Tolerant on the array fields: real users on prod can land in a
+ *  partial-completion state (age + activity set, symptoms not yet
+ *  picked) — making `priorities` / `symptoms` strictly required would
+ *  fail validation on that legitimate shape, wipe dc_quiz, and lose
+ *  the user's age + activity answers along with the missing arrays.
+ *  `.catch([])` defaults the field to `[]` when it's absent OR
+ *  malformed, preserving the rest of the object instead of nuking
+ *  the whole record. */
 const QuizAnswersSchema = z.object({
   age: z.string().max(40).optional(),
   activity: z.string().max(40).optional(),
-  priorities: z.array(z.string().max(80)).max(40),
-  symptoms: z.array(z.string().max(80)).max(40),
+  priorities: z.array(z.string().max(80)).max(40).catch([]),
+  symptoms: z.array(z.string().max(80)).max(40).catch([]),
 });
 
 const QuizCompleteSchema = z.boolean();
