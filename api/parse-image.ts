@@ -126,15 +126,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      // gemini-1.5-flash, not 2.0-flash, for free-tier availability.
-      // Google rolled out the 2.x line unevenly — in several regions
-      // (notably India and parts of EMEA) the free-tier quota for
-      // gemini-2.0-flash is set to 0 unless billing is attached
-      // (surfaced as a 429 with "limit: 0" on first call). The 1.5
-      // line keeps a globally-available free tier and is fully
-      // sufficient for lab-table OCR. Swap back to 2.0/2.5 when we
-      // attach a paid Vertex AI key.
-      model: 'gemini-1.5-flash',
+      // Pinned to gemini-2.5-flash, the canonical stable replacement
+      // after the 2.0 deprecation (Feb 2026) and the 1.5-line retirement
+      // (returns 404 on v1beta for new projects). Path we walked to
+      // get here, for future-us:
+      //   - 'gemini-2.0-flash-exp' → 404 (preview alias retired)
+      //   - 'gemini-2.0-flash'     → 429 limit=0 in free tier (regional)
+      //   - 'gemini-1.5-flash'     → 404 (entire line retired)
+      // If 2.5-flash also surfaces a regional free-tier-0, fall back
+      // to 'gemini-2.5-flash-lite' which historically carries a more
+      // lenient free quota.
+      model: 'gemini-2.5-flash',
       generationConfig: {
         responseMimeType: 'application/json',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
