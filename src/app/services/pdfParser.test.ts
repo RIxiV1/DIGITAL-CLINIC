@@ -93,9 +93,20 @@ describe('extractBiomarkersFromText — status derivation', () => {
   });
 
   it('respects direction for "down is better" markers', () => {
-    // LDL 80 is within 0-100 healthy range AND has no optimal band,
-    // so it should be 'good'.
+    // LDL 80 is within 0-100 healthy range but OUTSIDE the optimal
+    // sub-band (0-70 per ACC/AHA 2018), so per statusForValue it's
+    // 'attention' — inside healthy, outside optimal. Previously this
+    // assertion was 'good' because LDL had no optimal band defined.
     const text = 'LDL Cholesterol 80 mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result[0].status).toBe('attention');
+  });
+
+  it('classifies LDL inside the optimal band as good', () => {
+    // Counterpart to the previous test: 60 mg/dL is inside both the
+    // healthy range AND the optimal sub-band → 'good'. Keeps the
+    // optimal-band semantics explicit in the test suite.
+    const text = 'LDL Cholesterol 60 mg/dL';
     const result = extractBiomarkersFromText(text);
     expect(result[0].status).toBe('good');
   });
@@ -277,8 +288,11 @@ describe('extractBiomarkersFromText — realistic lab fixture', () => {
     expect(byId.get('vit-d')?.status).toBe('concern');
     // HbA1c 5.2 in optimal band 4.5-5.3 → good
     expect(byId.get('hba1c')?.status).toBe('good');
-    // Triglycerides 145 < max of 150 → good
-    expect(byId.get('tg')?.status).toBe('good');
+    // Triglycerides 145 < healthy max of 150 but OUTSIDE optimal
+    // band (0-100 per AHA 2011 statement) → 'attention'. Was 'good'
+    // before TG got an optimal sub-range; updated to match the new
+    // semantics.
+    expect(byId.get('tg')?.status).toBe('attention');
   });
 });
 
