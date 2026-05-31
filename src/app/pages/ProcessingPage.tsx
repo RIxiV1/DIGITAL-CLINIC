@@ -30,12 +30,13 @@ import {
   categories as biomarkerCategories,
   type Biomarker,
 } from '../data/biomarkers';
-import { sampleReports } from '../data/reports';
+import { makeReport, sampleReports } from '../data/reports';
 import {
   clearPendingConfirm,
   loadPendingConfirm,
   savePendingConfirm,
 } from '../utils/persistence';
+import { parseWithAi } from '../services/aiParser';
 
 /**
  * Multi-stage parsing UI for the upload pipeline.
@@ -71,6 +72,12 @@ type FailureState = {
    *  columns? Empty extraction? Without this the failure was a black
    *  box. Undefined when the parser didn't run at all (no-file path). */
   rawText?: string;
+  /** The original uploaded File, preserved across the failure boundary
+   *  so the Vision-LLM fallback (Pipeline 3) can re-try the same bytes
+   *  without forcing the user to re-upload. Only set when the upload
+   *  actually carried a File (the no-file refresh path leaves it
+   *  undefined and the AI parser button stays hidden). */
+  file?: File;
 };
 
 /** Success-but-unconfirmed: the parser produced N markers and we're
@@ -243,6 +250,11 @@ export default function ProcessingPage() {
         ocrPagesAttempted: result.ocrPagesAttempted,
         ocrPagesSkipped: result.ocrPagesSkipped,
         rawText: result.rawText,
+        // Preserve the original File so the user can opt into the
+        // Vision-LLM fallback (Pipeline 3) without re-uploading. The
+        // file was just consumed from setPendingUpload — it's the
+        // only Blob handle we'll get for this upload.
+        file: file ?? undefined,
       });
     });
   }, [
@@ -272,6 +284,59 @@ export default function ProcessingPage() {
   const enterManually = () => {
     setFailure(null);
     replace({ type: 'manualEntry' });
+  };
+
+  /**
+   * Vision-LLM fallback (Pipeline 3). Called when the user opts in via
+   * the "Try AI parser" button on the failure screen. Sends the original
+   * File to /api/parse-image, which proxies to Gemini 2.0 Flash and
+   * returns biomarker JSON. We then create a fresh placeholder report
+   * (the original was already removed when the rule-based parse failed)
+   * and hand the user the same ConfirmExtractedValuesView they'd see
+   * after a successful Tesseract run — so the verification step is
+   * identical regardless of which pipeline produced the values.
+   *
+   * On 0 mapped markers (Gemini saw nothing recognisable, or saw
+   * markers our catalog doesn't cover yet), surface an inline error
+   * and keep the user on the failure screen.
+   */
+  const tryAiParser = async (file: File): Promise<{ error?: string }> => {
+    try {
+      const result = await parseWithAi(file);
+      if (result.biomarkers.length === 0) {
+        return {
+          error:
+            result.rawCount > 0
+              ? `Our AI parser found ${result.rawCount} marker${result.rawCount === 1 ? '' : 's'}, but none matched our catalog yet.`
+              : 'Our AI parser couldn’t recognise any markers in this image either.',
+        };
+      }
+      // Re-establish a processing report — the original was removed on
+      // the rule-based failure. Set pendingConfirm in the same shape
+      // as a normal Tesseract success so ConfirmExtractedValuesView
+      // doesn't need a second code path.
+      const newReport = makeReport(file.name || 'My lab report');
+      addReport(newReport);
+      activeProcessingIdRef.current = newReport.id;
+      const confirmState: ConfirmState = {
+        biomarkers: result.biomarkers,
+        fileName: file.name || 'AI-parsed report',
+      };
+      savePendingConfirm<Biomarker>({
+        processingId: newReport.id,
+        ...confirmState,
+      });
+      setPendingConfirm(confirmState);
+      setFailure(null);
+      return {};
+    } catch (err) {
+      return {
+        error:
+          err instanceof Error
+            ? err.message
+            : 'Something went wrong contacting the AI parser.',
+      };
+    }
   };
 
   /* ---- Confirm-step actions ---- */
@@ -305,6 +370,7 @@ export default function ProcessingPage() {
         onRetry={retryUpload}
         onSample={useSampleReport}
         onManualEntry={enterManually}
+        onTryAi={tryAiParser}
       />
     );
   }
@@ -479,12 +545,42 @@ function ParseFailedView({
   onRetry,
   onSample,
   onManualEntry,
+  onTryAi,
 }: {
   failure: FailureState;
   onRetry: () => void;
   onSample: () => void;
   onManualEntry: () => void;
+  /** Pipeline 3 escape hatch: send the original File to /api/parse-image
+   *  (Gemini Vision) and let the LLM extract markers our local parsers
+   *  couldn't. Returns `{ error }` on any failure (network, 0 markers
+   *  recognised, schema mismatch) so this view can surface the message
+   *  inline without taking over the page. On success the parent
+   *  transitions to ConfirmExtractedValuesView; this view unmounts. */
+  onTryAi: (file: File) => Promise<{ error?: string }>;
 }) {
+  const [aiBusy, setAiBusy] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  // The AI parser is only useful when we still have the original File
+  // (the no-file refresh path leaves failure.file undefined) AND the
+  // file is something Gemini can read directly. We're capable of
+  // sending PDFs too eventually, but the current path only wires up
+  // image MIME types — rendering PDF pages to canvas before upload
+  // is a follow-up.
+  const aiAvailable =
+    !!failure.file && /^image\//.test(failure.file.type || '');
+
+  const handleAiClick = async () => {
+    if (!failure.file) return;
+    setAiBusy(true);
+    setAiError(null);
+    const result = await onTryAi(failure.file);
+    // If the parser succeeded the parent already transitioned to the
+    // confirm view and this component is about to unmount — we still
+    // clear local state so a remount renders cleanly.
+    setAiBusy(false);
+    if (result.error) setAiError(result.error);
+  };
   // Reason-specific headline so the user knows what actually happened.
   // - parser-error: pdfjs/tesseract threw (corrupt PDF, locked PDF, …)
   // - no-file: pendingUpload was empty (refresh mid-flow, deep-link)
@@ -591,9 +687,56 @@ function ParseFailedView({
           </div>
 
           <div className="p-5 grid gap-2.5">
+            {/* Vision-LLM fallback button. Surfaces only when the
+                failed upload was an image and we still have the
+                original bytes (the no-file refresh case skips this).
+                Sits above "Enter values manually" because for the user
+                whose photo just failed Tesseract, the AI parser is
+                meaningfully more likely to succeed than typing 20 lab
+                values by hand. Gold tone signals "try this first" the
+                same way the Starter Check uses gold to mark "do this
+                first" on the recommended-tests page.
+                Privacy disclosure under the button is non-negotiable:
+                Pipelines 1+2 never leave the device; Pipeline 3 sends
+                the image to Google AI Studio's free tier, which may
+                retain it for service improvement. The user opts in
+                deliberately. When we swap to a paid Vertex AI key
+                later, the no-retention guarantee kicks in and the
+                disclosure can soften. */}
+            {aiAvailable && (
+              <>
+                <Button
+                  size="md"
+                  variant="primary"
+                  leading={<Sparkles size={14} />}
+                  onClick={handleAiClick}
+                  disabled={aiBusy}
+                  fullWidth
+                  className="!bg-gold-500 !text-indigo-900 hover:!bg-gold-400"
+                >
+                  {aiBusy ? 'Reading with AI…' : 'Try AI parser'}
+                </Button>
+                <p className="text-micro text-muted leading-relaxed -mt-1.5 px-1">
+                  Sends this image to Google Gemini for parsing. The image
+                  leaves your device for this step; Google may retain it
+                  to improve their service. Free, no account needed.
+                </p>
+                {aiError && (
+                  <div
+                    role="alert"
+                    className="rounded-[10px] bg-concern-soft/60 border border-concern/30 px-3 py-2 text-caption text-ink-soft"
+                  >
+                    <span className="font-bold uppercase tracking-label text-micro text-concern block mb-0.5">
+                      AI parser
+                    </span>
+                    {aiError}
+                  </div>
+                )}
+              </>
+            )}
             <Button
               size="md"
-              variant="primary"
+              variant={aiAvailable ? 'secondary' : 'primary'}
               leading={<Pencil size={14} />}
               onClick={onManualEntry}
               fullWidth
