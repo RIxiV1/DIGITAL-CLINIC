@@ -63,7 +63,13 @@ const BiomarkerCategorySchema = z.enum([
 const BiomarkerStatusSchema = z.enum(['good', 'attention', 'concern']);
 
 const OptimalSourceSchema = z.object({
-  label: z.string().max(200),
+  // Cap raised to 500 so editorial growth (a longer citation, a
+  // multi-author guideline title, an audience-qualifier appended to
+  // the label by a future catalog edit) doesn't slip past the gate
+  // and trip the validator on every user's reports. The previous 200
+  // cap left ~100 chars of headroom over the longest catalog label
+  // today — not enough.
+  label: z.string().max(500),
   url: z.string().url().max(500).optional(),
   audience: z.string().max(100).optional(),
 });
@@ -109,12 +115,7 @@ const ReportSchema = z.object({
   status: z.enum(['processing', 'ready']),
   badge: z.enum(['processing', 'ready', 'analyzed']).optional(),
   isSample: z.boolean().optional(),
-  biomarkers: z.array(BiomarkerSchema).max(120),
-});
-
-const StoredReportsSchema = z.object({
-  savedAt: z.string(),
-  reports: z.array(ReportSchema).max(MAX_REPORTS),
+  biomarkers: z.array(BiomarkerSchema).max(300),
 });
 
 const QuizAnswersSchema = z.object({
@@ -129,7 +130,7 @@ const QuizCompleteSchema = z.boolean();
 const PendingConfirmSchema = z.object({
   processingId: z.string().min(1).max(80),
   fileName: z.string().min(1).max(400),
-  biomarkers: z.array(BiomarkerSchema).max(120),
+  biomarkers: z.array(BiomarkerSchema).max(300),
   rawText: z.string().max(200_000).optional(),
   unrecognizedRows: z.array(z.string().max(500)).max(50).optional(),
   ignoredCategory: z.enum(['viral', 'imaging', 'physical-exam']).optional(),
@@ -210,12 +211,53 @@ function writeJSON(key: string, value: unknown): boolean {
 /* Typed per-domain accessors                                          */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Outer wrapper schema for the reports key — validates the envelope
+ * shape (savedAt + reports array) but leaves each report as unknown
+ * for tolerant per-report validation below. The previous all-or-
+ * nothing version (`z.array(ReportSchema).max(MAX_REPORTS)`) would
+ * fail the entire blob if a single biomarker overshot a string cap
+ * or carried a field outside enum — wiping every report the user
+ * owned for the sake of one bad entry.
+ */
+const StoredReportsEnvelopeSchema = z.object({
+  savedAt: z.string(),
+  reports: z.array(z.unknown()).max(MAX_REPORTS),
+});
+
+/**
+ * Load reports with per-entry tolerance. Each Report is independently
+ * validated; the good ones are kept and the bad ones are dropped with
+ * a single console.warn so corruption is debuggable. This is the
+ * crucial difference vs. readValidated()'s all-or-nothing posture:
+ * persisted state surfaces ONE bad record at a time as the user
+ * accumulates reports, and we shouldn't punish 50 good reports for
+ * one schema violation.
+ */
 export function loadReports<T = z.infer<typeof ReportSchema>>(): T[] {
-  const stored = readValidated(REPORTS_KEY, StoredReportsSchema, null as
-    | z.infer<typeof StoredReportsSchema>
-    | null);
-  if (!stored) return [];
-  return stored.reports as unknown as T[];
+  const envelope = readValidated(
+    REPORTS_KEY,
+    StoredReportsEnvelopeSchema,
+    null as z.infer<typeof StoredReportsEnvelopeSchema> | null,
+  );
+  if (!envelope) return [];
+  const kept: T[] = [];
+  let dropped = 0;
+  for (const candidate of envelope.reports) {
+    const result = ReportSchema.safeParse(candidate);
+    if (result.success) {
+      kept.push(result.data as unknown as T);
+    } else {
+      dropped += 1;
+    }
+  }
+  if (dropped > 0) {
+    // eslint-disable-next-line no-console
+    console.warn(
+      `persistence: dropped ${dropped} report${dropped === 1 ? '' : 's'} failing validation; ${kept.length} kept.`,
+    );
+  }
+  return kept;
 }
 
 /**
@@ -380,11 +422,18 @@ export function pruneExpiredReports<T extends ExpirableReport>(
 export function cleanupExpiredReports(
   now: number = Date.now(),
 ): { pruned: number; quotaError: boolean } {
-  const stored = readValidated(REPORTS_KEY, StoredReportsSchema, null as
-    | z.infer<typeof StoredReportsSchema>
-    | null);
+  // Tolerant envelope-only validation — we don't want a single bad
+  // biomarker to make the TTL cleanup skip itself entirely. The TTL
+  // filter only needs the `uploadedAt` + `isSample` shape, both of
+  // which we re-narrow inside pruneExpiredReports's filter.
+  const stored = readValidated(
+    REPORTS_KEY,
+    StoredReportsEnvelopeSchema,
+    null as z.infer<typeof StoredReportsEnvelopeSchema> | null,
+  );
   if (!stored) return { pruned: 0, quotaError: false };
-  const { kept, pruned } = pruneExpiredReports(stored.reports, now);
+  const reports = stored.reports as ExpirableReport[];
+  const { kept, pruned } = pruneExpiredReports(reports, now);
   if (pruned === 0) return { pruned: 0, quotaError: false };
   const ok = writeJSON(REPORTS_KEY, { savedAt: stored.savedAt, reports: kept });
   return { pruned, quotaError: !ok };
@@ -409,9 +458,11 @@ export function cleanupOrphanProcessing(): {
   pruned: number;
   quotaError: boolean;
 } {
-  const stored = readValidated(REPORTS_KEY, StoredReportsSchema, null as
-    | z.infer<typeof StoredReportsSchema>
-    | null);
+  const stored = readValidated(
+    REPORTS_KEY,
+    StoredReportsEnvelopeSchema,
+    null as z.infer<typeof StoredReportsEnvelopeSchema> | null,
+  );
   if (!stored) return { pruned: 0, quotaError: false };
   const pending = readValidated(
     PENDING_CONFIRM_KEY,
@@ -419,16 +470,22 @@ export function cleanupOrphanProcessing(): {
     null as z.infer<typeof PendingConfirmSchema> | null,
   );
   const keepId = pending?.processingId;
-  const kept = stored.reports.filter(
+  // Narrow each candidate just enough to apply the status + id check.
+  // We deliberately don't run ReportSchema here — orphan cleanup
+  // should still work on records that are otherwise valid except for
+  // an unrelated field (e.g. an out-of-bounds biomarker unit string).
+  type Trimmed = { status?: string; id?: string };
+  const candidates = stored.reports as Trimmed[];
+  const kept = candidates.filter(
     (r) =>
-      r.status !== 'processing' ||
-      (keepId !== undefined && r.id === keepId),
+      r?.status !== 'processing' ||
+      (keepId !== undefined && r?.id === keepId),
   );
-  if (kept.length === stored.reports.length) {
+  if (kept.length === candidates.length) {
     return { pruned: 0, quotaError: false };
   }
   const ok = writeJSON(REPORTS_KEY, { savedAt: stored.savedAt, reports: kept });
-  return { pruned: stored.reports.length - kept.length, quotaError: !ok };
+  return { pruned: candidates.length - kept.length, quotaError: !ok };
 }
 
 /** Per-prefix summary for the Profile "My data" panel.

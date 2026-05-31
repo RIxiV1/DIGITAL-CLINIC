@@ -37,6 +37,7 @@ import {
   savePendingConfirm,
 } from '../utils/persistence';
 import { parseWithAi } from '../services/aiParser';
+import { sanitizeFilename } from '../utils/sanitizeFilename';
 
 /**
  * Multi-stage parsing UI for the upload pipeline.
@@ -340,12 +341,20 @@ export default function ProcessingPage() {
       // the rule-based failure. Set pendingConfirm in the same shape
       // as a normal Tesseract success so ConfirmExtractedValuesView
       // doesn't need a second code path.
-      const newReport = makeReport(file.name || 'My lab report');
+      //
+      // Sanitize the filename through the same gate the rule-based
+      // path uses: a 250-char Android share-sheet path or a name
+      // packed with bidi/control chars would otherwise survive the
+      // AI fallback, get written into dc_reports, and then fail the
+      // zod ReportSchema.name max(200) check on next app boot —
+      // wiping the entire reports blob.
+      const safeName = sanitizeFilename(file.name || 'AI-parsed report', 200);
+      const newReport = makeReport(safeName);
       addReport(newReport);
       activeProcessingIdRef.current = newReport.id;
       const confirmState: ConfirmState = {
         biomarkers: result.biomarkers,
-        fileName: file.name || 'AI-parsed report',
+        fileName: safeName,
       };
       savePendingConfirm<Biomarker>({
         processingId: newReport.id,
