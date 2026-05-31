@@ -126,10 +126,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      // Stable Gemini 2.0 Flash. The earlier "-exp" alias was a preview
-      // identifier that got retired when the model graduated; pinning to
-      // the stable name avoids the 404 we hit on first deploy.
-      model: 'gemini-2.0-flash',
+      // gemini-1.5-flash, not 2.0-flash, for free-tier availability.
+      // Google rolled out the 2.x line unevenly — in several regions
+      // (notably India and parts of EMEA) the free-tier quota for
+      // gemini-2.0-flash is set to 0 unless billing is attached
+      // (surfaced as a 429 with "limit: 0" on first call). The 1.5
+      // line keeps a globally-available free tier and is fully
+      // sufficient for lab-table OCR. Swap back to 2.0/2.5 when we
+      // attach a paid Vertex AI key.
+      model: 'gemini-1.5-flash',
       generationConfig: {
         responseMimeType: 'application/json',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
