@@ -126,7 +126,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.0-flash-exp',
+      // Stable Gemini 2.0 Flash. The earlier "-exp" alias was a preview
+      // identifier that got retired when the model graduated; pinning to
+      // the stable name avoids the 404 we hit on first deploy.
+      model: 'gemini-2.0-flash',
       generationConfig: {
         responseMimeType: 'application/json',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
