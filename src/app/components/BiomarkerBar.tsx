@@ -344,6 +344,39 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           <p className="mt-1.5 text-caption leading-relaxed text-ink-soft">
             {marker.plain}
           </p>
+          {/* Optimal-range citation. Required by convention on every
+              marker that defines an optimal sub-range — without it,
+              users have no way to tell our optimal claim apart from a
+              synthetic score, and the whole feature stops being
+              trustworthy. Rendered small (text-micro) so it reads as
+              a footnote, not the headline. Audience defaults to
+              "adults" when unspecified — the field exists for
+              templates where the range only applies to a narrower
+              cohort (e.g. testosterone is men-specific). */}
+          {marker.optimalSource && (
+            <p className="mt-2.5 text-micro text-muted leading-snug">
+              <span className="font-semibold text-ink-soft">
+                Optimal range
+              </span>
+              {marker.optimalSource.audience
+                ? ` (${marker.optimalSource.audience}): `
+                : ': '}
+              {marker.optimalSource.label}
+              {marker.optimalSource.url && (
+                <>
+                  {' · '}
+                  <a
+                    href={marker.optimalSource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+                  >
+                    source
+                  </a>
+                </>
+              )}
+            </p>
+          )}
           {marker.problemId && onClick && (
             <div className="mt-3 inline-flex items-center gap-1 text-caption font-semibold text-indigo-700">
               Open the action plan <ChevronRight size={14} />

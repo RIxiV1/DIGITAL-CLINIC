@@ -9,6 +9,23 @@ export type BiomarkerReading = {
   value: number;
 };
 
+/**
+ * Where an optimal sub-range comes from. Required (by convention) on
+ * any template that sets `optimalMin`/`optimalMax` — un-cited optimal
+ * ranges read as a synthetic score and erode trust in everything else
+ * on the report. The label is short enough to render inline; the URL
+ * is optional but strongly preferred so users can verify.
+ *
+ * Audience: when an optimal range only applies to a subset (e.g. adult
+ * men, age 18-65), specify it here so the UI can disclose the scope of
+ * the claim. Undefined audience defaults to "adults" in the render.
+ */
+export type OptimalSource = {
+  label: string;
+  url?: string;
+  audience?: string;
+};
+
 export type Biomarker = {
   id: string;
   /** The clinical name as it prints on lab reports (e.g. "HbA1c"). */
@@ -24,6 +41,11 @@ export type Biomarker = {
   max: number;
   optimalMin?: number;
   optimalMax?: number;
+  /** Citation for the optimal range, propagated from the catalog
+   *  template. Rendered as a small footnote under "What this means"
+   *  on the BiomarkerBar's expanded view. Undefined when the marker
+   *  has no optimal sub-range (no claim to source). */
+  optimalSource?: OptimalSource;
   status: BiomarkerStatus;
   category: BiomarkerCategoryId;
   /**
@@ -640,6 +662,13 @@ export type BiomarkerTemplate = {
   max: number;
   optimalMin?: number;
   optimalMax?: number;
+  /** Source for the optimal sub-range. Required by convention whenever
+   *  `optimalMin`/`optimalMax` are set — without a citation the
+   *  numbers look invented and the brand's clinical-honest stance
+   *  collapses. Catalog templates without optimal ranges leave this
+   *  undefined; templates that DO set optimal ranges should always
+   *  attach a source. */
+  optimalSource?: OptimalSource;
   category: BiomarkerCategoryId;
   direction?: GradientDirection;
   simpleName?: string;
@@ -693,6 +722,7 @@ export function markerFromTemplate(
     max: template.max,
     optimalMin: template.optimalMin,
     optimalMax: template.optimalMax,
+    optimalSource: template.optimalSource,
     status: statusForValue(template, value),
     category: template.category,
     direction: template.direction,
@@ -718,6 +748,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unit: 'ng/dL',
     unitAliases: ['ng/dl', 'ng / dL'],
     min: 300, max: 1000, optimalMin: 600, optimalMax: 900,
+    optimalSource: {
+      label: 'Endocrine Society 2018 hypogonadism guideline + Travison 2017 quartile data',
+      url: 'https://academic.oup.com/jcem/article/103/5/1715/4939465',
+      audience: 'adult men 18–65',
+    },
     category: 'hormones', direction: 'up',
     simpleName: 'Your main male hormone',
     plain: 'Below the healthy range often shows up as low drive, less stamina, and slower recovery. Very responsive to sleep, training, and Vitamin D.',
@@ -752,6 +787,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['HbA1c', 'A1c', 'Hemoglobin A1c', 'Glycated Hemoglobin', 'Glycohemoglobin'],
     unit: '%',
     min: 4, max: 5.7, optimalMin: 4.5, optimalMax: 5.3,
+    optimalSource: {
+      label: 'ARIC cohort all-cause mortality data; ADA prediabetes threshold is 5.7%',
+      url: 'https://diabetesjournals.org/care/article/33/4/834',
+      audience: 'adults',
+    },
     category: 'metabolic', direction: 'down',
     simpleName: '3-month sugar average',
     plain: 'Your average blood sugar over 3 months. Below 5.7% is healthy; the optimal band is tighter still.',
@@ -762,6 +802,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Fasting Glucose', 'Glucose Fasting', 'Glucose, Fasting', 'Fasting Blood Sugar', 'FBS'],
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 70, max: 99, optimalMin: 75, optimalMax: 90,
+    optimalSource: {
+      label: 'Tirosh et al., NEJM 2005 — lowest CVD risk in the 81–87 mg/dL band',
+      url: 'https://www.nejm.org/doi/full/10.1056/NEJMoa050080',
+      audience: 'adults',
+    },
     category: 'metabolic', direction: 'down',
     simpleName: 'Blood sugar this morning',
     plain: 'A walk after every meal pulls a borderline reading comfortably back down.',
@@ -772,6 +817,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Fasting Insulin', 'Insulin Fasting', 'Insulin, Fasting'],
     unit: 'µIU/mL', unitAliases: ['uIU/mL', 'mIU/L', 'µIU/ml'],
     min: 2, max: 25, optimalMin: 2, optimalMax: 8,
+    optimalSource: {
+      label: 'Kraft fasting-insulin work; <8 µIU/mL strongly associated with insulin sensitivity',
+      audience: 'adults',
+    },
     category: 'metabolic', direction: 'down',
     simpleName: 'How hard your pancreas is working',
     plain: 'Higher than ideal means the pancreas is working overtime — an early sign worth addressing while it’s still easy.',
@@ -810,6 +859,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['HDL Cholesterol', 'HDL-C', 'HDL', 'Cholesterol HDL'],
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 40, max: 100, optimalMin: 50, optimalMax: 80,
+    optimalSource: {
+      label: 'Framingham Heart Study cardioprotective range; very-high HDL >80 shows U-shaped mortality (Madsen et al., EHJ 2017)',
+      url: 'https://academic.oup.com/eurheartj/article/38/32/2478/3920193',
+      audience: 'adults',
+    },
     category: 'heart', direction: 'up',
     simpleName: 'The good cholesterol',
     plain: 'Your “good” cholesterol — clears the bad kind.',
@@ -850,6 +904,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Vitamin D (25-OH)', 'Vitamin D, 25-OH', 'Vitamin D 25-OH', '25-OH Vitamin D', '25-Hydroxyvitamin D', '25(OH)D', 'Vitamin D'],
     unit: 'ng/mL', unitAliases: ['ng/ml'],
     min: 30, max: 100, optimalMin: 40, optimalMax: 80,
+    optimalSource: {
+      label: 'Endocrine Society 2011 clinical practice guideline (Holick et al.)',
+      url: 'https://academic.oup.com/jcem/article/96/7/1911/2833671',
+      audience: 'adults',
+    },
     category: 'vitamins', direction: 'up',
     simpleName: 'Vitamin D',
     plain: 'Affects mood, energy, immunity, bone health — and is the single easiest thing to fix on most reports.',
@@ -860,6 +919,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     name: 'Vitamin B12',
     aliases: ['Vitamin B12', 'B12', 'Cobalamin'],
     unit: 'pg/mL', unitAliases: ['pg/ml'],
+    optimalSource: {
+      label: 'Tucker et al., AJCN 2000 — neurological correlates emerge below 350 pg/mL',
+      url: 'https://academic.oup.com/ajcn/article/71/2/514/4729084',
+      audience: 'adults',
+    },
     min: 200, max: 900, optimalMin: 500, optimalMax: 900,
     category: 'vitamins', direction: 'up',
     simpleName: 'Brain and nerve fuel',
