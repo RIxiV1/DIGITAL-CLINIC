@@ -152,6 +152,49 @@ function hasContiguousWordMatch(
 }
 
 /**
+ * Detect the count-prefix multiplier in a printed unit string.
+ *
+ * Indian labs print platelets/WBC as "245 thou/cumm" or "2.45 lakh/cumm"
+ * rather than the canonical raw count (245,000). Gemini returns whatever
+ * the lab printed verbatim; we have to reconcile that against the
+ * catalog's canonical unit before storing the value, otherwise a
+ * platelet count of 245 thou shows up as "245" against a 150,000–450,000
+ * reference range and lights up red on a healthy reading.
+ *
+ * Returns the linear multiplier (1, 1e3, 1e5, 1e6). The reconciliation
+ * step computes `geminiMult / catalogMult` and scales the value — so a
+ * catalog template already in `million/cumm` (RBC) gets multiplier 1e6
+ * too and the values pass through unscaled.
+ *
+ * NOT a general unit converter — only handles the count-prefix family
+ * the Indian lab format uses. Mass/concentration units (mg/dL, ng/mL,
+ * g/dL) return 1; the catalog's per-marker canonical unit already
+ * enforces scale on those.
+ */
+function unitMultiplier(unit: string | null | undefined): number {
+  if (!unit) return 1;
+  const u = unit.toLowerCase().trim();
+  if (/(^|[^a-z])(lakh|lac|lakhs)([^a-z]|$)/.test(u)) return 1e5;
+  if (
+    /(^|[^a-z])(million|mill)([^a-z]|$)/.test(u) ||
+    /\b10\^?6\b/.test(u) ||
+    /x10\^?6/.test(u) ||
+    /10⁶/.test(u)
+  ) {
+    return 1e6;
+  }
+  if (
+    /(^|[^a-z])(thou|thousand)([^a-z]|$)/.test(u) ||
+    /\b10\^?3\b/.test(u) ||
+    /x10\^?3/.test(u) ||
+    /10³/.test(u)
+  ) {
+    return 1e3;
+  }
+  return 1;
+}
+
+/**
  * Resolve a Gemini-returned marker name against the biomarker catalog.
  * Returns the first template whose canonical name or any alias matches
  * the model's output as a contiguous word-run (case-insensitive).
@@ -203,22 +246,24 @@ function mapGeminiResultsToCatalog(results: GeminiMarker[]): Biomarker[] {
     const template = findTemplateByName(r.name);
     if (!template) continue;
     if (seen.has(template.id)) continue;
-    const value = typeof r.value === 'number' ? r.value : Number(r.value);
-    if (!Number.isFinite(value)) continue;
-    // Sanity bounds for AI-returned values. Three guards:
-    //   1. Non-negative — no biomarker we model is meaningfully <0;
-    //      a negative reading is either an LLM hallucination or a
-    //      sign flip we don't want propagating into the dashboard.
-    //   2. Absolute cap of 1e6 — even at the extreme end of any real
-    //      panel (platelet count "x10^3/uL", iron stores, …) the
-    //      printed integer is always < 10^6. Caps obviously-broken
-    //      OCR mistakes like a missed decimal turning 12.5 → 125000.
-    //   3. Within 5× the catalog's healthy span — mirror of the
-    //      regex matcher's bound. Loose enough to admit truly-out-
-    //      of-range clinical values (severe hypogonadism, diabetic
-    //      glucose), strict enough to reject "the model invented a
-    //      number" cases.
-    if (value < 0 || value > 1e6) continue;
+    const raw = typeof r.value === 'number' ? r.value : Number(r.value);
+    if (!Number.isFinite(raw)) continue;
+    // Reconcile the lab's printed unit against the catalog's canonical
+    // unit. "245 thou/cumm" → catalog `/cumm` → multiplier ratio 1000
+    // → store 245,000. "4.09 mill/cumm" → catalog `million/cumm` →
+    // ratio 1 → store 4.09 unchanged. Mass/concentration units (mg/dL,
+    // ng/mL) return ratio 1 and pass through.
+    const scale = unitMultiplier(r.unit) / unitMultiplier(template.unit);
+    const value = raw * scale;
+    // Sanity bounds applied to the SCALED value:
+    //   1. Non-negative — a negative reading is hallucination or sign-
+    //      flip, never legitimate.
+    //   2. Absolute cap 1e8 — catches "model invented an absurd number"
+    //      while admitting clinical extremes (severe thrombocytosis can
+    //      legitimately exceed 1e6 in raw cells/cumm).
+    //   3. Within 5× the catalog's healthy span — mirrors the regex
+    //      matcher's bound.
+    if (value < 0 || value > 1e8) continue;
     const span = template.max - template.min || 1;
     if (value < template.min - 5 * span || value > template.max + 5 * span)
       continue;
