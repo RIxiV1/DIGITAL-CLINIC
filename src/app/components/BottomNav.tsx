@@ -59,7 +59,7 @@ export default function BottomNav() {
 
   return (
     <nav className="md:hidden no-print sticky bottom-0 z-30 safe-bottom">
-      <div className="mx-auto max-w-md px-4 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
+      <div className="mx-auto max-w-md px-5 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
         <div className="bg-surface/85 backdrop-blur-md rounded-full border border-line/70 shadow-pop flex items-center p-1.5">
           {items.map(({ id, label, page: target, Icon }) => {
             const active = activeId === id;

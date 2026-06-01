@@ -232,20 +232,41 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
     `${midZone} ${SEGMENT_PCT}%, ${midZone} ${SEGMENT_PCT * 2}%, ` +
     `${highZone} ${SEGMENT_PCT * 2}%, ${highZone} 100%)`;
 
-  const wrapperClasses = `w-full text-left rounded-[16px] ${compact ? 'p-4' : 'p-5'} transition-colors ${onClick ? 'hover:bg-canvas/60' : ''}`;
+  // Padding ramp on the card body. The old `p-5` (20px all sides)
+  // ate ~40px of horizontal real estate on a 360px-wide phone, which
+  // — combined with the Container's outer px-5 and the category Card
+  // chrome — left only ~240px for the gradient bar + its three
+  // "CRITICAL LOW / HEALTHY / CRITICAL HIGH" labels. The right
+  // "CRITICAL HIGH" label was getting clipped on small phones because
+  // tracking-widest uppercase chars don't fit in what's left. Drop to
+  // p-4 (16px) on mobile so the bar and labels recover ~8px on each
+  // side; sm+ keeps the original p-5 where there's room to spare.
+  const wrapperClasses = `w-full text-left rounded-[16px] ${compact ? 'p-4' : 'p-4 sm:p-5'} transition-colors ${onClick ? 'hover:bg-canvas/60' : ''}`;
 
   const body = (
     <>
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      {/* Header row.
+       *  - `min-w-0` on the LEFT column lets long marker names and the
+       *    healthy-range strip shrink instead of pushing the right
+       *    column past the viewport edge.
+       *  - `gap-2 sm:gap-3` tightens horizontal gap on phones so the
+       *    right-aligned value + tier pill keep visible breathing room.
+       *  - The healthy-range line was previously
+       *    `uppercase tracking-widest` — on a 360-wide phone with an
+       *    optimal sub-band appended, that single line could measure
+       *    wider than the card's inner content area and force a
+       *    horizontal-scroll on the whole page (no `min-w-0` on the
+       *    flex parent meant intrinsic content width leaked upward).
+       *    Drop the tracking on mobile and let it wrap naturally. */}
+      <div className="flex items-start justify-between gap-2 sm:gap-3 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="font-semibold text-ink truncate">{marker.name}</div>
           {marker.simpleName && (
             <div className="text-caption text-ink-soft mt-0.5 truncate">
               {marker.simpleName}
             </div>
           )}
-          <div className="mt-1 text-caption text-muted uppercase tracking-widest">
+          <div className="mt-1 text-caption text-muted uppercase tracking-wide sm:tracking-widest break-words">
             Healthy range · {marker.min}–{marker.max} {marker.unit}
             {hasOptimal && (
               <>
@@ -257,7 +278,7 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
             )}
           </div>
         </div>
-        <div className="text-right shrink-0">
+        <div className="text-right shrink-0 min-w-0">
           <div className="font-display text-display-md leading-none text-ink">
             {marker.value}
             <span className="text-caption ml-1 text-muted font-sans font-medium">
@@ -338,10 +359,27 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
         />
       </div>
 
-      <div className="mt-2 flex justify-between text-micro font-semibold uppercase tracking-widest text-muted">
-        <span>Critical low</span>
-        <span className="text-good">Healthy</span>
-        <span>Critical high</span>
+      {/* Bar-zone labels.
+       *  Previously: three full "CRITICAL LOW / HEALTHY / CRITICAL HIGH"
+       *  labels in uppercase tracking-widest. The combined min-content
+       *  width (~225px) plus letter-spacing was wider than the card's
+       *  inner area on small phones, which pushed the rightmost
+       *  "CRITICAL HIGH" label off the visible viewport. Two changes:
+       *    1. Drop the labels to short "LOW / HEALTHY / HIGH" on mobile
+       *       (`sm:` restores the long form where there's room).
+       *    2. Tighten letter-spacing on mobile (`tracking-wide` not
+       *       `tracking-widest`) so the labels can't push the page
+       *       wider than viewport. */}
+      <div className="mt-2 flex justify-between text-micro font-semibold uppercase tracking-wide sm:tracking-widest text-muted gap-2">
+        <span className="truncate">
+          <span className="sm:hidden">Low</span>
+          <span className="hidden sm:inline">Critical low</span>
+        </span>
+        <span className="text-good truncate">Healthy</span>
+        <span className="truncate text-right">
+          <span className="sm:hidden">High</span>
+          <span className="hidden sm:inline">Critical high</span>
+        </span>
       </div>
 
       {/* Tier caption — explicit clinical-ish gloss for users who don't

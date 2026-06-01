@@ -152,6 +152,30 @@ body,
   background: var(--color-canvas);
 }
 
+/* Horizontal-overflow safety net.
+ *
+ * `overflow-x: clip` prevents any single rogue element (a too-wide
+ * label, a flex child without `min-w-0`, an absolute-positioned blur,
+ * a third-party widget) from triggering a body-level horizontal
+ * scrollbar on phones. We've fixed the known offenders inline at the
+ * source (BiomarkerBar label row, gold hero padding, HomePage filter
+ * bleed, BottomNav padding) — this is belt-around-suspenders.
+ *
+ * `clip` is preferred over `hidden` because it does NOT create a new
+ * scroll container, so `position: sticky` inside the page (the
+ * Manual-Entry sticky search, ReportResultsPage's md+ sticky sidebar)
+ * still works correctly. `clip` was added to baseline browser support
+ * in 2022 (Chromium 90+, Safari 16+, Firefox 81+) — older agents
+ * graceful-degrade to the default `visible`, which restores the
+ * pre-safety-net behavior (the inline fixes still hold).
+ *
+ * Applied only on `html` (not body) so the iOS rubber-band scroll
+ * still anchors to the viewport and the safe-area-inset utility
+ * keeps working. */
+html {
+  overflow-x: clip;
+}
+
 body {
   font-family: var(--font-sans);
   color: var(--color-ink);
@@ -320,6 +344,25 @@ input[type='number']::-webkit-inner-spin-button,
 input[type='number']::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
+}
+
+/* iOS Safari auto-zooms whenever a focused input/select/textarea has a
+ * computed font-size below 16px. The visual zoom often doesn't restore
+ * cleanly, leaving the page stuck at the zoomed level until the user
+ * pinches out. Our design tokens put body inputs at 14px (text-body-sm /
+ * text-caption), so without this override every text field on the
+ * Manual-Entry, search, and onboarding flows triggers the iOS zoom.
+ *
+ * The fix: force a 16px minimum on inputs ONLY at mobile widths. Desktop
+ * keeps the design-system size (the iOS zoom heuristic doesn't apply
+ * there — it's a Mobile Safari behavior). 16px and 14px render nearly
+ * identically in 12px-padded input boxes, so the visual diff is minor. */
+@media (max-width: 767px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }
 
 /* Selection */

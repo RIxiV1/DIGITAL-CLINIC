@@ -193,7 +193,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         >
           <Card
             raised
-            className="!bg-gold-500 border-gold-500 text-indigo-900 relative overflow-hidden !p-6 lg:!p-8"
+            className="!bg-gold-500 border-gold-500 text-indigo-900 relative overflow-hidden !p-5 sm:!p-6 lg:!p-8"
           >
             <div className="absolute -top-8 -right-8 w-40 h-40 lg:w-56 lg:h-56 rounded-full bg-gold-400/40 blur-2xl pointer-events-none" />
             {/* Single-column layout. The 1/3 column on the right used
