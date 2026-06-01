@@ -160,16 +160,24 @@ export type ParseImageResponse = z.infer<typeof ResponseSchema>;
 
 const SYSTEM_PROMPT = `You are a medical lab-report parser. Extract every numeric biomarker reading from the image.
 
+CRITICAL — column/row alignment in tabular layouts:
+Indian lab reports (Dr Lal PathLabs, Thyrocare, Crystal Data, Metropolis) print results in a strict grid:
+    Test Name | Result | Units | Bio. Ref. Interval
+Each row is a single marker. NEVER pull a value from a different row.
+Before emitting a marker, mentally trace a HORIZONTAL line from the test name across to the result column — that exact number is "value", not the one above or below.
+The reference range column (e.g. "13.00-17.00") looks similar to a result; never mistake a min/max range bound for the result. The result is a single number, the range has a hyphen / "to" between two numbers.
+If you cannot confidently identify which number is the result for a given row, OMIT that marker entirely. Do not guess. A correct empty extraction beats a wrong populated one.
+
 Rules:
 - Return JSON matching the schema exactly. No commentary, no markdown.
-- "name": use the marker name AS PRINTED on the report (e.g., "Hemoglobin", "Total Testosterone", "Haemoglobin"). Preserve original spelling and casing.
-- "value": the numeric value as a plain number (e.g., 12.5, 280, 1550000). Strip commas. No units inside this field.
-- "unit": the unit STRING as printed on the report (e.g., "g/dL", "ng/dL", "/cumm", "thou/mm3", "g%", "fL", "%"). Preserve the exact glyph the lab used — including older Indian conventions like "g%" or "/cu.mm".
+- "name": use the marker name AS PRINTED on the report (e.g., "Hemoglobin", "Total Testosterone", "Haemoglobin", "Packed Cell Volume (PCV)"). Preserve original spelling, casing, and any parenthesised aliases.
+- "value": the numeric value as a plain number (e.g., 12.5, 280, 1550000). Strip commas. No units inside this field. Preserve all printed decimal places (12.09 stays 12.09, not 12.1).
+- "unit": the unit STRING as printed on the report (e.g., "g/dL", "ng/dL", "/cumm", "thou/mm3", "g%", "fL", "%"). Preserve the exact glyph the lab used — including older Indian conventions like "g%" or "/cu.mm". If a row's units column says "thou/mm3" or "mill/mm3", report that EXACT string — do NOT normalise it to "/cumm" or strip the prefix.
 - "refMin"/"refMax": the lab's reference range numeric bounds if printed; omit otherwise. Strip commas. For one-sided patterns like "<2.00" or ">5.00", omit both fields (we don't model one-sided ranges yet).
 - Skip non-numeric result rows ("Normal", "Adequate", "Trace", "Not Detected", "Negative", "Positive" without a value).
 - Skip metadata rows (patient name, date, lab address, doctor name, page numbers, barcodes, signatures).
-- Skip section headers like "Differential Leucocyte Count" — those aren't measurements.
-- Common Indian lab formats: Marker → Value → Reference Range → Unit (Crystal Data, Dr Lal PathLabs, Thyrocare). Numbers can appear BEFORE the unit on the same row.
+- Skip section headers like "Differential Leucocyte Count" — those aren't measurements. But DO extract the individual differential rows beneath them (Neutrophils, Lymphocytes, Monocytes, Eosinophils, Basophils) — those ARE measurements.
+- Extract Packed Cell Volume (PCV) / Hematocrit / HCT — it is a real marker, not a header.
 
 Return ONLY the JSON object.`;
 
@@ -283,6 +291,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         responseMimeType: 'application/json',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         responseSchema: RESPONSE_SCHEMA as any,
+        // Temperature 0 = deterministic. For an extraction task there is
+        // exactly one correct answer per row; the default 1.0 sampling
+        // was letting the model "creatively" misread the result column
+        // (e.g., RBC 3.79 → 4.09, MCV 99.6 → 92.7 on the Dr Lal PathLabs
+        // tabular layout). Pinning to 0 keeps the output stable across
+        // re-runs and roughly halves the misread rate in our spot checks.
+        temperature: 0,
       },
     });
 

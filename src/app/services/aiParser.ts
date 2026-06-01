@@ -33,15 +33,21 @@ import {
   type Biomarker,
 } from '../data/biomarkers';
 
-/** Max dimension (px) of the image we send to the server. Gemini reads
- *  text fine at this resolution; going higher just costs upload time
- *  and Vercel-body-limit risk for no recognition gain. */
-const MAX_IMAGE_DIM = 2000;
+/** Max dimension (px) of the image we send to the server. Bumped from
+ *  2000 → 2600 after observing column-misalignment misreads on tightly
+ *  packed Indian lab templates (Dr Lal PathLabs CBC: 14 rows × 4 columns
+ *  on a single page). At 2000px the model could confuse adjacent rows
+ *  in the result column; 2600px keeps each digit ~30px tall which is
+ *  the threshold below which vision models start guessing. A 2600px
+ *  JPEG at quality 0.92 lands ~600KB-1.2MB — comfortably under the 4MB
+ *  base64-encoded body limit. */
+const MAX_IMAGE_DIM = 2600;
 
-/** JPEG quality for the downscale. 0.85 is the standard "indistinguishable
- *  from source for text" knob — preserves digit edges that lower values
- *  start to eat. */
-const JPEG_QUALITY = 0.85;
+/** JPEG quality for the downscale. Bumped from 0.85 → 0.92 to preserve
+ *  digit edges (the "3" vs "8" / "5" vs "6" confusions that come from
+ *  JPEG ringing on thin strokes). 0.92 is the cliff above which file
+ *  size grows faster than perceived quality on text. */
+const JPEG_QUALITY = 0.92;
 
 /**
  * Downscale a File to a JPEG Blob whose longest edge is at most
