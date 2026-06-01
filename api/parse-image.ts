@@ -166,7 +166,7 @@ Indian lab reports (Dr Lal PathLabs, Thyrocare, Crystal Data, Metropolis) print 
 Each row is a single marker. NEVER pull a value from a different row.
 Before emitting a marker, mentally trace a HORIZONTAL line from the test name across to the result column — that exact number is "value", not the one above or below.
 The reference range column (e.g. "13.00-17.00") looks similar to a result; never mistake a min/max range bound for the result. The result is a single number, the range has a hyphen / "to" between two numbers.
-If you cannot confidently identify which number is the result for a given row, OMIT that marker entirely. Do not guess. A correct empty extraction beats a wrong populated one.
+If a SINGLE specific numeric value is unreadable due to image quality, omit ONLY that one marker and CONTINUE with the rest of the report. Never stop extraction early. Process EVERY row top-to-bottom before responding — a typical CBC has 11–14 numeric rows (Hemoglobin, RBC, WBC, Platelets, Hematocrit/PCV, MCV, MCH, MCHC, RDW, plus differentials); a typical lipid panel has 4–6; a thyroid panel has 3–4. If your output contains fewer rows than the report visibly has, you have failed the task.
 
 Rules:
 - Return JSON matching the schema exactly. No commentary, no markdown.
