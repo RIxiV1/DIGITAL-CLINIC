@@ -101,7 +101,32 @@ type ConfirmState = {
    *  mistaken for a complete one. */
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
+  /** Set when the raw text mentions WHO 2010 (or the WHO 5th edition).
+   *  Our semen-axis catalog scores against WHO 2021 (6th edition); a
+   *  report graded against the older reference will surface a verdict
+   *  that disagrees with the lab's printed "Low / Normal" call. We
+   *  flag this so the confirm view can disclose the standard mismatch
+   *  rather than letting the user assume one of us is wrong. */
+  semenStandardMismatch?: boolean;
 };
+
+/**
+ * Detects "WHO 2010" / "WHO 5th edition" / "WHO Laboratory Manual 5th"
+ * in raw text, case-insensitive. Returns true when the report cites the
+ * old standard. Used to surface a one-line disclosure in the confirm
+ * view so the user understands why our verdict may disagree with the
+ * lab's interpretive copy.
+ */
+function detectsWho2010Reference(rawText: string | undefined): boolean {
+  if (!rawText) return false;
+  // Strict patterns — we don't want to trip on "WHO 2021" (the new
+  // standard) or "WHO" alone (too generic). Specifically look for the
+  // 2010 year, the 5th-edition wording, or the legacy WHO-criteria
+  // strings labs print.
+  return /WHO\s*(?:reference)?\s*(?:2010|5th\s*edition|5th\s*ed)/i.test(
+    rawText,
+  );
+}
 
 export default function ProcessingPage() {
   const { reports, markReportReady, removeReport, addReport } = useReports();
@@ -233,6 +258,14 @@ export default function ProcessingPage() {
         // The placeholder report stays in 'processing' state during
         // the confirm step (so the locker doesn't show a half-baked
         // entry); it's only marked ready when the user confirms.
+        // Detect WHO 2010 / 5th-edition references in the raw text;
+        // only relevant when a semen-axis (fertility) marker was
+        // matched, otherwise the standard-mismatch banner is noise.
+        const hasFertilityMarker = result.biomarkers.some(
+          (m) => m.category === 'fertility',
+        );
+        const semenStandardMismatch =
+          hasFertilityMarker && detectsWho2010Reference(result.rawText);
         const confirmState: ConfirmState = {
           biomarkers: result.biomarkers,
           fileName,
@@ -241,6 +274,7 @@ export default function ProcessingPage() {
           ignoredCategory: result.ignoredCategory,
           ocrPagesAttempted: result.ocrPagesAttempted,
           ocrPagesSkipped: result.ocrPagesSkipped,
+          semenStandardMismatch,
         };
         // Persist so a navigate-away-then-back can restore this view
         // without re-running the parser against the consumed file.
@@ -352,9 +386,20 @@ export default function ProcessingPage() {
       const newReport = makeReport(safeName);
       addReport(newReport);
       activeProcessingIdRef.current = newReport.id;
+      // Pass AI-unmapped markers through as `unrecognizedRows` so the
+      // confirm view surfaces "your lab also tested these N markers we
+      // don't analyze yet" instead of silently dropping them. Cap at
+      // 50 to mirror the rule-based path's surface.
+      const unrecognizedFromAi = result.unmapped.slice(0, 50).map((u) => {
+        const valueStr = Number.isFinite(u.value) ? String(u.value) : 'n/a';
+        const unitStr = u.unit ? ` ${u.unit}` : '';
+        return `${u.name} ${valueStr}${unitStr}`;
+      });
       const confirmState: ConfirmState = {
         biomarkers: result.biomarkers,
         fileName: safeName,
+        unrecognizedRows:
+          unrecognizedFromAi.length > 0 ? unrecognizedFromAi : undefined,
       };
       savePendingConfirm<Biomarker>({
         processingId: newReport.id,
@@ -420,6 +465,7 @@ export default function ProcessingPage() {
         ignoredCategory={pendingConfirm.ignoredCategory}
         ocrPagesAttempted={pendingConfirm.ocrPagesAttempted}
         ocrPagesSkipped={pendingConfirm.ocrPagesSkipped}
+        semenStandardMismatch={pendingConfirm.semenStandardMismatch}
         onConfirm={confirmExtractedValues}
         onReject={rejectAndRetry}
       />
@@ -850,6 +896,7 @@ function ConfirmExtractedValuesView({
   ignoredCategory,
   ocrPagesAttempted,
   ocrPagesSkipped,
+  semenStandardMismatch,
   onConfirm,
   onReject,
 }: {
@@ -860,39 +907,42 @@ function ConfirmExtractedValuesView({
   ignoredCategory?: 'viral' | 'imaging' | 'physical-exam';
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
+  semenStandardMismatch?: boolean;
   onConfirm: () => void;
   onReject: () => void;
 }) {
   const [showRaw, setShowRaw] = useState(false);
 
-  // Status summary — three counts the user can scan at a glance before
+  // Status summary — four counts the user can scan at a glance before
   // committing to the report. Putting them next to the headline turns
   // "we found N values" from a count into a verdict: "and X of them
   // need your attention right now."
   const counts = useMemo(() => {
+    let critical = 0;
     let concern = 0;
     let attention = 0;
     let good = 0;
     for (const m of biomarkers) {
-      if (m.status === 'concern') concern += 1;
+      if (m.status === 'critical') critical += 1;
+      else if (m.status === 'concern') concern += 1;
       else if (m.status === 'attention') attention += 1;
       else good += 1;
     }
-    return { concern, attention, good };
+    return { critical, concern, attention, good };
   }, [biomarkers]);
 
   /** Per-category expansion mirrors the ReportResults pattern. Default-
-   *  open: any category with at least one `concern` marker. Everything
-   *  else collapses on first paint so the user can scan category
-   *  headers + the SummaryChips up top to verify "did we get the
-   *  numbers right?" without staring at 30+ MarkerRows. The categories
-   *  carrying flagged values are the only ones that need scrutiny by
-   *  default; the rest are one tap away. */
+   *  open: any category with a `critical` or `concern` marker.
+   *  Everything else collapses on first paint so the user can scan
+   *  category headers + the SummaryChips up top to verify "did we get
+   *  the numbers right?" without staring at 30+ MarkerRows. */
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(
     () => {
       const initial = new Set<string>();
       for (const m of biomarkers) {
-        if (m.status === 'concern') initial.add(m.category);
+        if (m.status === 'critical' || m.status === 'concern') {
+          initial.add(m.category);
+        }
       }
       return initial;
     },
@@ -918,9 +968,10 @@ function ConfirmExtractedValuesView({
       byCategory.set(m.category, list);
     }
     const severityRank: Record<Biomarker['status'], number> = {
-      concern: 0,
-      attention: 1,
-      good: 2,
+      critical: 0,
+      concern: 1,
+      attention: 2,
+      good: 3,
     };
     return biomarkerCategories
       .filter((c) => byCategory.has(c.id))
@@ -968,6 +1019,9 @@ function ConfirmExtractedValuesView({
               degenerate one. */}
           {grouped.length === 0 && (
             <div className="mt-5 flex flex-wrap gap-2">
+              {counts.critical > 0 && (
+                <SummaryChip tone="critical" count={counts.critical} label="see a doctor" />
+              )}
               {counts.concern > 0 && (
                 <SummaryChip tone="concern" count={counts.concern} label="need care" />
               )}
@@ -999,6 +1053,61 @@ function ConfirmExtractedValuesView({
         </div>
 
         <div className="mt-6 lg:max-w-3xl lg:mx-auto grid gap-4">
+          {/* Critical-tier callout — highest-priority banner. Appears
+              when any marker landed in the 'critical' tier (severe
+              hypoglycemia, potassium >6.0, platelet <50,000, etc.).
+              Same-day-care copy supersedes the 12-week-plan tone we
+              use elsewhere. */}
+          {counts.critical > 0 && (
+            <Card padded={false} className="overflow-hidden border-concern">
+              <div className="px-5 py-4 bg-concern text-white flex items-start gap-3">
+                <span aria-hidden role="img" className="text-body-lg leading-none">
+                  🚨
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display text-body-sm leading-tight">
+                    {counts.critical === 1
+                      ? 'One reading is in same-day-attention range'
+                      : `${counts.critical} readings are in same-day-attention range`}
+                  </div>
+                  <p className="mt-1 text-caption text-white/85 leading-relaxed">
+                    These values are far enough outside the healthy range
+                    that magnitude itself is a clinical signal. Don't wait
+                    for a follow-up — contact a doctor today.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+
+          {/* WHO standard mismatch — surfaced when the report mentions
+              WHO 2010 / 5th edition AND we matched a fertility marker.
+              Our catalog uses WHO 2021 (6th edition) reference ranges;
+              an older report's "Low / Borderline" verdicts may
+              disagree with ours and the user deserves to know why. */}
+          {semenStandardMismatch && (
+            <Card padded={false} className="overflow-hidden border-indigo-200/70">
+              <div className="px-5 py-4 bg-indigo-50/60 flex items-start gap-3">
+                <span aria-hidden role="img" className="text-body-lg leading-none">
+                  ℹ️
+                </span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-display text-body-sm leading-tight">
+                    Your report uses WHO 2010 reference ranges
+                  </div>
+                  <p className="mt-1 text-caption text-ink-soft leading-relaxed">
+                    We score semen-axis markers against the WHO 2021
+                    (6th edition) standard. Your lab's "Low / Borderline /
+                    Normal" calls may disagree with ours — that's a
+                    real reference-standard difference, not a parser
+                    bug. The numbers are the numbers; the verdicts are
+                    where the standards diverge.
+                  </p>
+                </div>
+              </div>
+            </Card>
+          )}
+
           {/* OCR skip banner — surfaces when Tesseract couldn't finish
               one or more pages (timeout or render failure). Without
               this, a partial result on a multi-page report looks
@@ -1234,10 +1343,29 @@ function SummaryChip({
   count,
   label,
 }: {
-  tone: 'concern' | 'attention' | 'good';
+  tone: 'critical' | 'concern' | 'attention' | 'good';
   count: number;
   label: string;
 }) {
+  // Critical uses the inverted solid-fill treatment (white text on
+  // concern-color background) to break visual parity with the other
+  // tiers — "see a doctor" should NOT read as a louder version of
+  // "need care".
+  if (tone === 'critical') {
+    return (
+      <div
+        className="inline-flex items-center gap-2 pl-2.5 pr-3.5 h-9 rounded-full bg-concern text-white"
+      >
+        <span className="w-2 h-2 rounded-full bg-white" aria-hidden />
+        <span className="font-display text-body tabular-nums leading-none">
+          {count}
+        </span>
+        <span className="text-caption font-medium leading-none">
+          {label}
+        </span>
+      </div>
+    );
+  }
   const dot =
     tone === 'concern' ? 'bg-concern' : tone === 'attention' ? 'bg-attention' : 'bg-good';
   const bg =
@@ -1279,22 +1407,31 @@ function MarkerRow({
   marker: Biomarker;
   showTopBorder: boolean;
 }) {
+  const isCritical = marker.status === 'critical';
   const isConcern = marker.status === 'concern';
   const isAttention = marker.status === 'attention';
-  const accentBg = isConcern
+  // Critical uses the same concern color but a fatter accent edge
+  // (visible-from-thumbnail width) — we deliberately don't introduce
+  // a new color hue for critical because the existing concern red is
+  // already the strongest signal in the design system; doubling it
+  // would dilute. The fatter edge + the same-day-care banner above is
+  // the differentiator.
+  const accentBg = isCritical || isConcern
     ? 'bg-concern'
     : isAttention
       ? 'bg-attention'
       : 'bg-transparent';
-  // Subtle tint for non-good rows so attention/concern jumps out
-  // without screaming. The /40 + /20 opacities are tuned to be
-  // perceptible but not noisy — closer to a highlight than a
-  // colored box.
-  const rowTint = isConcern
-    ? 'bg-concern-soft/40'
-    : isAttention
-      ? 'bg-attention-soft/30'
-      : '';
+  const accentWidth = isCritical ? 'w-1.5' : 'w-1';
+  // Critical rows get a slightly stronger tint than concern (50 vs 40)
+  // so the row reads as "the most important one to look at right now"
+  // when scanning a long list.
+  const rowTint = isCritical
+    ? 'bg-concern-soft/55'
+    : isConcern
+      ? 'bg-concern-soft/40'
+      : isAttention
+        ? 'bg-attention-soft/30'
+        : '';
   // The per-row status Pill (UPPERCASE "NEEDS CARE" / "NEEDS ATTENTION")
   // used to live in the right cluster alongside the value. Dropped:
   // the SummaryChips in the hero already give the per-status counts
@@ -1307,7 +1444,7 @@ function MarkerRow({
     <li
       className={`relative flex items-stretch ${rowTint} ${showTopBorder ? 'border-t border-line/50' : ''}`}
     >
-      <div className={`w-1 shrink-0 ${accentBg}`} aria-hidden />
+      <div className={`${accentWidth} shrink-0 ${accentBg}`} aria-hidden />
       {/* Mobile gap is tighter (gap-2) and value font is smaller
           (text-body-lg = 17px) so the right cluster stops eating
           ~100px on a 320px iPhone SE — there's now actual room for

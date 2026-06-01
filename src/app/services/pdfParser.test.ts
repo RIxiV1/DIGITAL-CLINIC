@@ -179,22 +179,389 @@ describe('extractBiomarkersFromText — normalize artefacts', () => {
 /* Sanity bound                                                        */
 /* ------------------------------------------------------------------ */
 
-describe('extractBiomarkersFromText — sanity bound', () => {
-  it('rejects values >5x outside the healthy span', () => {
-    // Glucose healthy 70-99 (span = 29). 5x span = 145.
-    // value < min - 5*span = 70 - 145 = -75
-    // value > max + 5*span = 99 + 145 = 244
-    // So glucose=300 should be rejected.
-    const text = 'Fasting Glucose 300 mg/dL';
+/* ------------------------------------------------------------------ */
+/* Critical-tier status — values far enough outside healthy that the    */
+/* magnitude itself is a clinical signal. Promotes the same-day-care    */
+/* tier separately from 'concern'.                                      */
+/* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Reference-range trap — the matcher must capture the user's measured */
+/* value, NOT a number that lives inside the lab's printed reference   */
+/* range. Captures the lab's range as a labRefMin/labRefMax pair so    */
+/* the UI can surface "lab's range vs our range" alongside.            */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — reference-range trap', () => {
+  it('extracts the value, NOT the ref-range max, on a refrange-before-unit row', () => {
+    // Classic Indian-lab layout: `<marker>  <value>  <refmin>-<refmax>  <unit>`.
+    // The optional ref-range absorber in `tail` must eat "13.5-17.5"
+    // so the captured value stays 14.5 — without it, the engine
+    // backtracks and matches "17.5" as the value (which would render
+    // as a perfectly-healthy reading regardless of what the user's
+    // actual Hb is).
+    const text = 'Hemoglobin 14.5 13.5-17.5 g/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'hb')?.value).toBe(14.5);
+  });
+
+  it('captures the printed reference range into labRefMin/labRefMax', () => {
+    const text = 'Fasting Glucose 92 70-99 mg/dL';
+    const glucose = extractBiomarkersFromText(text).find(
+      (m) => m.id === 'glucose',
+    );
+    expect(glucose?.value).toBe(92);
+    expect(glucose?.labRefMin).toBe(70);
+    expect(glucose?.labRefMax).toBe(99);
+  });
+
+  it('extracts correctly when ref-range uses en-dash separator', () => {
+    const text = 'Hemoglobin 14.5 13.5–17.5 g/dL';
+    const hb = extractBiomarkersFromText(text).find((m) => m.id === 'hb');
+    expect(hb?.value).toBe(14.5);
+    expect(hb?.labRefMin).toBe(13.5);
+    expect(hb?.labRefMax).toBe(17.5);
+  });
+
+  it('extracts correctly when ref-range uses literal "to"', () => {
+    const text = 'Fasting Glucose 92 70 to 99 mg/dL';
+    const g = extractBiomarkersFromText(text).find((m) => m.id === 'glucose');
+    expect(g?.value).toBe(92);
+    expect(g?.labRefMin).toBe(70);
+    expect(g?.labRefMax).toBe(99);
+  });
+
+  it('passes through labRefMin/labRefMax undefined when no range printed', () => {
+    const text = 'Fasting Glucose 92 mg/dL';
+    const g = extractBiomarkersFromText(text).find((m) => m.id === 'glucose');
+    expect(g?.value).toBe(92);
+    expect(g?.labRefMin).toBeUndefined();
+    expect(g?.labRefMax).toBeUndefined();
+  });
+
+  it('scales labRefMin/labRefMax through the same unit multiplier as value', () => {
+    // Lab prints platelets in thou/cumm with thou-prefixed ref-range:
+    // value=245 thou/cumm → 245,000; range 150–450 thou/cumm → 150,000–450,000.
+    const text = 'Platelet Count 245 150-450 thou/cumm';
+    const p = extractBiomarkersFromText(text).find((m) => m.id === 'platelets');
+    expect(p?.value).toBe(245000);
+    expect(p?.labRefMin).toBe(150000);
+    expect(p?.labRefMax).toBe(450000);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Lab-range-driven status                                              */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — lab range takes priority over catalog', () => {
+  // The audit's CRITICAL 2 directive: when the lab prints a reference
+  // range, use IT for the healthy-band classification (not the catalog).
+  // Catalog still owns critical thresholds + the optimal sub-band.
+
+  it('uses lab range when it disagrees with catalog (older standard)', () => {
+    // Hemoglobin catalog band is 13.5–17.5 g/dL. A 2010-era report
+    // might print a wider 13.0–18.0 band. A value of 13.2 falls below
+    // the catalog's min (would be 'concern') but INSIDE the lab's
+    // range (should be 'good' — the pathologist said it's normal).
+    const text = 'Hemoglobin 13.2 13.0-18.0 g/dL';
+    const hb = extractBiomarkersFromText(text).find((m) => m.id === 'hb');
+    expect(hb?.value).toBe(13.2);
+    expect(hb?.labRefMin).toBe(13);
+    expect(hb?.labRefMax).toBe(18);
+    expect(hb?.status).toBe('good');
+  });
+
+  it('flips status when lab range is TIGHTER than catalog', () => {
+    // Inverse: lab prints a tighter range (e.g. 14.0–17.0). A value
+    // of 13.7 is inside the catalog's 13.5–17.5 (would be 'good') but
+    // OUTSIDE the lab's tighter range — surface as 'concern' to match
+    // what the lab itself flagged.
+    const text = 'Hemoglobin 13.7 14.0-17.0 g/dL';
+    const hb = extractBiomarkersFromText(text).find((m) => m.id === 'hb');
+    expect(hb?.value).toBe(13.7);
+    expect(hb?.status).toBe('concern');
+  });
+
+  it('still triggers catalog critical when value crosses panic threshold', () => {
+    // Even if the lab's range is generous, severe hyperkalemia is a
+    // panic value REGARDLESS of how wide the lab's range is. Catalog
+    // criticalLow/High take absolute priority — they aren't
+    // range-relative.
+    const text = 'Potassium 7.0 3.0-6.5 mmol/L';
+    const k = extractBiomarkersFromText(text).find((m) => m.id === 'potassium');
+    expect(k?.value).toBe(7);
+    expect(k?.status).toBe('critical');
+  });
+
+  it('falls back to catalog range when lab prints no range', () => {
+    const text = 'Hemoglobin 13.7 g/dL';
+    const hb = extractBiomarkersFromText(text).find((m) => m.id === 'hb');
+    expect(hb?.value).toBe(13.7);
+    // 13.7 is inside catalog band 13.5–17.5 → 'good'.
+    expect(hb?.status).toBe('good');
+  });
+
+  it('flags Troponin I 0.05 as critical (MI rule-in threshold)', () => {
+    const text = 'Troponin I 0.05 ng/mL';
+    const m = extractBiomarkersFromText(text).find(
+      (b) => b.id === 'troponin-i',
+    );
+    expect(m?.value).toBe(0.05);
+    expect(m?.status).toBe('critical');
+  });
+
+  it('flags Procalcitonin 3.5 as critical (sepsis threshold)', () => {
+    const text = 'Procalcitonin 3.5 ng/mL';
+    const m = extractBiomarkersFromText(text).find(
+      (b) => b.id === 'procalcitonin',
+    );
+    expect(m?.value).toBe(3.5);
+    expect(m?.status).toBe('critical');
+  });
+
+  it('flags NT-proBNP 800 as critical (heart-failure decomp threshold)', () => {
+    const text = 'NT-proBNP 800 pg/mL';
+    const m = extractBiomarkersFromText(text).find(
+      (b) => b.id === 'nt-pro-bnp',
+    );
+    expect(m?.value).toBe(800);
+    expect(m?.status).toBe('critical');
+  });
+
+  it('preserves the optimal-band attention tier when lab range is wider', () => {
+    // LDL catalog: healthy 0–100, optimal 0–70. A lab printing the
+    // wider conventional range (0–130) for LDL=85 should NOT make
+    // the user lose the "outside optimal" attention signal — the
+    // optimal sub-band is the long-term-outcome layer the catalog
+    // owns regardless of lab range.
+    const text = 'LDL Cholesterol 85 0-130 mg/dL';
+    const ldl = extractBiomarkersFromText(text).find((m) => m.id === 'ldl');
+    expect(ldl?.value).toBe(85);
+    // 85 is inside lab's 0-130 AND inside catalog's 0-100 healthy →
+    // optimal check applies → outside 0-70 → 'attention'.
+    expect(ldl?.status).toBe('attention');
+  });
+});
+
+describe('extractBiomarkersFromText — HOMA-IR auto-derivation', () => {
+  // Many Indian Wellness panels print glucose + insulin but stop short
+  // of computing HOMA-IR. The parser derives it post-hoc so users see
+  // the insulin-resistance number on the dashboard without depending
+  // on the lab to print it.
+
+  it('derives HOMA-IR when glucose + insulin both extracted', () => {
+    const text =
+      'Fasting Glucose 95 mg/dL\nFasting Insulin 12 µIU/mL';
+    const result = extractBiomarkersFromText(text);
+    const homa = result.find((m) => m.id === 'homa-ir');
+    // 95 * 12 / 405 = 2.8148...
+    expect(homa).toBeDefined();
+    expect(homa?.value).toBeCloseTo(2.81, 1);
+  });
+
+  it('does NOT derive HOMA-IR when only glucose extracted', () => {
+    const text = 'Fasting Glucose 95 mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'homa-ir')).toBeUndefined();
+  });
+
+  it('does NOT overwrite a directly-extracted HOMA-IR', () => {
+    const text =
+      'Fasting Glucose 95 mg/dL\nFasting Insulin 12 µIU/mL\nHOMA-IR 4.5';
+    const result = extractBiomarkersFromText(text);
+    // If the lab reports a HOMA-IR, trust it over the derived one —
+    // the user's report could've been calculated with adjustments
+    // we don't replicate (e.g. HOMA2 vs HOMA1).
+    expect(result.find((m) => m.id === 'homa-ir')?.value).toBe(4.5);
+  });
+});
+
+describe('statusForValue — critical tier', () => {
+  it('flags platelets <50,000 as critical (bleeding-risk threshold)', () => {
+    const text = 'Platelet Count 30000 /cumm';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.status).toBe('critical');
+  });
+
+  it('flags potassium >6.0 as critical (cardiac-arrhythmia threshold)', () => {
+    const text = 'Potassium 6.8 mmol/L';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'potassium')?.status).toBe('critical');
+  });
+
+  it('flags glucose >250 as critical (DKA-risk threshold)', () => {
+    const text = 'Fasting Glucose 350 mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'glucose')?.status).toBe('critical');
+  });
+
+  it('keeps concerning-but-not-critical glucose at concern tier', () => {
+    // 110 is above max (99) but below critical (250).
+    const text = 'Fasting Glucose 110 mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'glucose')?.status).toBe('concern');
+  });
+
+  it('does NOT flag TSH 13 as critical (no 2x-span fallback)', () => {
+    // Hypothyroidism territory but NOT panic. The old 2×span
+    // fallback would have flagged 13 as critical (TSH span 4.1,
+    // critHigh = 4.5 + 8.2 = 12.7). With the fallback removed and
+    // criticalHigh: 50 set explicitly, 13 is correctly 'concern'.
+    const text = 'TSH 13 µIU/mL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'tsh')?.status).toBe('concern');
+  });
+
+  it('does NOT flag Estradiol 80 as critical (no 2x-span fallback)', () => {
+    // Estradiol has no explicit criticalLow/High. With the old
+    // fallback, 80 would have been critical (span 33, critHigh =
+    // 44 + 66 = 110, so wait — 80 is below 110 here so this
+    // particular value would NOT have been critical even under the
+    // fallback. Pick a value that WOULD trip the old fallback to
+    // make the regression check meaningful: estradiol = 150, which
+    // crosses the OLD critHigh of 110 but should stay 'concern'
+    // under the new explicit-only critical-tier policy.
+    const text = 'Estradiol 150 pg/mL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'estradiol')?.status).toBe('concern');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Cutoff-prefix guard — `<`, `>`, `≤`, `≥` precede reference values,  */
+/* never a measured result. The parser must not capture them.          */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — cutoff-prefix guard', () => {
+  it('does not capture <-prefixed cutoff as a measured value', () => {
+    // Indian lab convention: `<2.00` is the cutoff, NOT the user's value.
+    // If the matcher captured 2.00 it would land as a borderline TSH
+    // reading on a screen where the user actually has no TSH result.
+    const text = 'TSH reference <2.00 µIU/mL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'tsh')).toBeUndefined();
+  });
+
+  it('does not capture >-prefixed cutoff', () => {
+    const text = 'Vitamin D reference >30 ng/mL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'vit-d')).toBeUndefined();
+  });
+
+  it('does not capture ≥-prefixed cutoff', () => {
+    const text = 'HbA1c diagnostic threshold ≥6.5 %';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'hba1c')).toBeUndefined();
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Count-prefix unit reconciliation (lakh / thou / million)            */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — count-prefix unit reconciliation', () => {
+  // The catalog stores platelets at canonical /cumm (range 150,000–
+  // 450,000). Real Indian lab reports print in lakh/cumm, thou/cumm,
+  // and other prefixed magnitudes. The parser's unitMultiplier scales
+  // those into catalog units at extract time. These tests pin the
+  // mapping so a future change to the prefix detection doesn't
+  // silently re-introduce the "245 thou/cumm rendered as 245" critical
+  // misread that motivated this fix.
+
+  it('scales platelets in lakh/cumm to raw count', () => {
+    const text = 'Platelet Count 2.45 lakh/cumm';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(245000);
+  });
+
+  it('scales platelets in lakhs/cumm (plural variant)', () => {
+    const text = 'Platelet Count 3.10 lakhs/cumm';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(310000);
+  });
+
+  it('scales platelets in thou/cumm', () => {
+    const text = 'Platelet Count 245 thou/cumm';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(245000);
+  });
+
+  it('scales WBC in thousand/cumm', () => {
+    const text = 'Total WBC Count 8.5 thousand/cumm';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'wbc')?.value).toBe(8500);
+  });
+
+  it('passes through platelets already in raw /cumm', () => {
+    const text = 'Platelet Count 280000 /cumm';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(280000);
+  });
+
+  it('passes through RBC in million/cumm without scaling', () => {
+    // RBC catalog unit is `million/cumm` — printed unit matches, so
+    // the multiplier ratio is 1 and the value flows through unscaled.
+    const text = 'Total RBC Count 5.2 million/cumm';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'rbc')?.value).toBe(5.2);
+  });
+
+  it('accepts the lacs plural form (older Indian spelling)', () => {
+    const text = 'Platelet Count 2.8 lacs/cumm';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(280000);
+  });
+
+  it('accepts 10E3 exponent notation for platelets', () => {
+    // Some German/European-template lab software prints in the "10E3"
+    // shorthand (engineering-notation cousin of 10^3). unitMultiplier
+    // recognises this form; the test pins it.
+    const text = 'Platelet Count 245 10E3/μL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(245000);
+  });
+});
+
+describe('extractBiomarkersFromText — physical bounds', () => {
+  // Glucose template has explicit physicalMin=30, physicalMax=800
+  // (reflecting "30 mg/dL is incompatible with consciousness, 800 is
+  // the documented DKA ceiling"). Templates without explicit bounds
+  // fall back to the 5×-span heuristic.
+
+  it('rejects values beyond the template physicalMax', () => {
+    // Glucose's physicalMax = 800. A reading of 1500 mg/dL is
+    // physically implausible (would be incompatible with life) and
+    // is the kind of OCR-misread we want to reject before it
+    // pollutes the dashboard.
+    const text = 'Fasting Glucose 1500 mg/dL';
     const result = extractBiomarkersFromText(text);
     expect(result.find((m) => m.id === 'glucose')).toBeUndefined();
   });
 
-  it('accepts values within 5x of healthy span (concerning but plausible)', () => {
-    // Glucose=200 is concerning but within 5x span of max (244).
-    const text = 'Fasting Glucose 200 mg/dL';
+  it('admits clinically-extreme but physically-plausible values', () => {
+    // Glucose=300 is severely hyperglycemic but absolutely a real
+    // reading — refusing it would silently drop diabetic users'
+    // actual lab values. The critical-tier gate (separate from
+    // physicalMax) catches the urgency in the UI; the parser admits
+    // the value.
+    const text = 'Fasting Glucose 300 mg/dL';
     const result = extractBiomarkersFromText(text);
-    expect(result.find((m) => m.id === 'glucose')?.value).toBe(200);
+    expect(result.find((m) => m.id === 'glucose')?.value).toBe(300);
+  });
+
+  it('falls back to 5x-span heuristic when no physical bounds set', () => {
+    // Pick a template that doesn't have physicalMin/Max set yet
+    // (Estradiol: min 11 max 44, span 33, 5x = 165 → ceiling = 209).
+    const tooHigh = 'Estradiol 500 pg/mL';
+    expect(
+      extractBiomarkersFromText(tooHigh).find((m) => m.id === 'estradiol'),
+    ).toBeUndefined();
+    const inRange = 'Estradiol 150 pg/mL';
+    expect(
+      extractBiomarkersFromText(inRange).find((m) => m.id === 'estradiol')
+        ?.value,
+    ).toBe(150);
   });
 });
 

@@ -13,7 +13,7 @@ type Props = {
 /* ------------------------------------------------------------------ */
 
 type Tier = {
-  id: 'optimal' | 'borderline' | 'critical';
+  id: 'optimal' | 'borderline' | 'concern' | 'critical';
   label: string;
   className: string;
   caption: string;
@@ -22,22 +22,38 @@ type Tier = {
 /**
  * Map a biomarker's status + optional optimal band into a clinical tier.
  *
- *   - "Optimal"    — value falls inside the marker's optimalMin/optimalMax
- *                    band (when defined), OR status is 'good' and there's
- *                    no narrower optimal band specified.
- *   - "Borderline" — value is inside the healthy range (min..max) but
- *                    outside the optimal sub-band; OR status is
- *                    'attention'.
- *   - "Critical"   — value is outside the healthy range entirely
- *                    (status === 'concern').
+ *   - "Optimal"      — value falls inside the marker's
+ *                      optimalMin/optimalMax band (when defined), OR
+ *                      status is 'good' and there's no narrower optimal
+ *                      band specified.
+ *   - "Borderline"   — value is inside the healthy range (min..max) but
+ *                      outside the optimal sub-band; OR status is
+ *                      'attention'.
+ *   - "Out of range" — value is outside healthy but within
+ *                      clinically-reasonable abnormal range
+ *                      (status === 'concern'). 12-week-plan copy.
+ *   - "See a doctor" — value is in the critical band (severe
+ *                      hypoglycemia, K+ >6, platelet <50k, etc.).
+ *                      Same-day-care copy.
  */
 function tierFor(marker: Biomarker): Tier {
-  if (marker.status === 'concern') {
+  if (marker.status === 'critical') {
     return {
       id: 'critical',
-      label: 'Critical',
+      label: 'See a doctor',
       className: 'bg-concern text-white',
-      caption: 'Outside healthy range',
+      caption: 'Same-day medical attention is appropriate',
+    };
+  }
+  if (marker.status === 'concern') {
+    return {
+      id: 'concern',
+      // Renamed from "Critical" to "Out of range" — the prior label was
+      // overclaiming severity for borderline-abnormal readings, and now
+      // a true `critical` tier exists for the same-day cases.
+      label: 'Out of range',
+      className: 'bg-concern/85 text-white',
+      caption: 'Outside healthy range — worth a follow-up',
     };
   }
 
@@ -344,6 +360,33 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           <p className="mt-1.5 text-caption leading-relaxed text-ink-soft">
             {marker.plain}
           </p>
+          {/* Range disclosure — when the parser captured the lab's
+              printed range, that range is what we score against
+              (the audit's "trust the diagnosing pathologist's range
+              over the hardcoded standard" directive). The catalog's
+              range becomes the fallback we'd use if the lab hadn't
+              printed one. The optimal sub-band — when set — is a
+              separate long-term-outcome target the catalog owns. */}
+          {typeof marker.labRefMin === 'number' &&
+            typeof marker.labRefMax === 'number' && (
+              <div className="mt-2.5 rounded-[8px] border border-indigo-100 bg-indigo-50/40 px-3 py-2 text-micro leading-snug">
+                <div className="font-semibold text-ink-soft">
+                  Status uses your lab's printed range
+                </div>
+                <div className="mt-0.5 text-muted">
+                  <span className="font-medium text-ink-soft">
+                    {marker.labRefMin}–{marker.labRefMax}
+                    {marker.unit ? ` ${marker.unit}` : ''}
+                  </span>{' '}
+                  (your lab) · Digital Clinic's catalog{' '}
+                  {marker.min}–{marker.max}
+                  {marker.unit ? ` ${marker.unit}` : ''} would have been
+                  used if your lab hadn't printed a range. We trust the
+                  pathologist who signed your report over our hardcoded
+                  defaults when the two disagree.
+                </div>
+              </div>
+            )}
           {/* Optimal-range citation. Required by convention on every
               marker that defines an optimal sub-range — without it,
               users have no way to tell our optimal claim apart from a
@@ -354,28 +397,45 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
               templates where the range only applies to a narrower
               cohort (e.g. testosterone is men-specific). */}
           {marker.optimalSource && (
-            <p className="mt-2.5 text-micro text-muted leading-snug">
-              <span className="font-semibold text-ink-soft">
-                Optimal range
-              </span>
-              {marker.optimalSource.audience
-                ? ` (${marker.optimalSource.audience}): `
-                : ': '}
-              {marker.optimalSource.label}
-              {marker.optimalSource.url && (
-                <>
-                  {' · '}
-                  <a
-                    href={marker.optimalSource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
-                  >
-                    source
-                  </a>
-                </>
-              )}
-            </p>
+            <>
+              <p className="mt-2.5 text-micro text-muted leading-snug">
+                <span className="font-semibold text-ink-soft">
+                  Optimal range
+                </span>
+                {marker.optimalSource.audience
+                  ? ` (${marker.optimalSource.audience}): `
+                  : ': '}
+                {marker.optimalSource.label}
+                {marker.optimalSource.url && (
+                  <>
+                    {' · '}
+                    <a
+                      href={marker.optimalSource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+                    >
+                      source
+                    </a>
+                  </>
+                )}
+              </p>
+              {/* Sub-clinical disclaimer. Without this, a "Borderline"
+                  flag on a value that sits comfortably inside the
+                  lab's "Normal" range reads as a contradiction and
+                  drives triage anxiety. The copy explicitly separates
+                  the two range concepts: the lab's clinical reference
+                  (the floor of "abnormal enough to investigate") vs.
+                  our optimal sub-band (the band associated with
+                  lowest-risk outcomes in cohort studies). One says
+                  "you're not sick"; the other says "you're not at
+                  the sweet spot yet." */}
+              <p className="mt-2 text-micro text-muted/90 leading-snug italic">
+                A value inside your lab's "Normal" range but outside
+                this optimal sub-band isn't a sign of disease — it's
+                a long-term-outcome nudge, not a clinical alarm.
+              </p>
+            </>
           )}
           {marker.problemId && onClick && (
             <div className="mt-3 inline-flex items-center gap-1 text-caption font-semibold text-indigo-700">

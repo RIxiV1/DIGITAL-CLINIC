@@ -46,8 +46,49 @@ import {
 const OCR_MAX_PAGES = 3;
 
 /** PDF render scale for OCR. 2.5x A4 ≈ 1495×2115 px; Tesseract needs
- *  this resolution to read small lab-table fonts reliably. */
-const PDF_RENDER_SCALE = 2.5;
+ *  this resolution to read small lab-table fonts reliably. Used as the
+ *  desktop / high-memory default — see `getOcrRenderScale()` for the
+ *  adaptive selection. */
+const PDF_RENDER_SCALE_DESKTOP = 2.5;
+/** Lower scale for memory-constrained devices: 2.0x A4 ≈ 1196×1692 px.
+ *  Still adequate for most lab-table fonts (≥10pt) but cuts canvas
+ *  memory ~40% — important on Android Chrome where 200MB+ canvas
+ *  allocations are common OOM triggers. */
+const PDF_RENDER_SCALE_LOW = 2.0;
+
+/**
+ * Pick an OCR render scale appropriate to the device. We lower the
+ * scale (and thus canvas RAM) when:
+ *   - `deviceMemory` hints ≤4 GB (Chromium-only API; Safari returns
+ *     undefined and we conservatively default high).
+ *   - The viewport's longest edge is ≤480px (phone-sized).
+ *
+ * The fallback to PDF_RENDER_SCALE_DESKTOP preserves the high-fidelity
+ * behavior on desktop/laptop where Tesseract has the RAM. Anywhere this
+ * heuristic mis-classifies, the user still gets a working result; OCR
+ * quality degrades gracefully rather than OOM-crashing the tab. The
+ * architectural-audit motivation: a 3-page A4 PDF at 2.5× renders to
+ * ~210MB of canvas memory across the run, and budget Android Chrome
+ * tabs OOM at ~250MB.
+ */
+function getOcrRenderScale(): number {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+    return PDF_RENDER_SCALE_DESKTOP;
+  }
+  // `navigator.deviceMemory` is a Chromium quantised hint (0.25, 0.5,
+  // 1, 2, 4, 8). It's the closest thing browsers expose to "is this a
+  // low-end phone?" Treat ≤4 GB as constrained.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const memHint = (navigator as any).deviceMemory;
+  if (typeof memHint === 'number' && memHint <= 4) {
+    return PDF_RENDER_SCALE_LOW;
+  }
+  const longest = Math.max(window.innerWidth || 0, window.innerHeight || 0);
+  if (longest > 0 && longest <= 480) {
+    return PDF_RENDER_SCALE_LOW;
+  }
+  return PDF_RENDER_SCALE_DESKTOP;
+}
 
 /** Minimum char count before we trust the PDF text layer. Below this,
  *  the layer is probably stripped/empty (scanned PDF) — fall to OCR. */
@@ -57,6 +98,17 @@ const MIN_USABLE_TEXT_LENGTH = 50;
  *  hang on garbage input. 45s is generous and still well below "the
  *  user gives up and refreshes". */
 const OCR_PAGE_TIMEOUT_MS = 45_000;
+
+/** Tesseract language pack. `eng` only — current default for all Indian
+ *  lab reports we've seen, which print their tabular content in English
+ *  even when bilingual headers (Hindi / Tamil / Telugu) are present.
+ *  Future enhancement: surface a `Settings → Advanced` toggle for
+ *  `eng+hin` / `eng+tam` etc. The bilingual variants give measurably
+ *  cleaner extraction when the secondary language appears in body text
+ *  (rare), but add ~12MB of traineddata download on first use — not
+ *  worth defaulting on. Keep this constant in one place so the future
+ *  toggle has one knob to flip. */
+const OCR_LANG = 'eng';
 
 /** Worker-init timeout. Tesseract pulls ~12MB of eng.traineddata on
  *  first use; on a flaky mobile network this can stall indefinitely
@@ -183,13 +235,54 @@ type TextContentLike = { items: unknown[] };
  * A naive space-join turns "43" into "4 3" — which parses as 4.
  */
 function reconstructByPosition(content: TextContentLike): string {
-  const items: PdfTextItemLike[] = [];
+  const rawItems: PdfTextItemLike[] = [];
   for (const it of content.items) {
-    if (isPdfTextItem(it) && it.str.trim()) items.push(it);
+    if (isPdfTextItem(it) && it.str.trim()) rawItems.push(it);
   }
+  if (rawItems.length === 0) return '';
+
+  // Adaptive Y tolerance — median glyph height × 0.6, computed from a
+  // TRIMMED set that excludes the top-decile outliers. Without trimming,
+  // a page carrying multiple oversize items (e.g., a "DUPLICATE COPY"
+  // stamp + a lab-name banner + a doctor-signature image label) would
+  // shift the median upward enough that body-text headers (1.4–1.6×
+  // body height) survive the watermark filter — defeating it precisely
+  // on the reports where it's most needed.
+  const heightsRaw = rawItems
+    .map((it) => it.height ?? it.transform?.[0] ?? 0)
+    .filter((h) => h > 0);
+  const sortedHeights = heightsRaw.slice().sort((a, b) => a - b);
+  // Use the median of the bottom 90% — drops the top decile of
+  // outliers before computing. For a 200-item page, that's the lower
+  // 180 items' median; resilient to up to ~10% oversize garbage.
+  const trimmedEnd = Math.max(
+    1,
+    Math.floor(sortedHeights.length * 0.9),
+  );
+  const trimmed = sortedHeights.slice(0, trimmedEnd);
+  const medianHeight = trimmed.length
+    ? trimmed[Math.floor(trimmed.length / 2)]
+    : 0;
+
+  // Watermark / stamp filter: drop items whose font height is >1.8× the
+  // trimmed median. Apollo, Crystal Data, Dr Lal templates frequently
+  // embed "DUPLICATE COPY", "FOR REFERENCE ONLY", or doctor-signature
+  // stamps as oversize text items at arbitrary Y coordinates. Without
+  // this filter those items get clustered into whichever Y bucket they
+  // fall closest to, polluting the surrounding row. The 1.8× threshold
+  // sits well above normal headers (typically 1.3–1.5× body) and well
+  // below the 2–3× stamp range.
+  const items =
+    medianHeight > 0
+      ? rawItems.filter((it) => {
+          const h = it.height ?? it.transform?.[0] ?? medianHeight;
+          return h <= medianHeight * 1.8;
+        })
+      : rawItems;
   if (items.length === 0) return '';
 
-  // Adaptive Y tolerance — median glyph height × 0.6.
+  // Recompute tolerance from the filtered set so a removed oversize
+  // outlier doesn't skew the value.
   const heights = items
     .map((it) => it.height ?? it.transform?.[0] ?? 0)
     .filter((h) => h > 0);
@@ -302,7 +395,7 @@ async function renderPageToImage(
   pageNum: number,
 ): Promise<Blob | string> {
   const page = await pdf.getPage(pageNum);
-  const viewport = page.getViewport({ scale: PDF_RENDER_SCALE });
+  const viewport = page.getViewport({ scale: getOcrRenderScale() });
   const canvas = document.createElement('canvas');
   canvas.width = viewport.width;
   canvas.height = viewport.height;
@@ -398,7 +491,7 @@ async function preprocessImageForOcr(file: Blob): Promise<Blob> {
 async function runImageOcr(file: Blob): Promise<string> {
   const createWorker = await loadTesseract();
   const worker = await withTimeout(
-    createWorker('eng'),
+    createWorker(OCR_LANG),
     OCR_WORKER_INIT_TIMEOUT_MS,
     'OCR worker init',
   );
@@ -471,7 +564,7 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
   // clear "couldn't download the OCR engine" message rather than the
   // UI stalling at the last visible stage forever.
   const worker = await withTimeout(
-    createWorker('eng'),
+    createWorker(OCR_LANG),
     OCR_WORKER_INIT_TIMEOUT_MS,
     'OCR worker init',
   );
@@ -511,6 +604,23 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
 
 /* ------------------------------------------------------------------ */
 /* Catalog matching                                                     */
+/*                                                                      */
+/* Strategy: linear regex per template, anchored on the alias text.    */
+/* The pattern walks `alias → between → number → tail-with-refrange →  */
+/* unit` and captures (value, refMin?, refMax?, printed-unit?). The    */
+/* tail's optional ref-range absorber + the cutoff-prefix lookbehind   */
+/* defend the "Reference Range Trap" (capturing the lab's upper bound  */
+/* as the user's value) that linear scans are most vulnerable to.      */
+/*                                                                      */
+/* Audit note: an alternative architecture would do TRUE column-       */
+/* geometry extraction — detect the "Result" / "Reference" column     */
+/* headers, project each text item to a column, and only consider     */
+/* values in the Result column. This is more robust on adversarial    */
+/* multi-column templates but a multi-day rewrite. The current         */
+/* defenses (ref-range absorber, cutoff lookbehind, bounded between-   */
+/* window, page-boundary sentinel) close the specific failure modes   */
+/* the audit identified for the linear approach. Column geometry is a  */
+/* deferred backlog item, not an active defect.                        */
 /* ------------------------------------------------------------------ */
 
 function escapeRegex(input: string): string {
@@ -531,6 +641,56 @@ function aliasContainsUnit(
 }
 
 /**
+ * Detect a count-prefix multiplier in a printed unit string.
+ *
+ * Indian labs print platelets/WBC as "245 thou/cumm" or "2.45 lakh/cumm"
+ * rather than the canonical raw count. The catalog's `platelets`
+ * template uses /cumm (raw); a captured value of `245` against a
+ * printed unit of `thou/cumm` is actually 245,000.
+ *
+ * Returns the linear multiplier (1, 1e3, 1e5, 1e6). The reconciliation
+ * step in `extractMarkerValue` computes `printedMult / catalogMult` and
+ * scales — so a catalog template already in `million/cumm` (RBC) gets
+ * multiplier 1e6 too and values pass through unscaled.
+ *
+ * Mirror of aiParser.ts's identical helper. Mass/concentration units
+ * (mg/dL, ng/mL, g/dL) return 1; per-marker canonical unit already
+ * enforces scale on those.
+ */
+function unitMultiplier(unit: string | null | undefined): number {
+  if (!unit) return 1;
+  const u = unit.toLowerCase().trim();
+  // Lakh = 1e5. Indian English convention. Variants: lakh, lakhs,
+  // lac (older), lacs (older plural).
+  if (/(^|[^a-z])(lakh|lakhs|lac|lacs)([^a-z]|$)/.test(u)) return 1e5;
+  // Million = 1e6. Variants: million, mill, mio (German/European
+  // notation seen on some imported labs), and the various 10^6
+  // typesettings — plain `10^6`, the superscript `10⁶`, the `E`
+  // notation `10E6`, and `x10^6` / `x 10^6` with optional space.
+  if (
+    /(^|[^a-z])(million|mill|mio)([^a-z]|$)/.test(u) ||
+    /\b10\s*\^?\s*6\b/.test(u) ||
+    /x\s*10\s*\^?\s*6/.test(u) ||
+    /10\s*e\s*6\b/.test(u) ||
+    /10⁶/.test(u)
+  ) {
+    return 1e6;
+  }
+  // Thousand = 1e3. Variants: thou, thousand, 10^3 / 10³ / 10E3 /
+  // x10^3 with optional spacing.
+  if (
+    /(^|[^a-z])(thou|thousand)([^a-z]|$)/.test(u) ||
+    /\b10\s*\^?\s*3\b/.test(u) ||
+    /x\s*10\s*\^?\s*3/.test(u) ||
+    /10\s*e\s*3\b/.test(u) ||
+    /10³/.test(u)
+  ) {
+    return 1e3;
+  }
+  return 1;
+}
+
+/**
  * Extract a single marker's value from text using its template.
  *
  * Per-alias gating:
@@ -545,10 +705,20 @@ function aliasContainsUnit(
  * data-entry errors and mis-parses (e.g. picking up the page number
  * instead of the value).
  */
+type ExtractedMarker = {
+  value: number;
+  /** The reference range the lab itself printed alongside the value,
+   *  captured by the `tail` regex's ref-range slot. Undefined when the
+   *  row didn't include a printed range or the parser couldn't fit it
+   *  into the recognised shape. */
+  labRefMin?: number;
+  labRefMax?: number;
+};
+
 function extractMarkerValue(
   text: string,
   template: BiomarkerTemplate,
-): number | null {
+): ExtractedMarker | null {
   // Bounded between-window: allow AT MOST one newline between the
   // alias and the number. Cross-row glue matches were a real false-
   // positive vector — a marker on row N could pair with a number on
@@ -567,7 +737,17 @@ function extractMarkerValue(
   // "Total WBC Count 7200 /cumm\nTotal RBC Count 5.2 …" into a WBC
   // match for "5.2" when the right answer is "7200" on the same line.
   const between = '(?:[^\\n]{0,40}?\\n)??[^\\n]{0,80}?';
-  const numPattern = '(-?\\d+(?:\\.\\d+)?)';
+  // Number pattern with a leading negative lookbehind. Rejects:
+  //   - one-sided reference cutoffs (`<2.00`, `>5.00`, `≤140`, `≥1.5`)
+  //     — labs print these as their reference threshold, not as the
+  //     user's measured value.
+  //   - mid-decimal starts (digit or `.` immediately before) — without
+  //     this, the cutoff `<2.00` would have its `<` blocked but the
+  //     engine could backtrack and bind `00` as the value (starting
+  //     at the `.`'s right boundary).
+  //   - mid-digit starts — `(?<!\\d)` so a captured number can't begin
+  //     inside another number.
+  const numPattern = '(?<![<>≤≥\\d.])(-?\\d+(?:\\.\\d+)?)';
   // Between number and unit: up to 30 non-digit chars, OPTIONALLY
   // followed by a reference-range shape ("12-14", "150 to 450",
   // "80–99") and then up to 30 more non-digit chars before the unit.
@@ -586,8 +766,17 @@ function extractMarkerValue(
   // protection against "Vitamin D (25-OH) 28 ng/mL" capturing "25" is
   // preserved because "(25-OH)" doesn't match the ref-range shape:
   // the engine then backtracks and captures 28 correctly.
+  //
+  // The ref-range slot is now CAPTURED via groups so we can surface
+  // the lab's printed range in the UI (CRITICAL 2 in the architectural
+  // audit — "lab said normal, app says concern" trust break). Indices
+  // m[3], m[4] hold refMin / refMax when matched. The pattern also
+  // accepts the one-sided forms "<X" and ">X" (common in Indian labs)
+  // and the ":" / "Reference Range" lead-ins that some templates use.
+  const refRangeBody =
+    '(\\d+(?:\\.\\d+)?)\\s*(?:[-–—]|to)\\s*(\\d+(?:\\.\\d+)?)';
   const tail =
-    '[^\\d\\n]{0,30}?(?:\\d+(?:\\.\\d+)?\\s*(?:[-–—]|to)\\s*\\d+(?:\\.\\d+)?[^\\d\\n]{0,30}?)?';
+    `[^\\d\\n]{0,30}?(?:${refRangeBody}[^\\d\\n]{0,30}?)?`;
 
   // normalizeMu on the catalog side mirrors the call inside normalize()
   // for the input text — without both sides agreeing on µ vs μ, units
@@ -597,7 +786,32 @@ function extractMarkerValue(
         .filter((u) => u.length > 0)
         .map((u) => escapeRegex(normalizeMu(u)))
     : [];
-  const unitGate = unitTokens.length > 0 ? `(?:${unitTokens.join('|')})` : '';
+  // Capture the matched unit token so we can apply unitMultiplier
+  // reconciliation when the lab prints in a different magnitude than
+  // our catalog's canonical unit (e.g. "245 thou/cumm" → 245,000
+  // against a /cumm template).
+  //
+  // Also widen the unit gate to admit count-prefixes IN FRONT of the
+  // catalog unit. The catalog can't list every prefix×base combo
+  // explicitly because they multiply combinatorially (thou/cumm,
+  // lakh/cumm, thou/mm3, lakh/μL, …). Instead we accept an optional
+  // prefix word (lakh|lac|thou|thousand|million|mill or a 10^N
+  // shorthand) immediately before a known catalog unit, and let
+  // unitMultiplier() figure out the scaling.
+  // Optional count-prefix that can sit before the catalog's bare unit.
+  // Mirrors the families recognised by unitMultiplier(): the named
+  // prefixes (lakh/lac/thou/thousand/million/mill/mio) and the
+  // exponent typesettings (10^N, 10ᴺ, 10EN, x10^N) for N ∈ {3, 6}.
+  const prefixPattern =
+    '(?:' +
+    '(?:lakh|lakhs|lac|lacs|thou|thousand|million|mill|mio)\\s*[/]?\\s*' +
+    '|' +
+    '(?:x?\\s*10\\s*(?:\\^|e|⁶|³)?\\s*[36]?)\\s*[/]?\\s*' +
+    ')?';
+  const unitGate =
+    unitTokens.length > 0
+      ? `(${prefixPattern}(?:${unitTokens.join('|')}))`
+      : '';
 
   for (const alias of template.aliases) {
     const aliasEsc = escapeRegex(alias);
@@ -615,12 +829,76 @@ function extractMarkerValue(
       : `${aliasEsc}${between}${numPattern}${tail}${unitGate}`;
     const m = text.match(new RegExp(pattern, 'i'));
     if (!m) continue;
-    const v = parseFloat(m[1]);
-    if (Number.isNaN(v)) continue;
-    // Sanity bound — wildly outside-band values are mis-parses.
+    const raw = parseFloat(m[1]);
+    if (Number.isNaN(raw)) continue;
+    // Capture group layout depends on whether skipUnit branched off.
+    //   skipUnit=true:  m[1]=value (no other groups)
+    //   skipUnit=false: m[1]=value, m[2]=refMin?, m[3]=refMax?, m[4]=unit
+    // refMin/refMax exist only when the lab printed a ref-range
+    // matching the strict `\d+(.\d+)? sep \d+(.\d+)?` shape; otherwise
+    // they're undefined (the tail's outer `(?:...)?` was skipped).
+    const printedUnit = !skipUnit && m[4] ? m[4] : '';
+    const labRefMinStr = !skipUnit && m[2] ? m[2] : '';
+    const labRefMaxStr = !skipUnit && m[3] ? m[3] : '';
+    // Reconcile the lab's printed unit against the catalog's canonical
+    // unit. Only do the reconciliation when we actually captured a
+    // printed unit token (non-skipUnit path). When skipUnit is true,
+    // the alias text already names the catalog's canonical unit
+    // ("Density (million per ml)"), so the captured numeric is in
+    // catalog units by construction — applying the multiplier ratio
+    // would WRONGLY divide by the catalog's prefix (1e6 for
+    // million/ml) and turn 103 into 0.000103.
+    let scale = 1;
+    if (!skipUnit && printedUnit) {
+      scale = unitMultiplier(printedUnit) / unitMultiplier(template.unit);
+    }
+    // Clean up float-precision noise introduced by scaling — 2.45 * 1e5
+    // yields 245000.00000000003 in IEEE-754, which is silly to surface
+    // on a clinical dashboard. `toPrecision(12)` keeps 12 significant
+    // digits (well above any real measurement precision) and drops the
+    // floating-point error.
+    const v = scale !== 1
+      ? parseFloat((raw * scale).toPrecision(12))
+      : raw;
+    // Reject obviously-broken values up front. Floor at 0 (biomarkers
+    // are non-negative even though the regex now refuses '-' anyway,
+    // belt-and-braces).
+    if (v < 0) continue;
+    // Physical bound check — use template's explicit physicalMin/Max
+    // when set, otherwise fall back to the 5×-span heuristic. Critical
+    // status is decided later by statusForValue; this check is only
+    // about rejecting values that are physically/clinically impossible.
     const span = template.max - template.min || 1;
-    if (v < template.min - 5 * span || v > template.max + 5 * span) continue;
-    return v;
+    const physMin =
+      typeof template.physicalMin === 'number'
+        ? template.physicalMin
+        : template.min - 5 * span;
+    const physMax =
+      typeof template.physicalMax === 'number'
+        ? template.physicalMax
+        : template.max + 5 * span;
+    if (v < physMin || v > physMax) continue;
+    // Scale the captured ref-range too — same multiplier logic as the
+    // value. A lab printing "Platelet Count 245 (150 - 450) thou/cumm"
+    // captures refMin=150, refMax=450 in printed thou units; we
+    // multiply by the same scale so the user sees the lab's range in
+    // the catalog's canonical units.
+    const labRefMinNum = labRefMinStr ? parseFloat(labRefMinStr) : NaN;
+    const labRefMaxNum = labRefMaxStr ? parseFloat(labRefMaxStr) : NaN;
+    const labRef =
+      Number.isFinite(labRefMinNum) && Number.isFinite(labRefMaxNum)
+        ? {
+            min:
+              scale !== 1
+                ? parseFloat((labRefMinNum * scale).toPrecision(12))
+                : labRefMinNum,
+            max:
+              scale !== 1
+                ? parseFloat((labRefMaxNum * scale).toPrecision(12))
+                : labRefMaxNum,
+          }
+        : undefined;
+    return { value: v, labRefMin: labRef?.min, labRefMax: labRef?.max };
   }
   return null;
 }
@@ -639,11 +917,55 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
     // invariant the loop body didn't need. Dropped to keep the loop
     // readable; if catalog duplication ever needs to be defended
     // against, dedupe at the catalog source, not here.
-    const value = extractMarkerValue(normalized, template);
-    if (value === null) continue;
-    found.push(markerFromTemplate(template, value));
+    const extracted = extractMarkerValue(normalized, template);
+    if (extracted === null) continue;
+    const labRef =
+      typeof extracted.labRefMin === 'number' &&
+      typeof extracted.labRefMax === 'number'
+        ? { min: extracted.labRefMin, max: extracted.labRefMax }
+        : undefined;
+    found.push(markerFromTemplate(template, extracted.value, labRef));
   }
-  return found;
+  return deriveComputedMarkers(found);
+}
+
+/**
+ * Compute derived markers from extracted ones when both inputs are
+ * present and the derived marker wasn't directly reported.
+ *
+ * Currently:
+ *   - HOMA-IR = (fasting glucose mg/dL × fasting insulin µIU/mL) / 405.
+ *     Many Indian Wellness panels print both glucose + insulin but
+ *     stop short of computing HOMA-IR. We add it here so the user
+ *     sees the insulin-resistance number on the dashboard without
+ *     needing the lab to print it.
+ *
+ * Pure function — doesn't mutate the input array. Returns the input
+ * with derived markers appended at the end. Skips derivation if the
+ * source markers' status is 'critical' (the computed number would
+ * compound the alarm; the user should focus on the underlying value).
+ */
+function deriveComputedMarkers(extracted: Biomarker[]): Biomarker[] {
+  const hasHomaIr = extracted.some((m) => m.id === 'homa-ir');
+  if (hasHomaIr) return extracted;
+
+  const glucose = extracted.find((m) => m.id === 'glucose');
+  const insulin = extracted.find((m) => m.id === 'insulin');
+  if (!glucose || !insulin) return extracted;
+
+  const homaTemplate = biomarkerCatalog.find((t) => t.id === 'homa-ir');
+  if (!homaTemplate) return extracted;
+
+  // Standard formula. Defensive zero-guard: if either value is 0
+  // (mis-extraction), the computed result is 0 or NaN — skip rather
+  // than surface a spurious "perfect insulin sensitivity" reading.
+  if (glucose.value <= 0 || insulin.value <= 0) return extracted;
+  const homaIr = parseFloat(
+    ((glucose.value * insulin.value) / 405).toPrecision(4),
+  );
+  if (!Number.isFinite(homaIr)) return extracted;
+
+  return [...extracted, markerFromTemplate(homaTemplate, homaIr)];
 }
 
 /**

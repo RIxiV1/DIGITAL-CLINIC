@@ -14,7 +14,7 @@ import Header from '../components/Header';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
 import { useNavigation, useReports } from '../AppContext';
-import { sampleBiomarkers } from '../data/biomarkers';
+import { sampleBiomarkers, type BiomarkerStatus } from '../data/biomarkers';
 import { getLatestReadyReport } from '../data/reports';
 import { getProblem } from '../data/problems';
 
@@ -90,8 +90,8 @@ export default function ProblemDetailPage({
    *  inline strip. Previously every related marker rendered with
    *  equal weight, which inverted the Isolation Effect for a page
    *  whose job is to focus the user on one thing. */
-  const severityRank = (s: 'concern' | 'attention' | 'good') =>
-    s === 'concern' ? 0 : s === 'attention' ? 1 : 2;
+  const severityRank = (s: BiomarkerStatus) =>
+    s === 'critical' ? 0 : s === 'concern' ? 1 : s === 'attention' ? 2 : 3;
   const focalMarker = related.length
     ? [...related].sort(
         (a, b) => severityRank(a.status) - severityRank(b.status),

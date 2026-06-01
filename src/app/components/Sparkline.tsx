@@ -41,9 +41,11 @@ export default function Sparkline({
   const bandTop = scaleY(marker.max);
   const bandBottom = scaleY(marker.min);
 
-  // Trend stroke color picks up the marker status — concern is red, etc.
+  // Trend stroke color picks up the marker status. Critical reuses the
+  // concern color — the differentiation comes from copy + the per-tier
+  // status pill on the dashboard, not the sparkline hue.
   const stroke =
-    marker.status === 'concern'
+    marker.status === 'critical' || marker.status === 'concern'
       ? '#E11D48' // matches text-concern
       : marker.status === 'attention'
         ? '#D97706' // matches text-attention

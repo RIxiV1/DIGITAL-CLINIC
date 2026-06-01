@@ -33,15 +33,18 @@ import {
   type Biomarker,
 } from '../data/biomarkers';
 
-/** Max dimension (px) of the image we send to the server. Gemini reads
- *  text fine at this resolution; going higher just costs upload time
- *  and Vercel-body-limit risk for no recognition gain. */
-const MAX_IMAGE_DIM = 2000;
+/** Max dimension (px) of the image we send to the server. Held at
+ *  2200 — bumping to 2600 reproducibly tripped Gemini's image-payload
+ *  limit on Dr Lal PathLabs PNGs (server returned "Internal error").
+ *  2200 keeps digits ~25px tall on a 14-row CBC, still above the
+ *  vision-model guessing threshold, and lands ~400-800KB JPEG. */
+const MAX_IMAGE_DIM = 2200;
 
-/** JPEG quality for the downscale. 0.85 is the standard "indistinguishable
- *  from source for text" knob — preserves digit edges that lower values
- *  start to eat. */
-const JPEG_QUALITY = 0.85;
+/** JPEG quality for the downscale. 0.88 is the sweet spot we landed
+ *  on: 0.85 left visible ringing on thin digit strokes ("3"/"8" and
+ *  "5"/"6" confusions on tight tabular templates), 0.92 pushed file
+ *  sizes past Gemini's limit. */
+const JPEG_QUALITY = 0.88;
 
 /**
  * Downscale a File to a JPEG Blob whose longest edge is at most
@@ -232,22 +235,49 @@ function findTemplateByName(name: string) {
   return null;
 }
 
+export type AiMapResult = {
+  /** Mapped biomarkers ready for the dashboard. */
+  biomarkers: Biomarker[];
+  /** Names + values + units the model returned that we couldn't map to
+   *  a catalog template, or that failed sanity bounds after scaling.
+   *  Surfaced in the confirm view as "your lab also tested these — we
+   *  don't analyze them yet" so the user understands a 70-marker panel
+   *  didn't get silently truncated to 18. */
+  unmapped: Array<{ name: string; value: number; unit: string }>;
+};
+
 /**
  * Map Gemini's flat array onto our Biomarker shape. Markers that don't
- * resolve to a catalog template are dropped silently — the catalog
- * scope is the source of truth for what the rest of the app knows how
- * to render. Future work: surface the dropped names in the confirm
- * view as "unrecognised markers" so the user knows they were seen.
+ * resolve to a catalog template are returned in the `unmapped` array
+ * rather than silently dropped — the catalog scope is still the source
+ * of truth for what the rest of the app knows how to render, but the
+ * UI gets to tell the user "we saw N more markers your lab tested,
+ * here they are."
  */
-function mapGeminiResultsToCatalog(results: GeminiMarker[]): Biomarker[] {
+function mapGeminiResultsToCatalog(results: GeminiMarker[]): AiMapResult {
   const seen = new Set<string>();
   const mapped: Biomarker[] = [];
+  const unmapped: Array<{ name: string; value: number; unit: string }> = [];
+  const recordUnmapped = (r: GeminiMarker) => {
+    const value = typeof r.value === 'number' ? r.value : Number(r.value);
+    unmapped.push({
+      name: r.name,
+      value: Number.isFinite(value) ? value : NaN,
+      unit: r.unit ?? '',
+    });
+  };
   for (const r of results) {
     const template = findTemplateByName(r.name);
-    if (!template) continue;
+    if (!template) {
+      recordUnmapped(r);
+      continue;
+    }
     if (seen.has(template.id)) continue;
     const raw = typeof r.value === 'number' ? r.value : Number(r.value);
-    if (!Number.isFinite(raw)) continue;
+    if (!Number.isFinite(raw)) {
+      recordUnmapped(r);
+      continue;
+    }
     // Reconcile the lab's printed unit against the catalog's canonical
     // unit. "245 thou/cumm" → catalog `/cumm` → multiplier ratio 1000
     // → store 245,000. "4.09 mill/cumm" → catalog `million/cumm` →
@@ -256,21 +286,34 @@ function mapGeminiResultsToCatalog(results: GeminiMarker[]): Biomarker[] {
     const scale = unitMultiplier(r.unit) / unitMultiplier(template.unit);
     const value = raw * scale;
     // Sanity bounds applied to the SCALED value:
-    //   1. Non-negative — a negative reading is hallucination or sign-
-    //      flip, never legitimate.
-    //   2. Absolute cap 1e8 — catches "model invented an absurd number"
-    //      while admitting clinical extremes (severe thrombocytosis can
-    //      legitimately exceed 1e6 in raw cells/cumm).
-    //   3. Within 5× the catalog's healthy span — mirrors the regex
-    //      matcher's bound.
-    if (value < 0 || value > 1e8) continue;
-    const span = template.max - template.min || 1;
-    if (value < template.min - 5 * span || value > template.max + 5 * span)
+    //   1. Non-negative — biomarkers are non-negative; a negative
+    //      reading is hallucination or sign-flip.
+    //   2. Per-template physical bound — uses `physicalMin/Max` when
+    //      set (admits clinical extremes like glucose 500 in DKA,
+    //      platelet 1.2M in essential thrombocythemia, while
+    //      rejecting hallucinated numbers); falls back to the 5×-span
+    //      heuristic for templates without explicit bounds yet.
+    if (value < 0) {
+      recordUnmapped(r);
       continue;
+    }
+    const span = template.max - template.min || 1;
+    const physMin =
+      typeof template.physicalMin === 'number'
+        ? template.physicalMin
+        : template.min - 5 * span;
+    const physMax =
+      typeof template.physicalMax === 'number'
+        ? template.physicalMax
+        : template.max + 5 * span;
+    if (value < physMin || value > physMax) {
+      recordUnmapped(r);
+      continue;
+    }
     mapped.push(markerFromTemplate(template, value));
     seen.add(template.id);
   }
-  return mapped;
+  return { biomarkers: mapped, unmapped };
 }
 
 export type AiParseResult = {
@@ -280,6 +323,12 @@ export type AiParseResult = {
    *  "Gemini saw nothing" (rawCount = 0) from "Gemini saw markers we
    *  don't track yet" (rawCount > 0 but biomarkers.length = 0). */
   rawCount: number;
+  /** Markers the model returned that didn't resolve to a catalog
+   *  template (or failed sanity bounds). Surfaced in the confirm view
+   *  so a 70-marker panel that mapped to 18 catalog markers reads as
+   *  "we mapped 18 and saw 52 more your lab tested" — not as silent
+   *  truncation. Empty when every returned marker was mapped. */
+  unmapped: Array<{ name: string; value: number; unit: string }>;
 };
 
 export class AiParseError extends Error {
@@ -314,8 +363,13 @@ export async function parseWithAi(file: File): Promise<AiParseResult> {
     const errBody = await response.text().catch(() => '');
     let message = `AI parser failed (${response.status})`;
     try {
-      const parsed = JSON.parse(errBody) as { error?: string };
+      const parsed = JSON.parse(errBody) as { error?: string; kind?: string };
       if (parsed.error) message = parsed.error;
+      // Server attaches `kind` (the error class name from the catch
+      // block) for 500 responses — surfacing it in the UI lets us
+      // distinguish a Gemini rate-limit error from a JSON-parse fail
+      // or a body-size cap trip without a Vercel-logs round-trip.
+      if (parsed.kind) message = `${message} [${parsed.kind}]`;
     } catch {
       if (errBody) message = errBody;
     }
@@ -327,8 +381,10 @@ export async function parseWithAi(file: File): Promise<AiParseResult> {
     throw new AiParseError('AI parser returned an unexpected shape');
   }
 
+  const mapResult = mapGeminiResultsToCatalog(body.biomarkers);
   return {
-    biomarkers: mapGeminiResultsToCatalog(body.biomarkers),
+    biomarkers: mapResult.biomarkers,
+    unmapped: mapResult.unmapped,
     rawCount: body.biomarkers.length,
   };
 }

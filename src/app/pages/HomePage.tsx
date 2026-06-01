@@ -24,6 +24,7 @@ import Emoji from '../components/Emoji';
 import { useNavigation, useReports } from '../AppContext';
 import { useModalA11y } from '../utils/useModalA11y';
 import {
+  CATALOG_VERSION,
   getTrend,
   STATUS_FILTER_OPTIONS,
   type Biomarker,
@@ -36,6 +37,7 @@ import {
   getSampleReportForDashboard,
   type Report,
 } from '../data/reports';
+import { loadCatalogAck, saveCatalogAck } from '../utils/persistence';
 import { getMarkerInfo } from '../data/markerInfo';
 
 type StatusFilter = StatusFilterId;
@@ -82,6 +84,37 @@ type LockerSort = 'newest' | 'oldest' | 'lab';
 
 export default function HomePage() {
   const { reports, removeReport, saveError, dismissSaveError } = useReports();
+
+  /** Catalog-migration notice. Shown when:
+   *    - The user has acknowledged an older CATALOG_VERSION than the
+   *      one this build ships with (loadCatalogAck < CATALOG_VERSION).
+   *    - AND at least one persisted report has biomarkers stamped at
+   *      the older version (or no version) AND has a history field —
+   *      meaning the trend merger would have skipped some readings on
+   *      the version-mismatch gate.
+   *  Dismissed by writing the current CATALOG_VERSION to dc_catalogAck
+   *  so it doesn't re-appear until the next bump. */
+  const [catalogNoticeDismissed, setCatalogNoticeDismissed] = useState(() => {
+    if (typeof window === 'undefined') return true;
+    return loadCatalogAck() >= CATALOG_VERSION;
+  });
+  const showCatalogMigrationNotice = useMemo(() => {
+    if (catalogNoticeDismissed) return false;
+    // Only show when the user actually has reports affected by the
+    // version mismatch — fresh installs (no reports) get no banner.
+    return reports.some((r) =>
+      r.biomarkers.some(
+        (b) =>
+          (b.catalogVersion ?? 0) < CATALOG_VERSION &&
+          b.history &&
+          b.history.length > 0,
+      ),
+    );
+  }, [catalogNoticeDismissed, reports]);
+  const dismissCatalogNotice = () => {
+    saveCatalogAck(CATALOG_VERSION);
+    setCatalogNoticeDismissed(true);
+  };
   const { navigate } = useNavigation();
 
   /** Per-report delete dialog. State lives at the page level so the
@@ -161,16 +194,24 @@ export default function HomePage() {
     });
   }, [biomarkers, trimmedQuery, statusFilter]);
 
-  /** All flagged markers (concern + attention), sorted concern-first.
-   *  Drives the top-concern hero (index 0) and the count in the
-   *  "See N more flagged" link. */
+  /** All flagged markers (critical + concern + attention), sorted
+   *  critical → concern → attention. Drives the top-concern hero
+   *  (index 0) and the count in the "See N more flagged" link. */
   const flaggedMarkersAll = useMemo(() => {
+    const severityRank: Record<Biomarker['status'], number> = {
+      critical: 0,
+      concern: 1,
+      attention: 2,
+      good: 3,
+    };
     return biomarkers
-      .filter((m) => m.status === 'concern' || m.status === 'attention')
-      .sort((a, b) => {
-        if (a.status !== b.status) return a.status === 'concern' ? -1 : 1;
-        return 0;
-      });
+      .filter(
+        (m) =>
+          m.status === 'critical' ||
+          m.status === 'concern' ||
+          m.status === 'attention',
+      )
+      .sort((a, b) => severityRank[a.status] - severityRank[b.status]);
   }, [biomarkers]);
 
   /** Markers rendered inside the disclosure body.
@@ -206,9 +247,16 @@ export default function HomePage() {
       const markers = biomarkers.filter((m) =>
         p.categories.includes(m.category),
       );
-      const concern = markers.filter((m) => m.status === 'concern').length;
+      const critical = markers.filter((m) => m.status === 'critical').length;
+      // "concern" tile sum collapses critical + concern into one count —
+      // both surface as red tiles with see-a-doctor-priority framing.
+      // Critical preserves its semantics via the separate `critical`
+      // field so the strip can promote those tiles visually.
+      const concern =
+        critical +
+        markers.filter((m) => m.status === 'concern').length;
       const attention = markers.filter((m) => m.status === 'attention').length;
-      return { ...p, concern, attention, total: markers.length };
+      return { ...p, critical, concern, attention, total: markers.length };
     }).filter((p) => p.total > 0);
   }, [biomarkers]);
 
@@ -262,6 +310,45 @@ export default function HomePage() {
           fails to persist (quota exceeded, private mode, storage
           disabled). Reports still work in memory, but a tab close wipes
           them — telling the user upfront is the only honest move. */}
+      {/* Catalog-migration notice. Surfaced once per CATALOG_VERSION
+          bump for users whose persisted reports were stamped at an
+          older version AND carry history — those trendlines would
+          otherwise drop a reading silently after the bump without
+          explanation. Dismissible; ack persists across reloads. */}
+      {showCatalogMigrationNotice && (
+        <Container size="wide" className="pt-4">
+          <div
+            role="status"
+            className="flex items-start gap-3 rounded-2xl bg-indigo-50/70 border border-indigo-200 px-4 py-3"
+          >
+            <span aria-hidden role="img" className="text-body-lg leading-none mt-0.5">
+              ℹ️
+            </span>
+            <div className="flex-1 min-w-0 text-caption leading-relaxed text-ink">
+              <div className="font-semibold text-indigo-900">
+                We updated our biomarker catalog
+              </div>
+              <p className="mt-0.5 text-ink-soft">
+                Some of your trendlines might be missing readings from
+                older reports — that's because the marker shape (id or
+                unit) changed between catalog versions, and we don't
+                fuse readings across the change. Past reports are still
+                in your locker; we just won't merge their history into
+                a different-shaped marker.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissCatalogNotice}
+              aria-label="Dismiss"
+              className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-indigo-700 hover:bg-indigo-100"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </Container>
+      )}
+
       {saveError === 'quota' && (
         <Container size="wide" className="pt-4">
           <div
