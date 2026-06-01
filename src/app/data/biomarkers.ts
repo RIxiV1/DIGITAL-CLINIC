@@ -88,6 +88,16 @@ export type Biomarker = {
    *  for backward compat with reports persisted before the field
    *  existed. */
   catalogVersion?: number;
+  /** The reference range the LAB itself printed next to this value, if
+   *  the parser was able to read it. Surfaced in the UI alongside the
+   *  catalog's healthy/optimal bands so a user uploading an older
+   *  report (e.g. WHO 2010 semen criteria, pre-ADA-2024 A1c thresholds)
+   *  sees BOTH the lab's interpretive context AND ours — preventing
+   *  the "lab said normal, app says concern" trust break. The catalog
+   *  is still the source of truth for the status tier; this is a
+   *  display-only field that anchors the user back to the document. */
+  labRefMin?: number;
+  labRefMax?: number;
 };
 
 export type BiomarkerCategoryId =
@@ -903,10 +913,16 @@ export const CATALOG_VERSION = 2;
  * Construct a fully-typed Biomarker from a catalog template plus a
  * measured value. Used by the parser when it pulls a value out of an
  * uploaded report.
+ *
+ * `labRef` is the lab's printed reference range when the parser was
+ * able to capture it from the row's `tail`. Threaded through unchanged
+ * — the catalog's `min`/`max` still drive status; `labRefMin`/`labRefMax`
+ * are display-only context surfaced alongside.
  */
 export function markerFromTemplate(
   template: BiomarkerTemplate,
   value: number,
+  labRef?: { min?: number; max?: number },
 ): Biomarker {
   return {
     id: template.id,
@@ -925,6 +941,8 @@ export function markerFromTemplate(
     plain: template.plain,
     problemId: template.problemId,
     catalogVersion: CATALOG_VERSION,
+    labRefMin: labRef?.min,
+    labRefMax: labRef?.max,
   };
 }
 
@@ -1211,6 +1229,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       audience: 'adults',
     },
     min: 200, max: 900, optimalMin: 500, optimalMax: 900,
+    // Methylcobalamin/cyanocobalamin supplementation routinely pushes
+    // B12 into the 1,500–5,000 pg/mL range. The 5×-span fallback
+    // (cap ≈ 4,400) was clipping these as "OCR errors" when they're
+    // actually legitimate supplemented readings.
+    physicalMin: 0, physicalMax: 10000,
     category: 'vitamins', direction: 'up',
     simpleName: 'Brain and nerve fuel',
     plain: 'Technically in range below the optimum, but lower than ideal for sharp thinking and steady energy.',
@@ -1226,6 +1249,18 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       url: 'https://www.who.int/publications/i/item/9789240008526',
       audience: 'adult men',
     },
+    // Acute-phase reactant: COVID-19 cytokine storm, HLH, adult Still's
+    // disease, hemochromatosis crisis can legitimately push ferritin
+    // to 10,000–100,000 ng/mL. The 5×-span fallback (cap ≈ 2,250) was
+    // SILENTLY DELETING these readings as "OCR errors" — a real
+    // patient-safety bug: ferritin >10,000 is itself a diagnostic
+    // signal for HLH that we were swallowing. Bumped physicalMax to
+    // 200,000 (well above any documented case).
+    // Critical: >1,000 = inflammatory cascade / HLH workup; samaller
+    // band than max prevents the "concern" tier from absorbing
+    // genuinely emergent readings.
+    criticalHigh: 1000,
+    physicalMin: 0, physicalMax: 200000,
     category: 'vitamins', direction: 'band',
     simpleName: 'Your iron stores',
     plain: 'Iron stores — band-shaped because both deficiency and overload carry risk.',
@@ -1872,6 +1907,13 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       url: 'https://www.ahajournals.org/doi/10.1161/01.CIR.0000052939.59093.45',
       audience: 'adults',
     },
+    // Acute-phase reactant. The 5×-span fallback (cap ≈ 18) was
+    // silently deleting COVID-19 / sepsis / acute pancreatitis
+    // readings that legitimately spike to 100–500 mg/L. Bumped to
+    // 1000 (covers documented sepsis maxima). Critical: ≥100 mg/L is
+    // the clinical inflection — same-day evaluation is appropriate.
+    criticalHigh: 100,
+    physicalMin: 0, physicalMax: 1000,
     category: 'inflammation', direction: 'down',
     simpleName: 'A general inflammation signal',
     plain: 'Persistently elevated CRP suggests low-grade inflammation — linked to heart disease and metabolic issues.',
@@ -1882,9 +1924,32 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['ESR', 'Erythrocyte Sedimentation Rate', 'Sed Rate'],
     unit: 'mm/hr', unitAliases: ['mm/h', 'mm/1hr'],
     min: 0, max: 15,
+    physicalMin: 0, physicalMax: 200,
     category: 'inflammation', direction: 'down',
     simpleName: 'Old-school inflammation marker',
     plain: 'ESR is a non-specific inflammation gauge. Less precise than CRP but still useful in context.',
+  },
+  {
+    id: 'd-dimer',
+    name: 'D-Dimer',
+    aliases: ['D-Dimer', 'D Dimer', 'D-dimer', 'DDimer', 'Fibrin Degradation Product'],
+    unit: 'ng/mL',
+    unitAliases: ['ng/ml', 'µg/mL', 'mg/L', 'FEU ng/mL', 'DDU ng/mL'],
+    min: 0, max: 500,
+    // Acute-phase reactant — pulmonary embolism, DVT, DIC, COVID-19
+    // cytokine storm, post-surgical states all legitimately push
+    // D-Dimer into 1,000–50,000+ ng/mL territory. The 5×-span fallback
+    // (cap ≈ 3,000) was actively unsafe — D-Dimer >1,000 ng/mL is the
+    // VTE-workup threshold; silently rejecting >3,000 ng/mL would
+    // strip a real PE alert. Bumped to 100,000.
+    // Critical: ≥1000 ng/mL = VTE / PE risk warranting urgent
+    // imaging; this is one of the clearest critical-tier markers in
+    // the catalog.
+    criticalHigh: 1000,
+    physicalMin: 0, physicalMax: 100000,
+    category: 'inflammation', direction: 'down',
+    simpleName: 'Clotting-breakdown signal',
+    plain: 'Elevated D-Dimer suggests active clot formation — pulmonary embolism, DVT, or systemic inflammatory states like COVID-19.',
   },
 
   /* ---- HOMA-IR (derived) ---------------------------------------

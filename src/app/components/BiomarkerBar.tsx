@@ -360,6 +360,35 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           <p className="mt-1.5 text-caption leading-relaxed text-ink-soft">
             {marker.plain}
           </p>
+          {/* Range disclosure — anchors the user back to the lab's
+              printed range when we have it. Surfaces the difference
+              between the lab's "Normal" call and ours so a 2018 report
+              graded against WHO 2010 (or an older A1c standard) doesn't
+              read as a contradiction. The catalog's healthy band stays
+              the source of truth for the status tier; this is purely
+              context. */}
+          {typeof marker.labRefMin === 'number' &&
+            typeof marker.labRefMax === 'number' && (
+              <div className="mt-2.5 rounded-[8px] border border-indigo-100 bg-indigo-50/40 px-3 py-2 text-micro leading-snug">
+                <div className="font-semibold text-ink-soft">
+                  Your lab's printed range
+                </div>
+                <div className="mt-0.5 text-muted">
+                  {marker.labRefMin}–{marker.labRefMax}
+                  {marker.unit ? ` ${marker.unit}` : ''}
+                  {' '}
+                  <span className="text-ink-soft">
+                    · Digital Clinic uses{' '}
+                    <span className="font-medium">
+                      {marker.min}–{marker.max}
+                      {marker.unit ? ` ${marker.unit}` : ''}
+                    </span>{' '}
+                    as the healthy band; the two can differ when the lab
+                    uses an older reference standard.
+                  </span>
+                </div>
+              </div>
+            )}
           {/* Optimal-range citation. Required by convention on every
               marker that defines an optimal sub-range — without it,
               users have no way to tell our optimal claim apart from a
@@ -370,28 +399,45 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
               templates where the range only applies to a narrower
               cohort (e.g. testosterone is men-specific). */}
           {marker.optimalSource && (
-            <p className="mt-2.5 text-micro text-muted leading-snug">
-              <span className="font-semibold text-ink-soft">
-                Optimal range
-              </span>
-              {marker.optimalSource.audience
-                ? ` (${marker.optimalSource.audience}): `
-                : ': '}
-              {marker.optimalSource.label}
-              {marker.optimalSource.url && (
-                <>
-                  {' · '}
-                  <a
-                    href={marker.optimalSource.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
-                  >
-                    source
-                  </a>
-                </>
-              )}
-            </p>
+            <>
+              <p className="mt-2.5 text-micro text-muted leading-snug">
+                <span className="font-semibold text-ink-soft">
+                  Optimal range
+                </span>
+                {marker.optimalSource.audience
+                  ? ` (${marker.optimalSource.audience}): `
+                  : ': '}
+                {marker.optimalSource.label}
+                {marker.optimalSource.url && (
+                  <>
+                    {' · '}
+                    <a
+                      href={marker.optimalSource.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+                    >
+                      source
+                    </a>
+                  </>
+                )}
+              </p>
+              {/* Sub-clinical disclaimer. Without this, a "Borderline"
+                  flag on a value that sits comfortably inside the
+                  lab's "Normal" range reads as a contradiction and
+                  drives triage anxiety. The copy explicitly separates
+                  the two range concepts: the lab's clinical reference
+                  (the floor of "abnormal enough to investigate") vs.
+                  our optimal sub-band (the band associated with
+                  lowest-risk outcomes in cohort studies). One says
+                  "you're not sick"; the other says "you're not at
+                  the sweet spot yet." */}
+              <p className="mt-2 text-micro text-muted/90 leading-snug italic">
+                A value inside your lab's "Normal" range but outside
+                this optimal sub-band isn't a sign of disease — it's
+                a long-term-outcome nudge, not a clinical alarm.
+              </p>
+            </>
           )}
           {marker.problemId && onClick && (
             <div className="mt-3 inline-flex items-center gap-1 text-caption font-semibold text-indigo-700">

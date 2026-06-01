@@ -107,6 +107,10 @@ const BiomarkerSchema = z.object({
    *  a catalog rename (see [[reports-merge-history]]). Optional for
    *  backward compat with reports persisted before the field landed. */
   catalogVersion: z.number().int().nonnegative().optional(),
+  /** Lab's printed reference range, captured at extraction time. Used
+   *  for display alongside the catalog's healthy band. Optional. */
+  labRefMin: z.number().finite().optional(),
+  labRefMax: z.number().finite().optional(),
 });
 
 const ReportSchema = z.object({

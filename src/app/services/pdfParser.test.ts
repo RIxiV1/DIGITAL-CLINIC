@@ -185,6 +185,71 @@ describe('extractBiomarkersFromText — normalize artefacts', () => {
 /* tier separately from 'concern'.                                      */
 /* ------------------------------------------------------------------ */
 
+/* ------------------------------------------------------------------ */
+/* Reference-range trap — the matcher must capture the user's measured */
+/* value, NOT a number that lives inside the lab's printed reference   */
+/* range. Captures the lab's range as a labRefMin/labRefMax pair so    */
+/* the UI can surface "lab's range vs our range" alongside.            */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — reference-range trap', () => {
+  it('extracts the value, NOT the ref-range max, on a refrange-before-unit row', () => {
+    // Classic Indian-lab layout: `<marker>  <value>  <refmin>-<refmax>  <unit>`.
+    // The optional ref-range absorber in `tail` must eat "13.5-17.5"
+    // so the captured value stays 14.5 — without it, the engine
+    // backtracks and matches "17.5" as the value (which would render
+    // as a perfectly-healthy reading regardless of what the user's
+    // actual Hb is).
+    const text = 'Hemoglobin 14.5 13.5-17.5 g/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'hb')?.value).toBe(14.5);
+  });
+
+  it('captures the printed reference range into labRefMin/labRefMax', () => {
+    const text = 'Fasting Glucose 92 70-99 mg/dL';
+    const glucose = extractBiomarkersFromText(text).find(
+      (m) => m.id === 'glucose',
+    );
+    expect(glucose?.value).toBe(92);
+    expect(glucose?.labRefMin).toBe(70);
+    expect(glucose?.labRefMax).toBe(99);
+  });
+
+  it('extracts correctly when ref-range uses en-dash separator', () => {
+    const text = 'Hemoglobin 14.5 13.5–17.5 g/dL';
+    const hb = extractBiomarkersFromText(text).find((m) => m.id === 'hb');
+    expect(hb?.value).toBe(14.5);
+    expect(hb?.labRefMin).toBe(13.5);
+    expect(hb?.labRefMax).toBe(17.5);
+  });
+
+  it('extracts correctly when ref-range uses literal "to"', () => {
+    const text = 'Fasting Glucose 92 70 to 99 mg/dL';
+    const g = extractBiomarkersFromText(text).find((m) => m.id === 'glucose');
+    expect(g?.value).toBe(92);
+    expect(g?.labRefMin).toBe(70);
+    expect(g?.labRefMax).toBe(99);
+  });
+
+  it('passes through labRefMin/labRefMax undefined when no range printed', () => {
+    const text = 'Fasting Glucose 92 mg/dL';
+    const g = extractBiomarkersFromText(text).find((m) => m.id === 'glucose');
+    expect(g?.value).toBe(92);
+    expect(g?.labRefMin).toBeUndefined();
+    expect(g?.labRefMax).toBeUndefined();
+  });
+
+  it('scales labRefMin/labRefMax through the same unit multiplier as value', () => {
+    // Lab prints platelets in thou/cumm with thou-prefixed ref-range:
+    // value=245 thou/cumm → 245,000; range 150–450 thou/cumm → 150,000–450,000.
+    const text = 'Platelet Count 245 150-450 thou/cumm';
+    const p = extractBiomarkersFromText(text).find((m) => m.id === 'platelets');
+    expect(p?.value).toBe(245000);
+    expect(p?.labRefMin).toBe(150000);
+    expect(p?.labRefMax).toBe(450000);
+  });
+});
+
 describe('extractBiomarkersFromText — HOMA-IR auto-derivation', () => {
   // Many Indian Wellness panels print glucose + insulin but stop short
   // of computing HOMA-IR. The parser derives it post-hoc so users see

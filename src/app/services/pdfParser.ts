@@ -46,8 +46,49 @@ import {
 const OCR_MAX_PAGES = 3;
 
 /** PDF render scale for OCR. 2.5x A4 ≈ 1495×2115 px; Tesseract needs
- *  this resolution to read small lab-table fonts reliably. */
-const PDF_RENDER_SCALE = 2.5;
+ *  this resolution to read small lab-table fonts reliably. Used as the
+ *  desktop / high-memory default — see `getOcrRenderScale()` for the
+ *  adaptive selection. */
+const PDF_RENDER_SCALE_DESKTOP = 2.5;
+/** Lower scale for memory-constrained devices: 2.0x A4 ≈ 1196×1692 px.
+ *  Still adequate for most lab-table fonts (≥10pt) but cuts canvas
+ *  memory ~40% — important on Android Chrome where 200MB+ canvas
+ *  allocations are common OOM triggers. */
+const PDF_RENDER_SCALE_LOW = 2.0;
+
+/**
+ * Pick an OCR render scale appropriate to the device. We lower the
+ * scale (and thus canvas RAM) when:
+ *   - `deviceMemory` hints ≤4 GB (Chromium-only API; Safari returns
+ *     undefined and we conservatively default high).
+ *   - The viewport's longest edge is ≤480px (phone-sized).
+ *
+ * The fallback to PDF_RENDER_SCALE_DESKTOP preserves the high-fidelity
+ * behavior on desktop/laptop where Tesseract has the RAM. Anywhere this
+ * heuristic mis-classifies, the user still gets a working result; OCR
+ * quality degrades gracefully rather than OOM-crashing the tab. The
+ * architectural-audit motivation: a 3-page A4 PDF at 2.5× renders to
+ * ~210MB of canvas memory across the run, and budget Android Chrome
+ * tabs OOM at ~250MB.
+ */
+function getOcrRenderScale(): number {
+  if (typeof navigator === 'undefined' || typeof window === 'undefined') {
+    return PDF_RENDER_SCALE_DESKTOP;
+  }
+  // `navigator.deviceMemory` is a Chromium quantised hint (0.25, 0.5,
+  // 1, 2, 4, 8). It's the closest thing browsers expose to "is this a
+  // low-end phone?" Treat ≤4 GB as constrained.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const memHint = (navigator as any).deviceMemory;
+  if (typeof memHint === 'number' && memHint <= 4) {
+    return PDF_RENDER_SCALE_LOW;
+  }
+  const longest = Math.max(window.innerWidth || 0, window.innerHeight || 0);
+  if (longest > 0 && longest <= 480) {
+    return PDF_RENDER_SCALE_LOW;
+  }
+  return PDF_RENDER_SCALE_DESKTOP;
+}
 
 /** Minimum char count before we trust the PDF text layer. Below this,
  *  the layer is probably stripped/empty (scanned PDF) — fall to OCR. */
@@ -354,7 +395,7 @@ async function renderPageToImage(
   pageNum: number,
 ): Promise<Blob | string> {
   const page = await pdf.getPage(pageNum);
-  const viewport = page.getViewport({ scale: PDF_RENDER_SCALE });
+  const viewport = page.getViewport({ scale: getOcrRenderScale() });
   const canvas = document.createElement('canvas');
   canvas.width = viewport.width;
   canvas.height = viewport.height;
@@ -647,10 +688,20 @@ function unitMultiplier(unit: string | null | undefined): number {
  * data-entry errors and mis-parses (e.g. picking up the page number
  * instead of the value).
  */
+type ExtractedMarker = {
+  value: number;
+  /** The reference range the lab itself printed alongside the value,
+   *  captured by the `tail` regex's ref-range slot. Undefined when the
+   *  row didn't include a printed range or the parser couldn't fit it
+   *  into the recognised shape. */
+  labRefMin?: number;
+  labRefMax?: number;
+};
+
 function extractMarkerValue(
   text: string,
   template: BiomarkerTemplate,
-): number | null {
+): ExtractedMarker | null {
   // Bounded between-window: allow AT MOST one newline between the
   // alias and the number. Cross-row glue matches were a real false-
   // positive vector — a marker on row N could pair with a number on
@@ -698,8 +749,17 @@ function extractMarkerValue(
   // protection against "Vitamin D (25-OH) 28 ng/mL" capturing "25" is
   // preserved because "(25-OH)" doesn't match the ref-range shape:
   // the engine then backtracks and captures 28 correctly.
+  //
+  // The ref-range slot is now CAPTURED via groups so we can surface
+  // the lab's printed range in the UI (CRITICAL 2 in the architectural
+  // audit — "lab said normal, app says concern" trust break). Indices
+  // m[3], m[4] hold refMin / refMax when matched. The pattern also
+  // accepts the one-sided forms "<X" and ">X" (common in Indian labs)
+  // and the ":" / "Reference Range" lead-ins that some templates use.
+  const refRangeBody =
+    '(\\d+(?:\\.\\d+)?)\\s*(?:[-–—]|to)\\s*(\\d+(?:\\.\\d+)?)';
   const tail =
-    '[^\\d\\n]{0,30}?(?:\\d+(?:\\.\\d+)?\\s*(?:[-–—]|to)\\s*\\d+(?:\\.\\d+)?[^\\d\\n]{0,30}?)?';
+    `[^\\d\\n]{0,30}?(?:${refRangeBody}[^\\d\\n]{0,30}?)?`;
 
   // normalizeMu on the catalog side mirrors the call inside normalize()
   // for the input text — without both sides agreeing on µ vs μ, units
@@ -754,6 +814,15 @@ function extractMarkerValue(
     if (!m) continue;
     const raw = parseFloat(m[1]);
     if (Number.isNaN(raw)) continue;
+    // Capture group layout depends on whether skipUnit branched off.
+    //   skipUnit=true:  m[1]=value (no other groups)
+    //   skipUnit=false: m[1]=value, m[2]=refMin?, m[3]=refMax?, m[4]=unit
+    // refMin/refMax exist only when the lab printed a ref-range
+    // matching the strict `\d+(.\d+)? sep \d+(.\d+)?` shape; otherwise
+    // they're undefined (the tail's outer `(?:...)?` was skipped).
+    const printedUnit = !skipUnit && m[4] ? m[4] : '';
+    const labRefMinStr = !skipUnit && m[2] ? m[2] : '';
+    const labRefMaxStr = !skipUnit && m[3] ? m[3] : '';
     // Reconcile the lab's printed unit against the catalog's canonical
     // unit. Only do the reconciliation when we actually captured a
     // printed unit token (non-skipUnit path). When skipUnit is true,
@@ -763,8 +832,8 @@ function extractMarkerValue(
     // would WRONGLY divide by the catalog's prefix (1e6 for
     // million/ml) and turn 103 into 0.000103.
     let scale = 1;
-    if (!skipUnit && m[2]) {
-      scale = unitMultiplier(m[2]) / unitMultiplier(template.unit);
+    if (!skipUnit && printedUnit) {
+      scale = unitMultiplier(printedUnit) / unitMultiplier(template.unit);
     }
     // Clean up float-precision noise introduced by scaling — 2.45 * 1e5
     // yields 245000.00000000003 in IEEE-754, which is silly to surface
@@ -792,7 +861,27 @@ function extractMarkerValue(
         ? template.physicalMax
         : template.max + 5 * span;
     if (v < physMin || v > physMax) continue;
-    return v;
+    // Scale the captured ref-range too — same multiplier logic as the
+    // value. A lab printing "Platelet Count 245 (150 - 450) thou/cumm"
+    // captures refMin=150, refMax=450 in printed thou units; we
+    // multiply by the same scale so the user sees the lab's range in
+    // the catalog's canonical units.
+    const labRefMinNum = labRefMinStr ? parseFloat(labRefMinStr) : NaN;
+    const labRefMaxNum = labRefMaxStr ? parseFloat(labRefMaxStr) : NaN;
+    const labRef =
+      Number.isFinite(labRefMinNum) && Number.isFinite(labRefMaxNum)
+        ? {
+            min:
+              scale !== 1
+                ? parseFloat((labRefMinNum * scale).toPrecision(12))
+                : labRefMinNum,
+            max:
+              scale !== 1
+                ? parseFloat((labRefMaxNum * scale).toPrecision(12))
+                : labRefMaxNum,
+          }
+        : undefined;
+    return { value: v, labRefMin: labRef?.min, labRefMax: labRef?.max };
   }
   return null;
 }
@@ -811,9 +900,14 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
     // invariant the loop body didn't need. Dropped to keep the loop
     // readable; if catalog duplication ever needs to be defended
     // against, dedupe at the catalog source, not here.
-    const value = extractMarkerValue(normalized, template);
-    if (value === null) continue;
-    found.push(markerFromTemplate(template, value));
+    const extracted = extractMarkerValue(normalized, template);
+    if (extracted === null) continue;
+    const labRef =
+      typeof extracted.labRefMin === 'number' &&
+      typeof extracted.labRefMax === 'number'
+        ? { min: extracted.labRefMin, max: extracted.labRefMax }
+        : undefined;
+    found.push(markerFromTemplate(template, extracted.value, labRef));
   }
   return deriveComputedMarkers(found);
 }
