@@ -33,10 +33,11 @@ import {
 import { makeReport, sampleReports } from '../data/reports';
 import {
   clearPendingConfirm,
+  loadAiAutoFallbackSetting,
   loadPendingConfirm,
   savePendingConfirm,
 } from '../utils/persistence';
-import { parseWithAi } from '../services/aiParser';
+import { AI_PARSER_PRIVACY_COPY, parseWithAi } from '../services/aiParser';
 import { sanitizeFilename } from '../utils/sanitizeFilename';
 
 /**
@@ -149,6 +150,28 @@ export default function ProcessingPage() {
    *  app auto-routed and the user had no chance to verify what was
    *  extracted before being shown a "your report" dashboard. */
   const [pendingConfirm, setPendingConfirm] = useState<ConfirmState | null>(null);
+  /** When set, ProcessingPage is in the auto-cascade state: the local
+   *  pipeline failed on an image and we're invoking the Vision-LLM
+   *  fallback automatically (without requiring the user to tap the
+   *  manual "Try AI parser" button on the failure card). The render
+   *  branch for this state shows a "Trying AI parser..." view with the
+   *  privacy disclosure inline and a prominent Cancel button.
+   *
+   *  Gated by:
+   *    - File MIME starts with `image/` (PDFs never auto-cascade — they
+   *      have text layers, and a failed PDF is more likely a non-lab
+   *      file than a parser miss)
+   *    - User has `dc_aiAutoFallback` enabled (default true; togglable
+   *      in Profile)
+   *    - Local pipeline failed with a parser-miss reason (`no-matches`
+   *      / `extraction-error` / `ocr-failed`) — corruption / missing
+   *      file shouldn't burn a quota tick. */
+  const [aiCascadeFile, setAiCascadeFile] = useState<File | null>(null);
+  /** AbortController for the in-flight AI cascade call. Held in a ref
+   *  so the Cancel button (and unmount cleanup) can `.abort()` without
+   *  triggering a re-render. Replaced on every cascade entry; aborted
+   *  on every cascade exit (success, failure, cancel, unmount). */
+  const aiCascadeAbortRef = useRef<AbortController | null>(null);
 
   // StrictMode in dev double-mounts every effect. We track which
   // processingId we've *already started* parsing for, so the second
@@ -287,12 +310,32 @@ export default function ProcessingPage() {
       }
       // Extraction failed. Roll back the placeholder report so we
       // don't leave a forever-"processing" ghost in the locker, then
-      // render the inline error state. Defensive clear in case a stale
-      // confirm record from a prior session is still sitting in storage.
+      // decide between two paths: auto-cascade to the AI parser
+      // (preferred for image uploads, when the setting is on) or fall
+      // straight to the inline failure card (PDFs, opt-out, or
+      // non-parser-miss reasons like corruption / no-file).
       clearPendingConfirm();
       removeReport(processingId);
+      const reason = result.failureReason ?? 'no-matches';
+      // Only cascade on parser-miss reasons — `no-file` (consumed
+      // upload / refresh) and `out-of-scope` (catalog has no matching
+      // markers) are deliberate non-cascade cases. `parser-error` IS
+      // included because most of those are tabular-layout edge cases
+      // Gemini can recover from.
+      const isParserMiss = reason === 'no-matches' || reason === 'parser-error';
+      const isImage = !!file && /^image\//.test(file.type || '');
+      const shouldCascade =
+        isImage && isParserMiss && loadAiAutoFallbackSetting();
+      if (shouldCascade && file) {
+        // Don't paint the failure card — kick straight into the AI
+        // cascade. The setAiCascadeFile state drives a new render
+        // branch that shows the "Trying AI parser..." view with the
+        // privacy disclosure inline.
+        setAiCascadeFile(file);
+        return;
+      }
       setFailure({
-        reason: result.failureReason ?? 'no-matches',
+        reason,
         errorMessage: result.errorMessage,
         fileName,
         ocrPagesAttempted: result.ocrPagesAttempted,
@@ -352,9 +395,12 @@ export default function ProcessingPage() {
    * markers our catalog doesn't cover yet), surface an inline error
    * and keep the user on the failure screen.
    */
-  const tryAiParser = async (file: File): Promise<{ error?: string }> => {
+  const tryAiParser = async (
+    file: File,
+    signal?: AbortSignal,
+  ): Promise<{ error?: string }> => {
     try {
-      const result = await parseWithAi(file);
+      const result = await parseWithAi(file, signal);
       // Race guard: if the component unmounted while the AI call was
       // in flight (user clicked Try AI parser, then navigated away or
       // hit "Enter values manually"), bail before we mutate global
@@ -439,6 +485,87 @@ export default function ProcessingPage() {
     replace({ type: 'upload' });
   };
 
+  /* ---- AI auto-cascade ---- */
+
+  /**
+   * Drive the AI cascade whenever `aiCascadeFile` flips on. The effect
+   * owns the AbortController for the in-flight call so Cancel and
+   * unmount can both interrupt cleanly. Three terminal transitions:
+   *   - success → tryAiParser sets pendingConfirm; we clear aiCascadeFile
+   *   - parser miss / error → setFailure (drops back to the manual
+   *     failure card so the user can retry, enter manually, or use a
+   *     sample); we clear aiCascadeFile
+   *   - user cancel → setFailure with the same fallback set
+   *
+   * Race guards:
+   *   - mountedRef: if the user navigates away mid-call, we don't mutate
+   *     state on a dead component.
+   *   - activeProcessingIdRef: if a new upload supersedes this one
+   *     during the cascade, suppress side-effects.
+   */
+  useEffect(() => {
+    if (!aiCascadeFile) return;
+    const controller = new AbortController();
+    aiCascadeAbortRef.current = controller;
+    const cascadeProcessingId = activeProcessingIdRef.current;
+    const fileName = aiCascadeFile.name || 'My lab report';
+
+    void tryAiParser(aiCascadeFile, controller.signal).then((res) => {
+      if (!mountedRef.current) return;
+      if (activeProcessingIdRef.current !== cascadeProcessingId) return;
+      if (controller.signal.aborted) {
+        // User-triggered cancel: drop into the failure card with a
+        // gentle reason so they can pick an alternative (manual,
+        // sample, different file).
+        setAiCascadeFile(null);
+        setFailure({
+          reason: 'no-matches',
+          errorMessage:
+            'AI parser cancelled. You can enter values manually or try a different file.',
+          fileName,
+          file: aiCascadeFile,
+        });
+        return;
+      }
+      if (res.error) {
+        // tryAiParser returned an error (zero markers, network fail,
+        // schema reject). Fall back to the manual failure card —
+        // ParseFailedView already renders the "Try AI parser" button
+        // so the user can retry if it was transient.
+        setAiCascadeFile(null);
+        setFailure({
+          reason: 'no-matches',
+          errorMessage: res.error,
+          fileName,
+          file: aiCascadeFile,
+        });
+        return;
+      }
+      // Success path: tryAiParser already called setPendingConfirm.
+      // Just clear the cascade state so the next render shows the
+      // confirm view (which is gated higher in this render function).
+      setAiCascadeFile(null);
+    });
+
+    return () => {
+      // On effect cleanup (component unmount OR aiCascadeFile changing
+      // mid-flight), abort the in-flight call. The fetch will reject
+      // with AbortError, tryAiParser will catch it, and the
+      // mountedRef guard above will suppress the state mutation.
+      controller.abort();
+      aiCascadeAbortRef.current = null;
+    };
+    // tryAiParser is intentionally NOT in the dep list — it's
+    // re-created on every render but its closed-over state we care
+    // about (mountedRef / activeProcessingIdRef) is ref-stable. Adding
+    // it would re-fire the effect every render and double-call the API.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [aiCascadeFile]);
+
+  const cancelAiCascade = () => {
+    aiCascadeAbortRef.current?.abort();
+  };
+
   /* ================================================================ */
   /* Render                                                             */
   /* ================================================================ */
@@ -469,6 +596,12 @@ export default function ProcessingPage() {
         onConfirm={confirmExtractedValues}
         onReject={rejectAndRetry}
       />
+    );
+  }
+
+  if (aiCascadeFile) {
+    return (
+      <AiCascadeView fileName={aiCascadeFile.name} onCancel={cancelAiCascade} />
     );
   }
 
@@ -612,6 +745,108 @@ export default function ProcessingPage() {
         <p className="mt-7 text-caption uppercase tracking-label font-bold text-muted">
           Usually under 60 seconds
         </p>
+      </Container>
+    </div>
+  );
+}
+
+/* ================================================================== */
+/* AI auto-cascade view — local parser failed on an image, Gemini is    */
+/* running in the background. Shows a spinner + the privacy disclosure  */
+/* inline (so consent stays just-in-time) + a prominent Cancel button   */
+/* that aborts the in-flight fetch and drops the user back to the       */
+/* manual failure card.                                                  */
+/* ================================================================== */
+
+function AiCascadeView({
+  fileName,
+  onCancel,
+}: {
+  fileName: string;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="min-h-dvh bg-canvas flex flex-col">
+      <Container size="narrow" className="pt-6">
+        <Logo />
+      </Container>
+
+      <Container
+        size="narrow"
+        className="flex-1 flex flex-col items-center justify-center text-center pb-16"
+      >
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+          className="relative"
+          aria-hidden="true"
+        >
+          <motion.div
+            animate={{
+              boxShadow: [
+                '0 0 0 0 rgba(45,59,142,0.20)',
+                '0 0 0 28px rgba(45,59,142,0)',
+              ],
+            }}
+            transition={{ duration: 1.6, repeat: Infinity }}
+            className="grid place-items-center w-24 h-24 rounded-3xl bg-indigo-600 text-gold-400"
+          >
+            <Sparkles size={44} />
+          </motion.div>
+        </motion.div>
+
+        <h1 className="font-display text-display-md leading-tight mt-7 text-balance max-w-[22rem]">
+          Trying AI parser
+        </h1>
+        <p className="mt-2 text-body-sm text-ink-soft max-w-[22rem] text-pretty">
+          Our on-device read couldn’t recognise this layout. Handing the
+          image to Google Gemini for a second look.
+        </p>
+
+        {/* Privacy disclosure — same copy as the manual button on
+            ParseFailedView, so users see consistent language whether
+            they hit AI manually or via auto-cascade. Constant lives in
+            aiParser.ts. */}
+        <div
+          role="note"
+          aria-label="Privacy notice"
+          className="mt-6 w-full max-w-sm rounded-2xl border border-line bg-surface px-4 py-3 text-left"
+        >
+          <div className="text-caption uppercase tracking-label font-bold text-muted">
+            Heads up
+          </div>
+          <p className="mt-1 text-body-sm text-ink-soft text-pretty">
+            {AI_PARSER_PRIVACY_COPY}
+          </p>
+          {fileName ? (
+            <p className="mt-2 text-caption text-muted truncate">
+              File: {fileName}
+            </p>
+          ) : null}
+        </div>
+
+        {/* Indeterminate spinner — we don't have step-level progress
+            from the server, so an honest spinner beats a fake stage
+            ladder here. */}
+        <div className="mt-6 flex items-center gap-2 text-caption uppercase tracking-label font-bold text-muted">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+            className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full"
+            aria-hidden="true"
+          />
+          <span>Usually 3–8 seconds</span>
+        </div>
+
+        <Button
+          variant="secondary"
+          size="md"
+          onClick={onCancel}
+          className="mt-8"
+        >
+          Cancel and choose another option
+        </Button>
       </Container>
     </div>
   );

@@ -31,6 +31,16 @@ const PENDING_CONFIRM_KEY = `${KEY_PREFIX}pendingConfirm`;
  *  version, the dashboard surfaces a one-time migration notice
  *  explaining why their trendlines may no longer merge cleanly. */
 const CATALOG_ACK_KEY = `${KEY_PREFIX}catalogAck`;
+/** User preference: when local lab-report parsing (Tesseract / pdfjs)
+ *  fails on an image upload, should we auto-cascade to the Vision-LLM
+ *  fallback (Pipeline 3 / Gemini) instead of stopping at the failure
+ *  card and waiting for an explicit tap? Defaults true — opt-out, not
+ *  opt-in. The cascade is gated by image MIME type only (we never
+ *  cascade PDFs, which have text layers and stronger PHI signal).
+ *  Surfaced as an inline disclosure + Cancel during the cascade so
+ *  consent stays just-in-time. Profile → "AI auto-fallback" turns it
+ *  off permanently for users who want zero implicit network egress. */
+const AI_AUTO_FALLBACK_KEY = `${KEY_PREFIX}aiAutoFallback`;
 
 /** Reports older than this get cleaned up on next app load. 6 months. */
 const REPORT_TTL_MS = 180 * 24 * 60 * 60 * 1000;
@@ -144,6 +154,7 @@ const QuizAnswersSchema = z.object({
 });
 
 const QuizCompleteSchema = z.boolean();
+const AiAutoFallbackSchema = z.boolean();
 
 const PendingConfirmSchema = z.object({
   processingId: z.string().min(1).max(80),
@@ -312,6 +323,22 @@ export function loadQuizComplete(): boolean {
 
 export function saveQuizComplete(complete: boolean): void {
   writeJSON(QUIZ_COMPLETE_KEY, complete);
+}
+
+/* ------------------------------------------------------------------ */
+/* AI auto-fallback preference                                          */
+/*                                                                      */
+/* Defaults to TRUE — when local parsing fails on an image upload, the */
+/* AI parser kicks in automatically. Users who want zero implicit       */
+/* network egress can flip this off in Profile.                         */
+/* ------------------------------------------------------------------ */
+
+export function loadAiAutoFallbackSetting(): boolean {
+  return readValidated(AI_AUTO_FALLBACK_KEY, AiAutoFallbackSchema, true);
+}
+
+export function saveAiAutoFallbackSetting(enabled: boolean): void {
+  writeJSON(AI_AUTO_FALLBACK_KEY, enabled);
 }
 
 

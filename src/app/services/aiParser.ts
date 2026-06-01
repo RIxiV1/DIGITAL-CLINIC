@@ -33,6 +33,18 @@ import {
   type Biomarker,
 } from '../data/biomarkers';
 
+/**
+ * Single source of truth for the AI-parser privacy disclosure copy.
+ * Shown in three places:
+ *   1. Below the manual "Try AI parser" button on the failure card
+ *   2. Below the auto-cascade "Trying AI parser..." progress view
+ *   3. Next to the "AI auto-fallback" toggle in Profile
+ * Keeping it here avoids prose drift across surfaces — change the
+ * one constant, all three update together.
+ */
+export const AI_PARSER_PRIVACY_COPY =
+  'Sends this image to Google Gemini for parsing. The image leaves your device for this step; Google may retain it to improve their service. Free, no account needed.';
+
 /** Max dimension (px) of the image we send to the server. Held at
  *  2200 — bumping to 2600 reproducibly tripped Gemini's image-payload
  *  limit on Dr Lal PathLabs PNGs (server returned "Internal error").
@@ -346,9 +358,20 @@ export class AiParseError extends Error {
  * shape mismatch so the caller can render a meaningful error without
  * having to inspect HTTP details.
  */
-export async function parseWithAi(file: File): Promise<AiParseResult> {
+export async function parseWithAi(
+  file: File,
+  signal?: AbortSignal,
+): Promise<AiParseResult> {
+  // Short-circuit if the caller already cancelled before we did any
+  // work — saves a downscale and a base64 encode on a doomed call.
+  if (signal?.aborted) {
+    throw new AiParseError('AI parser cancelled', undefined);
+  }
   const scaled = await downscaleImage(file);
   const base64 = await blobToBase64(scaled);
+  if (signal?.aborted) {
+    throw new AiParseError('AI parser cancelled', undefined);
+  }
 
   const response = await fetch('/api/parse-image', {
     method: 'POST',
@@ -357,6 +380,7 @@ export async function parseWithAi(file: File): Promise<AiParseResult> {
       imageBase64: base64,
       mimeType: scaled.type || 'image/jpeg',
     }),
+    signal,
   });
 
   if (!response.ok) {
