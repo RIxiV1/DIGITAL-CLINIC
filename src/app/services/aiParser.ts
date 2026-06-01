@@ -325,7 +325,57 @@ function mapGeminiResultsToCatalog(results: GeminiMarker[]): AiMapResult {
     mapped.push(markerFromTemplate(template, value));
     seen.add(template.id);
   }
-  return { biomarkers: mapped, unmapped };
+  return pruneSuspectShortNameMarkers({ biomarkers: mapped, unmapped });
+}
+
+/**
+ * Defence-in-depth pass against cross-category hallucinations.
+ *
+ * Real failure observed on a Redcliffe Labs CBC: Gemini returned
+ * `{ name: "pH", value: 4.2 }` despite there being no pH row anywhere
+ * in the report. Our catalog has "pH" as a Semen pH marker (Fertility
+ * category) with reference 7.2-8, so the matcher correctly resolved
+ * the name and dumped a hallucinated 4.2 into the dashboard as
+ * "severely low semen pH." Trust-killer.
+ *
+ * Root cause is upstream (vision model inventing a short ambiguous
+ * abbreviation). The prompt now forbids this explicitly, but a second
+ * line of defence at the catalog boundary is cheap insurance: if a
+ * fertility marker with a short canonical name (≤3 chars: pH, plus
+ * any future additions like K, Na) appears AND no other fertility-axis
+ * markers were extracted in the same response, treat it as suspect
+ * and move it to the unmapped list. A genuine semen analysis would
+ * report volume, motility, morphology, count alongside pH; a CBC
+ * never includes pH.
+ *
+ * Threshold rationale: require ≥1 OTHER fertility marker (so total
+ * ≥2). Conservative — drops only the textbook hallucination pattern
+ * without false-positiving on legitimate multi-marker semen analyses.
+ */
+export function pruneSuspectShortNameMarkers(input: AiMapResult): AiMapResult {
+  const fertilityCount = input.biomarkers.filter(
+    (b) => b.category === 'fertility',
+  ).length;
+  if (fertilityCount === 0) return input;
+  const kept: Biomarker[] = [];
+  const newUnmapped = [...input.unmapped];
+  for (const b of input.biomarkers) {
+    const normalised = b.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '');
+    const isShortName = normalised.length > 0 && normalised.length <= 3;
+    const isFertility = b.category === 'fertility';
+    if (isFertility && isShortName && fertilityCount < 2) {
+      newUnmapped.push({
+        name: b.name,
+        value: b.value,
+        unit: b.unit,
+      });
+      continue;
+    }
+    kept.push(b);
+  }
+  return { biomarkers: kept, unmapped: newUnmapped };
 }
 
 export type AiParseResult = {

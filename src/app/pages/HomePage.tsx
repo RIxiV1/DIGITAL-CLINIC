@@ -800,7 +800,17 @@ function AllMarkersPane({
         </div>
       </div>
 
-      <div className="mt-3 overflow-x-auto scrollbar-none -mx-1 px-1">
+      {/* Bleed pattern: -mx-5 expands the scroll viewport past the
+       *  Container's px-5 gutters so the leftmost pill aligns to the
+       *  Container's outer left edge (rather than its inner content
+       *  edge) and the row can scroll edge-to-edge. The matching px-5
+       *  restores comfortable padding inside the scroll viewport for
+       *  the first and last pills. ReportResultsPage's mobile filter
+       *  strip uses the identical pattern — previously this one used
+       *  `-mx-1 px-1` which was asymmetric with the parent Container
+       *  and could let a long-label pill cause horizontal overflow
+       *  on a narrow phone. */}
+      <div className="mt-3 overflow-x-auto scrollbar-none -mx-5 px-5">
         <div className="flex gap-2 w-max">
           {STATUS_FILTER_OPTIONS.map((f) => {
             const active = statusFilter === f.id;
