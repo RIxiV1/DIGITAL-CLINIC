@@ -343,17 +343,21 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(200).json(validated.data);
   } catch (err) {
-    // Log the error class server-side but DO NOT leak `err.message` to
-    // the client — Gemini SDK errors can include URL fragments, key
-    // hints, and request-id headers we don't want crossing the trust
-    // boundary. Generic message + opaque code is the right posture.
+    // Log the error class server-side. We expose the error NAME
+    // (e.g. "GoogleGenerativeAIError") in the client response so
+    // misconfigurations surface in the UI without a Vercel-logs round-
+    // trip — but we deliberately withhold `err.message` because the
+    // Gemini SDK embeds URL fragments, request IDs, and occasionally
+    // echoes the prompt back. Name alone is safe; message is not.
+    const name = err instanceof Error ? err.name : typeof err;
     console.error(
       'parse-image: unhandled error',
-      err instanceof Error ? err.name : typeof err,
+      name,
       err instanceof Error ? err.message : '',
     );
     return res.status(500).json({
       error: 'Internal error while parsing the image. Please try again.',
+      kind: name,
     });
   }
 }

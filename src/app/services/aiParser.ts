@@ -33,21 +33,18 @@ import {
   type Biomarker,
 } from '../data/biomarkers';
 
-/** Max dimension (px) of the image we send to the server. Bumped from
- *  2000 → 2600 after observing column-misalignment misreads on tightly
- *  packed Indian lab templates (Dr Lal PathLabs CBC: 14 rows × 4 columns
- *  on a single page). At 2000px the model could confuse adjacent rows
- *  in the result column; 2600px keeps each digit ~30px tall which is
- *  the threshold below which vision models start guessing. A 2600px
- *  JPEG at quality 0.92 lands ~600KB-1.2MB — comfortably under the 4MB
- *  base64-encoded body limit. */
-const MAX_IMAGE_DIM = 2600;
+/** Max dimension (px) of the image we send to the server. Held at
+ *  2200 — bumping to 2600 reproducibly tripped Gemini's image-payload
+ *  limit on Dr Lal PathLabs PNGs (server returned "Internal error").
+ *  2200 keeps digits ~25px tall on a 14-row CBC, still above the
+ *  vision-model guessing threshold, and lands ~400-800KB JPEG. */
+const MAX_IMAGE_DIM = 2200;
 
-/** JPEG quality for the downscale. Bumped from 0.85 → 0.92 to preserve
- *  digit edges (the "3" vs "8" / "5" vs "6" confusions that come from
- *  JPEG ringing on thin strokes). 0.92 is the cliff above which file
- *  size grows faster than perceived quality on text. */
-const JPEG_QUALITY = 0.92;
+/** JPEG quality for the downscale. 0.88 is the sweet spot we landed
+ *  on: 0.85 left visible ringing on thin digit strokes ("3"/"8" and
+ *  "5"/"6" confusions on tight tabular templates), 0.92 pushed file
+ *  sizes past Gemini's limit. */
+const JPEG_QUALITY = 0.88;
 
 /**
  * Downscale a File to a JPEG Blob whose longest edge is at most
@@ -320,8 +317,13 @@ export async function parseWithAi(file: File): Promise<AiParseResult> {
     const errBody = await response.text().catch(() => '');
     let message = `AI parser failed (${response.status})`;
     try {
-      const parsed = JSON.parse(errBody) as { error?: string };
+      const parsed = JSON.parse(errBody) as { error?: string; kind?: string };
       if (parsed.error) message = parsed.error;
+      // Server attaches `kind` (the error class name from the catch
+      // block) for 500 responses — surfacing it in the UI lets us
+      // distinguish a Gemini rate-limit error from a JSON-parse fail
+      // or a body-size cap trip without a Vercel-logs round-trip.
+      if (parsed.kind) message = `${message} [${parsed.kind}]`;
     } catch {
       if (errBody) message = errBody;
     }
