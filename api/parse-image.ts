@@ -168,6 +168,11 @@ Before emitting a marker, mentally trace a HORIZONTAL line from the test name ac
 The reference range column (e.g. "13.00-17.00") looks similar to a result; never mistake a min/max range bound for the result. The result is a single number, the range has a hyphen / "to" between two numbers.
 If a SINGLE specific numeric value is unreadable due to image quality, omit ONLY that one marker and CONTINUE with the rest of the report. Never stop extraction early. Process EVERY row top-to-bottom before responding — a typical CBC has 11–14 numeric rows (Hemoglobin, RBC, WBC, Platelets, Hematocrit/PCV, MCV, MCH, MCHC, RDW, plus differentials); a typical lipid panel has 4–6; a thyroid panel has 3–4. If your output contains fewer rows than the report visibly has, you have failed the task.
 
+CRITICAL — no hallucinated markers:
+Only emit markers whose test name is VISIBLY PRINTED in the image on the same row as the value you are reporting. Do NOT infer a marker name from the report title, section header, package name ("Full Body Checkup", "Wellness Panel"), or anatomical context. If the visible page is a CBC (Complete Blood Count), do NOT invent non-blood markers such as semen pH, vitamin levels, urine pH, or thyroid hormones — those would appear on other pages of a multi-page report. Emit ONLY what you can read directly from this page.
+Two-letter test abbreviations (pH, Hb, K, Na) are particularly risky to guess — only emit them if the literal characters appear in the test-name column of the row you are reading. "pH" is NEVER a CBC marker.
+Flag suffixes after the value ("L*", "H*", "CL*", "CH*", "*", "†", "L", "H") are status indicators for low/high/critical — strip them and keep ONLY the numeric value. "11.4 L*" means value 11.4 with status low — emit value: 11.4.
+
 Rules:
 - Return JSON matching the schema exactly. No commentary, no markdown.
 - "name": use the marker name AS PRINTED on the report (e.g., "Hemoglobin", "Total Testosterone", "Haemoglobin", "Packed Cell Volume (PCV)"). Preserve original spelling, casing, and any parenthesised aliases.
