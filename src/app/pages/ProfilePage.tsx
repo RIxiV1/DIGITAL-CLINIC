@@ -19,6 +19,10 @@ import BottomNav from '../components/BottomNav';
 import DataPanelModal from '../components/DataPanelModal';
 import { useNavigation, useQuiz, useReports } from '../AppContext';
 import { buildLabelMap, findOptionLabel } from '../data/quiz';
+import {
+  loadAiAutoFallbackSetting,
+  saveAiAutoFallbackSetting,
+} from '../utils/persistence';
 
 export default function ProfilePage() {
   const { quiz, resetQuiz } = useQuiz();
@@ -36,6 +40,18 @@ export default function ProfilePage() {
   // "My data & exports" opens DataPanelModal, which surfaces storage
   // stats and a one-button wipe path.
   const [dataPanelOpen, setDataPanelOpen] = useState(false);
+
+  /** AI auto-fallback preference. Captured via useState initialiser so
+   *  the localStorage read happens once at mount (not on every render).
+   *  Toggle persists immediately on flip — no Save button needed. */
+  const [aiAutoFallback, setAiAutoFallback] = useState<boolean>(() =>
+    loadAiAutoFallbackSetting(),
+  );
+  const toggleAiAutoFallback = () => {
+    const next = !aiAutoFallback;
+    setAiAutoFallback(next);
+    saveAiAutoFallbackSetting(next);
+  };
 
   const priorityLabels = useMemo(() => buildLabelMap(), []);
 
@@ -275,6 +291,59 @@ export default function ProfilePage() {
                     </div>
                   );
                 })}
+              </Card>
+
+              {/* Preferences card — separate from Account & data so
+                  togglable settings live in their own group. As more
+                  toggles get added (notifications cadence, units,
+                  etc.) this card can grow without crowding the
+                  navigation-style rows above. */}
+              <div className="mt-7 font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
+                Preferences
+              </div>
+              <h3 className="font-display text-display-sm leading-tight mt-1">
+                Parsing
+              </h3>
+
+              <Card padded={false} className="mt-4 overflow-hidden">
+                <button
+                  type="button"
+                  onClick={toggleAiAutoFallback}
+                  role="switch"
+                  aria-checked={aiAutoFallback}
+                  aria-label="AI auto-fallback for failed image parses"
+                  className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-canvas/60 transition-colors cursor-pointer"
+                >
+                  <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
+                    <Sparkles size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-body-sm">
+                      AI auto-fallback
+                    </div>
+                    <div className="text-caption text-muted text-pretty">
+                      When local read fails on a photo, automatically try
+                      Google Gemini. The image leaves your device for that
+                      step.
+                    </div>
+                  </div>
+                  {/* Visual toggle — pill that slides left/right. Kept
+                      inline (no separate component) since this is the
+                      only toggle in the app today; promote to shared
+                      component when there's a second one. */}
+                  <span
+                    aria-hidden="true"
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                      aiAutoFallback ? 'bg-indigo-600' : 'bg-line'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                        aiAutoFallback ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </span>
+                </button>
               </Card>
             </section>
 
