@@ -363,13 +363,19 @@ export async function parseWithAi(file: File): Promise<AiParseResult> {
     const errBody = await response.text().catch(() => '');
     let message = `AI parser failed (${response.status})`;
     try {
-      const parsed = JSON.parse(errBody) as { error?: string; kind?: string };
+      const parsed = JSON.parse(errBody) as {
+        error?: string;
+        kind?: string;
+        hint?: string;
+      };
       if (parsed.error) message = parsed.error;
-      // Server attaches `kind` (the error class name from the catch
-      // block) for 500 responses — surfacing it in the UI lets us
-      // distinguish a Gemini rate-limit error from a JSON-parse fail
-      // or a body-size cap trip without a Vercel-logs round-trip.
-      if (parsed.kind) message = `${message} [${parsed.kind}]`;
+      // Server attaches `kind` (error class name) and a sanitised
+      // `hint` (message fragment with URLs/keys/payloads stripped) for
+      // 500 responses — surfacing both in the UI distinguishes a Gemini
+      // rate-limit from a fetch-failed from a schema-rejected without
+      // a Vercel-logs round-trip.
+      const suffix = [parsed.kind, parsed.hint].filter(Boolean).join(': ');
+      if (suffix) message = `${message} [${suffix}]`;
     } catch {
       if (errBody) message = errBody;
     }
