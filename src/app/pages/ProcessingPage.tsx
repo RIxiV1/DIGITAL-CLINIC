@@ -317,15 +317,26 @@ export default function ProcessingPage() {
       clearPendingConfirm();
       removeReport(processingId);
       const reason = result.failureReason ?? 'no-matches';
-      // Only cascade on parser-miss reasons — `no-file` (consumed
-      // upload / refresh) and `out-of-scope` (catalog has no matching
-      // markers) are deliberate non-cascade cases. `parser-error` IS
-      // included because most of those are tabular-layout edge cases
-      // Gemini can recover from.
-      const isParserMiss = reason === 'no-matches' || reason === 'parser-error';
       const isImage = !!file && /^image\//.test(file.type || '');
+      // Cascade is image-only — the AI parser endpoint accepts JPEG /
+      // PNG / WebP only. Sending a PDF here would round-trip a 400
+      // from the server, so PDFs never cascade regardless of reason.
+      //
+      // For images, any failure reason except 'no-file' triggers the
+      // cascade. The out-of-scope classifier was tuned against clean
+      // pdfjs text-layer output where it's reliable; on noisy Tesseract
+      // OCR from a phone photo (low contrast, glare, slight rotation),
+      // false positives are common — a clearly-a-CBC image can get
+      // flagged out-of-scope and the user previously saw a failure
+      // card with no auto-recovery. Real-world example: a Pakistani
+      // lab CBC photo where Tesseract's OCR garbled enough text that
+      // the classifier guessed "not a lab report" and the prior gate
+      // (excluding out-of-scope) blocked the AI fallback. For images,
+      // trying Gemini is essentially free; if Gemini also sees
+      // nothing, we drop through to the failure card anyway.
+      const isCascadeReason = reason !== 'no-file';
       const shouldCascade =
-        isImage && isParserMiss && loadAiAutoFallbackSetting();
+        isImage && isCascadeReason && loadAiAutoFallbackSetting();
       if (shouldCascade && file) {
         // Don't paint the failure card — kick straight into the AI
         // cascade. The setAiCascadeFile state drives a new render
