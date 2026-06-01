@@ -360,32 +360,30 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           <p className="mt-1.5 text-caption leading-relaxed text-ink-soft">
             {marker.plain}
           </p>
-          {/* Range disclosure — anchors the user back to the lab's
-              printed range when we have it. Surfaces the difference
-              between the lab's "Normal" call and ours so a 2018 report
-              graded against WHO 2010 (or an older A1c standard) doesn't
-              read as a contradiction. The catalog's healthy band stays
-              the source of truth for the status tier; this is purely
-              context. */}
+          {/* Range disclosure — when the parser captured the lab's
+              printed range, that range is what we score against
+              (the audit's "trust the diagnosing pathologist's range
+              over the hardcoded standard" directive). The catalog's
+              range becomes the fallback we'd use if the lab hadn't
+              printed one. The optimal sub-band — when set — is a
+              separate long-term-outcome target the catalog owns. */}
           {typeof marker.labRefMin === 'number' &&
             typeof marker.labRefMax === 'number' && (
               <div className="mt-2.5 rounded-[8px] border border-indigo-100 bg-indigo-50/40 px-3 py-2 text-micro leading-snug">
                 <div className="font-semibold text-ink-soft">
-                  Your lab's printed range
+                  Status uses your lab's printed range
                 </div>
                 <div className="mt-0.5 text-muted">
-                  {marker.labRefMin}–{marker.labRefMax}
-                  {marker.unit ? ` ${marker.unit}` : ''}
-                  {' '}
-                  <span className="text-ink-soft">
-                    · Digital Clinic uses{' '}
-                    <span className="font-medium">
-                      {marker.min}–{marker.max}
-                      {marker.unit ? ` ${marker.unit}` : ''}
-                    </span>{' '}
-                    as the healthy band; the two can differ when the lab
-                    uses an older reference standard.
-                  </span>
+                  <span className="font-medium text-ink-soft">
+                    {marker.labRefMin}–{marker.labRefMax}
+                    {marker.unit ? ` ${marker.unit}` : ''}
+                  </span>{' '}
+                  (your lab) · Digital Clinic's catalog{' '}
+                  {marker.min}–{marker.max}
+                  {marker.unit ? ` ${marker.unit}` : ''} would have been
+                  used if your lab hadn't printed a range. We trust the
+                  pathologist who signed your report over our hardcoded
+                  defaults when the two disagree.
                 </div>
               </div>
             )}

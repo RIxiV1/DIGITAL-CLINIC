@@ -875,6 +875,18 @@ export type BiomarkerTemplate = {
 export function statusForValue(
   template: BiomarkerTemplate,
   value: number,
+  /** The lab's printed reference range, captured at extract time. When
+   *  set, this takes PRIORITY over the catalog's `min`/`max` for the
+   *  healthy-band classification — the audit's "trust the diagnosing
+   *  pathologist's range over our hardcoded standard" directive. The
+   *  catalog still drives:
+   *    - critical-tier thresholds (criticalLow/High are absolute
+   *      panic-value cliffs, not range-relative)
+   *    - the optimal sub-band (long-term-outcome target; labs don't
+   *      print this)
+   *  When labRef is absent (older format, OCR couldn't capture it),
+   *  the catalog's healthy band remains the source of truth. */
+  labRef?: { min?: number; max?: number },
 ): BiomarkerStatus {
   if (
     (typeof template.criticalLow === 'number' && value < template.criticalLow) ||
@@ -882,7 +894,16 @@ export function statusForValue(
   ) {
     return 'critical';
   }
-  if (value < template.min || value > template.max) return 'concern';
+  // Pick the healthy band: the lab's printed range wins when both
+  // bounds are present and form a valid interval. Otherwise fall back
+  // to the catalog's range.
+  const useLab =
+    typeof labRef?.min === 'number' &&
+    typeof labRef?.max === 'number' &&
+    labRef.min <= labRef.max;
+  const healthyMin = useLab ? (labRef!.min as number) : template.min;
+  const healthyMax = useLab ? (labRef!.max as number) : template.max;
+  if (value < healthyMin || value > healthyMax) return 'concern';
   if (
     typeof template.optimalMin === 'number' &&
     typeof template.optimalMax === 'number' &&
@@ -935,7 +956,7 @@ export function markerFromTemplate(
     optimalMin: template.optimalMin,
     optimalMax: template.optimalMax,
     optimalSource: template.optimalSource,
-    status: statusForValue(template, value),
+    status: statusForValue(template, value, labRef),
     category: template.category,
     direction: template.direction,
     plain: template.plain,

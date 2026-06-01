@@ -250,6 +250,73 @@ describe('extractBiomarkersFromText — reference-range trap', () => {
   });
 });
 
+/* ------------------------------------------------------------------ */
+/* Lab-range-driven status                                              */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — lab range takes priority over catalog', () => {
+  // The audit's CRITICAL 2 directive: when the lab prints a reference
+  // range, use IT for the healthy-band classification (not the catalog).
+  // Catalog still owns critical thresholds + the optimal sub-band.
+
+  it('uses lab range when it disagrees with catalog (older standard)', () => {
+    // Hemoglobin catalog band is 13.5–17.5 g/dL. A 2010-era report
+    // might print a wider 13.0–18.0 band. A value of 13.2 falls below
+    // the catalog's min (would be 'concern') but INSIDE the lab's
+    // range (should be 'good' — the pathologist said it's normal).
+    const text = 'Hemoglobin 13.2 13.0-18.0 g/dL';
+    const hb = extractBiomarkersFromText(text).find((m) => m.id === 'hb');
+    expect(hb?.value).toBe(13.2);
+    expect(hb?.labRefMin).toBe(13);
+    expect(hb?.labRefMax).toBe(18);
+    expect(hb?.status).toBe('good');
+  });
+
+  it('flips status when lab range is TIGHTER than catalog', () => {
+    // Inverse: lab prints a tighter range (e.g. 14.0–17.0). A value
+    // of 13.7 is inside the catalog's 13.5–17.5 (would be 'good') but
+    // OUTSIDE the lab's tighter range — surface as 'concern' to match
+    // what the lab itself flagged.
+    const text = 'Hemoglobin 13.7 14.0-17.0 g/dL';
+    const hb = extractBiomarkersFromText(text).find((m) => m.id === 'hb');
+    expect(hb?.value).toBe(13.7);
+    expect(hb?.status).toBe('concern');
+  });
+
+  it('still triggers catalog critical when value crosses panic threshold', () => {
+    // Even if the lab's range is generous, severe hyperkalemia is a
+    // panic value REGARDLESS of how wide the lab's range is. Catalog
+    // criticalLow/High take absolute priority — they aren't
+    // range-relative.
+    const text = 'Potassium 7.0 3.0-6.5 mmol/L';
+    const k = extractBiomarkersFromText(text).find((m) => m.id === 'potassium');
+    expect(k?.value).toBe(7);
+    expect(k?.status).toBe('critical');
+  });
+
+  it('falls back to catalog range when lab prints no range', () => {
+    const text = 'Hemoglobin 13.7 g/dL';
+    const hb = extractBiomarkersFromText(text).find((m) => m.id === 'hb');
+    expect(hb?.value).toBe(13.7);
+    // 13.7 is inside catalog band 13.5–17.5 → 'good'.
+    expect(hb?.status).toBe('good');
+  });
+
+  it('preserves the optimal-band attention tier when lab range is wider', () => {
+    // LDL catalog: healthy 0–100, optimal 0–70. A lab printing the
+    // wider conventional range (0–130) for LDL=85 should NOT make
+    // the user lose the "outside optimal" attention signal — the
+    // optimal sub-band is the long-term-outcome layer the catalog
+    // owns regardless of lab range.
+    const text = 'LDL Cholesterol 85 0-130 mg/dL';
+    const ldl = extractBiomarkersFromText(text).find((m) => m.id === 'ldl');
+    expect(ldl?.value).toBe(85);
+    // 85 is inside lab's 0-130 AND inside catalog's 0-100 healthy →
+    // optimal check applies → outside 0-70 → 'attention'.
+    expect(ldl?.status).toBe('attention');
+  });
+});
+
 describe('extractBiomarkersFromText — HOMA-IR auto-derivation', () => {
   // Many Indian Wellness panels print glucose + insulin but stop short
   // of computing HOMA-IR. The parser derives it post-hoc so users see
