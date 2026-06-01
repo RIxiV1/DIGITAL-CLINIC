@@ -1,4 +1,27 @@
-export type BiomarkerStatus = 'good' | 'attention' | 'concern';
+/**
+ * Four-tier clinical status:
+ *
+ *   'good'      — inside the optimal sub-band (or healthy range when no
+ *                  optimal is set). Re-test on schedule.
+ *   'attention' — inside healthy but outside optimal. Informational; not
+ *                  a clinical concern. UI tones this down vs 'concern'.
+ *   'concern'   — outside healthy but within a clinically-reasonable
+ *                  abnormal range. Worth a follow-up; not urgent.
+ *   'critical'  — far enough outside healthy that the value's magnitude
+ *                  is itself a clinical signal (e.g. glucose >250 mg/dL,
+ *                  platelets <50,000, potassium >6.5 mEq/L). UI surfaces
+ *                  a same-day-care prompt rather than the 12-week plan
+ *                  copy used for 'concern'. Triggered when the value
+ *                  falls outside [min - 2*span, max + 2*span] OR outside
+ *                  the explicit `criticalLow`/`criticalHigh` band on the
+ *                  template, whichever is tighter.
+ *
+ * The fourth tier was added in response to a clinical-trust audit: the
+ * old three-tier system collapsed `platelet 149k` (mild thrombocytopenia,
+ * no action) and `platelet 30k` (immediate bleeding risk) into the same
+ * 'concern' bucket with identical copy.
+ */
+export type BiomarkerStatus = 'good' | 'attention' | 'concern' | 'critical';
 type GradientDirection = 'band' | 'up' | 'down';
 
 /** A single prior reading for a marker — ordered earliest → latest, NOT
@@ -506,6 +529,18 @@ export function statusColor(s: BiomarkerStatus) {
         // has room for a verbose action-oriented phrase.
         label: 'NEEDS CARE',
       };
+    case 'critical':
+      return {
+        // Inverted treatment vs concern: solid fill, white text,
+        // alert-icon adjacent. This is the only tier where same-day
+        // action is the right user reading, so we deliberately break
+        // visual parity with the other tiers — the user should NOT
+        // experience "critical" as a louder version of "concern".
+        text: 'text-white',
+        bg: 'bg-concern',
+        dot: 'bg-concern',
+        label: 'SEE A DOCTOR',
+      };
   }
 }
 
@@ -532,6 +567,7 @@ export const STATUS_FILTER_OPTIONS: ReadonlyArray<{
   label: string;
 }> = [
   { id: 'all', label: 'All markers' },
+  { id: 'critical', label: 'See a doctor' },
   { id: 'concern', label: 'Worth a check-in' },
   { id: 'attention', label: 'Borderline' },
   { id: 'good', label: 'On track' },
@@ -550,19 +586,33 @@ export function summarizeStatuses(markers: Biomarker[] = sampleBiomarkers) {
   let good = 0;
   let attention = 0;
   let concern = 0;
+  let critical = 0;
   for (const m of markers) {
     if (m.status === 'good') good++;
     else if (m.status === 'attention') attention++;
+    else if (m.status === 'critical') critical++;
     else concern++;
   }
-  return { good, attention, concern, total: markers.length };
+  return { good, attention, concern, critical, total: markers.length };
 }
 
 export function bottomLineFor(markers: Biomarker[] = sampleBiomarkers) {
   const summary = summarizeStatuses(markers);
+  const criticals = markers
+    .filter((m) => m.status === 'critical')
+    .map((m) => m.name);
   const concerns = markers
     .filter((m) => m.status === 'concern')
     .map((m) => m.name);
+
+  // Critical takes precedence over every other framing — same-day
+  // action copy supersedes the 12-week-plan tone we use for 'concern'.
+  if (summary.critical > 0) {
+    if (summary.critical === 1) {
+      return `${criticals[0]} is in a range where same-day medical attention is appropriate. Don't wait for the follow-up — call a doctor today.`;
+    }
+    return `${summary.critical} markers (${criticals.slice(0, 2).join(', ')}${summary.critical > 2 ? ', …' : ''}) are in ranges where same-day medical attention is appropriate. Don't wait — call a doctor today.`;
+  }
 
   let line = '';
   if (summary.concern === 0 && summary.attention === 0) {
@@ -576,6 +626,47 @@ export function bottomLineFor(markers: Biomarker[] = sampleBiomarkers) {
     line = `Two things to focus on: ${concerns.slice(0, 2).join(' and ')}. Both are reversible with the same set of habits — sleep, movement, and a couple of nutrient swaps.`;
   }
   return line;
+}
+
+/* ------------------------------------------------------------------ */
+/* Cleared-status helper — celebrates the "fixed" case in the UI       */
+/* ------------------------------------------------------------------ */
+
+/**
+ * `true` when the marker's most recent prior reading was 'attention',
+ * 'concern' or 'critical' AND the current reading is 'good'. Used by
+ * the dashboard to surface "you fixed it!" copy on markers that have
+ * crossed back into the optimal band — without this, an improvement
+ * gets visually indistinguishable from a marker that's always been
+ * fine.
+ *
+ * Does NOT mutate status. This is a transient UI-only derivation;
+ * persistence treats the current reading as 'good' like any other.
+ */
+export function isClearedSinceLast(marker: Biomarker): boolean {
+  if (marker.status !== 'good') return false;
+  if (!marker.history || marker.history.length === 0) return false;
+  // We don't store prior status; re-derive it by running statusForValue
+  // against the catalog template that produced this marker. Walk the
+  // catalog for the template — at this layer we have a Biomarker, not
+  // its template, but we can rebuild a synthetic template from the
+  // current marker's bounds (which were copied from the template at
+  // markerFromTemplate time).
+  const lastReading = marker.history[marker.history.length - 1];
+  const synthetic: BiomarkerTemplate = {
+    id: marker.id,
+    name: marker.name,
+    aliases: [],
+    unit: marker.unit,
+    min: marker.min,
+    max: marker.max,
+    optimalMin: marker.optimalMin,
+    optimalMax: marker.optimalMax,
+    category: marker.category,
+    plain: '',
+  };
+  const priorStatus = statusForValue(synthetic, lastReading.value);
+  return priorStatus !== 'good';
 }
 
 /* ------------------------------------------------------------------ */
@@ -638,6 +729,19 @@ export function pickHeadlineMarker(
   const byAbsDelta = (a: Biomarker, b: Biomarker): number =>
     Math.abs(b.value - (getPreviousValue(b) ?? 0)) -
     Math.abs(a.value - (getPreviousValue(a) ?? 0));
+
+  // Critical takes priority: a same-day-care reading must headline,
+  // regardless of trend direction. Even a `critical` value with no
+  // history points to the headline so the dashboard surfaces the
+  // most-urgent reading first.
+  const criticals = withHistory.filter((m) => m.status === 'critical');
+  if (criticals.length > 0) {
+    return criticals.slice().sort(byAbsDelta)[0];
+  }
+  // No-history fallback: prefer any critical marker even when it
+  // doesn't have prior readings to trend against.
+  // (Caller has filtered to withHistory; this is documented intent for
+  // future expansion if we ever surface no-history criticals here.)
 
   const decliningConcerns = withHistory.filter(
     (m) => m.status === 'concern' && getTrendTone(m) === 'declining',
@@ -703,6 +807,25 @@ export type BiomarkerTemplate = {
   max: number;
   optimalMin?: number;
   optimalMax?: number;
+  /** Explicit clinical-critical bounds. When set, values outside
+   *  `[criticalLow, criticalHigh]` are flagged as 'critical' regardless
+   *  of how the 2×-span heuristic would score them. Use when the
+   *  cliff between "abnormal" and "emergency" is asymmetric or doesn't
+   *  match 2×span (e.g. potassium: >6.0 is a cardiac risk regardless
+   *  of healthy span; platelet count <50,000 is bleeding-risk
+   *  regardless of margin). Leave undefined to use the 2×span heuristic. */
+  criticalLow?: number;
+  criticalHigh?: number;
+  /** Physically/clinically possible bounds. The parser uses these in
+   *  preference to the 5×-span sanity heuristic — set them when you
+   *  know the real ceiling (e.g. testosterone never exceeds ~2500 ng/dL
+   *  in a measurable sample; glucose <40 mg/dL is incompatible with
+   *  consciousness, >700 is rare even in DKA). Defaults: parser falls
+   *  back to `[min - 5*span, max + 5*span]` when unset. The point is to
+   *  admit clinical extremes (severe diabetes, hypogonadism) without
+   *  admitting hallucinated values from OCR misreads. */
+  physicalMin?: number;
+  physicalMax?: number;
   /** Source for the optimal sub-range. Required by convention whenever
    *  `optimalMin`/`optimalMax` are set — without a citation the
    *  numbers look invented and the brand's clinical-honest stance
@@ -719,12 +842,20 @@ export type BiomarkerTemplate = {
 
 /**
  * Derive a status from a measured value against a template's healthy
- * range + optional optimal sub-band.
+ * range + optional optimal sub-band + optional critical-cliff bounds.
  *
+ *   value outside critical band       → 'critical'
  *   value outside [min, max]          → 'concern'
  *   value inside [min, max] but
  *     outside [optimalMin, optimalMax] → 'attention'
  *   value inside the optimal band     → 'good'
+ *
+ * Critical-band derivation:
+ *   - If `criticalLow` / `criticalHigh` are set explicitly on the
+ *     template, use them.
+ *   - Otherwise fall back to `[min - 2*span, max + 2*span]`. A value
+ *     more than 2× the healthy span outside the band is far enough
+ *     from clinical normal that magnitude itself is a signal.
  *
  * For templates without an optimal sub-band, anything inside the
  * healthy range is 'good'.
@@ -733,6 +864,16 @@ export function statusForValue(
   template: BiomarkerTemplate,
   value: number,
 ): BiomarkerStatus {
+  const span = template.max - template.min || 1;
+  const critLow =
+    typeof template.criticalLow === 'number'
+      ? template.criticalLow
+      : template.min - 2 * span;
+  const critHigh =
+    typeof template.criticalHigh === 'number'
+      ? template.criticalHigh
+      : template.max + 2 * span;
+  if (value < critLow || value > critHigh) return 'critical';
   if (value < template.min || value > template.max) return 'concern';
   if (
     typeof template.optimalMin === 'number' &&
@@ -758,7 +899,7 @@ export function statusForValue(
  * merged with — by definition). Only on a future bump does the gate
  * activate.
  */
-export const CATALOG_VERSION = 1;
+export const CATALOG_VERSION = 2;
 
 /**
  * Construct a fully-typed Biomarker from a catalog template plus a
@@ -792,10 +933,43 @@ export function markerFromTemplate(
 /**
  * The catalog itself. Order matters only for tie-breaking: when a PDF
  * line could match multiple templates (e.g. "Testosterone" matches both
- * Total T and Free T), the parser picks the first hit. List the more-
- * specific aliases ("Total Testosterone") before the broader ones
- * inside each template, AND order the templates so the more-specific
- * marker appears first.
+ * Total T and Free T), the parser picks the first hit.
+ *
+ * AUTHORING CONVENTIONS — follow these when adding new entries:
+ *
+ *   1. Aliases inside one template: list MORE-SPECIFIC strings before
+ *      broader substrings. The matcher first-match-wins inside the
+ *      alias array, so `['Total Testosterone', 'Testosterone']` wins
+ *      correctly on "Total Testosterone" while still falling back to
+ *      "Testosterone" alone when the lab abbreviates.
+ *
+ *   2. Templates within the catalog: place the MORE-SPECIFIC marker
+ *      first. `total-chol` deliberately appears AFTER `ldl`/`hdl`
+ *      because a bare 'Cholesterol' inside `total-chol.aliases` would
+ *      otherwise match an LDL line first.
+ *
+ *   3. Excluded bare substrings: when a common short alias would
+ *      collide with another template (e.g. bare 'Cholesterol' would
+ *      catch LDL/HDL rows), DO NOT list it. Document the exclusion as
+ *      a per-template comment so future editors don't add it back.
+ *
+ *   4. Unit + unitAliases: list every glyph/punctuation variant seen
+ *      across Thyrocare/Lal/Metropolis/SRL/Apollo/Healthians. The
+ *      `unitMultiplier()` helper handles count-prefixes (lakh / thou /
+ *      million) at extract time — list ONLY the bare-magnitude unit
+ *      forms here, not every prefix×base combo (those multiply
+ *      combinatorially).
+ *
+ *   5. Physical + critical bounds: set `physicalMin/Max` for any
+ *      marker where you know the real ceiling (admits clinical
+ *      extremes, rejects OCR garbage). Set `criticalLow/High` when
+ *      there's a documented same-day-care threshold (DKA glucose,
+ *      hyperkalemia, severe thrombocytopenia, etc.).
+ *
+ *   6. Optimal source: required by convention whenever
+ *      `optimalMin/Max` are set. Cite a peer-reviewed paper or society
+ *      guideline; unsourced optimal ranges look invented and erode
+ *      brand trust.
  */
 export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   /* ---- Hormones ------------------------------------------------- */
@@ -811,6 +985,14 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       url: 'https://academic.oup.com/jcem/article/103/5/1715/4939465',
       audience: 'adult men 18–65',
     },
+    // Critical floor: severe hypogonadism (<150 ng/dL) warrants prompt
+    // endocrinology referral. Critical ceiling: >2000 ng/dL in a man
+    // not on TRT is anabolic-use or assay error — either way, a
+    // physician should see it.
+    criticalLow: 150, criticalHigh: 2000,
+    // Physical bounds: 0 floor (negative impossible); 2500 ceiling
+    // (highest plausible TRT supraphysiological measurement).
+    physicalMin: 0, physicalMax: 2500,
     category: 'hormones', direction: 'up',
     simpleName: 'Your main male hormone',
     plain: 'Below the healthy range often shows up as low drive, less stamina, and slower recovery. Very responsive to sleep, training, and Vitamin D.',
@@ -823,6 +1005,15 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unit: 'pg/mL',
     unitAliases: ['pg/ml'],
     min: 8.7, max: 25.1,
+    // No optimal sub-band yet — Bhasin et al. didn't issue a single
+    // optimal threshold; the cited value below is the diagnostic floor
+    // for hypogonadism, not an "optimal" anchor.
+    optimalSource: {
+      label: 'Endocrine Society 2018 (Bhasin et al.) — diagnostic free-T floor ~9 pg/mL by equilibrium dialysis; assay-dependent',
+      url: 'https://academic.oup.com/jcem/article/103/5/1715/4939465',
+      audience: 'adult men',
+    },
+    physicalMin: 0, physicalMax: 60,
     category: 'hormones', direction: 'up',
     simpleName: 'Testosterone your body can actually use',
     plain: 'The testosterone your body can actually use. Even a small lift here makes a noticeable daily difference.',
@@ -850,6 +1041,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       url: 'https://diabetesjournals.org/care/article/33/4/834',
       audience: 'adults',
     },
+    // Critical ceiling: ≥10% indicates severely uncontrolled diabetes
+    // with elevated micro/macrovascular event risk; needs prompt
+    // endocrinology engagement, not a 12-week home plan.
+    criticalHigh: 10,
+    physicalMin: 3, physicalMax: 18,
     category: 'metabolic', direction: 'down',
     simpleName: '3-month sugar average',
     plain: 'Your average blood sugar over 3 months. Below 5.7% is healthy; the optimal band is tighter still.',
@@ -865,6 +1061,13 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       url: 'https://www.nejm.org/doi/full/10.1056/NEJMoa050080',
       audience: 'adults',
     },
+    // Critical floor: <50 mg/dL is symptomatic hypoglycemia (confusion,
+    // seizure risk). Critical ceiling: ≥250 mg/dL fasting suggests
+    // uncontrolled diabetes / DKA risk and is same-day-care territory.
+    criticalLow: 50, criticalHigh: 250,
+    // Physical bounds: 30 floor (incompatible with consciousness below);
+    // 800 ceiling (reported extreme in DKA case literature).
+    physicalMin: 30, physicalMax: 800,
     category: 'metabolic', direction: 'down',
     simpleName: 'Blood sugar this morning',
     plain: 'A walk after every meal pulls a borderline reading comfortably back down.',
@@ -911,6 +1114,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       url: 'https://www.ahajournals.org/doi/10.1161/CIR.0000000000000625',
       audience: 'adults',
     },
+    // Critical ceiling: ≥190 mg/dL is the ACC/AHA "severe
+    // hypercholesterolemia" threshold — statin therapy is recommended
+    // regardless of other risk factors, and familial
+    // hypercholesterolemia screening is warranted.
+    criticalHigh: 190,
+    physicalMin: 0, physicalMax: 600,
     category: 'heart', direction: 'down',
     simpleName: 'The bad cholesterol',
     plain: 'The cholesterol that builds up in artery walls. Meaningfully above ideal is worth a 12-week plan.',
@@ -942,6 +1151,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       url: 'https://www.ahajournals.org/doi/10.1161/CIR.0b013e3182160726',
       audience: 'adults',
     },
+    // Critical ceiling: ≥500 mg/dL is the threshold for acute
+    // pancreatitis risk per the AHA/NLA — clinical attention warranted
+    // regardless of other risk factors.
+    criticalHigh: 500,
+    physicalMin: 0, physicalMax: 5000,
     category: 'heart', direction: 'down',
     simpleName: 'Fat in your blood',
     plain: 'Usually tied to sugar, refined carbs, or alcohol — very responsive to small changes.',
@@ -1396,22 +1610,45 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     plain: 'Elevated uric acid risks gout flares and kidney stones. Common drivers: red meat, alcohol, fructose.',
   },
 
-  /* ---- Additional Blood (CBC) ---------------------------------- */
+  /* ---- Additional Blood (CBC) ----------------------------------
+   *
+   * Count-prefix unit handling: Indian labs print platelets/WBC in
+   * three magnitudes depending on the report era + template:
+   *
+   *   - Raw count          /cumm, /cu.mm, /μL                   → 1×
+   *   - Thou (thousand)    thou/cumm, thou/mm3, 10^3/μL         → 1e3
+   *   - Lakh (100,000)     lakh/cumm, lac/cumm                  → 1e5
+   *   - Million            million/cumm, mill/mm3, 10^6/μL      → 1e6
+   *
+   * `unitMultiplier()` in pdfParser.ts + aiParser.ts reconciles the
+   * lab's printed unit against this template's canonical unit. ONE
+   * template per marker — the previous `platelets_lakh` duplicate is
+   * gone (catalog version 1 → 2 migration). All three magnitudes for
+   * a single marker route into the same template via the multiplier
+   * ratio at extract time.
+   */
   {
     id: 'wbc',
     name: 'WBC (Total Count)',
     aliases: ['Total Leucocyte Count', 'Total Leukocyte Count', 'White Blood Cells', 'White Blood Cell Count', 'Total WBC Count', 'WBC Count', 'TLC', 'WBC'],
-    // /cu.mm, cu.mm, /cu mm are the Indian/older-British notations for
-    // /cumm (cells per cubic millimeter). Same magnitude, different
-    // punctuation. Lab templates from the 90s-2000s era still print
-    // it with the period; adding both forms so they all parse.
-    // /cu.mm, cu.mm, /cu mm are the Indian/older-British notations for
-    // /cumm. thou/mm3 + thou/mm³ are the Dr Lal PathLabs / NABL
-    // convention. Numerically identical; we collect all the glyph
-    // variants so reports from any of the major Indian lab chains
-    // (Thyrocare, Lal, Metropolis, SRL) parse without bespoke fixes.
-    unit: '/cumm', unitAliases: ['cells/cumm', 'cells/μL', '/μL', '10^3/μL', 'thousand/μL', '/cu.mm', 'cu.mm', '/cu mm', 'cu mm', 'cumm', 'cells/cu.mm', 'cells/cu mm', 'thou/mm3', 'thou/mm³', 'thousand/mm3', 'thousand/mm³'],
+    // Canonical /cumm with every glyph/punctuation variant seen across
+    // Thyrocare/Lal/Metropolis/SRL/Apollo/Healthians. Thou/lakh
+    // prefixes are scaled by unitMultiplier — only the bare-unit
+    // glyphs need to be listed here.
+    unit: '/cumm',
+    unitAliases: [
+      'cells/cumm', 'cells/μL', '/μL', 'thousand/μL', '/cu.mm', 'cu.mm',
+      '/cu mm', 'cu mm', 'cumm', 'cells/cu.mm', 'cells/cu mm',
+      'thou/mm3', 'thou/mm³', 'thousand/mm3', 'thousand/mm³',
+      'thou/cumm', 'thousand/cumm', 'thou/cu.mm', 'thou/cu mm',
+      '10^3/μL', '10^3/uL', 'x10^3/μL', 'x10³/μL',
+    ],
     min: 4000, max: 11000,
+    // Critical: <2000 = severe neutropenia + infection risk;
+    // >30,000 = leukemoid reaction or marrow disorder warrants urgent
+    // hematology eval.
+    criticalLow: 2000, criticalHigh: 30000,
+    physicalMin: 0, physicalMax: 500000,
     category: 'blood', direction: 'band',
     simpleName: 'Your infection-fighting cells',
     plain: 'High WBC often signals infection or inflammation. Low WBC can mean viral illness or bone-marrow issues.',
@@ -1420,10 +1657,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     id: 'rbc',
     name: 'RBC (Total Count)',
     aliases: ['Total Red Cell Count', 'Red Blood Cells', 'RBC Count', 'Total RBC Count', 'Erythrocyte Count', 'RBC'],
-    // mill/mm3 + mill/mm³ are the Dr Lal PathLabs / NABL convention
-    // (per-mm³ instead of per-cubic-millimeter). Numerically identical
-    // to million/cumm; just different glyphs.
-    unit: 'million/cumm', unitAliases: ['mill/cumm', 'million/μL', 'M/μL', '10^6/μL', 'mill/mm3', 'mill/mm³', 'million/mm3', 'million/mm³', 'mil/cu mm', 'mill/cu mm'],
+    unit: 'million/cumm',
+    unitAliases: [
+      'mill/cumm', 'million/μL', 'M/μL', 'mill/mm3', 'mill/mm³',
+      'million/mm3', 'million/mm³', 'mil/cu mm', 'mill/cu mm',
+      '10^6/μL', '10^6/uL', 'x10^6/μL', 'x10⁶/μL',
+    ],
     min: 4.5, max: 5.9,
     category: 'blood', direction: 'band',
     simpleName: 'Your oxygen-carrying cells',
@@ -1433,20 +1672,25 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     id: 'platelets',
     name: 'Platelet Count',
     aliases: ['Platelet Count', 'Platelets', 'Thrombocyte Count', 'PLT'],
-    // Same /cu.mm-with-period family as WBC above — the Indian /
-    // older-British lab template convention.
-    unit: '/cumm', unitAliases: ['cells/cumm', 'cells/μL', '/μL', '10^3/μL', '/cu.mm', 'cu.mm', '/cu mm', 'cu mm', 'cumm', 'cells/cu.mm', 'thou/mm3', 'thou/mm³', 'thousand/mm3', 'thousand/mm³'],
+    // Canonical /cumm (raw count). The prefixed forms (thou/cumm,
+    // lakh/cumm) reach this template via unitMultiplier scaling:
+    // "245 thou/cumm" → 245,000; "2.45 lakh/cumm" → 245,000.
+    unit: '/cumm',
+    unitAliases: [
+      'cells/cumm', 'cells/μL', '/μL', '/cu.mm', 'cu.mm', '/cu mm',
+      'cu mm', 'cumm', 'cells/cu.mm', 'cells/cu mm',
+      'thou/mm3', 'thou/mm³', 'thousand/mm3', 'thousand/mm³',
+      'thou/cumm', 'thousand/cumm', 'thou/cu.mm', 'thou/cu mm',
+      'lakh/cumm', 'lakhs/cumm', 'lac/cumm', 'lakh/cu mm',
+      'lakh/μL', 'lakhs/μL',
+      '10^3/μL', '10^3/uL', 'x10^3/μL', 'x10³/μL',
+    ],
     min: 150000, max: 450000,
-    category: 'blood', direction: 'band',
-    simpleName: 'Your clotting cells',
-    plain: 'Low platelets risk bleeding; high platelets risk clotting. Both ends warrant medical follow-up.',
-  },
-  {
-    id: 'platelets_lakh',
-    name: 'Platelet Count',
-    aliases: ['Platelet Count', 'Platelets', 'Thrombocyte Count', 'PLT'],
-    unit: 'lakh/cumm', unitAliases: ['lak/cumm', 'lakhs/cumm'],
-    min: 1.5, max: 4.5,
+    // Critical: <50,000 = bleeding risk (CBC-emergency threshold);
+    // >1,000,000 = essential thrombocythemia / reactive thrombocytosis
+    // warranting hematology workup.
+    criticalLow: 50000, criticalHigh: 1000000,
+    physicalMin: 0, physicalMax: 5000000,
     category: 'blood', direction: 'band',
     simpleName: 'Your clotting cells',
     plain: 'Low platelets risk bleeding; high platelets risk clotting. Both ends warrant medical follow-up.',
@@ -1524,6 +1768,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Potassium', 'Serum Potassium'],
     unit: 'mmol/L', unitAliases: ['mEq/L', 'mmol/l'],
     min: 3.5, max: 5,
+    // Critical: ≤2.5 or ≥6.0 are arrhythmia / cardiac arrest thresholds.
+    // This is the marker where "critical" tier is least negotiable —
+    // a value of 6.5 mEq/L is a same-hour emergency regardless of
+    // patient context.
+    criticalLow: 2.5, criticalHigh: 6,
+    physicalMin: 1, physicalMax: 10,
     category: 'electrolytes', direction: 'band',
     simpleName: 'Heart-rhythm electrolyte',
     plain: 'Potassium runs your nerves and heart rhythm. Out-of-range values need immediate medical attention.',
@@ -1564,6 +1814,102 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     category: 'inflammation', direction: 'down',
     simpleName: 'Old-school inflammation marker',
     plain: 'ESR is a non-specific inflammation gauge. Less precise than CRP but still useful in context.',
+  },
+
+  /* ---- HOMA-IR (derived) ---------------------------------------
+   * Insulin-resistance index derived as (fasting glucose mg/dL ×
+   * fasting insulin µIU/mL) / 405. Many Indian Advanced Wellness
+   * panels (Thyrocare, Healthians, Apollo HealthCheck) now print
+   * HOMA-IR directly. When a lab prints both glucose + insulin but
+   * NOT HOMA-IR, the dashboard could compute it — that's a
+   * follow-up enhancement; the catalog entry below is for direct
+   * extraction.
+   *
+   * Reference: <2.5 (insulin-sensitive), 2.5–3.8 (borderline),
+   * >3.8 (insulin-resistant) per Wallace et al., Diabetes Care 2004.
+   */
+  {
+    id: 'homa-ir',
+    name: 'HOMA-IR',
+    aliases: ['HOMA-IR', 'HOMA IR', 'HOMA Index', 'Insulin Resistance Index'],
+    unit: '',
+    min: 0, max: 2.5, optimalMin: 0, optimalMax: 1.5,
+    optimalSource: {
+      label: 'Wallace et al., Diabetes Care 2004 — insulin-sensitive band <1.5; resistance ≥2.5',
+      url: 'https://diabetesjournals.org/care/article/27/6/1487/22845',
+      audience: 'adults',
+    },
+    physicalMin: 0, physicalMax: 50,
+    category: 'metabolic', direction: 'down',
+    simpleName: 'How insulin-resistant you are',
+    plain: 'Combines fasting glucose + fasting insulin into one insulin-resistance number. Higher = your pancreas is working harder for the same blood sugar.',
+    problemId: 'insulin-resistance',
+  },
+
+  /* ---- CBC differentials ---------------------------------------
+   * Standard CBC subrows. Indian labs print these on every panel —
+   * absence from the catalog was reading to users as "the parser
+   * missed something" when in fact the parser was working as
+   * intended but the catalog didn't cover differentials.
+   *
+   * The differential percentages must sum to ~100. We don't
+   * cross-validate that — labs round individual values so the sum
+   * often lands at 99 or 101.
+   */
+  {
+    id: 'neutrophils',
+    name: 'Neutrophils',
+    aliases: ['Neutrophils', 'Neutrophil', 'Neutrophils %', 'Polymorphs', 'Polymorphonuclear', 'PMN', 'Segmented Neutrophils'],
+    unit: '%',
+    min: 40, max: 75,
+    physicalMin: 0, physicalMax: 100,
+    category: 'blood', direction: 'band',
+    simpleName: 'Front-line bacterial fighters',
+    plain: 'High % often signals bacterial infection or stress. Very low % can mean viral illness or marrow suppression.',
+  },
+  {
+    id: 'lymphocytes',
+    name: 'Lymphocytes',
+    aliases: ['Lymphocytes', 'Lymphocyte', 'Lymphocytes %', 'Lymphs'],
+    unit: '%',
+    min: 20, max: 45,
+    physicalMin: 0, physicalMax: 100,
+    category: 'blood', direction: 'band',
+    simpleName: 'Viral / antibody-immunity cells',
+    plain: 'High % often suggests viral infection or chronic immune activation. Low % can point to acute stress, steroids, or HIV.',
+  },
+  {
+    id: 'monocytes',
+    name: 'Monocytes',
+    aliases: ['Monocytes', 'Monocyte', 'Monocytes %', 'Monos'],
+    unit: '%',
+    min: 2, max: 10,
+    physicalMin: 0, physicalMax: 100,
+    category: 'blood', direction: 'band',
+    simpleName: 'Tissue cleanup + chronic-immunity cells',
+    plain: 'Elevated monocytes can signal chronic inflammation, certain infections, or recovery from acute illness.',
+  },
+  {
+    id: 'eosinophils',
+    name: 'Eosinophils',
+    aliases: ['Eosinophils', 'Eosinophil', 'Eosinophils %', 'Eos'],
+    unit: '%',
+    min: 0, max: 6,
+    physicalMin: 0, physicalMax: 100,
+    category: 'blood', direction: 'band',
+    simpleName: 'Allergy + parasite cells',
+    plain: 'Elevated eosinophils usually suggest allergy, asthma, or parasitic infection. Common in Indian populations from intestinal parasites.',
+  },
+  {
+    id: 'basophils',
+    name: 'Basophils',
+    aliases: ['Basophils', 'Basophil', 'Basophils %', 'Basos'],
+    unit: '%',
+    min: 0, max: 2,
+    physicalMin: 0, physicalMax: 100,
+    category: 'blood', direction: 'band',
+    simpleName: 'Rare allergic-response cells',
+    plain: 'Usually <2% in a healthy sample. Persistent elevation can suggest allergic disorders or certain chronic conditions.',
   },
 ];
 

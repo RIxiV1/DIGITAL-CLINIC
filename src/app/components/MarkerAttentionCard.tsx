@@ -56,17 +56,24 @@ export default function MarkerAttentionCard({
         ? 'text-concern'
         : 'text-muted';
 
-  // Edge bar colour mirrors the status — concern red, attention amber, etc.
+  // Edge bar colour mirrors the status. Critical reuses concern red
+  // (no new hue introduced — the same-day-care framing comes from copy,
+  // not color) but with a fatter edge so the card still pops above
+  // concerns when scanning. Attention is amber, good is green.
   const edgeBarColor =
-    marker.status === 'concern'
+    marker.status === 'critical' || marker.status === 'concern'
       ? 'bg-concern'
       : marker.status === 'attention'
         ? 'bg-attention'
         : 'bg-good';
+  const edgeBarWidth = marker.status === 'critical' ? 'w-1.5' : 'w-1';
 
   // Build the action label. problemId always wins if present — it points
-  // at a real action plan inside the app.
+  // at a real action plan inside the app. Critical overrides everything
+  // else because same-day-care framing supersedes the 12-week-plan
+  // language used for `concern`.
   const actionLabel = (() => {
+    if (marker.status === 'critical') return 'Talk to a doctor today';
     if (marker.problemId) return 'Open action plan';
     if (marker.status === 'concern' && tone === 'declining')
       return marker.category === 'hormones'
@@ -102,7 +109,7 @@ export default function MarkerAttentionCard({
       className="relative bg-surface border border-line/70 rounded-[18px] shadow-soft h-full flex overflow-hidden group focus-within:ring-2 focus-within:ring-indigo-400/60 focus-within:border-indigo-400"
     >
       {/* Status edge bar */}
-      <div className={`w-1 ${edgeBarColor} shrink-0`} aria-hidden />
+      <div className={`${edgeBarWidth} ${edgeBarColor} shrink-0`} aria-hidden />
 
       <div className="flex-1 p-5 flex flex-col min-w-0">
         <div className="flex items-start justify-between gap-2">

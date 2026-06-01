@@ -96,7 +96,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     () => {
       const initial = new Set<string>();
       for (const m of biomarkers) {
-        if (m.status === 'concern') initial.add(m.category);
+        if (m.status === 'critical' || m.status === 'concern') {
+          initial.add(m.category);
+        }
       }
       return initial;
     },
@@ -314,9 +316,11 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                         {m.name}
                       </div>
                       <div className="font-semibold leading-tight mt-0.5">
-                        {m.status === 'concern'
-                          ? 'Action plan + retest cadence'
-                          : 'See what to tweak this month'}
+                        {m.status === 'critical'
+                          ? 'Same-day medical attention is appropriate'
+                          : m.status === 'concern'
+                            ? 'Action plan + retest cadence'
+                            : 'See what to tweak this month'}
                       </div>
                       <div
                         className={`text-caption mt-1 ${c.text} font-bold uppercase tracking-widest`}
@@ -411,8 +415,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   // closed: everything else.
                   const open = isCategoryOpen(category.id);
                   const counts = {
-                    concern: markers.filter((m) => m.status === 'concern')
-                      .length,
+                    // Critical rolls up into the concern count for the
+                    // header dot row — the category-card header dots are
+                    // a coarse signal; per-marker rendering inside the
+                    // panel still distinguishes critical from concern.
+                    concern:
+                      markers.filter(
+                        (m) =>
+                          m.status === 'critical' || m.status === 'concern',
+                      ).length,
                     attention: markers.filter((m) => m.status === 'attention')
                       .length,
                     good: markers.filter((m) => m.status === 'good').length,

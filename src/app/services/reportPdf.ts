@@ -315,8 +315,11 @@ type Tier = {
 };
 
 function tierForMarker(marker: Biomarker): Tier {
+  if (marker.status === 'critical') {
+    return { label: 'SEE A DOCTOR', color: COLOR.concern };
+  }
   if (marker.status === 'concern') {
-    return { label: 'CRITICAL', color: COLOR.concern };
+    return { label: 'OUT OF RANGE', color: COLOR.concern };
   }
   const hasOptimal =
     typeof marker.optimalMin === 'number' &&

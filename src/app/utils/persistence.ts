@@ -25,6 +25,12 @@ export const REPORTS_KEY = `${KEY_PREFIX}reports`;
 export const QUIZ_KEY = `${KEY_PREFIX}quiz`;
 export const QUIZ_COMPLETE_KEY = `${KEY_PREFIX}quizComplete`;
 const PENDING_CONFIRM_KEY = `${KEY_PREFIX}pendingConfirm`;
+/** Catalog-version ack — the highest CATALOG_VERSION the user has seen
+ *  and acknowledged. When the running app's CATALOG_VERSION exceeds
+ *  this value AND the user has persisted reports stamped at an older
+ *  version, the dashboard surfaces a one-time migration notice
+ *  explaining why their trendlines may no longer merge cleanly. */
+const CATALOG_ACK_KEY = `${KEY_PREFIX}catalogAck`;
 
 /** Reports older than this get cleaned up on next app load. 6 months. */
 const REPORT_TTL_MS = 180 * 24 * 60 * 60 * 1000;
@@ -610,4 +616,26 @@ export async function requestStoragePersistence(): Promise<void> {
   } catch {
     // API unavailable — no-op
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Catalog-version acknowledgement                                     */
+/* ------------------------------------------------------------------ */
+
+const CatalogAckSchema = z.number().int().nonnegative();
+
+/** The highest CATALOG_VERSION the user has acknowledged. Returns 0
+ *  for fresh installs (and on any validation failure — the read path
+ *  already clears poisoned keys before falling back). Caller compares
+ *  against the running app's CATALOG_VERSION to decide whether to show
+ *  the migration notice. */
+export function loadCatalogAck(): number {
+  return readValidated<number>(CATALOG_ACK_KEY, CatalogAckSchema, 0);
+}
+
+/** Persist that the user has seen the migration notice for the
+ *  current CATALOG_VERSION. The notice won't appear again until a
+ *  future version bump. */
+export function saveCatalogAck(version: number): void {
+  writeJSON(CATALOG_ACK_KEY, version);
 }

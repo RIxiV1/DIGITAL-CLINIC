@@ -58,6 +58,17 @@ const MIN_USABLE_TEXT_LENGTH = 50;
  *  user gives up and refreshes". */
 const OCR_PAGE_TIMEOUT_MS = 45_000;
 
+/** Tesseract language pack. `eng` only — current default for all Indian
+ *  lab reports we've seen, which print their tabular content in English
+ *  even when bilingual headers (Hindi / Tamil / Telugu) are present.
+ *  Future enhancement: surface a `Settings → Advanced` toggle for
+ *  `eng+hin` / `eng+tam` etc. The bilingual variants give measurably
+ *  cleaner extraction when the secondary language appears in body text
+ *  (rare), but add ~12MB of traineddata download on first use — not
+ *  worth defaulting on. Keep this constant in one place so the future
+ *  toggle has one knob to flip. */
+const OCR_LANG = 'eng';
+
 /** Worker-init timeout. Tesseract pulls ~12MB of eng.traineddata on
  *  first use; on a flaky mobile network this can stall indefinitely
  *  with no signal to the UI. 60s is generous enough for slow 3G but
@@ -183,13 +194,41 @@ type TextContentLike = { items: unknown[] };
  * A naive space-join turns "43" into "4 3" — which parses as 4.
  */
 function reconstructByPosition(content: TextContentLike): string {
-  const items: PdfTextItemLike[] = [];
+  const rawItems: PdfTextItemLike[] = [];
   for (const it of content.items) {
-    if (isPdfTextItem(it) && it.str.trim()) items.push(it);
+    if (isPdfTextItem(it) && it.str.trim()) rawItems.push(it);
   }
-  if (items.length === 0) return '';
+  if (rawItems.length === 0) return '';
 
   // Adaptive Y tolerance — median glyph height × 0.6.
+  const heightsRaw = rawItems
+    .map((it) => it.height ?? it.transform?.[0] ?? 0)
+    .filter((h) => h > 0);
+  const sortedHeights = heightsRaw.slice().sort((a, b) => a - b);
+  const medianHeight = sortedHeights.length
+    ? sortedHeights[Math.floor(sortedHeights.length / 2)]
+    : 0;
+
+  // Watermark / stamp filter: drop items whose font height is >1.8× the
+  // median. Apollo, Crystal Data, Dr Lal templates frequently embed
+  // "DUPLICATE COPY", "FOR REFERENCE ONLY", or doctor-signature stamps
+  // as oversize text items at arbitrary Y coordinates. Without this
+  // filter those items get clustered into whichever Y bucket they fall
+  // closest to, polluting the surrounding row. Median × 1.8 is loose
+  // enough to leave normal headers + body text alone (headers usually
+  // land at 1.3-1.5× body) and tight enough to catch the 2-3× stamp
+  // text.
+  const items =
+    medianHeight > 0
+      ? rawItems.filter((it) => {
+          const h = it.height ?? it.transform?.[0] ?? medianHeight;
+          return h <= medianHeight * 1.8;
+        })
+      : rawItems;
+  if (items.length === 0) return '';
+
+  // Recompute tolerance from the filtered set so a removed oversize
+  // outlier doesn't skew the value.
   const heights = items
     .map((it) => it.height ?? it.transform?.[0] ?? 0)
     .filter((h) => h > 0);
@@ -398,7 +437,7 @@ async function preprocessImageForOcr(file: Blob): Promise<Blob> {
 async function runImageOcr(file: Blob): Promise<string> {
   const createWorker = await loadTesseract();
   const worker = await withTimeout(
-    createWorker('eng'),
+    createWorker(OCR_LANG),
     OCR_WORKER_INIT_TIMEOUT_MS,
     'OCR worker init',
   );
@@ -471,7 +510,7 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
   // clear "couldn't download the OCR engine" message rather than the
   // UI stalling at the last visible stage forever.
   const worker = await withTimeout(
-    createWorker('eng'),
+    createWorker(OCR_LANG),
     OCR_WORKER_INIT_TIMEOUT_MS,
     'OCR worker init',
   );
@@ -531,6 +570,46 @@ function aliasContainsUnit(
 }
 
 /**
+ * Detect a count-prefix multiplier in a printed unit string.
+ *
+ * Indian labs print platelets/WBC as "245 thou/cumm" or "2.45 lakh/cumm"
+ * rather than the canonical raw count. The catalog's `platelets`
+ * template uses /cumm (raw); a captured value of `245` against a
+ * printed unit of `thou/cumm` is actually 245,000.
+ *
+ * Returns the linear multiplier (1, 1e3, 1e5, 1e6). The reconciliation
+ * step in `extractMarkerValue` computes `printedMult / catalogMult` and
+ * scales — so a catalog template already in `million/cumm` (RBC) gets
+ * multiplier 1e6 too and values pass through unscaled.
+ *
+ * Mirror of aiParser.ts's identical helper. Mass/concentration units
+ * (mg/dL, ng/mL, g/dL) return 1; per-marker canonical unit already
+ * enforces scale on those.
+ */
+function unitMultiplier(unit: string | null | undefined): number {
+  if (!unit) return 1;
+  const u = unit.toLowerCase().trim();
+  if (/(^|[^a-z])(lakh|lac|lakhs)([^a-z]|$)/.test(u)) return 1e5;
+  if (
+    /(^|[^a-z])(million|mill)([^a-z]|$)/.test(u) ||
+    /\b10\^?6\b/.test(u) ||
+    /x10\^?6/.test(u) ||
+    /10⁶/.test(u)
+  ) {
+    return 1e6;
+  }
+  if (
+    /(^|[^a-z])(thou|thousand)([^a-z]|$)/.test(u) ||
+    /\b10\^?3\b/.test(u) ||
+    /x10\^?3/.test(u) ||
+    /10³/.test(u)
+  ) {
+    return 1e3;
+  }
+  return 1;
+}
+
+/**
  * Extract a single marker's value from text using its template.
  *
  * Per-alias gating:
@@ -567,7 +646,17 @@ function extractMarkerValue(
   // "Total WBC Count 7200 /cumm\nTotal RBC Count 5.2 …" into a WBC
   // match for "5.2" when the right answer is "7200" on the same line.
   const between = '(?:[^\\n]{0,40}?\\n)??[^\\n]{0,80}?';
-  const numPattern = '(-?\\d+(?:\\.\\d+)?)';
+  // Number pattern with a leading negative lookbehind. Rejects:
+  //   - one-sided reference cutoffs (`<2.00`, `>5.00`, `≤140`, `≥1.5`)
+  //     — labs print these as their reference threshold, not as the
+  //     user's measured value.
+  //   - mid-decimal starts (digit or `.` immediately before) — without
+  //     this, the cutoff `<2.00` would have its `<` blocked but the
+  //     engine could backtrack and bind `00` as the value (starting
+  //     at the `.`'s right boundary).
+  //   - mid-digit starts — `(?<!\\d)` so a captured number can't begin
+  //     inside another number.
+  const numPattern = '(?<![<>≤≥\\d.])(-?\\d+(?:\\.\\d+)?)';
   // Between number and unit: up to 30 non-digit chars, OPTIONALLY
   // followed by a reference-range shape ("12-14", "150 to 450",
   // "80–99") and then up to 30 more non-digit chars before the unit.
@@ -597,7 +686,24 @@ function extractMarkerValue(
         .filter((u) => u.length > 0)
         .map((u) => escapeRegex(normalizeMu(u)))
     : [];
-  const unitGate = unitTokens.length > 0 ? `(?:${unitTokens.join('|')})` : '';
+  // Capture the matched unit token so we can apply unitMultiplier
+  // reconciliation when the lab prints in a different magnitude than
+  // our catalog's canonical unit (e.g. "245 thou/cumm" → 245,000
+  // against a /cumm template).
+  //
+  // Also widen the unit gate to admit count-prefixes IN FRONT of the
+  // catalog unit. The catalog can't list every prefix×base combo
+  // explicitly because they multiply combinatorially (thou/cumm,
+  // lakh/cumm, thou/mm3, lakh/μL, …). Instead we accept an optional
+  // prefix word (lakh|lac|thou|thousand|million|mill or a 10^N
+  // shorthand) immediately before a known catalog unit, and let
+  // unitMultiplier() figure out the scaling.
+  const prefixPattern =
+    '(?:(?:lakh|lakhs|lac|thou|thousand|million|mill)\\s*[/]?\\s*|(?:x?10\\^?[36])\\s*[/]?\\s*)?';
+  const unitGate =
+    unitTokens.length > 0
+      ? `(${prefixPattern}(?:${unitTokens.join('|')}))`
+      : '';
 
   for (const alias of template.aliases) {
     const aliasEsc = escapeRegex(alias);
@@ -615,11 +721,46 @@ function extractMarkerValue(
       : `${aliasEsc}${between}${numPattern}${tail}${unitGate}`;
     const m = text.match(new RegExp(pattern, 'i'));
     if (!m) continue;
-    const v = parseFloat(m[1]);
-    if (Number.isNaN(v)) continue;
-    // Sanity bound — wildly outside-band values are mis-parses.
+    const raw = parseFloat(m[1]);
+    if (Number.isNaN(raw)) continue;
+    // Reconcile the lab's printed unit against the catalog's canonical
+    // unit. Only do the reconciliation when we actually captured a
+    // printed unit token (non-skipUnit path). When skipUnit is true,
+    // the alias text already names the catalog's canonical unit
+    // ("Density (million per ml)"), so the captured numeric is in
+    // catalog units by construction — applying the multiplier ratio
+    // would WRONGLY divide by the catalog's prefix (1e6 for
+    // million/ml) and turn 103 into 0.000103.
+    let scale = 1;
+    if (!skipUnit && m[2]) {
+      scale = unitMultiplier(m[2]) / unitMultiplier(template.unit);
+    }
+    // Clean up float-precision noise introduced by scaling — 2.45 * 1e5
+    // yields 245000.00000000003 in IEEE-754, which is silly to surface
+    // on a clinical dashboard. `toPrecision(12)` keeps 12 significant
+    // digits (well above any real measurement precision) and drops the
+    // floating-point error.
+    const v = scale !== 1
+      ? parseFloat((raw * scale).toPrecision(12))
+      : raw;
+    // Reject obviously-broken values up front. Floor at 0 (biomarkers
+    // are non-negative even though the regex now refuses '-' anyway,
+    // belt-and-braces).
+    if (v < 0) continue;
+    // Physical bound check — use template's explicit physicalMin/Max
+    // when set, otherwise fall back to the 5×-span heuristic. Critical
+    // status is decided later by statusForValue; this check is only
+    // about rejecting values that are physically/clinically impossible.
     const span = template.max - template.min || 1;
-    if (v < template.min - 5 * span || v > template.max + 5 * span) continue;
+    const physMin =
+      typeof template.physicalMin === 'number'
+        ? template.physicalMin
+        : template.min - 5 * span;
+    const physMax =
+      typeof template.physicalMax === 'number'
+        ? template.physicalMax
+        : template.max + 5 * span;
+    if (v < physMin || v > physMax) continue;
     return v;
   }
   return null;

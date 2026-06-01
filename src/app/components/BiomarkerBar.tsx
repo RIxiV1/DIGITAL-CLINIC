@@ -13,7 +13,7 @@ type Props = {
 /* ------------------------------------------------------------------ */
 
 type Tier = {
-  id: 'optimal' | 'borderline' | 'critical';
+  id: 'optimal' | 'borderline' | 'concern' | 'critical';
   label: string;
   className: string;
   caption: string;
@@ -22,22 +22,38 @@ type Tier = {
 /**
  * Map a biomarker's status + optional optimal band into a clinical tier.
  *
- *   - "Optimal"    — value falls inside the marker's optimalMin/optimalMax
- *                    band (when defined), OR status is 'good' and there's
- *                    no narrower optimal band specified.
- *   - "Borderline" — value is inside the healthy range (min..max) but
- *                    outside the optimal sub-band; OR status is
- *                    'attention'.
- *   - "Critical"   — value is outside the healthy range entirely
- *                    (status === 'concern').
+ *   - "Optimal"      — value falls inside the marker's
+ *                      optimalMin/optimalMax band (when defined), OR
+ *                      status is 'good' and there's no narrower optimal
+ *                      band specified.
+ *   - "Borderline"   — value is inside the healthy range (min..max) but
+ *                      outside the optimal sub-band; OR status is
+ *                      'attention'.
+ *   - "Out of range" — value is outside healthy but within
+ *                      clinically-reasonable abnormal range
+ *                      (status === 'concern'). 12-week-plan copy.
+ *   - "See a doctor" — value is in the critical band (severe
+ *                      hypoglycemia, K+ >6, platelet <50k, etc.).
+ *                      Same-day-care copy.
  */
 function tierFor(marker: Biomarker): Tier {
-  if (marker.status === 'concern') {
+  if (marker.status === 'critical') {
     return {
       id: 'critical',
-      label: 'Critical',
+      label: 'See a doctor',
       className: 'bg-concern text-white',
-      caption: 'Outside healthy range',
+      caption: 'Same-day medical attention is appropriate',
+    };
+  }
+  if (marker.status === 'concern') {
+    return {
+      id: 'concern',
+      // Renamed from "Critical" to "Out of range" — the prior label was
+      // overclaiming severity for borderline-abnormal readings, and now
+      // a true `critical` tier exists for the same-day cases.
+      label: 'Out of range',
+      className: 'bg-concern/85 text-white',
+      caption: 'Outside healthy range — worth a follow-up',
     };
   }
 
