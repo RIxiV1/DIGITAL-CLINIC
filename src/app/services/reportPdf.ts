@@ -364,7 +364,12 @@ function drawFooters(ctx: Ctx): void {
     doc.setLineWidth(0.2);
     doc.line(MARGIN_L, PAGE_H - 14, PAGE_W - MARGIN_R, PAGE_H - 14);
 
-    setText({ doc, y: 0 }, 7.5, 'normal', COLOR.muted);
+    // Inline the font/color setup rather than building a fake Ctx —
+    // setText only ever reads ctx.doc today, but a future change that
+    // started reading ctx.y would break this footer call silently.
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7.5);
+    doc.setTextColor(COLOR.muted[0], COLOR.muted[1], COLOR.muted[2]);
     doc.text('ForMen - Digital Clinic', MARGIN_L, PAGE_H - 9);
 
     const pageLabel = `${i} / ${total}`;

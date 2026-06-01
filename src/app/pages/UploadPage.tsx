@@ -16,6 +16,7 @@ import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useReports } from '../AppContext';
 import { makeReport } from '../data/reports';
 import {
+  clearPendingUpload,
   setPendingUpload,
   validateUpload,
   type FileValidationError,
@@ -26,24 +27,23 @@ import { clearPendingConfirm } from '../utils/persistence';
  * Best-effort extraction of a File from a drop event's DataTransfer.
  *
  * Native file drags (Finder/Explorer/photo library) populate
- * `dataTransfer.files` — the cheap, always-correct path. But images
- * dragged from another browser tab arrive with `files` empty and the
- * source URL in `text/uri-list` instead, which is why the old handler
- * silently no-op'd on browser-tab drags. We now try:
+ * `dataTransfer.files` — the cheap, always-correct path. Some browsers
+ * expose the file via `dataTransfer.items` even when `files` is empty.
  *
- *   1. `dataTransfer.files`         — native file drag (works always)
- *   2. `dataTransfer.items` files   — some browsers expose Files via
- *                                     items even when `files` is empty
- *   3. `text/uri-list` URL fetch    — last-resort for tab-to-tab drags;
- *                                     subject to CORS, so many image
- *                                     hosts will block it
+ * Returns `null` if neither path yields a File — the caller surfaces a
+ * user-facing error pointing users at copy-image-then-paste (paste is
+ * the safe cross-tab equivalent; the user authorises the copy and the
+ * browser hands us the image bytes without an origin-attacker-controlled
+ * fetch).
  *
- * Returns `null` if none of the paths yield a File — the caller surfaces
- * a user-facing error explaining the cross-tab limitation. We don't try
- * to be heroic about CORS-blocked fetches; we just tell the user to
- * save the image to their device and drop the file instead.
+ * We DELIBERATELY do not fall back to fetching the URL from
+ * `text/uri-list` / `text/plain`. That path was a credentialed GET to
+ * an attacker-controlled origin (CSRF/SSRF-shaped behaviour from a
+ * malicious page that hosts a draggable element with crafted
+ * text/uri-list metadata). The paste path covers the same workflow
+ * without the risk.
  */
-async function extractDroppedFile(dt: DataTransfer): Promise<File | null> {
+function extractDroppedFile(dt: DataTransfer): File | null {
   if (dt.files && dt.files.length > 0) return dt.files[0];
 
   if (dt.items) {
@@ -56,34 +56,7 @@ async function extractDroppedFile(dt: DataTransfer): Promise<File | null> {
     }
   }
 
-  const raw = (dt.getData('text/uri-list') || dt.getData('text/plain') || '').trim();
-  // First non-blank line — text/uri-list can have multiple URLs + comments.
-  const url = raw.split(/\r?\n/).find((line) => line && !line.startsWith('#'));
-  if (!url || !/^https?:/i.test(url)) return null;
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) return null;
-    const blob = await response.blob();
-    // Infer a filename from the URL path. Fall back to "image.jpg" when
-    // the URL has no path component (rare; e.g., `https://host/`). The
-    // extension matters because validateUpload's last-resort check uses
-    // the filename when the blob's MIME type is missing.
-    let name = 'image.jpg';
-    try {
-      const parsed = new URL(url, window.location.href);
-      const last = parsed.pathname.split('/').filter(Boolean).pop();
-      if (last) name = decodeURIComponent(last);
-      if (!name.includes('.')) name = `${name}.jpg`;
-    } catch {
-      // Bad URL; keep the fallback name.
-    }
-    return new File([blob], name, { type: blob.type || 'image/jpeg' });
-  } catch {
-    // CORS, network failure, etc. The caller turns this into a user
-    // message — silent failure is what was broken before.
-    return null;
-  }
+  return null;
 }
 
 /**
@@ -210,6 +183,26 @@ export default function UploadPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  /** True once the user has tapped "Start analysing" — flips the
+   *  unmount cleanup below into "don't clear pendingUpload, the next
+   *  page is about to consume it." Without this flag, unmount would
+   *  wipe the File handoff a tick before ProcessingPage's mount runs
+   *  consumePendingUpload(). */
+  const handedOffRef = useRef(false);
+  useEffect(
+    () => () => {
+      if (!handedOffRef.current) {
+        // User abandoned the upload flow (back gesture, locker tap,
+        // anything that unmounts this page) WITHOUT confirming the
+        // upload. Drop the File handle so it doesn't linger in module
+        // state and resurface on a future upload — both a memory and
+        // PII-retention concern.
+        clearPendingUpload();
+      }
+    },
+    [],
+  );
+
   const startProcessing = () => {
     // Sweep any existing 'processing' placeholder reports before adding
     // a new one. Scenario: user starts upload A → navigates away mid-
@@ -235,6 +228,7 @@ export default function UploadPage() {
     // ProcessingPage will consume it on mount. Persisted state can't
     // hold a File so this is the lightest-weight handoff that works.
     setPendingUpload(fileRef.current);
+    handedOffRef.current = true;
     replace({ type: 'processing' });
   };
 
@@ -333,27 +327,23 @@ export default function UploadPage() {
               e.preventDefault();
               setDragDepth((d) => Math.max(0, d - 1));
             }}
-            onDrop={async (e) => {
+            onDrop={(e) => {
               e.preventDefault();
               setDragDepth(0);
-              // Stash the DataTransfer reference before the await — the
-              // event object is reused by the browser after the
-              // handler returns synchronously, so `e.dataTransfer`
-              // can be null by the time the fetch resolves.
-              const dt = e.dataTransfer;
-              const file = await extractDroppedFile(dt);
+              const file = extractDroppedFile(e.dataTransfer);
               if (file) {
                 onSelect(file);
                 return;
               }
               // Nothing usable. Most common cause: an image dragged
-              // from another browser tab that we can't fetch
-              // cross-origin. Tell the user how to get past it
-              // instead of silently doing nothing (the old behavior).
+              // from another browser tab — we deliberately don't try
+              // to fetch the source URL (that path was unsafe). Point
+              // the user at copy-image → paste, which works without
+              // an attacker-controlled fetch.
               setError({
                 kind: 'type',
                 message:
-                  'We couldn’t read what you dropped. Most images dragged from another browser tab are blocked by the source site for cross-origin reasons. Try right-clicking the image → Copy Image, then paste here (Cmd/Ctrl + V) — that works for almost everything. Or save the image to your device and drop the file.',
+                  'We couldn’t read what you dropped. Images dragged from another browser tab only carry a URL, not the image bytes — so we can’t use them safely. Try right-clicking the image → Copy Image, then paste here (Cmd/Ctrl + V). Or save the image to your device and drop the file.',
               });
             }}
             onClick={() => openPicker(inputRef)}

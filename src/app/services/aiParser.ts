@@ -112,11 +112,56 @@ type ParseImageResponseShape = {
   biomarkers: GeminiMarker[];
 };
 
+/** Minimum candidate-token-length we'll accept as a match. Single-
+ *  character aliases (or two-letter ones like "Hb") get matched
+ *  AS-IS via the canonical name path, but only when they appear as a
+ *  standalone token in the model's output — never as a substring of a
+ *  longer word. The contiguous-word matcher below enforces that. */
+const MIN_CANDIDATE_LENGTH = 2;
+
+/** Split a normalised string into tokens (already lowercased + de-
+ *  punctuated upstream). Empty entries are filtered. */
+function tokenise(s: string): string[] {
+  return s.split(' ').filter(Boolean);
+}
+
+/**
+ * Return true iff every token of `needle` appears as a contiguous run
+ * in `haystack`. Word-level (not substring): the alias "B12" matches
+ * a haystack of "vitamin b12 cobalamin" but does NOT match "ab12cd".
+ * This was a real attack surface — the previous matcher used
+ * `haystack.includes(needle)` and a model output of "totally insane
+ * testosterone-like reading" could match alias "total testosterone".
+ */
+function hasContiguousWordMatch(
+  haystackTokens: string[],
+  needleTokens: string[],
+): boolean {
+  if (needleTokens.length === 0) return false;
+  for (let i = 0; i + needleTokens.length <= haystackTokens.length; i++) {
+    let ok = true;
+    for (let j = 0; j < needleTokens.length; j++) {
+      if (haystackTokens[i + j] !== needleTokens[j]) {
+        ok = false;
+        break;
+      }
+    }
+    if (ok) return true;
+  }
+  return false;
+}
+
 /**
  * Resolve a Gemini-returned marker name against the biomarker catalog.
  * Returns the first template whose canonical name or any alias matches
- * case-insensitively. Strips punctuation/whitespace from both sides so
- * "Hemoglobin (Hb)" matches the "Hemoglobin" template.
+ * the model's output as a contiguous word-run (case-insensitive).
+ * Strips punctuation/whitespace from both sides so "Hemoglobin (Hb)"
+ * still resolves to the "Hemoglobin" template.
+ *
+ * Hardened vs. the previous `.includes()` matcher: that direction was
+ * backwards (`normalised.includes(c)`) so a model output of arbitrary
+ * length could match a short alias as a substring of a longer word,
+ * defeating the catalog's role as the trust boundary.
  */
 function findTemplateByName(name: string) {
   const normalised = name
@@ -124,16 +169,21 @@ function findTemplateByName(name: string) {
     .replace(/[(),:.]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+  if (!normalised) return null;
+  const haystack = tokenise(normalised);
   for (const template of biomarkerCatalog) {
-    const candidates = [template.name, ...template.aliases].map((c) =>
-      c
-        .toLowerCase()
-        .replace(/[(),:.]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim(),
-    );
-    if (candidates.some((c) => c === normalised || normalised.includes(c))) {
-      return template;
+    const candidates = [template.name, ...template.aliases]
+      .map((c) =>
+        c
+          .toLowerCase()
+          .replace(/[(),:.]/g, ' ')
+          .replace(/\s+/g, ' ')
+          .trim(),
+      )
+      .filter((c) => c.length >= MIN_CANDIDATE_LENGTH);
+    for (const candidate of candidates) {
+      const needle = tokenise(candidate);
+      if (hasContiguousWordMatch(haystack, needle)) return template;
     }
   }
   return null;
@@ -155,8 +205,20 @@ function mapGeminiResultsToCatalog(results: GeminiMarker[]): Biomarker[] {
     if (seen.has(template.id)) continue;
     const value = typeof r.value === 'number' ? r.value : Number(r.value);
     if (!Number.isFinite(value)) continue;
-    // Sanity bound mirrors pdfParser's catalog matcher: reject values
-    // >5× outside the healthy span as obvious mis-reads.
+    // Sanity bounds for AI-returned values. Three guards:
+    //   1. Non-negative — no biomarker we model is meaningfully <0;
+    //      a negative reading is either an LLM hallucination or a
+    //      sign flip we don't want propagating into the dashboard.
+    //   2. Absolute cap of 1e6 — even at the extreme end of any real
+    //      panel (platelet count "x10^3/uL", iron stores, …) the
+    //      printed integer is always < 10^6. Caps obviously-broken
+    //      OCR mistakes like a missed decimal turning 12.5 → 125000.
+    //   3. Within 5× the catalog's healthy span — mirror of the
+    //      regex matcher's bound. Loose enough to admit truly-out-
+    //      of-range clinical values (severe hypogonadism, diabetic
+    //      glucose), strict enough to reject "the model invented a
+    //      number" cases.
+    if (value < 0 || value > 1e6) continue;
     const span = template.max - template.min || 1;
     if (value < template.min - 5 * span || value > template.max + 5 * span)
       continue;

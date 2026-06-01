@@ -4,6 +4,7 @@ import { Database, Download, Trash2, X } from 'lucide-react';
 import Button from './Button';
 import { useModalA11y } from '../utils/useModalA11y';
 import { exportAllData, getStorageStats, wipeAllData } from '../utils/persistence';
+import { clearPendingUpload } from '../services/api';
 import { formatBytes, formatDate } from '../utils/uiUtils';
 
 type Props = {
@@ -67,6 +68,10 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
 
   const handleWipe = () => {
     wipeAllData();
+    // Also drop any in-flight File handoff held in module state — the
+    // user just asked for "wipe everything" and a lingering pendingUpload
+    // would survive otherwise (it doesn't live in localStorage).
+    clearPendingUpload();
     setStats(getStorageStats());
     setWiped(true);
     setConfirming(false);

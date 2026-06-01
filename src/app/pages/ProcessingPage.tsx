@@ -37,6 +37,7 @@ import {
   savePendingConfirm,
 } from '../utils/persistence';
 import { parseWithAi } from '../services/aiParser';
+import { sanitizeFilename } from '../utils/sanitizeFilename';
 
 /**
  * Multi-stage parsing UI for the upload pipeline.
@@ -140,6 +141,19 @@ export default function ProcessingPage() {
   // state or leave an orphan pendingConfirm record tagged with the
   // dead processingId.
   const activeProcessingIdRef = useRef<string | null>(null);
+  // Mount guard for async paths whose state mutations would otherwise
+  // run after the component has been removed from the tree — e.g., the
+  // user clicks "Try AI parser" and immediately navigates to manual
+  // entry. The AI call resolves seconds later; without this guard it
+  // would call addReport (creating an orphan placeholder in the locker)
+  // and setPendingConfirm (no-op on unmounted, but logs a warning).
+  const mountedRef = useRef(true);
+  useEffect(
+    () => () => {
+      mountedRef.current = false;
+    },
+    [],
+  );
 
   // Refresh / deep-link guard: someone lands on /?page=processing
   // directly, but there's no pending processing report (refreshed
@@ -273,12 +287,16 @@ export default function ProcessingPage() {
   };
 
   const useSampleReport = () => {
-    const sample = sampleReports[0];
-    if (!reports.some((r) => r.id === sample.id)) {
-      addReport(sample);
-    }
+    // Navigate to the sample report's id WITHOUT calling addReport.
+    // findReport(userReports, id) falls back to the curated sample
+    // pool, so navigation works without us injecting sample data into
+    // the user's persistent locker. The previous addReport(sample)
+    // wrote 'rep-001' (carrying canned testosterone 280 ng/dL, etc.)
+    // into dc_reports as if the user owned it — turning what the
+    // dashboard treated as "the user's most recent report" into
+    // sample data labelled as theirs.
     setFailure(null);
-    navigate({ type: 'results', reportId: sample.id });
+    navigate({ type: 'results', reportId: sampleReports[0].id });
   };
 
   const enterManually = () => {
@@ -303,6 +321,14 @@ export default function ProcessingPage() {
   const tryAiParser = async (file: File): Promise<{ error?: string }> => {
     try {
       const result = await parseWithAi(file);
+      // Race guard: if the component unmounted while the AI call was
+      // in flight (user clicked Try AI parser, then navigated away or
+      // hit "Enter values manually"), bail before we mutate global
+      // state. Without this, addReport would land an orphan
+      // 'processing' report in the locker that the user never asked
+      // for. Return a benign empty result so the caller doesn't paint
+      // an error message either — the user has moved on.
+      if (!mountedRef.current) return {};
       if (result.biomarkers.length === 0) {
         return {
           error:
@@ -315,12 +341,20 @@ export default function ProcessingPage() {
       // the rule-based failure. Set pendingConfirm in the same shape
       // as a normal Tesseract success so ConfirmExtractedValuesView
       // doesn't need a second code path.
-      const newReport = makeReport(file.name || 'My lab report');
+      //
+      // Sanitize the filename through the same gate the rule-based
+      // path uses: a 250-char Android share-sheet path or a name
+      // packed with bidi/control chars would otherwise survive the
+      // AI fallback, get written into dc_reports, and then fail the
+      // zod ReportSchema.name max(200) check on next app boot —
+      // wiping the entire reports blob.
+      const safeName = sanitizeFilename(file.name || 'AI-parsed report', 200);
+      const newReport = makeReport(safeName);
       addReport(newReport);
       activeProcessingIdRef.current = newReport.id;
       const confirmState: ConfirmState = {
         biomarkers: result.biomarkers,
-        fileName: file.name || 'AI-parsed report',
+        fileName: safeName,
       };
       savePendingConfirm<Biomarker>({
         processingId: newReport.id,
@@ -330,6 +364,7 @@ export default function ProcessingPage() {
       setFailure(null);
       return {};
     } catch (err) {
+      if (!mountedRef.current) return {};
       return {
         error:
           err instanceof Error

@@ -81,7 +81,7 @@ type StatusFilter = StatusFilterId;
 type LockerSort = 'newest' | 'oldest' | 'lab';
 
 export default function HomePage() {
-  const { reports, addReport, removeReport, saveError, dismissSaveError } = useReports();
+  const { reports, removeReport, saveError, dismissSaveError } = useReports();
   const { navigate } = useNavigation();
 
   /** Per-report delete dialog. State lives at the page level so the
@@ -89,8 +89,13 @@ export default function HomePage() {
   const [reportPendingDelete, setReportPendingDelete] = useState<string | null>(null);
 
   const loadSampleData = () => {
-    if (reports.some((r) => r.id === 'rep-001')) return;
-    addReport(getSampleReportForDashboard());
+    // Navigate to the curated sample report directly. We deliberately
+    // do NOT call addReport — that would persist the sample data
+    // (testosterone 280 ng/dL, etc.) into the user's locker as if
+    // they uploaded it. findReport(userReports, id) already falls
+    // back to the curated sample pool, so navigation works without
+    // any locker write.
+    navigate({ type: 'results', reportId: getSampleReportForDashboard().id });
   };
 
   const ready = useMemo(() => getLatestReadyReport(reports), [reports]);

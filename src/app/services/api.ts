@@ -12,7 +12,7 @@
  */
 
 import { type Biomarker } from '../data/biomarkers';
-import { type Report } from '../data/reports';
+import { makeReportId, type Report } from '../data/reports';
 import { formatDate } from '../utils/uiUtils';
 import { sanitizeFilename } from '../utils/sanitizeFilename';
 import { classifyOutOfScope, parsePdfFile } from './pdfParser';
@@ -39,6 +39,19 @@ export function consumePendingUpload(): File | null {
   const f = pendingUpload;
   pendingUpload = null;
   return f;
+}
+
+/**
+ * Discard any pending upload without consuming it. Called when the
+ * user abandons the upload flow (UploadPage unmount before
+ * ProcessingPage picks up the File, or a global "wipe everything"
+ * gesture from the Profile › My data panel). Previously a stale File
+ * handle could survive across navigations the user expected to forget
+ * it — both a memory-pressure concern on phones and a PII-retention
+ * concern (the user thought "navigate away" meant "discarded").
+ */
+export function clearPendingUpload(): void {
+  pendingUpload = null;
 }
 
 /* ------------------------------------------------------------------ */
@@ -356,7 +369,7 @@ export async function parseUploadedReport(
   const biomarkers = outcome.biomarkers ?? [];
 
   const report: Report = {
-    id: `rep-${Math.random().toString(36).slice(2, 8)}`,
+    id: makeReportId(),
     name: input.name,
     lab: parsedFromFile ? 'Parsed from upload' : 'New upload',
     uploadedOn: formatDate(new Date()),
