@@ -302,6 +302,33 @@ describe('extractBiomarkersFromText — lab range takes priority over catalog', 
     expect(hb?.status).toBe('good');
   });
 
+  it('flags Troponin I 0.05 as critical (MI rule-in threshold)', () => {
+    const text = 'Troponin I 0.05 ng/mL';
+    const m = extractBiomarkersFromText(text).find(
+      (b) => b.id === 'troponin-i',
+    );
+    expect(m?.value).toBe(0.05);
+    expect(m?.status).toBe('critical');
+  });
+
+  it('flags Procalcitonin 3.5 as critical (sepsis threshold)', () => {
+    const text = 'Procalcitonin 3.5 ng/mL';
+    const m = extractBiomarkersFromText(text).find(
+      (b) => b.id === 'procalcitonin',
+    );
+    expect(m?.value).toBe(3.5);
+    expect(m?.status).toBe('critical');
+  });
+
+  it('flags NT-proBNP 800 as critical (heart-failure decomp threshold)', () => {
+    const text = 'NT-proBNP 800 pg/mL';
+    const m = extractBiomarkersFromText(text).find(
+      (b) => b.id === 'nt-pro-bnp',
+    );
+    expect(m?.value).toBe(800);
+    expect(m?.status).toBe('critical');
+  });
+
   it('preserves the optimal-band attention tier when lab range is wider', () => {
     // LDL catalog: healthy 0–100, optimal 0–70. A lab printing the
     // wider conventional range (0–130) for LDL=85 should NOT make

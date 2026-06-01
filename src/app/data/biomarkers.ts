@@ -1973,6 +1973,91 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     plain: 'Elevated D-Dimer suggests active clot formation — pulmonary embolism, DVT, or systemic inflammatory states like COVID-19.',
   },
 
+  /* ---- Cardiac + sepsis emergency markers ----------------------
+   * Standard Indian-lab "Acute Care" panels include Troponin I,
+   * NT-proBNP, LDH, CK-MB, and Procalcitonin. Without catalog
+   * coverage these would surface as "unrecognized rows" on every
+   * emergency-room or post-MI workup report. Each carries an
+   * explicit critical threshold — these are the markers where
+   * same-day-care framing is the WHOLE point of the test.
+   */
+  {
+    id: 'troponin-i',
+    name: 'Troponin I',
+    aliases: ['Troponin I', 'cTnI', 'Cardiac Troponin I', 'hs-Trop I', 'Hs-cTnI', 'High Sensitivity Troponin I'],
+    unit: 'ng/mL', unitAliases: ['ng/ml', 'pg/mL', 'pg/ml'],
+    min: 0, max: 0.04,
+    // Critical: ≥0.04 ng/mL is the universal MI rule-in threshold
+    // (4th Universal Definition of Myocardial Infarction, ESC/AHA
+    // 2018). For a consumer dashboard, surfacing this value at all
+    // means an acute-care setting — the critical framing is non-
+    // negotiable here.
+    criticalHigh: 0.04,
+    physicalMin: 0, physicalMax: 1000,
+    category: 'heart', direction: 'down',
+    simpleName: 'Heart-muscle damage marker',
+    plain: 'Troponin I rises with cardiac injury — any detectable amount above the threshold is a same-day cardiology call. Used in acute-care settings to rule MI in or out.',
+  },
+  {
+    id: 'nt-pro-bnp',
+    name: 'NT-proBNP',
+    aliases: ['NT-proBNP', 'NTproBNP', 'NT pro BNP', 'N-Terminal pro-BNP', 'BNP'],
+    unit: 'pg/mL', unitAliases: ['pg/ml', 'ng/L'],
+    min: 0, max: 125,
+    // Critical: ≥450 pg/mL (<50yr) / ≥900 pg/mL (50-75yr) — heart-
+    // failure decompensation. Conservative single threshold of 450
+    // since age-stratification would need patient context.
+    criticalHigh: 450,
+    physicalMin: 0, physicalMax: 50000,
+    category: 'heart', direction: 'down',
+    simpleName: 'Heart-strain signal from the ventricles',
+    plain: 'NT-proBNP rises when the heart’s ventricles are stretched — a sensitive heart-failure marker. Elevated values warrant urgent cardiology evaluation.',
+  },
+  {
+    id: 'ldh',
+    name: 'LDH',
+    aliases: ['LDH', 'Lactate Dehydrogenase', 'Lactic Acid Dehydrogenase'],
+    unit: 'U/L', unitAliases: ['u/L', 'IU/L'],
+    min: 140, max: 280,
+    // Critical: ≥600 = severe tissue damage / hemolysis / massive
+    // tumor lysis. Non-specific but the magnitude itself is the
+    // signal.
+    criticalHigh: 600,
+    physicalMin: 0, physicalMax: 10000,
+    category: 'inflammation', direction: 'down',
+    simpleName: 'Tissue-damage signal (non-specific)',
+    plain: 'LDH leaks from damaged cells. Elevated in heart attack, hemolysis, liver disease, lymphoma, and severe muscle injury. Pair with other markers for the specific cause.',
+  },
+  {
+    id: 'ck-mb',
+    name: 'CK-MB',
+    aliases: ['CK-MB', 'CKMB', 'Creatine Kinase MB', 'CK-MB Mass'],
+    unit: 'ng/mL', unitAliases: ['ng/ml', 'µg/L'],
+    min: 0, max: 5,
+    // Critical: ≥10 = cardiac muscle injury. Less specific than
+    // Troponin I but historically the workhorse cardiac marker.
+    criticalHigh: 10,
+    physicalMin: 0, physicalMax: 500,
+    category: 'heart', direction: 'down',
+    simpleName: 'Cardiac muscle damage marker (older)',
+    plain: 'CK-MB rises with cardiac muscle damage. Largely superseded by Troponin I, but still printed on many Indian lab panels.',
+  },
+  {
+    id: 'procalcitonin',
+    name: 'Procalcitonin',
+    aliases: ['Procalcitonin', 'PCT', 'Pro-Calcitonin'],
+    unit: 'ng/mL', unitAliases: ['ng/ml', 'µg/L'],
+    min: 0, max: 0.1,
+    // Critical: ≥2 ng/mL = high probability of bacterial sepsis;
+    // ≥10 = septic-shock territory. The 2 ng/mL cutoff is the
+    // antibiotic-escalation trigger used in most ICU protocols.
+    criticalHigh: 2,
+    physicalMin: 0, physicalMax: 1000,
+    category: 'inflammation', direction: 'down',
+    simpleName: 'Bacterial-sepsis marker',
+    plain: 'Procalcitonin is specific to bacterial infection — viral illness does not raise it. Useful for distinguishing bacterial from viral when both look similar clinically.',
+  },
+
   /* ---- HOMA-IR (derived) ---------------------------------------
    * Insulin-resistance index derived as (fasting glucose mg/dL ×
    * fasting insulin µIU/mL) / 405. Many Indian Advanced Wellness

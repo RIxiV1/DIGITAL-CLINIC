@@ -604,6 +604,23 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
 
 /* ------------------------------------------------------------------ */
 /* Catalog matching                                                     */
+/*                                                                      */
+/* Strategy: linear regex per template, anchored on the alias text.    */
+/* The pattern walks `alias → between → number → tail-with-refrange →  */
+/* unit` and captures (value, refMin?, refMax?, printed-unit?). The    */
+/* tail's optional ref-range absorber + the cutoff-prefix lookbehind   */
+/* defend the "Reference Range Trap" (capturing the lab's upper bound  */
+/* as the user's value) that linear scans are most vulnerable to.      */
+/*                                                                      */
+/* Audit note: an alternative architecture would do TRUE column-       */
+/* geometry extraction — detect the "Result" / "Reference" column     */
+/* headers, project each text item to a column, and only consider     */
+/* values in the Result column. This is more robust on adversarial    */
+/* multi-column templates but a multi-day rewrite. The current         */
+/* defenses (ref-range absorber, cutoff lookbehind, bounded between-   */
+/* window, page-boundary sentinel) close the specific failure modes   */
+/* the audit identified for the linear approach. Column geometry is a  */
+/* deferred backlog item, not an active defect.                        */
 /* ------------------------------------------------------------------ */
 
 function escapeRegex(input: string): string {
