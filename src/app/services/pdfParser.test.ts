@@ -185,6 +185,39 @@ describe('extractBiomarkersFromText — normalize artefacts', () => {
 /* tier separately from 'concern'.                                      */
 /* ------------------------------------------------------------------ */
 
+describe('extractBiomarkersFromText — HOMA-IR auto-derivation', () => {
+  // Many Indian Wellness panels print glucose + insulin but stop short
+  // of computing HOMA-IR. The parser derives it post-hoc so users see
+  // the insulin-resistance number on the dashboard without depending
+  // on the lab to print it.
+
+  it('derives HOMA-IR when glucose + insulin both extracted', () => {
+    const text =
+      'Fasting Glucose 95 mg/dL\nFasting Insulin 12 µIU/mL';
+    const result = extractBiomarkersFromText(text);
+    const homa = result.find((m) => m.id === 'homa-ir');
+    // 95 * 12 / 405 = 2.8148...
+    expect(homa).toBeDefined();
+    expect(homa?.value).toBeCloseTo(2.81, 1);
+  });
+
+  it('does NOT derive HOMA-IR when only glucose extracted', () => {
+    const text = 'Fasting Glucose 95 mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'homa-ir')).toBeUndefined();
+  });
+
+  it('does NOT overwrite a directly-extracted HOMA-IR', () => {
+    const text =
+      'Fasting Glucose 95 mg/dL\nFasting Insulin 12 µIU/mL\nHOMA-IR 4.5';
+    const result = extractBiomarkersFromText(text);
+    // If the lab reports a HOMA-IR, trust it over the derived one —
+    // the user's report could've been calculated with adjustments
+    // we don't replicate (e.g. HOMA2 vs HOMA1).
+    expect(result.find((m) => m.id === 'homa-ir')?.value).toBe(4.5);
+  });
+});
+
 describe('statusForValue — critical tier', () => {
   it('flags platelets <50,000 as critical (bleeding-risk threshold)', () => {
     const text = 'Platelet Count 30000 /cumm';
@@ -209,6 +242,30 @@ describe('statusForValue — critical tier', () => {
     const text = 'Fasting Glucose 110 mg/dL';
     const result = extractBiomarkersFromText(text);
     expect(result.find((m) => m.id === 'glucose')?.status).toBe('concern');
+  });
+
+  it('does NOT flag TSH 13 as critical (no 2x-span fallback)', () => {
+    // Hypothyroidism territory but NOT panic. The old 2×span
+    // fallback would have flagged 13 as critical (TSH span 4.1,
+    // critHigh = 4.5 + 8.2 = 12.7). With the fallback removed and
+    // criticalHigh: 50 set explicitly, 13 is correctly 'concern'.
+    const text = 'TSH 13 µIU/mL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'tsh')?.status).toBe('concern');
+  });
+
+  it('does NOT flag Estradiol 80 as critical (no 2x-span fallback)', () => {
+    // Estradiol has no explicit criticalLow/High. With the old
+    // fallback, 80 would have been critical (span 33, critHigh =
+    // 44 + 66 = 110, so wait — 80 is below 110 here so this
+    // particular value would NOT have been critical even under the
+    // fallback. Pick a value that WOULD trip the old fallback to
+    // make the regression check meaningful: estradiol = 150, which
+    // crosses the OLD critHigh of 110 but should stay 'concern'
+    // under the new explicit-only critical-tier policy.
+    const text = 'Estradiol 150 pg/mL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'estradiol')?.status).toBe('concern');
   });
 });
 
@@ -289,6 +346,21 @@ describe('extractBiomarkersFromText — count-prefix unit reconciliation', () =>
     const text = 'Total RBC Count 5.2 million/cumm';
     const result = extractBiomarkersFromText(text);
     expect(result.find((m) => m.id === 'rbc')?.value).toBe(5.2);
+  });
+
+  it('accepts the lacs plural form (older Indian spelling)', () => {
+    const text = 'Platelet Count 2.8 lacs/cumm';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(280000);
+  });
+
+  it('accepts 10E3 exponent notation for platelets', () => {
+    // Some German/European-template lab software prints in the "10E3"
+    // shorthand (engineering-notation cousin of 10^3). unitMultiplier
+    // recognises this form; the test pins it.
+    const text = 'Platelet Count 245 10E3/μL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(245000);
   });
 });
 

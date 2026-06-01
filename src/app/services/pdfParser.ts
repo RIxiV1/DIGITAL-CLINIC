@@ -200,24 +200,37 @@ function reconstructByPosition(content: TextContentLike): string {
   }
   if (rawItems.length === 0) return '';
 
-  // Adaptive Y tolerance — median glyph height × 0.6.
+  // Adaptive Y tolerance — median glyph height × 0.6, computed from a
+  // TRIMMED set that excludes the top-decile outliers. Without trimming,
+  // a page carrying multiple oversize items (e.g., a "DUPLICATE COPY"
+  // stamp + a lab-name banner + a doctor-signature image label) would
+  // shift the median upward enough that body-text headers (1.4–1.6×
+  // body height) survive the watermark filter — defeating it precisely
+  // on the reports where it's most needed.
   const heightsRaw = rawItems
     .map((it) => it.height ?? it.transform?.[0] ?? 0)
     .filter((h) => h > 0);
   const sortedHeights = heightsRaw.slice().sort((a, b) => a - b);
-  const medianHeight = sortedHeights.length
-    ? sortedHeights[Math.floor(sortedHeights.length / 2)]
+  // Use the median of the bottom 90% — drops the top decile of
+  // outliers before computing. For a 200-item page, that's the lower
+  // 180 items' median; resilient to up to ~10% oversize garbage.
+  const trimmedEnd = Math.max(
+    1,
+    Math.floor(sortedHeights.length * 0.9),
+  );
+  const trimmed = sortedHeights.slice(0, trimmedEnd);
+  const medianHeight = trimmed.length
+    ? trimmed[Math.floor(trimmed.length / 2)]
     : 0;
 
   // Watermark / stamp filter: drop items whose font height is >1.8× the
-  // median. Apollo, Crystal Data, Dr Lal templates frequently embed
-  // "DUPLICATE COPY", "FOR REFERENCE ONLY", or doctor-signature stamps
-  // as oversize text items at arbitrary Y coordinates. Without this
-  // filter those items get clustered into whichever Y bucket they fall
-  // closest to, polluting the surrounding row. Median × 1.8 is loose
-  // enough to leave normal headers + body text alone (headers usually
-  // land at 1.3-1.5× body) and tight enough to catch the 2-3× stamp
-  // text.
+  // trimmed median. Apollo, Crystal Data, Dr Lal templates frequently
+  // embed "DUPLICATE COPY", "FOR REFERENCE ONLY", or doctor-signature
+  // stamps as oversize text items at arbitrary Y coordinates. Without
+  // this filter those items get clustered into whichever Y bucket they
+  // fall closest to, polluting the surrounding row. The 1.8× threshold
+  // sits well above normal headers (typically 1.3–1.5× body) and well
+  // below the 2–3× stamp range.
   const items =
     medianHeight > 0
       ? rawItems.filter((it) => {
@@ -589,19 +602,29 @@ function aliasContainsUnit(
 function unitMultiplier(unit: string | null | undefined): number {
   if (!unit) return 1;
   const u = unit.toLowerCase().trim();
-  if (/(^|[^a-z])(lakh|lac|lakhs)([^a-z]|$)/.test(u)) return 1e5;
+  // Lakh = 1e5. Indian English convention. Variants: lakh, lakhs,
+  // lac (older), lacs (older plural).
+  if (/(^|[^a-z])(lakh|lakhs|lac|lacs)([^a-z]|$)/.test(u)) return 1e5;
+  // Million = 1e6. Variants: million, mill, mio (German/European
+  // notation seen on some imported labs), and the various 10^6
+  // typesettings — plain `10^6`, the superscript `10⁶`, the `E`
+  // notation `10E6`, and `x10^6` / `x 10^6` with optional space.
   if (
-    /(^|[^a-z])(million|mill)([^a-z]|$)/.test(u) ||
-    /\b10\^?6\b/.test(u) ||
-    /x10\^?6/.test(u) ||
+    /(^|[^a-z])(million|mill|mio)([^a-z]|$)/.test(u) ||
+    /\b10\s*\^?\s*6\b/.test(u) ||
+    /x\s*10\s*\^?\s*6/.test(u) ||
+    /10\s*e\s*6\b/.test(u) ||
     /10⁶/.test(u)
   ) {
     return 1e6;
   }
+  // Thousand = 1e3. Variants: thou, thousand, 10^3 / 10³ / 10E3 /
+  // x10^3 with optional spacing.
   if (
     /(^|[^a-z])(thou|thousand)([^a-z]|$)/.test(u) ||
-    /\b10\^?3\b/.test(u) ||
-    /x10\^?3/.test(u) ||
+    /\b10\s*\^?\s*3\b/.test(u) ||
+    /x\s*10\s*\^?\s*3/.test(u) ||
+    /10\s*e\s*3\b/.test(u) ||
     /10³/.test(u)
   ) {
     return 1e3;
@@ -698,8 +721,16 @@ function extractMarkerValue(
   // prefix word (lakh|lac|thou|thousand|million|mill or a 10^N
   // shorthand) immediately before a known catalog unit, and let
   // unitMultiplier() figure out the scaling.
+  // Optional count-prefix that can sit before the catalog's bare unit.
+  // Mirrors the families recognised by unitMultiplier(): the named
+  // prefixes (lakh/lac/thou/thousand/million/mill/mio) and the
+  // exponent typesettings (10^N, 10ᴺ, 10EN, x10^N) for N ∈ {3, 6}.
   const prefixPattern =
-    '(?:(?:lakh|lakhs|lac|thou|thousand|million|mill)\\s*[/]?\\s*|(?:x?10\\^?[36])\\s*[/]?\\s*)?';
+    '(?:' +
+    '(?:lakh|lakhs|lac|lacs|thou|thousand|million|mill|mio)\\s*[/]?\\s*' +
+    '|' +
+    '(?:x?\\s*10\\s*(?:\\^|e|⁶|³)?\\s*[36]?)\\s*[/]?\\s*' +
+    ')?';
   const unitGate =
     unitTokens.length > 0
       ? `(${prefixPattern}(?:${unitTokens.join('|')}))`
@@ -784,7 +815,46 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
     if (value === null) continue;
     found.push(markerFromTemplate(template, value));
   }
-  return found;
+  return deriveComputedMarkers(found);
+}
+
+/**
+ * Compute derived markers from extracted ones when both inputs are
+ * present and the derived marker wasn't directly reported.
+ *
+ * Currently:
+ *   - HOMA-IR = (fasting glucose mg/dL × fasting insulin µIU/mL) / 405.
+ *     Many Indian Wellness panels print both glucose + insulin but
+ *     stop short of computing HOMA-IR. We add it here so the user
+ *     sees the insulin-resistance number on the dashboard without
+ *     needing the lab to print it.
+ *
+ * Pure function — doesn't mutate the input array. Returns the input
+ * with derived markers appended at the end. Skips derivation if the
+ * source markers' status is 'critical' (the computed number would
+ * compound the alarm; the user should focus on the underlying value).
+ */
+function deriveComputedMarkers(extracted: Biomarker[]): Biomarker[] {
+  const hasHomaIr = extracted.some((m) => m.id === 'homa-ir');
+  if (hasHomaIr) return extracted;
+
+  const glucose = extracted.find((m) => m.id === 'glucose');
+  const insulin = extracted.find((m) => m.id === 'insulin');
+  if (!glucose || !insulin) return extracted;
+
+  const homaTemplate = biomarkerCatalog.find((t) => t.id === 'homa-ir');
+  if (!homaTemplate) return extracted;
+
+  // Standard formula. Defensive zero-guard: if either value is 0
+  // (mis-extraction), the computed result is 0 or NaN — skip rather
+  // than surface a spurious "perfect insulin sensitivity" reading.
+  if (glucose.value <= 0 || insulin.value <= 0) return extracted;
+  const homaIr = parseFloat(
+    ((glucose.value * insulin.value) / 405).toPrecision(4),
+  );
+  if (!Number.isFinite(homaIr)) return extracted;
+
+  return [...extracted, markerFromTemplate(homaTemplate, homaIr)];
 }
 
 /**

@@ -850,30 +850,28 @@ export type BiomarkerTemplate = {
  *     outside [optimalMin, optimalMax] → 'attention'
  *   value inside the optimal band     → 'good'
  *
- * Critical-band derivation:
- *   - If `criticalLow` / `criticalHigh` are set explicitly on the
- *     template, use them.
- *   - Otherwise fall back to `[min - 2*span, max + 2*span]`. A value
- *     more than 2× the healthy span outside the band is far enough
- *     from clinical normal that magnitude itself is a signal.
+ * Critical-band derivation: a marker is 'critical' ONLY when explicit
+ * `criticalLow` / `criticalHigh` are set on the template. There is
+ * deliberately no heuristic fallback (e.g. 2×span) — clinical critical
+ * thresholds are too marker-specific for a one-size formula. TSH 13 is
+ * hypothyroidism (concern, not panic); glucose 250 is uncontrolled
+ * diabetes (real same-day-care call). Without per-marker auditing,
+ * a 2×span rule mis-classifies both directions.
  *
- * For templates without an optimal sub-band, anything inside the
- * healthy range is 'good'.
+ * Markers without explicit critical bounds top out at 'concern'. Add
+ * `criticalLow`/`criticalHigh` to a template when you've validated the
+ * cliff-edge against published panic-value guidelines.
  */
 export function statusForValue(
   template: BiomarkerTemplate,
   value: number,
 ): BiomarkerStatus {
-  const span = template.max - template.min || 1;
-  const critLow =
-    typeof template.criticalLow === 'number'
-      ? template.criticalLow
-      : template.min - 2 * span;
-  const critHigh =
-    typeof template.criticalHigh === 'number'
-      ? template.criticalHigh
-      : template.max + 2 * span;
-  if (value < critLow || value > critHigh) return 'critical';
+  if (
+    (typeof template.criticalLow === 'number' && value < template.criticalLow) ||
+    (typeof template.criticalHigh === 'number' && value > template.criticalHigh)
+  ) {
+    return 'critical';
+  }
   if (value < template.min || value > template.max) return 'concern';
   if (
     typeof template.optimalMin === 'number' &&
@@ -1168,6 +1166,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['TSH', 'Thyroid Stimulating Hormone', 'Thyrotropin'],
     unit: 'µIU/mL', unitAliases: ['uIU/mL', 'mIU/L'],
     min: 0.4, max: 4.5,
+    // Critical: <0.01 = thyroid storm / Graves' crisis risk; >50 =
+    // myxedema-coma adjacent. Most hypothyroidism (5-20) is 'concern',
+    // not panic — that's exactly where the audit said the old 2×span
+    // heuristic was over-flagging.
+    criticalLow: 0.01, criticalHigh: 50,
+    physicalMin: 0, physicalMax: 500,
     category: 'thyroid', direction: 'band',
     simpleName: 'Thyroid signal from your brain',
     plain: 'Thyroid signal — both ends carry meaning, so the band shape matters here.',
@@ -1227,7 +1231,22 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     plain: 'Iron stores — band-shaped because both deficiency and overload carry risk.',
   },
 
-  /* ---- Liver / Kidney / Blood ---------------------------------- */
+  /* ---- Electrolytes (extended) ---------------------------------- */
+  {
+    id: 'magnesium',
+    name: 'Magnesium',
+    aliases: ['Magnesium', 'Serum Magnesium', 'Mg'],
+    unit: 'mg/dL', unitAliases: ['mg/dl', 'mEq/L', 'mmol/L'],
+    min: 1.7, max: 2.4,
+    // Critical: <1.0 = severe hypomagnesemia (arrhythmia, seizure,
+    // tetany risk); >5 = symptomatic hypermagnesemia (renal failure
+    // context, IV-mag overdose).
+    criticalLow: 1, criticalHigh: 5,
+    physicalMin: 0.3, physicalMax: 15,
+    category: 'electrolytes', direction: 'band',
+    simpleName: 'Often-overlooked muscle + nerve electrolyte',
+    plain: 'Low magnesium is common and contributes to fatigue, cramps, and arrhythmia risk. Frequently silently low on Indian diets.',
+  },
   {
     id: 'alt',
     name: 'ALT',
@@ -1249,6 +1268,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Creatinine', 'Serum Creatinine'],
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 0.7, max: 1.3,
+    // Critical ceiling: ≥3.0 mg/dL suggests acute kidney injury or
+    // advanced CKD — same-day nephrology engagement is appropriate.
+    // No critical floor: very low creatinine usually means low muscle
+    // mass (vegan, elderly) — not a medical emergency.
+    criticalHigh: 3,
+    physicalMin: 0.1, physicalMax: 25,
     category: 'kidney', direction: 'band',
     simpleName: 'How well your kidneys are filtering',
     plain: 'Kidney filtering measure — both extremes carry meaning.',
@@ -1263,6 +1288,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     // never updated their templates still parse correctly.
     unit: 'g/dL', unitAliases: ['g/dl', 'gm/dL', 'gm/dl', 'g%', 'g %', 'gm%', 'gm %', 'grams%', 'grams %'],
     min: 13.5, max: 17.5,
+    // Critical: <7 g/dL is the transfusion-recommendation threshold
+    // for chronic anemia (NIH/AABB); >20 g/dL suggests
+    // polycythemia / dehydration / EPO use — needs investigation.
+    criticalLow: 7, criticalHigh: 20,
+    physicalMin: 2, physicalMax: 26,
     category: 'blood', direction: 'band',
     simpleName: 'Your blood’s oxygen carrier',
     plain: 'Oxygen-carrying capacity. Both anaemia and very high counts matter clinically.',
@@ -1510,9 +1540,19 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'ast',
     name: 'AST (SGOT)',
-    aliases: ['AST (SGOT)', 'AST', 'SGOT', 'Aspartate Aminotransferase'],
+    aliases: ['AST (SGOT)', 'AST', 'SGOT', 'Aspartate Aminotransferase', 'Aspartate Transaminase'],
     unit: 'U/L', unitAliases: ['u/L', 'IU/L'],
-    min: 8, max: 40,
+    min: 8, max: 40, optimalMin: 8, optimalMax: 30,
+    optimalSource: {
+      label: 'Prati et al., Annals of Internal Medicine 2002 — updated healthy AST/ALT ceilings (men ≤30 U/L)',
+      url: 'https://www.acpjournals.org/doi/10.7326/0003-4819-137-1-200207020-00006',
+      audience: 'adult men',
+    },
+    // Critical: ≥300 suggests acute hepatocellular injury (viral
+    // hepatitis flare, drug toxicity, ischemic hepatitis). Pair with
+    // ALT for confirmation but the magnitude itself is the signal.
+    criticalHigh: 300,
+    physicalMin: 0, physicalMax: 10000,
     category: 'liver', direction: 'down',
     simpleName: 'A liver enzyme (also in muscle)',
     plain: 'AST rises with liver stress but also after intense exercise or muscle damage. Pair with ALT for liver-specific reading.',
@@ -1540,9 +1580,14 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'total-bilirubin',
     name: 'Total Bilirubin',
-    aliases: ['Total Bilirubin', 'Bilirubin Total', 'Bilirubin - Total', 'T. Bilirubin'],
+    aliases: ['Total Bilirubin', 'Bilirubin Total', 'Bilirubin - Total', 'Bilirubin (Total)', 'Bilirubin, Total', 'T. Bilirubin', 'TBIL'],
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 0.1, max: 1.2,
+    // Critical: ≥10 mg/dL = severe hyperbilirubinemia (acute liver
+    // failure, fulminant hepatitis, massive hemolysis, complete biliary
+    // obstruction). Urgent hepatology workup is the expected next step.
+    criticalHigh: 10,
+    physicalMin: 0, physicalMax: 60,
     category: 'liver', direction: 'band',
     simpleName: 'A breakdown product processed by your liver',
     plain: 'Mildly elevated bilirubin is often benign (Gilbert syndrome). Substantially high needs investigation.',
@@ -1550,12 +1595,13 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'direct-bilirubin',
     name: 'Direct Bilirubin',
-    aliases: ['Direct Bilirubin', 'Bilirubin Direct', 'Bilirubin - Direct', 'Conjugated Bilirubin'],
+    aliases: ['Direct Bilirubin', 'Bilirubin Direct', 'Bilirubin - Direct', 'Bilirubin (Direct)', 'Bilirubin, Direct', 'Conjugated Bilirubin', 'D. Bilirubin'],
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 0, max: 0.3,
+    physicalMin: 0, physicalMax: 30,
     category: 'liver', direction: 'down',
     simpleName: 'Processed bilirubin — points to bile/liver issues',
-    plain: 'Elevated direct bilirubin suggests the liver isn’t excreting waste properly — needs medical attention.',
+    plain: 'Elevated direct bilirubin (out of proportion to total) points to biliary obstruction or intrahepatic cholestasis — needs medical attention.',
   },
   {
     id: 'total-protein',
@@ -1581,10 +1627,17 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   /* ---- Additional Kidney --------------------------------------- */
   {
     id: 'bun',
+    // Renders as "BUN (Urea)" because Indian labs print either or both
+    // — same chemistry, different convention. The alias array catches
+    // every variant.
     name: 'BUN (Urea)',
-    aliases: ['BUN', 'Blood Urea Nitrogen', 'Blood Urea', 'Urea'],
+    aliases: ['BUN', 'Blood Urea Nitrogen', 'Blood Urea', 'Urea', 'Urea Nitrogen', 'Serum Urea'],
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 7, max: 20,
+    // Critical: ≥47 mg/dL ≈ Urea ≥100 mg/dL — dialysis-consideration
+    // territory; same-day nephrology engagement expected.
+    criticalHigh: 47,
+    physicalMin: 1, physicalMax: 200,
     category: 'kidney', direction: 'band',
     simpleName: 'A waste product filtered by your kidneys',
     plain: 'High BUN can mean kidney issues, dehydration, or high-protein diet. Pair with creatinine for kidney-specific reading.',
@@ -1593,8 +1646,13 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     id: 'egfr',
     name: 'eGFR',
     aliases: ['eGFR', 'Estimated GFR', 'Estimated Glomerular Filtration Rate', 'GFR'],
-    unit: 'mL/min', unitAliases: ['ml/min', 'mL/min/1.73m²', 'mL/min/1.73m2'],
+    unit: 'mL/min', unitAliases: ['ml/min', 'mL/min/1.73m²', 'mL/min/1.73m2', 'ml/min/1.73m²', 'ml/min/1.73m2'],
     min: 90, max: 150,
+    // Critical floor: <30 = CKD stage 4 (advanced kidney disease,
+    // nephrology referral expected). <15 = end-stage, dialysis
+    // territory.
+    criticalLow: 30,
+    physicalMin: 0, physicalMax: 200,
     category: 'kidney', direction: 'up',
     simpleName: 'How fast your kidneys filter blood',
     plain: 'The most direct kidney function number. ≥90 is normal; persistent <60 indicates chronic kidney disease.',
@@ -1602,9 +1660,13 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'uric-acid',
     name: 'Uric Acid',
-    aliases: ['Uric Acid', 'Serum Uric Acid'],
+    aliases: ['Uric Acid', 'Serum Uric Acid', 'UA'],
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 3.5, max: 7.2,
+    // Critical: ≥10 = severe hyperuricemia, acute-gout-flare and
+    // uric-acid nephrolithiasis risk; tumor-lysis-syndrome workup.
+    criticalHigh: 10,
+    physicalMin: 0, physicalMax: 30,
     category: 'kidney', direction: 'down',
     simpleName: 'Waste product that can crystallise — causes gout',
     plain: 'Elevated uric acid risks gout flares and kidney stones. Common drivers: red meat, alcohol, fructose.',
@@ -1758,6 +1820,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Sodium', 'Serum Sodium'],
     unit: 'mmol/L', unitAliases: ['mEq/L', 'mmol/l'],
     min: 135, max: 145,
+    // Critical: <125 = severe hyponatremia (seizure risk, cerebral
+    // edema); >155 = severe hypernatremia (CNS dysfunction, brain
+    // dehydration). Both are same-day-care.
+    criticalLow: 125, criticalHigh: 155,
+    physicalMin: 90, physicalMax: 200,
     category: 'electrolytes', direction: 'band',
     simpleName: 'Salt — fluid balance',
     plain: 'Sodium controls your blood volume. Both ends are clinically significant; context matters.',
@@ -1784,6 +1851,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Calcium', 'Total Calcium', 'Serum Calcium'],
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 8.5, max: 10.2,
+    // Critical: <7 = severe hypocalcemia (tetany, seizure, prolonged
+    // QT); >12 = hypercalcemia crisis (renal failure, coma risk).
+    criticalLow: 7, criticalHigh: 12,
+    physicalMin: 4, physicalMax: 20,
     category: 'electrolytes', direction: 'band',
     simpleName: 'Bones, muscles, nerves',
     plain: 'Calcium is regulated by parathyroid hormone and Vitamin D. Persistent abnormalities need investigation.',
@@ -1910,6 +1981,26 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     category: 'blood', direction: 'band',
     simpleName: 'Rare allergic-response cells',
     plain: 'Usually <2% in a healthy sample. Persistent elevation can suggest allergic disorders or certain chronic conditions.',
+  },
+  {
+    id: 'anc',
+    name: 'Absolute Neutrophil Count',
+    aliases: ['Absolute Neutrophil Count', 'ANC', 'Absolute Neutrophils', 'Neutrophils Absolute'],
+    unit: '/cumm',
+    unitAliases: [
+      'cells/cumm', '/μL', '/cu.mm', 'cu.mm', '/cu mm', 'cumm',
+      'thou/mm3', 'thou/μL', 'thousand/μL', 'thou/cumm',
+      '10^3/μL', '10^3/uL',
+    ],
+    min: 1500, max: 8000,
+    // Critical floor: <500 = severe neutropenia (sepsis risk;
+    // hospitalisation is standard); <1000 = febrile-neutropenia
+    // threshold. Hospital labs panic-call ANC <500 universally.
+    criticalLow: 500,
+    physicalMin: 0, physicalMax: 50000,
+    category: 'blood', direction: 'band',
+    simpleName: 'Frontline infection-defence count',
+    plain: 'ANC < 1,500 is neutropenia; < 500 is severe and an immediate medical concern. Common in chemo patients, autoimmune disease, and severe viral illness.',
   },
 ];
 
