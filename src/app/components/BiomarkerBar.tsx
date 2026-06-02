@@ -41,7 +41,7 @@ function tierFor(marker: Biomarker): Tier {
     return {
       id: 'critical',
       label: 'See a doctor',
-      className: 'bg-concern text-white',
+      className: 'bg-concern text-on-status',
       caption: 'Same-day medical attention is appropriate',
     };
   }
@@ -52,7 +52,7 @@ function tierFor(marker: Biomarker): Tier {
       // overclaiming severity for borderline-abnormal readings, and now
       // a true `critical` tier exists for the same-day cases.
       label: 'Out of range',
-      className: 'bg-concern/85 text-white',
+      className: 'bg-concern/85 text-on-status',
       caption: 'Outside healthy range — worth a follow-up',
     };
   }
@@ -69,7 +69,7 @@ function tierFor(marker: Biomarker): Tier {
     return {
       id: 'borderline',
       label: 'Borderline',
-      className: 'bg-attention text-white',
+      className: 'bg-attention text-on-status',
       caption: hasOptimal
         ? 'Inside healthy band, outside optimal'
         : 'Inside healthy band, room to improve',
@@ -79,7 +79,7 @@ function tierFor(marker: Biomarker): Tier {
   return {
     id: 'optimal',
     label: 'Optimal',
-    className: 'bg-good text-white',
+    className: 'bg-good text-on-status',
     caption: 'Right where it should be',
   };
 }
@@ -354,7 +354,7 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           initial={{ left: '0%' }}
           animate={{ left: `${pinPct}%` }}
           transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-white border-[2.5px] border-ink shadow-pop"
+          className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 rounded-full bg-surface border-[2.5px] border-ink shadow-pop"
           aria-hidden
         />
       </div>

@@ -39,6 +39,33 @@
       href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=Inter:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
+
+    <!-- Theme bootstrap.
+         Stamps `data-theme` onto <html> BEFORE the React bundle parses,
+         so the first paint already carries the user's persisted theme.
+         Without this inline script the page would flash light→dark (or
+         vice versa) on every cold visit while the JS bundle mounts and
+         reads localStorage.
+
+         Default is dark — the brand identity on first impression. The
+         OS `prefers-color-scheme` is intentionally NOT honored on first
+         visit; the only way to land on light is to have explicitly
+         flipped the Profile toggle (which writes 'light' into
+         localStorage). Inverting this rule (auto-honor OS pref) is a
+         one-line edit if product wants it back. -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('dc_theme');
+          var theme = saved === 'light' ? 'light' : 'dark';
+          document.documentElement.dataset.theme = theme;
+        } catch (e) {
+          /* Private mode / quota / disabled storage. Fall back to the
+             dark default so the brand stays consistent. */
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
