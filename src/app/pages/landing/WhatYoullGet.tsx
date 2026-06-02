@@ -110,8 +110,17 @@ export default function WhatYoullGet() {
 }
 
 function DoctorSummaryMockup() {
+  /* `data-theme="light"` scopes this entire mockup subtree to the
+   * light-mode token values, regardless of the page-level theme. The
+   * mockup depicts a printed PDF "Doctor Summary" letter — its visual
+   * job is to look like a piece of white paper a user could hand to
+   * a clinician, so it must stay paper-white in dark mode too. Without
+   * this opt-out, the mockup's internal text-ink / text-blue-700 /
+   * bg-canvas tokens would flip with the page and produce illegible
+   * white-on-white + muddy gray rows. See the [data-theme='light']
+   * block in index.css for the re-binding details. */
   return (
-    <div className="relative">
+    <div data-theme="light" className="relative">
       <div className="absolute -inset-2 rounded-[24px] bg-gradient-to-br from-blue-100/70 via-white to-blue-50 blur-2xl opacity-60 pointer-events-none" />
 
       <div className="relative rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden">

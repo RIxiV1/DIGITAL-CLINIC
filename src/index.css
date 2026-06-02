@@ -297,6 +297,99 @@ body {
 /*      legacy comma form.                                             */
 /* ══════════════════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════════════════ */
+/* SCOPED LIGHT-THEME ISLAND                                           */
+/*                                                                     */
+/* Re-binds every token the dark theme overrides back to its light    */
+/* value, scoped to a [data-theme='light'] DOM subtree. Used to opt   */
+/* specific surfaces OUT of the global theme — currently the          */
+/* WhatYoullGet Doctor Summary mockup, which depicts a printed-PDF    */
+/* representation that has to stay paper-white regardless of the      */
+/* page-level theme.                                                  */
+/*                                                                     */
+/* Without this scope, the mockup's mix of static `bg-white`           */
+/* containers and dynamic `text-ink` / `text-blue-700` / `bg-canvas`  */
+/* / `bg-blue-50` tokens flips in dark mode and produces:             */
+/*   • white text on white containers (text-ink on bg-white)          */
+/*   • pastel blue text on white containers (text-blue-700 on white)  */
+/*   • muddy gray rows with invisible text (bg-canvas/40 + text-ink)  */
+/*                                                                     */
+/* CSS variable inheritance solves this elegantly: the scope's        */
+/* descendants read these LIGHT values directly, no matter what       */
+/* :root says. Single block here, single JSX wrapper at the call      */
+/* site, zero hardcoded hexes scattered through the mockup body.      */
+/* ══════════════════════════════════════════════════════════════════ */
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* Canvas + surface */
+  --color-canvas: #F8F9FA;
+  --color-surface: #FFFFFF;
+  --color-line: #E5E7EB;
+  --color-line-strong: #D1D5DB;
+
+  /* Text hierarchy */
+  --color-ink: #0F1422;
+  --color-ink-soft: #2C3344;
+  --color-muted: #6B7280;
+
+  /* Brand blue scale (and indigo aliases inherit via var()) */
+  --color-blue-50:  #EBF5FF;
+  --color-blue-100: #D6EBFF;
+  --color-blue-200: #ADD6FF;
+  --color-blue-300: #7AB8FF;
+  --color-blue-400: #3D95FF;
+  --color-blue-500: #0F7AEB;
+  --color-blue-600: #0066CC;
+  --color-blue-700: #0052A3;
+  --color-blue-800: #003D7A;
+  --color-blue-900: #002852;
+
+  /* Gold */
+  --color-gold-50:  #FFF9E5;
+  --color-gold-100: #FFF1BF;
+  --color-gold-200: #FFE48A;
+  --color-gold-300: #FFD66B;
+  --color-gold-400: #FFC73E;
+  --color-gold-500: #FFB800;
+  --color-gold-600: #E0A300;
+  --color-gold-700: #B88500;
+  --color-gold-800: #8A6500;
+
+  /* Mint */
+  --color-mint-50:  #ECFDF4;
+  --color-mint-100: #D5F8E5;
+  --color-mint-500: #15B97C;
+
+  /* Status fills + ink */
+  --color-good: #16A34A;
+  --color-good-soft: #DCFCE7;
+  --color-good-ink: #15803D;
+  --color-attention: #D97706;
+  --color-attention-soft: #FEF3C7;
+  --color-attention-ink: #B45309;
+  --color-concern: #DC2626;
+  --color-concern-soft: #FEE2E2;
+  --color-concern-ink: #B91C1C;
+
+  /* On-color pairs — back to white on saturated/vivid fills */
+  --color-on-primary: #FFFFFF;
+  --color-on-status: #FFFFFF;
+
+  /* Shadows — back to external drop, since the local surface is
+   * light and dark drop shadows are once again visible on it. */
+  --shadow-soft: 0 1px 1px rgb(15 20 34 / 0.02),
+    0 6px 18px rgb(15 20 34 / 0.05);
+  --shadow-pop: 0 4px 8px rgb(15 20 34 / 0.04),
+    0 16px 36px rgb(15 20 34 / 0.10);
+  --shadow-clinical: 0 4px 30px rgb(0 0 0 / 0.03);
+  --shadow-clinical-lg: 0 6px 40px rgb(0 0 0 / 0.05),
+    0 1px 1px rgb(0 0 0 / 0.02);
+  --shadow-blue: 0 10px 30px rgb(0 102 204 / 0.18);
+  --shadow-indigo: var(--shadow-blue);
+}
+
 :root[data-theme='dark'] {
   /* Tell the UA to render native scrollbars, form controls, and the
    * default selection chrome in dark variant. Without this, the
