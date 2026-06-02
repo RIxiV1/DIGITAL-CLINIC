@@ -21,7 +21,7 @@ export default function TopNav({
   variant?: 'full' | 'minimal';
 }) {
   return (
-    <header className="sticky top-0 z-40 bg-white border-b border-line/70">
+    <header className="sticky top-0 z-40 bg-surface border-b border-line/70">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8 h-16 flex items-center justify-between">
         <button
           type="button"

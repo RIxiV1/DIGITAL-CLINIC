@@ -1399,7 +1399,7 @@ function ConfirmExtractedValuesView({
                     open ? 'border-b border-line/60' : ''
                   }`}
                 >
-                  <div className="grid place-items-center w-10 h-10 rounded-2xl bg-white border border-line/60 shadow-soft shrink-0">
+                  <div className="grid place-items-center w-10 h-10 rounded-2xl bg-surface border border-line/60 shadow-soft shrink-0">
                     <Emoji label={category.name} className="text-body-lg leading-none">
                       {category.icon}
                     </Emoji>
@@ -1793,7 +1793,7 @@ function MiniRange({ marker }: { marker: Biomarker }) {
         style={{ background: gradient }}
       />
       <div
-        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-white border-2 border-ink shadow-sm"
+        className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3 h-3 rounded-full bg-surface border-2 border-ink shadow-sm"
         style={{ left: `${pinPct}%` }}
       />
     </div>

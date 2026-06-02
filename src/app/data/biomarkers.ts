@@ -509,14 +509,19 @@ export function statusColor(s: BiomarkerStatus) {
   switch (s) {
     case 'good':
       return {
-        text: 'text-good',
+        // text-{status}-ink, NOT text-{status}. The vivid status hues
+        // measure ~3:1 on the matching *-soft background — below the
+        // WCAG AA 4.5:1 floor. The *-ink variants are tuned for AA on
+        // light theme (darker stop) and re-bind to readable pastels
+        // on dark theme via the dark-mode CSS overrides.
+        text: 'text-good-ink',
         bg: 'bg-good-soft',
         dot: 'bg-good',
         label: 'ON TRACK',
       };
     case 'attention':
       return {
-        text: 'text-attention',
+        text: 'text-attention-ink',
         bg: 'bg-attention-soft',
         dot: 'bg-attention',
         // "BORDERLINE" replaces the older "NEEDS ATTENTION". Same data
@@ -530,7 +535,7 @@ export function statusColor(s: BiomarkerStatus) {
       };
     case 'concern':
       return {
-        text: 'text-concern',
+        text: 'text-concern-ink',
         bg: 'bg-concern-soft',
         dot: 'bg-concern',
         // Badge keeps "NEEDS CARE" — compact (10 chars) and clinically
@@ -541,12 +546,15 @@ export function statusColor(s: BiomarkerStatus) {
       };
     case 'critical':
       return {
-        // Inverted treatment vs concern: solid fill, white text,
+        // Inverted treatment vs concern: solid fill, on-status text,
         // alert-icon adjacent. This is the only tier where same-day
         // action is the right user reading, so we deliberately break
         // visual parity with the other tiers — the user should NOT
         // experience "critical" as a louder version of "concern".
-        text: 'text-white',
+        // text-on-status pairs with bg-concern: white text on vivid
+        // red in light theme, deep-navy text on pastel rose in dark.
+        // Pure `text-white` would fail WCAG on the dark-mode pastel.
+        text: 'text-on-status',
         bg: 'bg-concern',
         dot: 'bg-concern',
         label: 'SEE A DOCTOR',

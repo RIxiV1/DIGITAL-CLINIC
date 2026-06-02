@@ -25,7 +25,7 @@ export default function Hero({
   onSample: () => void;
 }) {
   return (
-    <section className="relative bg-white overflow-hidden">
+    <section className="relative bg-canvas overflow-hidden">
       {/* Left blue accent bar */}
       <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 hidden md:block" />
 
@@ -39,7 +39,7 @@ export default function Hero({
           {/* LEFT — Headline + CTAs */}
           <div className="md:col-span-6">
             <motion.div variants={fadeUp}>
-              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white border border-blue-100 text-caption font-semibold uppercase tracking-label text-blue-700 shadow-clinical">
+              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-surface border border-blue-100 text-caption font-semibold uppercase tracking-label text-blue-700 shadow-clinical">
                 <span className="relative grid place-items-center w-3.5 h-3.5">
                   <span className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping" />
                   <span className="relative w-1.5 h-1.5 rounded-full bg-blue-600" />

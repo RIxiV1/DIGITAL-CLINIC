@@ -6,7 +6,7 @@ import LegalModal, { type LegalKind } from '../../components/LegalModal';
 export default function Footer() {
   const [legal, setLegal] = useState<LegalKind | null>(null);
   return (
-    <footer className="border-t border-line/70 bg-white">
+    <footer className="border-t border-line/70 bg-surface">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8 py-12 grid sm:grid-cols-2 md:grid-cols-4 gap-8 text-caption">
         <div className="sm:col-span-2">
           <Logo />

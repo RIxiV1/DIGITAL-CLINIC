@@ -88,7 +88,7 @@ export default function ConnectionSection({
 
           <div className="md:col-span-5 md:sticky lg:top-24">
             <Reveal delay={0.1}>
-              <div className="rounded-2xl bg-white border border-line shadow-clinical p-6 md:p-7">
+              <div className="rounded-2xl bg-surface border border-line shadow-clinical p-6 md:p-7">
                 <div className="inline-flex items-center gap-2 text-caption font-bold uppercase tracking-eyebrow text-blue-700">
                   <span className="w-5 h-px bg-blue-600" /> Why it matters
                 </div>
@@ -218,7 +218,7 @@ function CascadeBig() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ duration: 0.35, delay: 1.2 + i * 0.05 }}
-            className="px-3 py-2.5 rounded-xl bg-white border border-line text-center font-semibold text-caption text-ink shadow-clinical"
+            className="px-3 py-2.5 rounded-xl bg-surface border border-line text-center font-semibold text-caption text-ink shadow-clinical"
           >
             {label}
           </motion.div>
@@ -251,7 +251,7 @@ function AxisStation({
         className={`absolute -left-[60px] top-0.5 grid place-items-center w-12 h-12 rounded-full border-[2.5px] ${
           isOutput
             ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
-            : 'bg-white border-blue-500 text-blue-700 shadow-clinical'
+            : 'bg-surface border-blue-500 text-blue-700 shadow-clinical'
         }`}
       >
         <OrganGlyph variant={num} />
@@ -262,7 +262,7 @@ function AxisStation({
         className={`relative rounded-2xl border p-4 md:p-5 overflow-hidden ${
           isOutput
             ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
-            : 'bg-white border-line shadow-clinical'
+            : 'bg-surface border-line shadow-clinical'
         }`}
       >
         {isOutput && (
@@ -336,7 +336,7 @@ function AxisStation({
         >
           <div className="relative w-12 grid place-items-center">
             <div className="absolute left-1/2 -translate-x-1/2 w-px h-full" />
-            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-white border border-blue-200 shadow-clinical">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-surface border border-blue-200 shadow-clinical">
               <ChevronDown
                 size={10}
                 strokeWidth={2.5}
@@ -451,7 +451,7 @@ function CascadeCompact() {
                 className={`absolute -left-[40px] top-0.5 grid place-items-center w-8 h-8 rounded-full border-2 ${
                   s.isOutput
                     ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'bg-white border-blue-500 text-blue-700'
+                    : 'bg-surface border-blue-500 text-blue-700'
                 }`}
               >
                 <div className="scale-[0.7]">
@@ -464,7 +464,7 @@ function CascadeCompact() {
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${
                   s.isOutput
                     ? 'bg-blue-600 border-blue-600 text-white'
-                    : 'bg-white border-blue-100'
+                    : 'bg-surface border-blue-100'
                 }`}
               >
                 <div className="flex-1 min-w-0">

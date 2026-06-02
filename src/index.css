@@ -463,6 +463,37 @@ body {
   color: rgb(255 255 255 / 0.98);
 }
 
+/* ─── Bulk on-color fix for legacy `text-white` on brand fills ──────
+ *
+ * Many components still pair `bg-indigo-600 text-white` (or
+ * `bg-blue-600 text-white`) directly in JSX — the canonical fix is to
+ * refactor each call site to `text-on-primary`, but that's ~26 touches
+ * across 15+ files. As a SCOPED override, this rule catches the
+ * pattern in dark mode without any component edits: when both classes
+ * land on the same element, the cascade rebinds `text-white` to the
+ * dark-mode on-primary value (deep navy). In light mode no override
+ * fires — `text-white` resolves normally to white, which is what those
+ * components want against the saturated blue fills.
+ *
+ * Same fix for `bg-{status} text-white` on the de-escalated status
+ * fills (bg-good / bg-attention / bg-concern), where dark theme
+ * desaturates the fill to a pastel and white-on-pastel fails AA. */
+:root[data-theme='dark'] .bg-indigo-500.text-white,
+:root[data-theme='dark'] .bg-indigo-600.text-white,
+:root[data-theme='dark'] .bg-indigo-700.text-white,
+:root[data-theme='dark'] .bg-indigo-800.text-white,
+:root[data-theme='dark'] .bg-blue-500.text-white,
+:root[data-theme='dark'] .bg-blue-600.text-white,
+:root[data-theme='dark'] .bg-blue-700.text-white,
+:root[data-theme='dark'] .bg-blue-800.text-white {
+  color: var(--color-on-primary);
+}
+:root[data-theme='dark'] .bg-good.text-white,
+:root[data-theme='dark'] .bg-attention.text-white,
+:root[data-theme='dark'] .bg-concern.text-white {
+  color: var(--color-on-status);
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
 }

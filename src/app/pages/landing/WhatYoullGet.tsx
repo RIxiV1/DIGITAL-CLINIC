@@ -66,7 +66,7 @@ export default function WhatYoullGet() {
                 ].map(({ Icon, title, body }) => (
                   <div
                     key={title}
-                    className="flex items-start gap-3 rounded-2xl bg-white border border-line p-4 shadow-clinical"
+                    className="flex items-start gap-3 rounded-2xl bg-surface border border-line p-4 shadow-clinical"
                   >
                     <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 shrink-0">
                       <Icon size={17} />
@@ -86,7 +86,7 @@ export default function WhatYoullGet() {
                     report" CTA removed — TopNav + Hero already carry
                     that affordance, having a third on the same page
                     diluted both. */}
-                <div className="mt-2 flex items-center gap-3 rounded-2xl bg-white border border-blue-100 p-4 shadow-clinical">
+                <div className="mt-2 flex items-center gap-3 rounded-2xl bg-surface border border-blue-100 p-4 shadow-clinical">
                   <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-600 text-white shrink-0">
                     <Download size={17} />
                   </div>
