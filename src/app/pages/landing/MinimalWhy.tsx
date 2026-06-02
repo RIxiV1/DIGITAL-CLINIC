@@ -26,7 +26,7 @@ export default function MinimalWhy() {
         <div className="mt-8 grid gap-5">
           {ITEMS.map(({ Icon, title, body }) => (
             <Reveal key={title}>
-              <div className="flex items-start gap-4 rounded-2xl bg-white border border-line p-5 shadow-clinical">
+              <div className="flex items-start gap-4 rounded-2xl bg-surface border border-line p-5 shadow-clinical">
                 <div className="grid place-items-center w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 shrink-0">
                   <Icon size={18} />
                 </div>

@@ -705,7 +705,7 @@ function PersonalizingOverlay({ onDone }: { onDone: () => void }) {
           <motion.div
             animate={{ rotate: [0, 6, -6, 0] }}
             transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-            className="relative grid place-items-center w-16 h-16 rounded-3xl bg-indigo-600 text-white shadow-indigo"
+            className="relative grid place-items-center w-16 h-16 rounded-3xl bg-indigo-600 text-on-primary shadow-indigo"
           >
             <Brain size={26} strokeWidth={2.2} />
             <motion.span
@@ -806,7 +806,7 @@ function PillOptions({
         onClick={() => toggle(opt.id)}
         className={`relative inline-flex items-center justify-center gap-2 min-h-12 h-auto py-2.5 px-4 rounded-full font-semibold text-caption border transition-all text-center ${
           selected
-            ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
+            ? 'bg-indigo-600 border-indigo-600 text-on-primary shadow-indigo'
             : 'bg-surface border-line text-ink-soft hover:border-indigo-300 hover:text-indigo-700 shadow-soft'
         }`}
       >
@@ -875,7 +875,7 @@ function CardOptions({
             onClick={() => toggle(opt.id)}
             className={`relative w-full text-left px-4 py-3.5 rounded-[16px] border transition-all min-h-[52px] ${
               selected
-                ? 'bg-indigo-600 border-indigo-600 text-white shadow-indigo'
+                ? 'bg-indigo-600 border-indigo-600 text-on-primary shadow-indigo'
                 : 'bg-surface border-line text-ink hover:border-indigo-300 shadow-soft'
             }`}
           >

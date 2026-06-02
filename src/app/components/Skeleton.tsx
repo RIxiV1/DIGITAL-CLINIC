@@ -22,11 +22,7 @@ export function Skeleton({ className = '' }: { className?: string }) {
 /** Top app-chrome strip used by most pages — logo placeholder + a CTA. */
 function ChromeSkeleton({ tone = 'page' }: { tone?: 'page' | 'landing' }) {
   return (
-    <div
-      className={`border-b border-line/70 px-5 md:px-8 h-16 flex items-center gap-4 ${
-        tone === 'landing' ? 'bg-white' : 'bg-canvas'
-      }`}
-    >
+    <div className="border-b border-line/70 px-5 md:px-8 h-16 flex items-center gap-4 bg-canvas">
       <Skeleton className="w-20 h-6" />
       <div className="flex-1" />
       {tone === 'landing' && (
@@ -53,7 +49,7 @@ export function PageSkeleton({
 }) {
   if (variant === 'landing') {
     return (
-      <div className="min-h-dvh bg-white">
+      <div className="min-h-dvh bg-canvas">
         <ChromeSkeleton tone="landing" />
         <div className="mx-auto w-full max-w-6xl px-5 md:px-8 pt-14 md:pt-20 grid md:grid-cols-12 gap-10 items-start">
           <div className="md:col-span-6 space-y-5">

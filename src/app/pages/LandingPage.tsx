@@ -53,7 +53,7 @@ export default function LandingPage() {
 
   if (isMinimal) {
     return (
-      <div className="min-h-dvh bg-white text-ink overflow-x-hidden">
+      <div className="min-h-dvh bg-canvas text-ink overflow-x-hidden">
         <TopNav
           variant="minimal"
           onStart={startQuiz}
@@ -69,7 +69,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-white text-ink overflow-x-hidden">
+    <div className="min-h-dvh bg-canvas text-ink overflow-x-hidden">
       <TopNav
         onStart={startQuiz}
         onSample={viewSample}

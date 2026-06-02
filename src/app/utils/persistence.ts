@@ -42,6 +42,13 @@ const CATALOG_ACK_KEY = `${KEY_PREFIX}catalogAck`;
  *  off permanently for users who want zero implicit network egress. */
 const AI_AUTO_FALLBACK_KEY = `${KEY_PREFIX}aiAutoFallback`;
 
+/** Color theme preference. Two values: 'dark' (the default — set on
+ *  <html> by an inline bootstrap script in index.html before React
+ *  mounts) or 'light' (explicit user opt-in via Profile toggle).
+ *  System `prefers-color-scheme` is intentionally NOT consulted —
+ *  the brand identity on first paint is dark regardless of OS pref. */
+const THEME_KEY = `${KEY_PREFIX}theme`;
+
 /** Reports older than this get cleaned up on next app load. 6 months. */
 const REPORT_TTL_MS = 180 * 24 * 60 * 60 * 1000;
 
@@ -339,6 +346,37 @@ export function loadAiAutoFallbackSetting(): boolean {
 
 export function saveAiAutoFallbackSetting(enabled: boolean): void {
   writeJSON(AI_AUTO_FALLBACK_KEY, enabled);
+}
+
+/* ------------------------------------------------------------------ */
+/* Theme preference                                                     */
+/*                                                                      */
+/* Read directly via `localStorage` (no JSON envelope) because the      */
+/* value is also consumed by an inline bootstrap script in index.html   */
+/* that runs BEFORE this module is parsed. Both readers must agree on   */
+/* the storage format; bare-string is the simplest coordination point.  */
+/* ------------------------------------------------------------------- */
+
+export type Theme = 'light' | 'dark';
+
+export function loadTheme(): Theme {
+  try {
+    const raw = window.localStorage.getItem(THEME_KEY);
+    return raw === 'light' ? 'light' : 'dark';
+  } catch {
+    // Private mode / quota / disabled storage. Mirror the bootstrap
+    // script's fallback so the React-controlled state matches what's
+    // already on <html>.
+    return 'dark';
+  }
+}
+
+export function saveTheme(theme: Theme): void {
+  try {
+    window.localStorage.setItem(THEME_KEY, theme);
+  } catch {
+    /* swallow — best-effort persistence */
+  }
 }
 
 

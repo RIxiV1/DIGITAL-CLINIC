@@ -135,7 +135,7 @@ export default class ErrorBoundary extends Component<Props, State> {
               <button
                 type="button"
                 onClick={isChunkError ? hardReload : this.reset}
-                className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-indigo-600 text-white text-caption font-semibold shadow-clinical hover:bg-indigo-700 transition-colors"
+                className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-indigo-600 text-on-primary text-caption font-semibold shadow-clinical hover:bg-indigo-700 transition-colors"
               >
                 {isChunkError ? 'Refresh app' : 'Try again'}
               </button>

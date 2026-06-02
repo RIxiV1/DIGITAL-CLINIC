@@ -821,7 +821,7 @@ function AllMarkersPane({
                 onClick={() => setStatusFilter(f.id)}
                 className={`px-4 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
                   active
-                    ? 'bg-indigo-600 text-white shadow-soft'
+                    ? 'bg-indigo-600 text-on-primary shadow-soft'
                     : 'bg-canvas/70 border border-line text-ink-soft hover:border-indigo-300'
                 }`}
                 aria-pressed={active}
@@ -1008,7 +1008,7 @@ function LockerPane({
           type="button"
           onClick={onUpload}
           aria-label="Upload a new report"
-          className="inline-flex items-center justify-center gap-1.5 min-h-12 h-12 w-12 sm:w-auto px-0 sm:px-4 rounded-full bg-indigo-600 text-white text-caption font-semibold shadow-soft hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+          className="inline-flex items-center justify-center gap-1.5 min-h-12 h-12 w-12 sm:w-auto px-0 sm:px-4 rounded-full bg-indigo-600 text-on-primary text-caption font-semibold shadow-soft hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
         >
           <Plus size={16} />
           <span className="hidden sm:inline">Upload</span>
@@ -1069,7 +1069,7 @@ function LockerPane({
                 onClick={() => setLockerSort(opt.id)}
                 className={`h-9 px-3.5 rounded-full transition-colors ${
                   lockerSort === opt.id
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-indigo-600 text-on-primary'
                     : 'text-ink-soft hover:text-ink'
                 }`}
               >

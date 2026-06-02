@@ -25,7 +25,7 @@ export default function Hero({
   onSample: () => void;
 }) {
   return (
-    <section className="relative bg-white overflow-hidden">
+    <section className="relative bg-canvas overflow-hidden">
       {/* Left blue accent bar */}
       <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 hidden md:block" />
 
@@ -39,7 +39,7 @@ export default function Hero({
           {/* LEFT — Headline + CTAs */}
           <div className="md:col-span-6">
             <motion.div variants={fadeUp}>
-              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-white border border-blue-100 text-caption font-semibold uppercase tracking-label text-blue-700 shadow-clinical">
+              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-surface border border-blue-100 text-caption font-semibold uppercase tracking-label text-blue-700 shadow-clinical">
                 <span className="relative grid place-items-center w-3.5 h-3.5">
                   <span className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping" />
                   <span className="relative w-1.5 h-1.5 rounded-full bg-blue-600" />
@@ -172,11 +172,17 @@ function HeroVisual() {
         draggable={false}
       />
 
-      {/* Hormonal Health Map card — overlaps the photo. Previously had
-          a y: [0, -5, 0] / 6s infinite float animation; removed because
-          it read as "drifting / off-anchor" rather than the intended
-          "gently floating overlay" cue. */}
+      {/* Hormonal Health Map card — overlaps the photo. Depicts a
+          "window-chrome" mockup of the in-app hormonal-axis visual,
+          like a screenshot pasted onto the hero. `data-theme="light"`
+          scopes it OUT of the global theme so it stays a clean white
+          card with brand-blue ink in both themes — without this, the
+          inner `text-blue-700` / `bg-blue-600` / etc. tokens flip in
+          dark mode but the outer `bg-white` doesn't, producing the
+          same white-on-pastel / pastel-on-white contrast traps that
+          hit the Doctor Summary mockup. */}
       <div
+        data-theme="light"
         onMouseMove={prefersReducedMotion ? undefined : handleMouseMove}
         className="group absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden"
       >
@@ -260,19 +266,19 @@ function MapRow({
       </div>
       <div
         className={`flex-1 rounded-lg px-2.5 py-1 ${
-          highlighted ? 'bg-blue-600 text-white' : ''
+          highlighted ? 'bg-blue-600 text-on-primary' : ''
         }`}
       >
         <div
           className={`text-caption font-semibold leading-tight ${
-            highlighted ? 'text-white' : 'text-ink'
+            highlighted ? 'text-inherit' : 'text-ink'
           }`}
         >
           {organ}
         </div>
         <div
           className={`text-micro font-bold uppercase tracking-widest leading-tight mt-0.5 ${
-            highlighted ? 'text-blue-100' : 'text-blue-700'
+            highlighted ? 'text-inherit opacity-90' : 'text-blue-700'
           }`}
         >
           {hormone}

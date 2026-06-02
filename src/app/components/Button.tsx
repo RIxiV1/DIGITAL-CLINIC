@@ -25,21 +25,31 @@ type Props = Omit<HTMLMotionProps<'button'>, 'children'> & {
   children?: ReactNode;
 };
 
+/* Variant → class map. Two rules consistent across every variant:
+ *
+ *  1.  No hardcoded `text-white` on a dynamic background. The fill
+ *      tokens (bg-primary-*, bg-gold-*, bg-surface) re-bind between
+ *      themes, so we pair them with the matching `on-*` text token:
+ *      `text-on-primary` flips white→deep-navy as the bg flips
+ *      saturated-blue→pastel-blue, and the button keeps AA in both.
+ *
+ *  2.  No literal hex backgrounds (`bg-[#0F1422]`) — every fill
+ *      resolves through a semantic token so the dark theme can re-bind
+ *      it. The `dark` variant previously used `#0F1422` (deep navy);
+ *      it now uses `bg-ink` which IS that color in light, and inverts
+ *      to a near-white in dark — pairing with `text-canvas` to keep
+ *      the visual register ("ink on canvas") consistent across themes. */
 const variantClasses: Record<Variant, string> = {
   primary:
-    'bg-indigo-600 text-white hover:bg-indigo-700 active:bg-indigo-800 shadow-indigo',
-  /* Hardcoded near-black so the button stays dark with white text in
-     BOTH themes — used on top of the gold Bottom Line card where the
-     gold background never changes. Theme tokens would invert ink to
-     light in dark mode and break the contrast. */
+    'bg-primary-600 text-on-primary hover:bg-primary-700 active:bg-primary-800 shadow-indigo',
   dark:
-    'bg-[#0F1422] text-white hover:bg-[#1F2433] active:bg-black shadow-soft',
+    'bg-ink text-canvas hover:opacity-90 shadow-soft',
   secondary:
-    'bg-surface text-indigo-700 hover:bg-indigo-50 active:bg-indigo-100 border border-line shadow-soft',
+    'bg-surface text-primary-700 hover:bg-primary-50 active:bg-primary-100 border border-line shadow-soft',
   gold:
-    'bg-gold-500 text-indigo-900 hover:bg-gold-400 active:bg-gold-600 shadow-soft',
-  outline: 'border border-indigo-600 text-indigo-700 hover:bg-indigo-50',
-  ghost: 'text-indigo-700 hover:bg-indigo-50',
+    'bg-gold-500 text-on-gold hover:bg-gold-400 active:bg-gold-600 shadow-soft',
+  outline: 'border border-primary-600 text-primary-700 hover:bg-primary-50',
+  ghost: 'text-primary-700 hover:bg-primary-50',
 };
 
 const sizeClasses: Record<Size, string> = {

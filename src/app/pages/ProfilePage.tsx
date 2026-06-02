@@ -6,6 +6,7 @@ import {
   Home,
   Lock,
   LogOut,
+  Moon,
   Pencil,
   ShieldCheck,
   Sparkles,
@@ -21,7 +22,10 @@ import { useNavigation, useQuiz, useReports } from '../AppContext';
 import { buildLabelMap, findOptionLabel } from '../data/quiz';
 import {
   loadAiAutoFallbackSetting,
+  loadTheme,
   saveAiAutoFallbackSetting,
+  saveTheme,
+  type Theme,
 } from '../utils/persistence';
 
 export default function ProfilePage() {
@@ -51,6 +55,36 @@ export default function ProfilePage() {
     const next = !aiAutoFallback;
     setAiAutoFallback(next);
     saveAiAutoFallbackSetting(next);
+  };
+
+  /** Theme preference. Defaults to dark — see index.html's bootstrap
+   *  script and persistence.ts:loadTheme. On flip, persist immediately
+   *  AND patch <html data-theme="…"> so the entire app reskins. The
+   *  `theme-transitioning` class is added briefly so the 200ms cubic
+   *  transition in index.css runs on this swap (but not on every
+   *  subsequent render — see the @media (prefers-reduced-motion) rule
+   *  for the opt-out path). */
+  const [theme, setThemeState] = useState<Theme>(() => loadTheme());
+  const toggleTheme = () => {
+    const next: Theme = theme === 'dark' ? 'light' : 'dark';
+    setThemeState(next);
+    saveTheme(next);
+    const root = document.documentElement;
+    root.classList.add('theme-transitioning');
+    root.dataset.theme = next;
+    // Keep the mobile-browser top-bar tint in sync with the canvas.
+    // The bootstrap script in index.html stamps the matching value on
+    // first paint; this handles every runtime flip after that. Hex
+    // mirrors `--color-canvas` from the @theme / [data-theme='dark']
+    // blocks in index.css — kept hardcoded here (not read from CSS)
+    // because the <meta> tag lives outside the document body and
+    // CSS variables don't reach it.
+    const themeColor = next === 'light' ? '#F8F9FA' : '#0B0F1A';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', themeColor);
+    window.setTimeout(() => {
+      root.classList.remove('theme-transitioning');
+    }, 240);
   };
 
   const priorityLabels = useMemo(() => buildLabelMap(), []);
@@ -90,7 +124,7 @@ export default function ProfilePage() {
             >
               <Card
                 raised
-                className="!bg-indigo-600 border-indigo-600 text-white !p-6 relative overflow-hidden"
+                className="!bg-indigo-600 border-indigo-600 text-on-primary !p-6 relative overflow-hidden"
               >
                 <div className="absolute -top-14 -right-14 w-44 h-44 rounded-full bg-indigo-400/25 blur-3xl pointer-events-none" />
                 <div className="absolute -bottom-20 -left-10 w-44 h-44 rounded-full bg-gold-500/10 blur-3xl pointer-events-none" />
@@ -312,7 +346,7 @@ export default function ProfilePage() {
                   role="switch"
                   aria-checked={aiAutoFallback}
                   aria-label="AI auto-fallback for failed image parses"
-                  className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-canvas/60 transition-colors cursor-pointer"
+                  className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-canvas/60 transition-colors cursor-pointer border-b border-line/70"
                 >
                   <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
                     <Sparkles size={16} />
@@ -327,10 +361,6 @@ export default function ProfilePage() {
                       step.
                     </div>
                   </div>
-                  {/* Visual toggle — pill that slides left/right. Kept
-                      inline (no separate component) since this is the
-                      only toggle in the app today; promote to shared
-                      component when there's a second one. */}
                   <span
                     aria-hidden="true"
                     className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
@@ -338,8 +368,49 @@ export default function ProfilePage() {
                     }`}
                   >
                     <span
-                      className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition-transform ${
+                      className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform ${
                         aiAutoFallback ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </span>
+                </button>
+
+                {/* Dark-theme toggle. Dark is the default brand experience
+                    on first load; this switch lets users opt into light
+                    for higher readability in bright environments
+                    (clinics, outdoor sun). `aria-checked` reads "is dark
+                    on?" so a screen reader announces dark as the active
+                    state, matching the visual chrome. */}
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  role="switch"
+                  aria-checked={theme === 'dark'}
+                  aria-label="Dark theme"
+                  className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-canvas/60 transition-colors cursor-pointer"
+                >
+                  <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
+                    <Moon size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-body-sm">
+                      Dark theme
+                    </div>
+                    <div className="text-caption text-muted text-pretty">
+                      On by default. Turn off for higher readability in
+                      bright environments (outdoor light, clinic
+                      fluorescents).
+                    </div>
+                  </div>
+                  <span
+                    aria-hidden="true"
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                      theme === 'dark' ? 'bg-indigo-600' : 'bg-line'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform ${
+                        theme === 'dark' ? 'translate-x-5' : 'translate-x-0.5'
                       }`}
                     />
                   </span>

@@ -4,7 +4,7 @@ import { Reveal, SectionHeader } from './shared';
 
 export default function Credibility() {
   return (
-    <section id="science" className="py-16 sm:py-20 md:py-28 bg-white">
+    <section id="science" className="py-16 sm:py-20 md:py-28 bg-canvas">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
         <Reveal>
           <SectionHeader
@@ -75,8 +75,8 @@ function StatCard({
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={`h-full rounded-2xl p-7 md:p-8 border ${
         accent
-          ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
-          : 'bg-white border-line shadow-clinical'
+          ? 'bg-blue-600 border-blue-600 text-on-primary shadow-blue'
+          : 'bg-surface border-line shadow-clinical'
       }`}
     >
       <div

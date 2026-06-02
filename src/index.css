@@ -22,7 +22,7 @@
    * families resolve to the same Clinical Blue stops, so a future
    * "actually shift to a new primary" decision flips one place
    * (--color-blue-*) instead of grep-and-pray across two scales.
-   * Do NOT add new code using indigo-* — prefer blue-*. */
+   * Do NOT add new code using indigo-* — prefer blue-* or primary-*. */
   --color-indigo-50: var(--color-blue-50);
   --color-indigo-100: var(--color-blue-100);
   --color-indigo-200: var(--color-blue-200);
@@ -33,6 +33,23 @@
   --color-indigo-700: var(--color-blue-700);
   --color-indigo-800: var(--color-blue-800);
   --color-indigo-900: var(--color-blue-900);
+
+  /* Semantic-role alias — the brand IS the primary. Adding the
+   * `--color-primary-*` scale here lets new code adopt the role-named
+   * Tailwind classes (`bg-primary-600`, `text-primary-700`, etc.)
+   * without having to know that "primary" happens to be Clinical Blue
+   * this season. Re-pointing the brand to a different hue is a single
+   * edit in --color-blue-* upstream of this aliasing. */
+  --color-primary-50: var(--color-blue-50);
+  --color-primary-100: var(--color-blue-100);
+  --color-primary-200: var(--color-blue-200);
+  --color-primary-300: var(--color-blue-300);
+  --color-primary-400: var(--color-blue-400);
+  --color-primary-500: var(--color-blue-500);
+  --color-primary-600: var(--color-blue-600);
+  --color-primary-700: var(--color-blue-700);
+  --color-primary-800: var(--color-blue-800);
+  --color-primary-900: var(--color-blue-900);
 
   /* Soft mint — fresh AI accent */
   --color-mint-50: #ECFDF4;
@@ -59,13 +76,68 @@
   --color-line: #E5E7EB;
   --color-line-strong: #D1D5DB;
 
-  /* Status */
+  /* Status fills. The vivid stops here are tuned for BADGE FILLS
+   * (white-on-color, e.g. `bg-good text-on-status`) — they hit AA
+   * comfortably when paired with the on-status token. The `*-soft`
+   * stops are the muted tinted backgrounds used by Pill chips and
+   * disclosure cards. */
   --color-good: #16A34A;
   --color-good-soft: #DCFCE7;
   --color-attention: #D97706;
   --color-attention-soft: #FEF3C7;
   --color-concern: #DC2626;
   --color-concern-soft: #FEE2E2;
+
+  /* Status INK tokens — for TEXT on the matching `*-soft` ground.
+   * The vivid `*` hues above measure ~3:1 on `*-soft` (below AA's
+   * 4.5:1 floor for body text). These darker variants restore AA:
+   *   text-good-ink on bg-good-soft       ≈ 5.5:1
+   *   text-attention-ink on bg-attention-soft ≈ 4.6:1
+   *   text-concern-ink on bg-concern-soft ≈ 6.5:1
+   * Pill, status labels, and any inline colored text point here;
+   * the vivid `*` tokens stay reserved for badge fills + status
+   * dots where they belong. */
+  --color-good-ink: #15803D;
+  --color-attention-ink: #B45309;
+  --color-concern-ink: #B91C1C;
+
+  /* ─── ON-COLOR TOKENS ───
+   *
+   * The contrast pair for any dynamic background. These exist so we
+   * NEVER hardcode `text-white` on a colored fill — that pattern
+   * breaks the moment the fill's tone shifts between themes (a
+   * desaturated pastel-red in dark mode + white text fails WCAG hard).
+   *
+   * Convention: every dynamic background token has a paired
+   * `--color-on-X` that lives at the right contrast for that fill
+   * in the CURRENT theme. Components consume the pair together:
+   *   bg-primary-600 text-on-primary
+   *   bg-good        text-on-status
+   *
+   * Light theme: all on-* tokens are near-white because the
+   *  underlying fills are saturated brand tones (deep blue, vivid
+   *  red, etc.) and white text reads at 5–9:1 contrast.
+   * Dark theme:  the on-* tokens flip to deep navy because the
+   *  underlying fills desaturate to pastels — dark-on-pastel reads
+   *  better than white-on-pastel.
+   *
+   * Two on-tokens cover every case:
+   *   --color-on-primary  →  text on bg-primary-* (CTAs, links, accent fills)
+   *   --color-on-status   →  text on bg-good / bg-attention / bg-concern (badges)
+   *
+   * Anything else that uses a colored fill should adopt or alias
+   * one of these — DO NOT add per-fill on-color tokens unless a
+   * surface needs a uniquely different contrast pair. */
+  --color-on-primary: #FFFFFF;
+  --color-on-status: #FFFFFF;
+  /* Gold is special — even in LIGHT theme it's a bright fill that needs
+   * DARK text, not white (white-on-#FFB800 fails AA at ~1.95:1). So
+   * `--color-on-gold` ALWAYS resolves to a fixed deep navy regardless
+   * of theme — it doesn't follow the white→navy flip the other on-*
+   * tokens use. Hardcoded hex (not `var(--color-blue-900)`) because
+   * blue-900 itself flips between themes, which would lose the
+   * theme-invariance we want here. */
+  --color-on-gold: #002852;
 
   /* Type system */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
@@ -130,14 +202,14 @@
    *   blue     — colored CTA glow. Aliased by --shadow-indigo for any
    *              legacy callers (single source of truth, like the
    *              color tokens above). */
-  --shadow-soft: 0 1px 1px rgba(15, 20, 34, 0.02),
-    0 6px 18px rgba(15, 20, 34, 0.05);
-  --shadow-pop: 0 4px 8px rgba(15, 20, 34, 0.04),
-    0 16px 36px rgba(15, 20, 34, 0.10);
-  --shadow-clinical: 0 4px 30px rgba(0, 0, 0, 0.03);
-  --shadow-clinical-lg: 0 6px 40px rgba(0, 0, 0, 0.05),
-    0 1px 1px rgba(0, 0, 0, 0.02);
-  --shadow-blue: 0 10px 30px rgba(0, 102, 204, 0.18);
+  --shadow-soft: 0 1px 1px rgb(15 20 34 / 0.02),
+    0 6px 18px rgb(15 20 34 / 0.05);
+  --shadow-pop: 0 4px 8px rgb(15 20 34 / 0.04),
+    0 16px 36px rgb(15 20 34 / 0.10);
+  --shadow-clinical: 0 4px 30px rgb(0 0 0 / 0.03);
+  --shadow-clinical-lg: 0 6px 40px rgb(0 0 0 / 0.05),
+    0 1px 1px rgb(0 0 0 / 0.02);
+  --shadow-blue: 0 10px 30px rgb(0 102 204 / 0.18);
   --shadow-indigo: var(--shadow-blue);
 
   /* Radii */
@@ -185,10 +257,304 @@ body {
   font-feature-settings: 'cv11', 'ss01', 'ss03';
 }
 
-/* Dark-theme CSS removed — the user-facing theme toggle was deleted
- * and the app is light-only. To bring it back, restore the
- * [data-theme='dark'] override block + the .theme-switching fade
- * from git history (commit before this cleanup). */
+/* ══════════════════════════════════════════════════════════════════ */
+/* DARK THEME                                                          */
+/*                                                                     */
+/* Strategy: SEMANTIC VARIABLE RE-BINDING. We re-bind the same         */
+/* `--color-*` tokens defined in `@theme` above. Every Tailwind class  */
+/* in the app (`bg-canvas`, `text-ink`, `border-line`, `shadow-soft`)  */
+/* resolves to a `var()` reference at render time, so overriding the  */
+/* variable inside `:root[data-theme='dark']` reskins the entire tree */
+/* without touching component code or sprinkling `dark:` variants.    */
+/*                                                                     */
+/* Five rules this block follows strictly:                            */
+/*                                                                     */
+/*  1.  :root[data-theme='dark'] selector (specificity 0,2,0). Beats  */
+/*      Tailwind v4's @theme :root (0,1,0) deterministically so the   */
+/*      dark values always win the cascade.                           */
+/*                                                                     */
+/*  2.  ON-COLOR TOKENS flip. `--color-on-primary` and                 */
+/*      `--color-on-status` go from white in light theme to deep navy */
+/*      in dark theme — because the underlying fills desaturate to    */
+/*      pastel and white-on-pastel fails WCAG AA. Components consume   */
+/*      the pair (`bg-primary-600 text-on-primary`), never `text-white`*/
+/*      on a colored fill.                                            */
+/*                                                                     */
+/*  3.  STATUS FILLS DESATURATE. Pure red/amber/green at full         */
+/*      saturation chromatic-aberrates on consumer AMOLED at low      */
+/*      ambient light. Shift to rose / warm amber / emerald pastels — */
+/*      a flagged marker still reads as "the rose row" but doesn't   */
+/*      vibrate.                                                       */
+/*                                                                     */
+/*  4.  SHADOWS GO INSET. External drop shadows collapse on dark      */
+/*      surfaces (they're already darker than the canvas). Replace    */
+/*      with inset top-edge highlights — a thin rim of brightness    */
+/*      mimicking real light catching the top of a raised card.       */
+/*                                                                     */
+/*  5.  MODERN RGB SYNTAX. `rgb(255 255 255 / 0.10)` not              */
+/*      `rgba(255, 255, 255, 0.10)`. Tailwind v4's color-mix engine   */
+/*      that powers `bg-token/40` opacity modifiers breaks on the     */
+/*      legacy comma form.                                             */
+/* ══════════════════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════════════════ */
+/* SCOPED LIGHT-THEME ISLAND                                           */
+/*                                                                     */
+/* Re-binds every token the dark theme overrides back to its light    */
+/* value, scoped to a [data-theme='light'] DOM subtree. Used to opt   */
+/* specific surfaces OUT of the global theme — currently the          */
+/* WhatYoullGet Doctor Summary mockup, which depicts a printed-PDF    */
+/* representation that has to stay paper-white regardless of the      */
+/* page-level theme.                                                  */
+/*                                                                     */
+/* Without this scope, the mockup's mix of static `bg-white`           */
+/* containers and dynamic `text-ink` / `text-blue-700` / `bg-canvas`  */
+/* / `bg-blue-50` tokens flips in dark mode and produces:             */
+/*   • white text on white containers (text-ink on bg-white)          */
+/*   • pastel blue text on white containers (text-blue-700 on white)  */
+/*   • muddy gray rows with invisible text (bg-canvas/40 + text-ink)  */
+/*                                                                     */
+/* CSS variable inheritance solves this elegantly: the scope's        */
+/* descendants read these LIGHT values directly, no matter what       */
+/* :root says. Single block here, single JSX wrapper at the call      */
+/* site, zero hardcoded hexes scattered through the mockup body.      */
+/* ══════════════════════════════════════════════════════════════════ */
+
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* Canvas + surface */
+  --color-canvas: #F8F9FA;
+  --color-surface: #FFFFFF;
+  --color-line: #E5E7EB;
+  --color-line-strong: #D1D5DB;
+
+  /* Text hierarchy */
+  --color-ink: #0F1422;
+  --color-ink-soft: #2C3344;
+  --color-muted: #6B7280;
+
+  /* Brand blue scale (and indigo aliases inherit via var()) */
+  --color-blue-50:  #EBF5FF;
+  --color-blue-100: #D6EBFF;
+  --color-blue-200: #ADD6FF;
+  --color-blue-300: #7AB8FF;
+  --color-blue-400: #3D95FF;
+  --color-blue-500: #0F7AEB;
+  --color-blue-600: #0066CC;
+  --color-blue-700: #0052A3;
+  --color-blue-800: #003D7A;
+  --color-blue-900: #002852;
+
+  /* Gold */
+  --color-gold-50:  #FFF9E5;
+  --color-gold-100: #FFF1BF;
+  --color-gold-200: #FFE48A;
+  --color-gold-300: #FFD66B;
+  --color-gold-400: #FFC73E;
+  --color-gold-500: #FFB800;
+  --color-gold-600: #E0A300;
+  --color-gold-700: #B88500;
+  --color-gold-800: #8A6500;
+
+  /* Mint */
+  --color-mint-50:  #ECFDF4;
+  --color-mint-100: #D5F8E5;
+  --color-mint-500: #15B97C;
+
+  /* Status fills + ink */
+  --color-good: #16A34A;
+  --color-good-soft: #DCFCE7;
+  --color-good-ink: #15803D;
+  --color-attention: #D97706;
+  --color-attention-soft: #FEF3C7;
+  --color-attention-ink: #B45309;
+  --color-concern: #DC2626;
+  --color-concern-soft: #FEE2E2;
+  --color-concern-ink: #B91C1C;
+
+  /* On-color pairs — back to white on saturated/vivid fills */
+  --color-on-primary: #FFFFFF;
+  --color-on-status: #FFFFFF;
+
+  /* Shadows — back to external drop, since the local surface is
+   * light and dark drop shadows are once again visible on it. */
+  --shadow-soft: 0 1px 1px rgb(15 20 34 / 0.02),
+    0 6px 18px rgb(15 20 34 / 0.05);
+  --shadow-pop: 0 4px 8px rgb(15 20 34 / 0.04),
+    0 16px 36px rgb(15 20 34 / 0.10);
+  --shadow-clinical: 0 4px 30px rgb(0 0 0 / 0.03);
+  --shadow-clinical-lg: 0 6px 40px rgb(0 0 0 / 0.05),
+    0 1px 1px rgb(0 0 0 / 0.02);
+  --shadow-blue: 0 10px 30px rgb(0 102 204 / 0.18);
+  --shadow-indigo: var(--shadow-blue);
+}
+
+:root[data-theme='dark'] {
+  /* Tell the UA to render native scrollbars, form controls, and the
+   * default selection chrome in dark variant. Without this, the
+   * scrollbars stay bright on the dark canvas. */
+  color-scheme: dark;
+
+  /* ─── Canvas + surface ladder ──────────────────────────────────
+   * Two visible tones from page floor to card surface. NOT pure
+   * black — `#0B0F1A` keeps the gamma curve away from OLED black-
+   * smearing during scroll, and reads as "navy night" instead of
+   * "void", which fits the clinical-blue brand. */
+  --color-canvas: #0B0F1A;
+  --color-surface: #131826;
+
+  /* ─── Line / border ────────────────────────────────────────────
+   * Low-alpha white so a border scales with whatever surface tone
+   * sits beneath it (canvas vs. surface vs. raised). A fixed grey
+   * line would stay one tone regardless of context. */
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-strong: rgb(255 255 255 / 0.14);
+
+  /* ─── Text hierarchy ───────────────────────────────────────────
+   * Opacity-based on white. 92/78/55 lands at APCA Lc 92/82/68 on
+   * canvas — AAA / AAA / AA. Slightly less than pure white kills
+   * the haloing effect that #FFFFFF gets on AMOLED. */
+  --color-ink: rgb(255 255 255 / 0.92);
+  --color-ink-soft: rgb(255 255 255 / 0.78);
+  --color-muted: rgb(255 255 255 / 0.55);
+
+  /* ─── Primary / Clinical Blue, dark-tuned ──────────────────────
+   * The blue scale inverts: 50 (lightest in light) becomes a deep
+   * tint (darkest in dark) for soft section backgrounds; 900
+   * (darkest in light) becomes near-white for prominent text on
+   * canvas. The middle stops (500-600) become PASTEL — `bg-primary-600`
+   * is a light-blue button surface, NOT a deep navy. This is the
+   * crucial part for the contrast principle: `text-white` on
+   * `bg-primary-600` would fail at ~2.3:1; `text-on-primary` (which
+   * the dark theme re-binds to deep navy below) hits 8:1 instead. */
+  --color-blue-50: #0E1A2D;
+  --color-blue-100: #15263F;
+  --color-blue-200: #1E3457;
+  --color-blue-300: #2A4A78;
+  --color-blue-400: #5288D4;
+  --color-blue-500: #76A8F0;
+  --color-blue-600: #9DC2FA;
+  --color-blue-700: #BCD5FC;
+  --color-blue-800: #DAE7FE;
+  --color-blue-900: #EEF4FF;
+
+  /* `--color-indigo-*` and `--color-primary-*` legacy/role aliases
+   * inherit via `var(--color-blue-*)` from the @theme block — no
+   * separate dark re-binding needed. */
+
+  /* ─── Gold accent, desaturated ─────────────────────────────────
+   * Brand gold #FFB800 at full saturation blasts on a dark canvas
+   * and pulls the eye away from data. ~25% saturation drop, slight
+   * amber shift for warmth. */
+  --color-gold-50: #2A1F0A;
+  --color-gold-100: #3D2D0E;
+  --color-gold-200: #5C4416;
+  --color-gold-300: #856426;
+  --color-gold-400: #B0883C;
+  --color-gold-500: #D6A656;
+  --color-gold-600: #E6BE7C;
+  --color-gold-700: #F1D2A2;
+  --color-gold-800: #F8E5C7;
+
+  /* ─── Mint accent ──────────────────────────────────────────────*/
+  --color-mint-50: #0E2418;
+  --color-mint-100: #163422;
+  --color-mint-500: #4DBE8C;
+
+  /* ─── Status fills — DE-ESCALATED for AMOLED ───────────────────
+   * Rose / warm-amber / emerald pastels instead of pure red/amber/
+   * green. The labelled status still reads as "the rose row" / "the
+   * amber row" but without the chromatic vibration. Paired with the
+   * flipped `--color-on-status` below, badges hit AA on these
+   * pastels with dark text. */
+  --color-good: #5FCB95;
+  --color-good-soft: rgb(95 203 149 / 0.10);
+  --color-attention: #D9A765;
+  --color-attention-soft: rgb(217 167 101 / 0.10);
+  --color-concern: #E27482;
+  --color-concern-soft: rgb(226 116 130 / 0.10);
+
+  /* In dark mode, the *-ink tokens (used by Pill chips for the colored
+   * text on a tinted `*-soft` background) flip from the AA-darker
+   * variants used in light to the SAME pastel values as the regular
+   * status fills — light theme needs DARKER colored text on near-white
+   * tints to hit AA; dark theme needs LIGHTER colored text on the
+   * near-dark tints. The pastel hues hit ~7:1 on the dark soft grounds. */
+  --color-good-ink: var(--color-good);
+  --color-attention-ink: var(--color-attention);
+  --color-concern-ink: var(--color-concern);
+
+  /* ─── ON-COLOR TOKENS — the principal contrast pair ────────────
+   * Flipped to deep navy because the matching dynamic fills above
+   * are now pastels. `text-on-primary` on `bg-primary-600` (pastel
+   * blue): ~8:1. `text-on-status` on `bg-concern` (pastel rose):
+   * ~5.5:1. Both meet AA; the first meets AAA. */
+  --color-on-primary: #0B0F1A;
+  --color-on-status: #0B0F1A;
+
+  /* ─── Shadow ladder — inset + deep ─────────────────────────────
+   * External shadows are darker than the canvas they sit on, so
+   * they disappear. Inset top-edge highlights mimic real ambient
+   * light catching the top edge of a raised surface, paired with a
+   * deeper outer shadow for the bottom edge. */
+  --shadow-soft:
+    inset 0 1px 0 rgb(255 255 255 / 0.04),
+    0 1px 2px rgb(0 0 0 / 0.40);
+  --shadow-pop:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 4px 12px rgb(0 0 0 / 0.55);
+  --shadow-clinical:
+    inset 0 1px 0 rgb(255 255 255 / 0.03);
+  --shadow-clinical-lg:
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    0 8px 24px rgb(0 0 0 / 0.60);
+  --shadow-blue:
+    0 0 0 1px rgb(82 136 212 / 0.35),
+    0 6px 24px rgb(82 136 212 / 0.18);
+  --shadow-indigo: var(--shadow-blue);
+
+  /* Match the active theme on native UA chrome. */
+  scrollbar-color: rgb(255 255 255 / 0.15) transparent;
+}
+
+/* ─── Theme-flip transition damping ──────────────────────────────
+ * Scoped to the brief moment immediately after a toggle flip — the
+ * `theme-transitioning` class is added by the toggle handler and
+ * cleared after 240ms. Without scoping, every render would crossfade
+ * every property change, which is wasteful and would interfere with
+ * other intentional transitions. Skipped under prefers-reduced-motion. */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-transitioning,
+  html.theme-transitioning * {
+    transition:
+      background-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      color 200ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+/* Focus ring on dark — the light-theme ring (3px rgba(0,102,204,0.18))
+ * is below the just-noticeable-difference threshold against canvas in
+ * dark. Bump alpha to 45% and add an inset 1px offset so the ring is
+ * visible through any surface tone. */
+:root[data-theme='dark'] button:focus-visible,
+:root[data-theme='dark'] a:focus-visible,
+:root[data-theme='dark'] input:focus-visible {
+  outline: none;
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.15),
+    0 0 0 3px rgb(82 136 212 / 0.45);
+}
+
+/* Selection — the light-theme `gold-200` flips to a deep brown in
+ * dark, nearly invisible against canvas. Force a visible dark
+ * selection. */
+:root[data-theme='dark'] ::selection {
+  background: rgb(82 136 212 / 0.45);
+  color: rgb(255 255 255 / 0.98);
+}
 
 * {
   -webkit-tap-highlight-color: transparent;
@@ -271,70 +637,61 @@ button:disabled,
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
   }
 
-  /* Gradient bars for biomarkers */
-  .gradient-bar-band {
-    background: linear-gradient(
-      90deg,
-      #DC2626 0%,
-      #F59E0B 22%,
-      #16A34A 45%,
-      #16A34A 55%,
-      #F59E0B 78%,
-      #DC2626 100%
-    );
-  }
-  .gradient-bar-up {
-    background: linear-gradient(
-      90deg,
-      #DC2626 0%,
-      #F59E0B 35%,
-      #16A34A 60%,
-      #16A34A 100%
-    );
-  }
-  .gradient-bar-down {
-    background: linear-gradient(
-      90deg,
-      #16A34A 0%,
-      #16A34A 40%,
-      #F59E0B 65%,
-      #DC2626 100%
-    );
-  }
 
-  /* Subtle dotted grid for premium hero */
+
+  /* Subtle dotted grid for premium hero. Modern `rgb(R G B / A)`
+   * syntax so the alpha modifier works under Tailwind v4's color-mix
+   * engine. The hue is brand-blue, intentionally fixed (not tokened)
+   * because the dot pattern reads identically against any surface
+   * tone — it just gives a faint dotted texture. */
   .bg-dot-grid {
     background-image: radial-gradient(
-      rgba(0, 102, 204, 0.08) 1px,
+      rgb(0 102 204 / 0.08) 1px,
       transparent 1px
     );
     background-size: 18px 18px;
   }
 
-  /* Calm clinical-blue grid for the Digital Clinic landing hero */
+  /* Calm clinical-blue grid for the Digital Clinic landing hero.
+   * Base linear-gradient resolves via tokens so the wash flips with
+   * the theme; the radial dots use brand-blue at low alpha and stay
+   * subtle on either tone. */
   .bg-hero-grid {
     background-image:
-      radial-gradient(rgba(0, 102, 204, 0.07) 1px, transparent 1px),
-      linear-gradient(180deg, #EBF5FF 0%, #FFFFFF 78%);
+      radial-gradient(rgb(0 102 204 / 0.07) 1px, transparent 1px),
+      linear-gradient(180deg, var(--color-blue-50) 0%, var(--color-surface) 78%);
     background-size:
       22px 22px,
       100% 100%;
   }
 
+  /* `.bg-soft-blue-gradient` — soft section wash used by Connection.
+   * The base stops resolve via tokens (`--color-surface` is white in
+   * light, deep navy in dark), so the wash inherits the theme without
+   * a separate dark override. The radial accent uses modern
+   * `rgb(R G B / A)` syntax so Tailwind v4's color-mix engine accepts
+   * any future opacity modifiers on the class. */
   .bg-soft-blue-gradient {
     background:
       radial-gradient(
         120% 70% at 50% 0%,
-        rgba(0, 102, 204, 0.06) 0%,
+        rgb(0 102 204 / 0.06) 0%,
         transparent 60%
       ),
-      linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%);
+      linear-gradient(180deg, var(--color-surface) 0%, var(--color-canvas) 100%);
   }
 
+  /* `.bg-cta-gradient` — permanent dark hero callout used by FinalCta.
+   * Stops are hardcoded brand-blue values intentionally; this surface
+   * stays the same in BOTH themes (a dark blue gradient is a
+   * deliberate visual constant on the landing's closing CTA, not
+   * something that should flip with the user's theme). Modern
+   * `rgb(R G B / A)` syntax across the alpha stops for Tailwind v4
+   * color-mix compat. */
   .bg-cta-gradient {
     background:
-      radial-gradient(60% 80% at 80% 20%, rgba(61, 149, 255, 0.30) 0%, transparent 60%),
-      radial-gradient(80% 100% at 0% 100%, rgba(21, 185, 124, 0.15) 0%, transparent 55%),
+      radial-gradient(60% 80% at 80% 20%, rgb(61 149 255 / 0.30) 0%, transparent 60%),
+      radial-gradient(80% 100% at 0% 100%, rgb(21 185 124 / 0.15) 0%, transparent 55%),
       linear-gradient(135deg, #003D7A 0%, #0052A3 45%, #0066CC 100%);
   }
 }

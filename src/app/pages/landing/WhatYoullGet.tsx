@@ -66,7 +66,7 @@ export default function WhatYoullGet() {
                 ].map(({ Icon, title, body }) => (
                   <div
                     key={title}
-                    className="flex items-start gap-3 rounded-2xl bg-white border border-line p-4 shadow-clinical"
+                    className="flex items-start gap-3 rounded-2xl bg-surface border border-line p-4 shadow-clinical"
                   >
                     <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 shrink-0">
                       <Icon size={17} />
@@ -86,8 +86,8 @@ export default function WhatYoullGet() {
                     report" CTA removed — TopNav + Hero already carry
                     that affordance, having a third on the same page
                     diluted both. */}
-                <div className="mt-2 flex items-center gap-3 rounded-2xl bg-white border border-blue-100 p-4 shadow-clinical">
-                  <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-600 text-white shrink-0">
+                <div className="mt-2 flex items-center gap-3 rounded-2xl bg-surface border border-blue-100 p-4 shadow-clinical">
+                  <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-600 text-on-primary shrink-0">
                     <Download size={17} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -110,8 +110,17 @@ export default function WhatYoullGet() {
 }
 
 function DoctorSummaryMockup() {
+  /* `data-theme="light"` scopes this entire mockup subtree to the
+   * light-mode token values, regardless of the page-level theme. The
+   * mockup depicts a printed PDF "Doctor Summary" letter — its visual
+   * job is to look like a piece of white paper a user could hand to
+   * a clinician, so it must stay paper-white in dark mode too. Without
+   * this opt-out, the mockup's internal text-ink / text-blue-700 /
+   * bg-canvas tokens would flip with the page and produce illegible
+   * white-on-white + muddy gray rows. See the [data-theme='light']
+   * block in index.css for the re-binding details. */
   return (
-    <div className="relative">
+    <div className="relative" data-theme="light">
       <div className="absolute -inset-2 rounded-[24px] bg-gradient-to-br from-blue-100/70 via-white to-blue-50 blur-2xl opacity-60 pointer-events-none" />
 
       <div className="relative rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden">
