@@ -25,7 +25,7 @@ export default function Hero({
   onSample: () => void;
 }) {
   return (
-    <section className="relative bg-canvas overflow-hidden">
+    <section id="connection" className="relative bg-canvas overflow-hidden">
       {/* Left blue accent bar */}
       <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 hidden md:block" />
 

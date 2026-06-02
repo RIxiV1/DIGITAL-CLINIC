@@ -13,11 +13,11 @@ export default function TopNav({
    *  or reports). Renders a "Go to dashboard" button. New visitors
    *  don't see it because there's nothing in the dashboard yet. */
   onDashboard?: () => void;
-  /** 'full' (default) shows the four hash anchors (#connection, #how,
-   *  #report, #science). 'minimal' hides them because the minimal
-   *  LandingPage variant doesn't have those sections — clicking a
-   *  hash anchor that doesn't exist silently no-ops, which is a
-   *  small but real UX hole. */
+  /** 'full' (default) shows the three hash anchors (#connection, #how,
+   *  #report) — each maps to a real section id in the full LandingPage
+   *  layout. 'minimal' hides them because the minimal LandingPage
+   *  variant doesn't have those sections — clicking a hash anchor that
+   *  doesn't exist silently no-ops, which is a small but real UX hole. */
   variant?: 'full' | 'minimal';
 }) {
   return (
@@ -41,9 +41,6 @@ export default function TopNav({
             </a>
             <a href="#report" className="hover:text-ink transition-colors">
               What you’ll get
-            </a>
-            <a href="#science" className="hover:text-ink transition-colors">
-              Science
             </a>
           </nav>
         )}

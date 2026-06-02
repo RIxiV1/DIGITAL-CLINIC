@@ -3,7 +3,7 @@ import { Reveal } from './shared';
 
 export default function FinalCta({ onStart }: { onStart: () => void }) {
   return (
-    <section className="py-16 sm:py-20 md:py-28">
+    <section id="report" className="py-16 sm:py-20 md:py-28">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
         <Reveal>
           <div className="relative mx-auto w-full max-w-5xl rounded-[32px] bg-blue-600 text-on-primary overflow-hidden shadow-blue">
