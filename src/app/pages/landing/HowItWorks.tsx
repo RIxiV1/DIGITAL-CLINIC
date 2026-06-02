@@ -72,7 +72,7 @@ function StepCard({
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={`relative h-full rounded-2xl p-6 sm:p-7 md:p-8 border transition-all ${
         emphasized
-          ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
+          ? 'bg-blue-600 border-blue-600 text-on-primary shadow-blue'
           : 'bg-surface border-line shadow-clinical'
       }`}
     >

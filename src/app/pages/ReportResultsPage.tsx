@@ -370,7 +370,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                         onClick={() => setFilter(f.id)}
                         className={`px-4 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
                           active
-                            ? 'bg-indigo-600 text-white shadow-soft'
+                            ? 'bg-indigo-600 text-on-primary shadow-soft'
                             : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
                         }`}
                       >
@@ -604,7 +604,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                         aria-pressed={active}
                         className={`inline-flex items-center px-3 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
                           active
-                            ? 'bg-indigo-600 text-white shadow-soft'
+                            ? 'bg-indigo-600 text-on-primary shadow-soft'
                             : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
                         }`}
                       >

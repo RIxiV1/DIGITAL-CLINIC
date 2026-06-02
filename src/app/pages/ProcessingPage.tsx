@@ -712,7 +712,7 @@ export default function ProcessingPage() {
                       state === 'done'
                         ? 'bg-good text-white'
                         : state === 'active'
-                          ? 'bg-indigo-600 text-white'
+                          ? 'bg-indigo-600 text-on-primary'
                           : 'bg-canvas text-muted'
                     }`}
                   >

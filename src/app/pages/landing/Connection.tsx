@@ -117,7 +117,7 @@ export default function ConnectionSection({
                 </ul>
                 <button
                   onClick={onStart}
-                  className="mt-6 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-caption font-semibold shadow-clinical transition-colors"
+                  className="mt-6 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-blue-600 hover:bg-blue-700 text-on-primary text-caption font-semibold shadow-clinical transition-colors"
                 >
                   See what’s actually going on
                   <ArrowRight size={14} />
@@ -155,7 +155,7 @@ function CascadeBig() {
 
       {/* Axis title strip */}
       <div className="flex items-center gap-3 mb-7">
-        <div className="grid place-items-center w-8 h-8 rounded-xl bg-blue-600 text-white shrink-0 shadow-clinical">
+        <div className="grid place-items-center w-8 h-8 rounded-xl bg-blue-600 text-on-primary shrink-0 shadow-clinical">
           <FlaskConical size={14} />
         </div>
         <div className="min-w-0">
@@ -250,7 +250,7 @@ function AxisStation({
       <div
         className={`absolute -left-[60px] top-0.5 grid place-items-center w-12 h-12 rounded-full border-[2.5px] ${
           isOutput
-            ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
+            ? 'bg-blue-600 border-blue-600 text-on-primary shadow-blue'
             : 'bg-surface border-blue-500 text-blue-700 shadow-clinical'
         }`}
       >
@@ -261,7 +261,7 @@ function AxisStation({
       <div
         className={`relative rounded-2xl border p-4 md:p-5 overflow-hidden ${
           isOutput
-            ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
+            ? 'bg-blue-600 border-blue-600 text-on-primary shadow-blue'
             : 'bg-surface border-line shadow-clinical'
         }`}
       >
@@ -450,7 +450,7 @@ function CascadeCompact() {
               <div
                 className={`absolute -left-[40px] top-0.5 grid place-items-center w-8 h-8 rounded-full border-2 ${
                   s.isOutput
-                    ? 'bg-blue-600 border-blue-600 text-white'
+                    ? 'bg-blue-600 border-blue-600 text-on-primary'
                     : 'bg-surface border-blue-500 text-blue-700'
                 }`}
               >
@@ -463,7 +463,7 @@ function CascadeCompact() {
               <div
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${
                   s.isOutput
-                    ? 'bg-blue-600 border-blue-600 text-white'
+                    ? 'bg-blue-600 border-blue-600 text-on-primary'
                     : 'bg-surface border-blue-100'
                 }`}
               >

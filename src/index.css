@@ -668,36 +668,7 @@ button:disabled,
     padding-bottom: max(env(safe-area-inset-bottom), 0px);
   }
 
-  /* Gradient bars for biomarkers */
-  .gradient-bar-band {
-    background: linear-gradient(
-      90deg,
-      #DC2626 0%,
-      #F59E0B 22%,
-      #16A34A 45%,
-      #16A34A 55%,
-      #F59E0B 78%,
-      #DC2626 100%
-    );
-  }
-  .gradient-bar-up {
-    background: linear-gradient(
-      90deg,
-      #DC2626 0%,
-      #F59E0B 35%,
-      #16A34A 60%,
-      #16A34A 100%
-    );
-  }
-  .gradient-bar-down {
-    background: linear-gradient(
-      90deg,
-      #16A34A 0%,
-      #16A34A 40%,
-      #F59E0B 65%,
-      #DC2626 100%
-    );
-  }
+
 
   /* Subtle dotted grid for premium hero. Modern `rgb(R G B / A)`
    * syntax so the alpha modifier works under Tailwind v4's color-mix

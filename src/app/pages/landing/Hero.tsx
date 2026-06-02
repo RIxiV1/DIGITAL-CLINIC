@@ -172,11 +172,17 @@ function HeroVisual() {
         draggable={false}
       />
 
-      {/* Hormonal Health Map card — overlaps the photo. Previously had
-          a y: [0, -5, 0] / 6s infinite float animation; removed because
-          it read as "drifting / off-anchor" rather than the intended
-          "gently floating overlay" cue. */}
+      {/* Hormonal Health Map card — overlaps the photo. Depicts a
+          "window-chrome" mockup of the in-app hormonal-axis visual,
+          like a screenshot pasted onto the hero. `data-theme="light"`
+          scopes it OUT of the global theme so it stays a clean white
+          card with brand-blue ink in both themes — without this, the
+          inner `text-blue-700` / `bg-blue-600` / etc. tokens flip in
+          dark mode but the outer `bg-white` doesn't, producing the
+          same white-on-pastel / pastel-on-white contrast traps that
+          hit the Doctor Summary mockup. */}
       <div
+        data-theme="light"
         onMouseMove={prefersReducedMotion ? undefined : handleMouseMove}
         className="group absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden"
       >
@@ -260,7 +266,7 @@ function MapRow({
       </div>
       <div
         className={`flex-1 rounded-lg px-2.5 py-1 ${
-          highlighted ? 'bg-blue-600 text-white' : ''
+          highlighted ? 'bg-blue-600 text-on-primary' : ''
         }`}
       >
         <div

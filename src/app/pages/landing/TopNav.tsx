@@ -61,7 +61,7 @@ export default function TopNav({
           {onDashboard && (
             <button
               onClick={onDashboard}
-              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-white text-caption font-semibold shadow-clinical transition-colors"
+              className="inline-flex items-center gap-1.5 h-10 px-4 rounded-full bg-blue-600 hover:bg-blue-700 text-on-primary text-caption font-semibold shadow-clinical transition-colors"
             >
               <House size={14} />
               Go to dashboard
@@ -74,7 +74,7 @@ export default function TopNav({
                 ? // Returning users — secondary styling, hidden on mobile to leave room
                   'hidden md:inline-flex border border-line text-ink-soft hover:text-ink hover:bg-blue-50'
                 : // New users — primary CTA, always visible
-                  'inline-flex bg-blue-600 hover:bg-blue-700 text-white shadow-clinical'
+                  'inline-flex bg-blue-600 hover:bg-blue-700 text-on-primary shadow-clinical'
             }`}
           >
             {onDashboard ? 'Retake the quiz' : 'Find out in 3 min'}

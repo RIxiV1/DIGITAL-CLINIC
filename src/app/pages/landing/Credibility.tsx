@@ -75,7 +75,7 @@ function StatCard({
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
       className={`h-full rounded-2xl p-7 md:p-8 border ${
         accent
-          ? 'bg-blue-600 border-blue-600 text-white shadow-blue'
+          ? 'bg-blue-600 border-blue-600 text-on-primary shadow-blue'
           : 'bg-surface border-line shadow-clinical'
       }`}
     >
