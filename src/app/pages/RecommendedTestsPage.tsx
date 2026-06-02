@@ -141,7 +141,7 @@ export default function RecommendedTestsPage() {
           <div className="mt-6 lg:max-w-3xl">
             <Card className="!bg-concern-soft border-concern/30">
               <div className="flex items-start gap-3">
-                <div className="grid place-items-center w-10 h-10 rounded-2xl bg-concern text-white shrink-0">
+                <div className="grid place-items-center w-10 h-10 rounded-2xl bg-concern text-on-status shrink-0">
                   <AlertCircle size={18} />
                 </div>
                 <div className="min-w-0">
@@ -425,7 +425,7 @@ export default function RecommendedTestsPage() {
         <div className="mt-8 grid sm:grid-cols-2 gap-3 lg:max-w-3xl">
           <Card className="bg-indigo-50 border-indigo-100">
             <div className="flex items-start gap-3">
-              <div className="grid place-items-center w-10 h-10 rounded-xl bg-indigo-600 text-white shrink-0">
+              <div className="grid place-items-center w-10 h-10 rounded-xl bg-indigo-600 text-on-primary shrink-0">
                 <Upload size={16} />
               </div>
               <div className="flex-1 min-w-0">
@@ -601,7 +601,7 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
     system.tier === 'high'
       ? {
           row: 'bg-concern-soft/40 -mx-3 px-3 rounded-lg',
-          badge: 'bg-concern text-white shadow-sm',
+          badge: 'bg-concern text-on-status shadow-sm',
           label: 'Strong signal',
           Icon: AlertCircle,
           iconClass: 'text-concern',
@@ -609,7 +609,7 @@ function RiskRow({ system }: { system: RiskSystemResult }) {
       : system.tier === 'moderate'
         ? {
             row: 'bg-attention-soft/40 -mx-3 px-3 rounded-lg',
-            badge: 'bg-attention text-white shadow-sm',
+            badge: 'bg-attention text-on-status shadow-sm',
             label: 'Moderate signal',
             Icon: AlertTriangle,
             iconClass: 'text-attention',

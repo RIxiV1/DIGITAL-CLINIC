@@ -87,7 +87,7 @@ export default function WhatYoullGet() {
                     that affordance, having a third on the same page
                     diluted both. */}
                 <div className="mt-2 flex items-center gap-3 rounded-2xl bg-surface border border-blue-100 p-4 shadow-clinical">
-                  <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-600 text-white shrink-0">
+                  <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-600 text-on-primary shrink-0">
                     <Download size={17} />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -120,7 +120,7 @@ function DoctorSummaryMockup() {
    * white-on-white + muddy gray rows. See the [data-theme='light']
    * block in index.css for the re-binding details. */
   return (
-    <div data-theme="light" className="relative">
+    <div className="relative" data-theme="light">
       <div className="absolute -inset-2 rounded-[24px] bg-gradient-to-br from-blue-100/70 via-white to-blue-50 blur-2xl opacity-60 pointer-events-none" />
 
       <div className="relative rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden">

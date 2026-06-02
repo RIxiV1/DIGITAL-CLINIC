@@ -271,14 +271,14 @@ function MapRow({
       >
         <div
           className={`text-caption font-semibold leading-tight ${
-            highlighted ? 'text-white' : 'text-ink'
+            highlighted ? 'text-inherit' : 'text-ink'
           }`}
         >
           {organ}
         </div>
         <div
           className={`text-micro font-bold uppercase tracking-widest leading-tight mt-0.5 ${
-            highlighted ? 'text-blue-100' : 'text-blue-700'
+            highlighted ? 'text-inherit opacity-90' : 'text-blue-700'
           }`}
         >
           {hormone}

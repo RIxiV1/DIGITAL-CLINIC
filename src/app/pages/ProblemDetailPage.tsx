@@ -309,7 +309,7 @@ export default function ProblemDetailPage({
       <Container size="wide" className="mt-6">
         <Card
           padded={false}
-          className="!bg-indigo-600 border-indigo-600 text-white lg:max-w-3xl"
+          className="!bg-indigo-600 border-indigo-600 text-on-primary lg:max-w-3xl"
         >
           <button
             type="button"

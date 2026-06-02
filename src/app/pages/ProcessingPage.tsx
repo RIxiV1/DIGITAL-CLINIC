@@ -710,7 +710,7 @@ export default function ProcessingPage() {
                   <div
                     className={`grid place-items-center w-8 h-8 rounded-full shrink-0 ${
                       state === 'done'
-                        ? 'bg-good text-white'
+                        ? 'bg-good text-on-status'
                         : state === 'active'
                           ? 'bg-indigo-600 text-on-primary'
                           : 'bg-canvas text-muted'
@@ -1306,7 +1306,7 @@ function ConfirmExtractedValuesView({
               use elsewhere. */}
           {counts.critical > 0 && (
             <Card padded={false} className="overflow-hidden border-concern">
-              <div className="px-5 py-4 bg-concern text-white flex items-start gap-3">
+              <div className="px-5 py-4 bg-concern text-on-status flex items-start gap-3">
                 <span aria-hidden role="img" className="text-body-lg leading-none">
                   🚨
                 </span>
@@ -1600,7 +1600,7 @@ function SummaryChip({
   if (tone === 'critical') {
     return (
       <div
-        className="inline-flex items-center gap-2 pl-2.5 pr-3.5 h-9 rounded-full bg-concern text-white"
+        className="inline-flex items-center gap-2 pl-2.5 pr-3.5 h-9 rounded-full bg-concern text-on-status"
       >
         <span className="w-2 h-2 rounded-full bg-white" aria-hidden />
         <span className="font-display text-body tabular-nums leading-none">

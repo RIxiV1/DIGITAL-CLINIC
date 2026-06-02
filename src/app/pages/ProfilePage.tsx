@@ -124,7 +124,7 @@ export default function ProfilePage() {
             >
               <Card
                 raised
-                className="!bg-indigo-600 border-indigo-600 text-white !p-6 relative overflow-hidden"
+                className="!bg-indigo-600 border-indigo-600 text-on-primary !p-6 relative overflow-hidden"
               >
                 <div className="absolute -top-14 -right-14 w-44 h-44 rounded-full bg-indigo-400/25 blur-3xl pointer-events-none" />
                 <div className="absolute -bottom-20 -left-10 w-44 h-44 rounded-full bg-gold-500/10 blur-3xl pointer-events-none" />

@@ -202,14 +202,14 @@
    *   blue     — colored CTA glow. Aliased by --shadow-indigo for any
    *              legacy callers (single source of truth, like the
    *              color tokens above). */
-  --shadow-soft: 0 1px 1px rgba(15, 20, 34, 0.02),
-    0 6px 18px rgba(15, 20, 34, 0.05);
-  --shadow-pop: 0 4px 8px rgba(15, 20, 34, 0.04),
-    0 16px 36px rgba(15, 20, 34, 0.10);
-  --shadow-clinical: 0 4px 30px rgba(0, 0, 0, 0.03);
-  --shadow-clinical-lg: 0 6px 40px rgba(0, 0, 0, 0.05),
-    0 1px 1px rgba(0, 0, 0, 0.02);
-  --shadow-blue: 0 10px 30px rgba(0, 102, 204, 0.18);
+  --shadow-soft: 0 1px 1px rgb(15 20 34 / 0.02),
+    0 6px 18px rgb(15 20 34 / 0.05);
+  --shadow-pop: 0 4px 8px rgb(15 20 34 / 0.04),
+    0 16px 36px rgb(15 20 34 / 0.10);
+  --shadow-clinical: 0 4px 30px rgb(0 0 0 / 0.03);
+  --shadow-clinical-lg: 0 6px 40px rgb(0 0 0 / 0.05),
+    0 1px 1px rgb(0 0 0 / 0.02);
+  --shadow-blue: 0 10px 30px rgb(0 102 204 / 0.18);
   --shadow-indigo: var(--shadow-blue);
 
   /* Radii */
@@ -556,37 +556,6 @@ body {
   color: rgb(255 255 255 / 0.98);
 }
 
-/* ─── Bulk on-color fix for legacy `text-white` on brand fills ──────
- *
- * Many components still pair `bg-indigo-600 text-white` (or
- * `bg-blue-600 text-white`) directly in JSX — the canonical fix is to
- * refactor each call site to `text-on-primary`, but that's ~26 touches
- * across 15+ files. As a SCOPED override, this rule catches the
- * pattern in dark mode without any component edits: when both classes
- * land on the same element, the cascade rebinds `text-white` to the
- * dark-mode on-primary value (deep navy). In light mode no override
- * fires — `text-white` resolves normally to white, which is what those
- * components want against the saturated blue fills.
- *
- * Same fix for `bg-{status} text-white` on the de-escalated status
- * fills (bg-good / bg-attention / bg-concern), where dark theme
- * desaturates the fill to a pastel and white-on-pastel fails AA. */
-:root[data-theme='dark'] .bg-indigo-500.text-white,
-:root[data-theme='dark'] .bg-indigo-600.text-white,
-:root[data-theme='dark'] .bg-indigo-700.text-white,
-:root[data-theme='dark'] .bg-indigo-800.text-white,
-:root[data-theme='dark'] .bg-blue-500.text-white,
-:root[data-theme='dark'] .bg-blue-600.text-white,
-:root[data-theme='dark'] .bg-blue-700.text-white,
-:root[data-theme='dark'] .bg-blue-800.text-white {
-  color: var(--color-on-primary);
-}
-:root[data-theme='dark'] .bg-good.text-white,
-:root[data-theme='dark'] .bg-attention.text-white,
-:root[data-theme='dark'] .bg-concern.text-white {
-  color: var(--color-on-status);
-}
-
 * {
   -webkit-tap-highlight-color: transparent;
 }
@@ -712,10 +681,17 @@ button:disabled,
       linear-gradient(180deg, var(--color-surface) 0%, var(--color-canvas) 100%);
   }
 
+  /* `.bg-cta-gradient` — permanent dark hero callout used by FinalCta.
+   * Stops are hardcoded brand-blue values intentionally; this surface
+   * stays the same in BOTH themes (a dark blue gradient is a
+   * deliberate visual constant on the landing's closing CTA, not
+   * something that should flip with the user's theme). Modern
+   * `rgb(R G B / A)` syntax across the alpha stops for Tailwind v4
+   * color-mix compat. */
   .bg-cta-gradient {
     background:
-      radial-gradient(60% 80% at 80% 20%, rgba(61, 149, 255, 0.30) 0%, transparent 60%),
-      radial-gradient(80% 100% at 0% 100%, rgba(21, 185, 124, 0.15) 0%, transparent 55%),
+      radial-gradient(60% 80% at 80% 20%, rgb(61 149 255 / 0.30) 0%, transparent 60%),
+      radial-gradient(80% 100% at 0% 100%, rgb(21 185 124 / 0.15) 0%, transparent 55%),
       linear-gradient(135deg, #003D7A 0%, #0052A3 45%, #0066CC 100%);
   }
 }
