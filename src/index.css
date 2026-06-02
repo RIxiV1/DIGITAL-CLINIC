@@ -606,33 +606,46 @@ button:disabled,
     );
   }
 
-  /* Subtle dotted grid for premium hero */
+  /* Subtle dotted grid for premium hero. Modern `rgb(R G B / A)`
+   * syntax so the alpha modifier works under Tailwind v4's color-mix
+   * engine. The hue is brand-blue, intentionally fixed (not tokened)
+   * because the dot pattern reads identically against any surface
+   * tone — it just gives a faint dotted texture. */
   .bg-dot-grid {
     background-image: radial-gradient(
-      rgba(0, 102, 204, 0.08) 1px,
+      rgb(0 102 204 / 0.08) 1px,
       transparent 1px
     );
     background-size: 18px 18px;
   }
 
-  /* Calm clinical-blue grid for the Digital Clinic landing hero */
+  /* Calm clinical-blue grid for the Digital Clinic landing hero.
+   * Base linear-gradient resolves via tokens so the wash flips with
+   * the theme; the radial dots use brand-blue at low alpha and stay
+   * subtle on either tone. */
   .bg-hero-grid {
     background-image:
-      radial-gradient(rgba(0, 102, 204, 0.07) 1px, transparent 1px),
-      linear-gradient(180deg, #EBF5FF 0%, #FFFFFF 78%);
+      radial-gradient(rgb(0 102 204 / 0.07) 1px, transparent 1px),
+      linear-gradient(180deg, var(--color-blue-50) 0%, var(--color-surface) 78%);
     background-size:
       22px 22px,
       100% 100%;
   }
 
+  /* `.bg-soft-blue-gradient` — soft section wash used by Connection.
+   * The base stops resolve via tokens (`--color-surface` is white in
+   * light, deep navy in dark), so the wash inherits the theme without
+   * a separate dark override. The radial accent uses modern
+   * `rgb(R G B / A)` syntax so Tailwind v4's color-mix engine accepts
+   * any future opacity modifiers on the class. */
   .bg-soft-blue-gradient {
     background:
       radial-gradient(
         120% 70% at 50% 0%,
-        rgba(0, 102, 204, 0.06) 0%,
+        rgb(0 102 204 / 0.06) 0%,
         transparent 60%
       ),
-      linear-gradient(180deg, #FFFFFF 0%, #F7FBFF 100%);
+      linear-gradient(180deg, var(--color-surface) 0%, var(--color-canvas) 100%);
   }
 
   .bg-cta-gradient {
