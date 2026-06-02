@@ -72,6 +72,16 @@ export default function ProfilePage() {
     const root = document.documentElement;
     root.classList.add('theme-transitioning');
     root.dataset.theme = next;
+    // Keep the mobile-browser top-bar tint in sync with the canvas.
+    // The bootstrap script in index.html stamps the matching value on
+    // first paint; this handles every runtime flip after that. Hex
+    // mirrors `--color-canvas` from the @theme / [data-theme='dark']
+    // blocks in index.css — kept hardcoded here (not read from CSS)
+    // because the <meta> tag lives outside the document body and
+    // CSS variables don't reach it.
+    const themeColor = next === 'light' ? '#F8F9FA' : '#0B0F1A';
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', themeColor);
     window.setTimeout(() => {
       root.classList.remove('theme-transitioning');
     }, 240);
