@@ -646,8 +646,8 @@ export default function ProcessingPage() {
           <motion.div
             animate={{
               boxShadow: [
-                '0 0 0 0 rgba(45,59,142,0.20)',
-                '0 0 0 28px rgba(45,59,142,0)',
+                '0 0 0 0 rgba(0,102,204,0.20)',
+                '0 0 0 28px rgba(0,102,204,0)',
               ],
             }}
             transition={{ duration: 1.6, repeat: Infinity }}
@@ -796,8 +796,8 @@ function AiCascadeView({
           <motion.div
             animate={{
               boxShadow: [
-                '0 0 0 0 rgba(45,59,142,0.20)',
-                '0 0 0 28px rgba(45,59,142,0)',
+                '0 0 0 0 rgba(0,102,204,0.20)',
+                '0 0 0 28px rgba(0,102,204,0)',
               ],
             }}
             transition={{ duration: 1.6, repeat: Infinity }}
