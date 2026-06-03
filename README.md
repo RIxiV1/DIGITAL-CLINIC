@@ -105,6 +105,17 @@ src/
     └── utils/       # Global utilities (localStorage helpers, lazy reloading, a11y hooks)
 ```
 
+## Docs
+
+For anyone (human or AI) digging into the code, start here:
+
+- **[AGENTS.md](AGENTS.md)** — repo conventions, sharp edges, commit rules. Read this first.
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — 10-minute system map: state, routing, code-splitting, the upload flow.
+- **[docs/PARSER.md](docs/PARSER.md)** — the multi-strategy PDF / OCR / Gemini pipeline. The hardest part of the codebase.
+- **[docs/NAVIGATION.md](docs/NAVIGATION.md)** — the no-router `NavigationContext`, typed `Page` union, the `location.key` back() trick, and the StrictMode async-navigation gotcha.
+- **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, dark-default bootstrap, `[data-theme='light']` scope-local islands.
+- **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** — workflow, commits, branches, where to make common changes.
+
 ## Status
 
 Built as a 3-month contract engagement. Production-grade build pipeline (typecheck + tests gating the bundle), deployable to any static host, currently configured for Vercel via `vercel.json`. PRs and forks welcome.
