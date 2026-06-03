@@ -1,0 +1,176 @@
+# Theming
+
+Dark is the default. Light is opt-in. The whole system runs on semantic Tailwind v4 tokens — there are zero `dark:` variants sprinkled across components.
+
+This doc explains the five principles, the no-FOUC bootstrap, and how to add a new themed surface without breaking dark mode.
+
+---
+
+## The five principles
+
+Every line of theme code in [`src/index.css`](../src/index.css) follows one of these. If you're tempted to break one, look hard for a different solution first.
+
+### 1. `:root[data-theme='dark']` beats `@theme :root`
+
+The dark mode block uses the `[data-theme='dark']` attribute selector (specificity 0,2,0) which beats Tailwind v4's `@theme :root` (specificity 0,1,0) deterministically. **No `!important` anywhere in the theme code.**
+
+If you ever feel like you need `!important` to make a token stick, you're fighting the cascade wrong. Re-read the source order in `index.css` and find the lower-specificity declaration that's bleeding through.
+
+### 2. Semantic re-binding, not Tailwind color overrides
+
+The dark block re-binds `--color-canvas`, `--color-ink`, `--color-primary-600`, etc. — the same variables Tailwind v4 reads when it generates `bg-canvas` / `text-ink` / `bg-primary-600` classes.
+
+Components that use those classes reskin themselves automatically when `data-theme` flips. **There are zero `dark:bg-...` variants in the codebase.** If you write `dark:bg-canvas`, code review will catch it (or should — flag it if you see one).
+
+### 3. "On-color" tokens for guaranteed contrast
+
+Every saturated surface has a paired "on-color" token:
+
+- `--color-on-primary` — text on `bg-primary-600` (CTAs, links, accent fills)
+- `--color-on-status` — text on `bg-good` / `bg-attention` / `bg-concern` / `bg-critical`
+- `--color-on-gold` — text on the brand gold
+
+These are deliberate. Without them, `text-white` on a desaturated dark-mode "blue" button drops contrast to ~2.3:1 — illegible. With them, dark mode flips on-colors to deep navy when the surface itself becomes a pastel — contrast stays above WCAG AA.
+
+### 4. De-escalated status palette in dark mode
+
+Status fills (`good` / `attention` / `concern`) become pastel rose / amber / emerald in dark mode (`#5FCB95`, `#D9A765`, `#E27482`). The vivid Tailwind defaults are visual noise on a dark canvas; the de-escalated set reads as clinical rather than alarming.
+
+Status text *on soft backgrounds* uses dedicated `*-ink` tokens (`--color-good-ink`, `--color-attention-ink`, etc.) for AA contrast.
+
+### 5. Inset shadows in dark, drop shadows in light
+
+Dark surfaces lift via `box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04)` instead of drop shadows. Drop shadows are invisible on a dark canvas; inset highlights mimic light hitting the top edge of a card and read as elevation.
+
+In light mode, the same elements use their usual `shadow-clinical` / `shadow-pop` drop shadows.
+
+### Bonus rule — modern CSS color syntax
+
+We use `rgb(R G B / A)` and `color-mix(in oklab, …)` throughout — no legacy `rgba(R, G, B, A)`. Tailwind v4's `color-mix` utilities require the modern syntax to interoperate.
+
+---
+
+## How the bootstrap works (no FOUC)
+
+The theme is stamped on `<html data-theme="...">` by an inline script in `index.html` that runs *before* React mounts. Without this, the page would paint in light mode (the CSS default), then flicker to dark when React hydrates and reads `localStorage`.
+
+```html
+<!-- index.html, inside <head>, BEFORE the React entry script -->
+<script>
+  (function() {
+    var theme = 'dark';
+    try {
+      var saved = localStorage.getItem('dc_theme');
+      if (saved === 'light') theme = 'light';
+    } catch (e) { /* private mode / disabled storage */ }
+    document.documentElement.dataset.theme = theme;
+
+    var themeColor = theme === 'light' ? '#F8F9FA' : '#0B0F1A';
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', themeColor);
+  })();
+</script>
+```
+
+Three things this script does:
+
+1. Reads `localStorage['dc_theme']` — defaults to `'dark'` on any failure (private mode, disabled storage, parse error).
+2. Stamps `<html data-theme="dark">` or `<html data-theme="light">`.
+3. Syncs the `<meta name="theme-color">` tag so the mobile browser top-bar tint matches the canvas color on first paint.
+
+**`prefers-color-scheme` is deliberately not consulted.** The brand identity on first paint is dark regardless of OS preference. Users who want light explicitly opt in via Profile.
+
+---
+
+## The `dc_theme` localStorage format
+
+The bootstrap script reads `dc_theme` as a **bare string** (`'dark'` or `'light'`), not a JSON envelope. This is the only `dc_*` key that breaks the JSON pattern.
+
+Why: the inline bootstrap can't import `zod` and shouldn't depend on `JSON.parse`. If you put `JSON.stringify('dark')` in storage, the bootstrap would read the literal six-character string `"dark"` (with quotes) and the comparison would fail.
+
+`loadTheme()` / `saveTheme()` in [`utils/persistence.ts`](../src/app/utils/persistence.ts) mirror this format. Both readers must agree — change one, change the other.
+
+---
+
+## Toggling the theme
+
+`ProfilePage` exposes a theme toggle. The handler:
+
+```tsx
+const toggleTheme = () => {
+  const next: Theme = theme === 'dark' ? 'light' : 'dark';
+  setThemeState(next);
+  saveTheme(next);                              // localStorage
+  const root = document.documentElement;
+  root.classList.add('theme-transitioning');    // 240ms color transition
+  root.dataset.theme = next;                    // re-bind tokens
+  const themeColor = next === 'light' ? '#F8F9FA' : '#0B0F1A';
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
+  setTimeout(() => root.classList.remove('theme-transitioning'), 240);
+};
+```
+
+The `theme-transitioning` class adds a global `transition: background-color 240ms, color 240ms, border-color 240ms` so the flip is smooth instead of a hard jump. Removed after the transition so element-level animations don't compete with it.
+
+---
+
+## Scope-local light islands
+
+Sometimes you want a section of a dark-mode page to stay light — for example, the Doctor Summary mockup on the landing hero is designed to look like a printed clinic letter. It uses `data-theme="light"` scoped to its DOM subtree:
+
+```tsx
+<div data-theme="light" className="rounded-2xl ...">
+  {/* This subtree uses the light token bindings even if the surrounding page is dark. */}
+</div>
+```
+
+This works because the `[data-theme='light']` selector in `index.css` is written without `:root` — so it matches any element with that attribute, not just the document root.
+
+Use sparingly. Every scope-local island is a place where the global dark/light flip stops being uniform across the page.
+
+---
+
+## Adding a new themed surface
+
+If you're building a new card, button, or page region:
+
+1. **Use semantic class names.** `bg-canvas` / `bg-surface` / `text-ink` / `text-ink-soft` / `border-line`. Don't use `bg-white` or `text-gray-900` — those don't re-theme.
+2. **For accent surfaces (CTAs, status fills),** pair the surface with its on-color: `bg-primary-600 text-on-primary`, `bg-good text-on-status`. Don't use `text-white` on accents.
+3. **For status text on soft backgrounds,** use the `*-ink` variant: `bg-good-soft text-good-ink`. The vivid `text-good` measures ~3:1 on `bg-good-soft` — fails AA.
+4. **For shadows,** use the existing `shadow-clinical` / `shadow-pop` / `shadow-blue` utilities. Don't write `shadow-[0_2px_8px_rgba(0,0,0,0.1)]` — it won't theme.
+5. **Test both themes before committing.** Toggle via Profile or via dev tools (`document.documentElement.dataset.theme = 'light'`).
+
+---
+
+## Adding a new color
+
+Don't, unless you really need to. The existing scale (blue, indigo aliased to blue, gold, mint, status colors, neutrals) covers most needs.
+
+If you must:
+
+1. Add the light-mode values to the `@theme :root` block at the top of `index.css`.
+2. Add dark-mode overrides to the `:root[data-theme='dark']` block (with the `--color-*` variables re-bound).
+3. If the color will be used as a background surface, also add an `on-color` token (`--color-on-<name>`).
+4. Run the build. If it passes, you're done.
+
+---
+
+## Anti-patterns
+
+- **`dark:bg-…` Tailwind variants.** Never. The whole system is semantic re-binding, not class-variant overrides.
+- **`!important` on color rules.** Means you're fighting the cascade wrong. Find the source-order problem instead.
+- **`text-white` on accent backgrounds.** Use the on-color token. Dark mode will eat your contrast otherwise.
+- **`bg-gray-100` / `text-gray-900` / raw color names.** Use semantic tokens. Raw Tailwind colors don't theme.
+- **`rgba(R, G, B, A)` in inline styles.** Use the modern `rgb(R G B / A)` syntax for consistency and `color-mix` interop.
+- **Reading `localStorage.dc_theme` outside `loadTheme()`/`saveTheme()`.** The format is shared with the inline bootstrap; both readers have to agree.
+
+---
+
+## Where to look in the code
+
+- [`src/index.css`](../src/index.css) — the entire theme system: `@theme :root`, `[data-theme='light']`, `:root[data-theme='dark']`, plus the global resets and `.theme-transitioning` keyframe.
+- [`index.html`](../index.html) — the no-FOUC bootstrap script.
+- [`src/app/pages/ProfilePage.tsx`](../src/app/pages/ProfilePage.tsx) — the theme toggle UI.
+- [`src/app/utils/persistence.ts`](../src/app/utils/persistence.ts) — `loadTheme()` / `saveTheme()`.
+
+If you need to verify a contrast ratio, paste the foreground and background hex values into any AA-checker. Aim for 4.5:1 on body text, 3:1 on large text (≥18.66 px bold or ≥24 px regular).
