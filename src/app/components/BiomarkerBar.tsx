@@ -190,6 +190,27 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
 
   const pinPct = piecewisePosition(marker.value, marker);
 
+  // Harm-anchor — the cited clinical action threshold (e.g. the diabetes
+  // diagnostic line). Rendered ONLY for out-of-range markers that carry a
+  // CITED threshold, never a fabricated one. A static tick (no animation)
+  // keeps it composite-safe. Positioned with the same piecewisePosition
+  // math as everything else so it stays aligned across skewed lab scales.
+  // Shows an out-of-range value sitting below the line as "elevated, not
+  // yet at the action point" (Zikmund-Fisher et al., JMIR 2018).
+  const actionValue =
+    typeof marker.actionMax === 'number'
+      ? marker.actionMax
+      : typeof marker.actionMin === 'number'
+        ? marker.actionMin
+        : undefined;
+  const showActionAnchor =
+    actionValue !== undefined &&
+    !!marker.actionSource &&
+    (marker.status === 'concern' || marker.status === 'critical');
+  const actionAnchorPct = showActionAnchor
+    ? piecewisePosition(actionValue as number, marker)
+    : 0;
+
   // Optimal-band overlay. Clamp to [min, max] so a misconfigured
   // optimal range that spills outside healthy doesn't render an
   // optimal strip in the critical zone (would be visually misleading).
@@ -348,6 +369,19 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           style={{ left: `${highBoundaryPct}%` }}
         />
 
+        {/* Harm-anchor — dashed neutral tick at the cited clinical action
+            threshold. Static (no animation) so it stays on the compositor;
+            neutral ink (NOT concern-red) because its job is to REDUCE
+            alarm, not add it. Taller than the boundary ticks so it reads
+            as a distinct reference. */}
+        {showActionAnchor && (
+          <div
+            aria-hidden
+            className="absolute -top-1.5 bottom-0 border-l border-dashed border-ink-soft/70"
+            style={{ left: `${actionAnchorPct}%` }}
+          />
+        )}
+
         {/* Value pin — animates in from 0% on mount; defensive clamp in
             piecewisePosition keeps it visually inside the track. */}
         <motion.div
@@ -398,6 +432,34 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           <p className="mt-1.5 text-caption leading-relaxed text-ink-soft">
             {marker.plain}
           </p>
+          {/* Harm-anchor explanation — ties the dashed tick to its cited
+              clinical meaning. Gated on the same condition as the tick, so
+              an uncited or in-range marker shows nothing (no fabricated
+              clinical claim). The framing reduces over-triage: above the
+              healthy range but left of this line is the borderline zone,
+              distinct from the diagnostic/treatment threshold. */}
+          {showActionAnchor && marker.actionSource && (
+            <p className="mt-2.5 text-micro text-muted leading-snug">
+              <span className="font-semibold text-ink-soft">
+                The dashed marker
+              </span>{' '}
+              is {marker.actionSource.label} — being above the healthy range
+              but to its left is the borderline zone, not the action point.
+              {marker.actionSource.url && (
+                <>
+                  {' · '}
+                  <a
+                    href={marker.actionSource.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+                  >
+                    source
+                  </a>
+                </>
+              )}
+            </p>
+          )}
           {/* Range disclosure — when the parser captured the lab's
               printed range, that range is what we score against
               (the audit's "trust the diagnosing pathologist's range

@@ -271,6 +271,47 @@ describe('pickHeadlineMarker', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Harm-anchor action thresholds — cited, propagated, never fabricated  */
+/* ------------------------------------------------------------------ */
+
+describe('action thresholds (harm-anchor)', () => {
+  it('glucose + HbA1c carry cited ADA action thresholds', () => {
+    const glu = getTemplateById('glucose');
+    const a1c = getTemplateById('hba1c');
+    expect(glu?.actionMax).toBe(126);
+    expect(glu?.actionSource?.label).toContain('ADA');
+    expect(glu?.actionSource?.url).toMatch(/diabetes/);
+    expect(a1c?.actionMax).toBe(6.5);
+    expect(a1c?.actionSource?.url).toMatch(/diabetes/);
+  });
+
+  it('markerFromTemplate propagates the action threshold + its citation', () => {
+    const m = markerFromTemplate(getTemplateById('glucose')!, 110);
+    expect(m.actionMax).toBe(126);
+    expect(m.actionSource?.label).toContain('ADA');
+  });
+
+  it('markers without an action threshold leave it undefined (no fabrication)', () => {
+    // Hemoglobin has no action threshold defined — must stay undefined,
+    // never a synthesized value.
+    const m = markerFromTemplate(getTemplateById('hb')!, 14);
+    expect(m.actionMax).toBeUndefined();
+    expect(m.actionMin).toBeUndefined();
+    expect(m.actionSource).toBeUndefined();
+  });
+
+  it('every template that sets an action threshold also cites a source', () => {
+    for (const t of biomarkerCatalog) {
+      const hasThreshold =
+        typeof t.actionMin === 'number' || typeof t.actionMax === 'number';
+      if (hasThreshold) {
+        expect(t.actionSource, `${t.id} sets an action threshold without a source`).toBeTruthy();
+      }
+    }
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* getTrajectory — forward projection from reading history             */
 /* ------------------------------------------------------------------ */
 
