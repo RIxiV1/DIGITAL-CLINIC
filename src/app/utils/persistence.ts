@@ -719,6 +719,26 @@ export function saveCatalogAck(version: number): void {
 }
 
 /* ------------------------------------------------------------------ */
+/* UI language preference                                              */
+/* ------------------------------------------------------------------ */
+
+const LANG_KEY = `${KEY_PREFIX}lang`;
+/** Keep in sync with LangCode in i18n/translations.ts. Listed inline so
+ *  persistence doesn't pull the i18n module into every load path. */
+const LangSchema = z.enum(['en', 'hi', 'ta', 'te', 'bn', 'mr']);
+type Lang = z.infer<typeof LangSchema>;
+
+/** Selected UI language. Defaults to English (and on any validation
+ *  failure — the read path clears poisoned keys before falling back). */
+export function loadLang(): Lang {
+  return readValidated<Lang>(LANG_KEY, LangSchema, 'en');
+}
+
+export function saveLang(lang: Lang): void {
+  writeJSON(LANG_KEY, lang);
+}
+
+/* ------------------------------------------------------------------ */
 /* Re-test nudge dismissal                                             */
 /* ------------------------------------------------------------------ */
 
