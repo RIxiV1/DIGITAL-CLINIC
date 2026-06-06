@@ -17,6 +17,7 @@ import { useNavigation, useReports } from '../AppContext';
 import { makeReport } from '../data/reports';
 import {
   clearPendingUpload,
+  prewarmOcr,
   setPendingUpload,
   validateUpload,
   type FileValidationError,
@@ -138,6 +139,11 @@ export default function UploadPage() {
     // utils/sanitizeFilename.
     setFileName(result.safeName);
     fileRef.current = result.file;
+    // Warm the ~4 MB Tesseract assets now if this is an image — images
+    // always go to OCR, so the download overlaps the user reviewing the
+    // file instead of blocking "Start analysing". Fire-and-forget; PDFs
+    // skip it (text PDFs never OCR, so it'd be wasted mobile bandwidth).
+    if (result.file.type.startsWith('image/')) void prewarmOcr();
   };
 
   // Paste support — handles the "I want to use an image from another
