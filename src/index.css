@@ -265,6 +265,29 @@ body {
   font-feature-settings: 'cv11', 'ss01', 'ss03';
 }
 
+/* Snappier taps on mobile. `touch-action: manipulation` removes the
+ * legacy ~300ms double-tap-zoom wait so buttons fire on the first tap
+ * (and a fast double-tap can't accidentally zoom the page). `user-select:
+ * none` stops a quick tap from selecting a button's label text. Scoped to
+ * interactive atoms so body copy and lab values stay selectable. */
+button,
+a,
+[role='button'],
+[role='switch'],
+[role='radio'] {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Horizontal pill / filter scrollers (status filters, category chips):
+ * keep iOS momentum scrolling and stop an over-scroll from chaining into
+ * the browser's edge back-swipe. */
+.scrollbar-none {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
 /* ══════════════════════════════════════════════════════════════════ */
 /* DARK THEME                                                          */
 /*                                                                     */
