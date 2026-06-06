@@ -49,7 +49,7 @@ const NavigationContext = createContext<NavigationValue | null>(null);
  * adding a new Page variant without updating this switch becomes a
  * compile-time error rather than a silent fallthrough.
  */
-function pageToPath(page: Page): string {
+export function pageToPath(page: Page): string {
   switch (page.type) {
     case 'landing':
       return '/';
@@ -85,7 +85,7 @@ function pageToPath(page: Page): string {
  * useLocation().pathname directly in LandingPage, not by branching the
  * Page union.
  */
-function pathToPage(pathname: string): Page {
+export function pathToPage(pathname: string): Page {
   // Strip trailing slash and lowercase the leading segment for forgiving
   // matches like "/Quiz" or "/quiz/".
   const path = pathname.replace(/\/+$/, '').toLowerCase() || '/';
@@ -125,7 +125,7 @@ function pathToPage(pathname: string): Page {
   return { type: 'landing' };
 }
 
-function pageEquals(a: Page | null | undefined, b: Page): boolean {
+export function pageEquals(a: Page | null | undefined, b: Page): boolean {
   if (!a) return false;
   if (a.type !== b.type) return false;
   if (a.type === 'results' && b.type === 'results') {
