@@ -37,16 +37,17 @@ Everything except Pipeline 3 happens in the user's browser. No PII leaves the de
 
 ## State containers
 
-There are three React contexts, combined under one `AppProvider`:
+There are four React contexts, combined under one `AppProvider`:
 
 ```
 AppProvider (src/app/AppContext.tsx)
-├── NavigationProvider   →  the typed Page state machine + URL sync
-├── QuizProvider         →  the symptom/priority quiz answers + risk tiers
-└── ReportsProvider      →  the user's locker of lab reports
+└── LanguageProvider       →  selected UI language + the t() translator
+    ├── NavigationProvider   →  the typed Page state machine + URL sync
+    ├── QuizProvider         →  the symptom/priority quiz answers + risk tiers
+    └── ReportsProvider      →  the user's locker of lab reports
 ```
 
-Each context exposes hooks (`useNavigation()`, `useQuiz()`, `useReports()`) and a `loadXxx()` / `saveXxx()` pair in `utils/persistence.ts`.
+Each context exposes hooks (`useNavigation()`, `useQuiz()`, `useReports()`, `useLanguage()`) and a `loadXxx()` / `saveXxx()` pair in `utils/persistence.ts`.
 
 ### NavigationContext — the no-router system
 
@@ -90,6 +91,10 @@ type Report = {
 ```
 
 Note the `status` field — a report exists in `processing` state from the moment the user hits "Start analysing" until either parsing succeeds (becomes `ready`) or fails (gets removed). That's why the dashboard can show a "your report is processing" placeholder.
+
+### LanguageContext
+
+The selected UI language + a type-checked `t(key)` translator. English is the source of truth and the fallback; Hindi is populated; other Indian languages are scaffolded. **Scope is UI chrome only** — clinical interpretation copy is intentionally excluded (it needs clinician-reviewed translations). Persisted to `dc_lang`. Deep dive: [I18N.md](I18N.md).
 
 ---
 
@@ -155,8 +160,10 @@ Everything user-owned is in `localStorage`, namespaced with a `dc_` prefix and v
 | `dc_aiAutoFallback` | `boolean` (default `true`) | ProcessingPage cascade gate |
 | `dc_theme` | raw `'dark'` / `'light'` string | inline bootstrap + ProfilePage |
 | `dc_catalogAck` | `number` (catalog version seen) | dashboard migration notice |
+| `dc_retestAck` | report id the re-test banner was dismissed for | dashboard re-test nudge |
+| `dc_lang` | language code (`'en'` / `'hi'` / …) | LanguageContext — see [I18N.md](I18N.md) |
 
-The `dc_theme` key is the only one that breaks the JSON-envelope convention because the pre-React inline script in `index.html` can't pull in zod and shouldn't depend on `JSON.parse`. See [THEMING.md](THEMING.md).
+The `dc_theme` key is the only one that breaks the JSON-envelope convention because the pre-React bootstrap can't pull in zod and shouldn't depend on `JSON.parse`. That bootstrap is an **external** file (`public/theme-init.js`), not an inline script, because the production CSP blocks inline scripts — see [THEMING.md](THEMING.md).
 
 If a stored value fails its zod schema, the load helper returns the default and silently re-saves on the next write. This is deliberate — corruption from browser extensions, dev-tools tampering, or a past-buggy version of the app shouldn't crash everyone on every boot.
 

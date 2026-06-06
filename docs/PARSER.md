@@ -86,6 +86,20 @@ When the parser finds a marker, the matcher:
 
 The catalog is the trust boundary. If a Gemini extraction comes back with `{ name: "PotassiumFakeMarker", value: 100 }`, the matcher returns null and the dashboard never sees it. New markers require a catalog entry.
 
+### Optional template fields
+
+Beyond the required shape above, a template can carry:
+
+- `optimalMin` / `optimalMax` + **`optimalSource`** — a tighter "optimal" sub-band inside the healthy range, with a **required citation**. Drives the gold "Optimal" tier. Never set an optimal band without a source.
+- `actionMin` / `actionMax` + **`actionSource`** — a cited **harm-anchor**: the clinical threshold where clinicians act (e.g. fasting glucose ≥126, HbA1c ≥6.5). Rendered as a dashed reference tick on the result bar so an out-of-range value sitting *below* it reads as "elevated, not yet at the action line" (reduces over-triage). Gated to concern/critical markers; **no source → no tick** (same cite-or-omit rule as optimal). See `BiomarkerBar.tsx`.
+- `criticalLow` / `criticalHigh` — explicit panic-value cliffs that promote to the same-day-care `critical` tier.
+- `physicalMin` / `physicalMax` — plausibility bounds the sanity check uses to admit clinical extremes while rejecting OCR garbage.
+- `labRefMin` / `labRefMax` — the lab's *printed* range, captured at extract time; when present it takes priority over the catalog band for status (trust the signing pathologist), while the catalog still owns the optimal / critical / action bands.
+
+**India-first ranges.** Reference and optimal ranges (and their citations) are localized to Indian standards where they diverge from Western defaults — e.g. Vitamin D floor 20 ng/mL (IOM/IAP, not the US Endocrine Society's 30), male haemoglobin floor 13.0 (WHO/India), LDL cited to the Lipid Association of India, and the diabetes harm-anchors cited to WHO/ICMR. When adding or editing a range for this India-first audience, prefer an Indian guideline source.
+
+**Catalog-adjacent dashboard helpers** (not the parser, but they live with the catalog data): `getTrajectory()` in `data/biomarkers.ts` (a least-squares projection of a marker toward its target band, shown in the trend rows) and `getRetestReminder()` in `data/reports.ts` (nudges a re-test when the latest report ages past ~4 months).
+
 ---
 
 ## Unit reconciliation (Indian lab quirks)
@@ -212,6 +226,10 @@ The client surfaces this as `Internal error... [<kind>: <hint>]` so the next fai
 |---|---|
 | Add a new biomarker | `data/biomarkers.ts` (add to `biomarkerCatalog`) |
 | Add a new lab's unit alias | `data/biomarkers.ts` → `unitAliases` on the relevant template |
+| Add a harm-anchor (action threshold) | `data/biomarkers.ts` → `actionMin`/`actionMax` + `actionSource` on the template |
+| Localize a reference range to India | `data/biomarkers.ts` (cite an Indian guideline — ICMR / LAI / IAP) |
+| Speed up first OCR | `services/pdfParser.ts` → `prewarmOcr()` (fired from `UploadPage` on image select) |
+| Add / translate a UI string | `i18n/translations.ts` — see [I18N.md](I18N.md) |
 | Tighten the Gemini prompt | `api/parse-image.ts` → `SYSTEM_PROMPT` constant |
 | Change the cascade gate | `pages/ProcessingPage.tsx` → search for `shouldCascade` |
 | Adjust unit scaling | `services/aiParser.ts` → `unitMultiplier()` |

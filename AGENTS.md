@@ -34,12 +34,13 @@ DIGITAL CLINIC/
 │       ├── App.tsx                 # PageHost: lazy routing + AnimatePresence
 │       ├── AppContext.tsx          # Combined provider wrapper
 │       ├── components/             # Shared atoms (Button, Card, Container, Pill, etc.)
-│       ├── contexts/               # NavigationContext, QuizContext, ReportsContext
+│       ├── contexts/               # Navigation, Quiz, Reports, Language contexts
 │       ├── data/                   # The biomarker catalog, sample reports, quiz config
+│       ├── i18n/                   # UI-language dictionary + translate() (docs/I18N.md)
 │       ├── pages/                  # One file per route, lazy-loaded
 │       ├── services/               # Parsing pipelines, report PDF generator
 │       └── utils/                  # localStorage, sanitisers, hooks, lazy reload
-├── public/                         # Static assets (PDF.js worker, hero image, favicons)
+├── public/                         # Static assets: PDF.js worker, hero image, favicons, theme-init.js (theme bootstrap), manifest.webmanifest + PWA icons
 ├── vercel.json                     # SPA rewrite + serverless function config
 └── package.json
 ```
@@ -66,6 +67,22 @@ Body is optional for trivial commits. For anything non-obvious, include a body t
 
 ---
 
+## The docs
+
+Read the one matching what you're touching before you grep — each is a focused deep-dive (200–400 lines).
+
+| Doc | Covers |
+|---|---|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | The big picture: the four contexts, the upload flow, persistence, code-splitting |
+| [docs/NAVIGATION.md](docs/NAVIGATION.md) | The hand-rolled no-router `Page`-union navigation + the StrictMode async gotcha |
+| [docs/PARSER.md](docs/PARSER.md) | The three-pipeline parser, the biomarker catalog + its fields (optimal / action / critical), India-localized ranges |
+| [docs/THEMING.md](docs/THEMING.md) | Dark-default semantic tokens, the external (CSP-safe) theme bootstrap, on-color contrast |
+| [docs/I18N.md](docs/I18N.md) | The UI-language system: dictionary, English-fallback chain, adding keys/languages |
+| [docs/MOBILE.md](docs/MOBILE.md) | Mobile-first patterns + footguns: PWA, fixed nav, `min-w-0`, touch targets, OCR prewarm |
+| [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Setup, running locally, and how to ship a change |
+
+---
+
 ## Things that will surprise you
 
 These are the parts that look weird until you know why. Each gets its own deep-dive doc; skim them here so you know where to look.
@@ -80,7 +97,7 @@ See [docs/NAVIGATION.md](docs/NAVIGATION.md).
 
 ### 2. Dark is the default theme — light is opt-in
 
-The whole semantic token system runs on `:root[data-theme='dark']` overrides, not `dark:` Tailwind variants. The theme is stamped on `<html>` by an inline script in `index.html` *before* React mounts (no FOUC). `prefers-color-scheme` is deliberately ignored — dark is the brand identity on first paint regardless of OS.
+The whole semantic token system runs on `:root[data-theme='dark']` overrides, not `dark:` Tailwind variants. The theme is stamped on `<html>` *before* React mounts (no FOUC) by an **external** bootstrap, `public/theme-init.js` — external, **not** inline, because the production CSP (`script-src 'self'`, no `'unsafe-inline'`) blocks inline scripts. As an inline script it silently failed in prod and the deployed site loaded in light; don't move it back inline. `prefers-color-scheme` is deliberately ignored — dark is the brand identity on first paint regardless of OS.
 
 See [docs/THEMING.md](docs/THEMING.md).
 
@@ -100,7 +117,7 @@ This is the most complex subsystem. See [docs/PARSER.md](docs/PARSER.md).
 
 Everything in localStorage has a `dc_` prefix (`dc_reports`, `dc_quiz`, `dc_theme`, etc.) and every load path validates the persisted JSON against a zod schema before trusting it. Without validation, a poisoned key (browser extension, past-buggy version, dev-tools session on a shared device) would crash the app on every load. Schema mismatch → fall back to default, don't crash.
 
-The one exception: `dc_theme` is stored as a raw `'dark'` / `'light'` string (no JSON envelope) so the pre-React bootstrap script in `index.html` can read it without needing `JSON.parse`.
+The one exception: `dc_theme` is stored as a raw `'dark'` / `'light'` string (no JSON envelope) so the pre-React bootstrap (`public/theme-init.js`) can read it without needing `JSON.parse`.
 
 ### 5. Reports have a status state machine, not a boolean
 
@@ -113,6 +130,18 @@ If a user has the app open when we ship a new deploy, the old chunk URLs are gon
 ### 7. PDF.js worker is bundled separately
 
 The PDF.js worker is a separate JS file fetched from `/pdf.worker.min-*.mjs` (Vite hashes it). Don't try to inline it. The worker has its own bundle hash for cache-busting on deploys.
+
+### 8. UI text runs through a tiny i18n layer (English-source, India-first)
+
+UI chrome (nav, buttons, settings) renders through `t('key')` from `useLanguage()`. English is the source of truth + fallback; Hindi is populated; other Indian languages are scaffolded and surface in the picker only once translated (so a user can't pick a language that would render English). **Clinical interpretation copy is deliberately NOT translated** — it needs clinician review, not an engineer's dictionary. See [docs/I18N.md](docs/I18N.md).
+
+### 9. It's an installable PWA, and mobile has its own footguns
+
+The app ships a web manifest + maskable icons (installable / standalone). Mobile layout has traps we've already hit and fixed: the bottom nav is `fixed` (not `sticky`, or you get a dead zone under it), flex/grid children that hold a horizontal scroller need `min-w-0` (or they blow past the viewport), and interactive atoms use `touch-action: manipulation` + 44px hit areas. OCR assets are prewarmed on image-select. See [docs/MOBILE.md](docs/MOBILE.md).
+
+### 10. Reference ranges are India-localized; "harm-anchor" ticks must be cited
+
+Catalog ranges and citations follow Indian guidelines where they diverge (Vitamin D ≥20, male haemoglobin ≥13, LDL → Lipid Association of India, diabetes → WHO/ICMR). A marker can carry a cited `actionMin`/`actionMax` ("harm-anchor") rendered as a reference tick on the result bar — but **only with a source** (cite-or-omit, same rule as optimal ranges; never a fabricated clinical line). See [docs/PARSER.md](docs/PARSER.md).
 
 ---
 
