@@ -1230,14 +1230,18 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     // endocrinology engagement, not a 12-week home plan.
     criticalHigh: 10,
     physicalMin: 3, physicalMax: 18,
-    // Harm-anchor: the ADA diabetes diagnostic line. A reading above the
-    // 5.7% prediabetes ceiling but below 6.5% is "prediabetic, not
-    // diabetic" — the tick shows that gap so it doesn't read as alarming.
+    // Harm-anchor: India's WHO/ICMR diabetes diagnostic line. A reading
+    // above the 5.7% prediabetes ceiling but below 6.5% is "prediabetic,
+    // not diabetic" — the tick shows that gap so it doesn't read as
+    // alarming. India caveat: ICMR does NOT treat HbA1c as a sole
+    // diagnostic test — iron-deficiency anaemia (very common in India)
+    // skews HbA1c — so the label tells users to confirm with glucose.
     actionMax: 6.5,
     actionSource: {
-      label: 'the ADA diabetes diagnostic threshold (HbA1c ≥6.5%)',
-      url: 'https://diabetes.org/about-diabetes/diagnosis',
-      audience: 'adults',
+      label:
+        'the WHO/ICMR diabetes diagnostic line (HbA1c ≥6.5%) — in India, confirm with a fasting glucose test, as common iron-deficiency anaemia can skew HbA1c',
+      url: 'https://main.icmr.nic.in/sites/default/files/guidelines/ICMR_GuidelinesType2diabetes2018_0.pdf',
+      audience: 'adults · India (ICMR/WHO criteria)',
     },
     category: 'metabolic', direction: 'down',
     simpleName: '3-month sugar average',
@@ -1261,15 +1265,15 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     // Physical bounds: 30 floor (incompatible with consciousness below);
     // 800 ceiling (reported extreme in DKA case literature).
     physicalMin: 30, physicalMax: 800,
-    // Harm-anchor: the ADA diabetes diagnostic line. 100–125 mg/dL is
-    // prediabetic (impaired fasting glucose); ≥126 is diagnostic. The
-    // tick separates "borderline" from "diagnostic" so the former reads
-    // calmly.
+    // Harm-anchor: India's WHO/ICMR diabetes diagnostic line. 100–125
+    // mg/dL is prediabetic (impaired fasting glucose); ≥126 is
+    // diagnostic. The tick separates "borderline" from "diagnostic" so
+    // the former reads calmly. India uses WHO criteria (ICMR 2018).
     actionMax: 126,
     actionSource: {
-      label: 'the ADA diabetes diagnostic threshold (fasting glucose ≥126 mg/dL)',
-      url: 'https://diabetes.org/about-diabetes/diagnosis',
-      audience: 'adults',
+      label: 'the WHO/ICMR diabetes diagnostic line (fasting glucose ≥126 mg/dL)',
+      url: 'https://main.icmr.nic.in/sites/default/files/guidelines/ICMR_GuidelinesType2diabetes2018_0.pdf',
+      audience: 'adults · India (ICMR/WHO criteria)',
     },
     category: 'metabolic', direction: 'down',
     simpleName: 'Blood sugar this morning',
