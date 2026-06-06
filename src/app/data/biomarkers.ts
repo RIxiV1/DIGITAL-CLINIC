@@ -515,6 +515,13 @@ export function statusColor(s: BiomarkerStatus) {
         // light theme (darker stop) and re-bind to readable pastels
         // on dark theme via the dark-mode CSS overrides.
         text: 'text-good-ink',
+        // Readable color for the label rendered as bare text on a plain
+        // surface (no status fill behind it). Identical to `text` for
+        // every tier EXCEPT critical, whose `text` is `text-on-status`
+        // — correct on the solid `bg-concern` fill, but invisible on a
+        // surface. Always use this field when the label sits on a card/
+        // canvas; use `text` only when paired with `bg`.
+        textOnSurface: 'text-good-ink',
         bg: 'bg-good-soft',
         dot: 'bg-good',
         label: 'ON TRACK',
@@ -522,6 +529,7 @@ export function statusColor(s: BiomarkerStatus) {
     case 'attention':
       return {
         text: 'text-attention-ink',
+        textOnSurface: 'text-attention-ink',
         bg: 'bg-attention-soft',
         dot: 'bg-attention',
         // "BORDERLINE" replaces the older "NEEDS ATTENTION". Same data
@@ -536,6 +544,7 @@ export function statusColor(s: BiomarkerStatus) {
     case 'concern':
       return {
         text: 'text-concern-ink',
+        textOnSurface: 'text-concern-ink',
         bg: 'bg-concern-soft',
         dot: 'bg-concern',
         // Badge keeps "NEEDS CARE" — compact (10 chars) and clinically
@@ -555,6 +564,12 @@ export function statusColor(s: BiomarkerStatus) {
         // red in light theme, deep-navy text on pastel rose in dark.
         // Pure `text-white` would fail WCAG on the dark-mode pastel.
         text: 'text-on-status',
+        // On a plain surface (no fill), text-on-status is invisible in
+        // both themes. Critical has no surface-ink token of its own, so
+        // it borrows concern's readable red — same family, correct
+        // contrast. This is the fix for the "SEE A DOCTOR" label going
+        // dark-on-dark in the deep-dives card.
+        textOnSurface: 'text-concern-ink',
         bg: 'bg-concern',
         dot: 'bg-concern',
         label: 'SEE A DOCTOR',

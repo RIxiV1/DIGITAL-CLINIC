@@ -323,7 +323,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                             : 'See what to tweak this month'}
                       </div>
                       <div
-                        className={`text-caption mt-1 ${c.text} font-bold uppercase tracking-widest`}
+                        className={`text-caption mt-1 ${c.textOnSurface} font-bold uppercase tracking-widest`}
                       >
                         {c.label}
                       </div>
@@ -670,7 +670,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                               {m.name}
                             </div>
                             <div
-                              className={`text-caption mt-0.5 ${c.text} font-bold uppercase tracking-widest`}
+                              className={`text-caption mt-0.5 ${c.textOnSurface} font-bold uppercase tracking-widest`}
                             >
                               {c.label}
                             </div>
