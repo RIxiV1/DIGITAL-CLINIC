@@ -212,9 +212,10 @@ export const sampleBiomarkers: Biomarker[] = [
     optimalMin: 600,
     optimalMax: 900,
     optimalSource: {
-      label: 'Endocrine Society 2018 hypogonadism guideline + Travison 2017 quartile data',
+      label:
+        'Endocrine Society 2018 hypogonadism guideline + Travison 2017 quartile data; the Indian male-hypogonadism consensus (Kalra et al., 2023) uses the same <300 ng/dL low cutoff',
       url: 'https://academic.oup.com/jcem/article/103/5/1715/4939465',
-      audience: 'adult men 18–65',
+      audience: 'adult men 18–65 · India-consistent',
     },
     status: 'concern',
     category: 'hormones',
@@ -417,20 +418,21 @@ export const sampleBiomarkers: Biomarker[] = [
     simpleName: 'Vitamin D',
     value: 26,
     unit: 'ng/mL',
-    min: 30,
+    min: 20,
     max: 100,
     optimalMin: 40,
     optimalMax: 80,
     optimalSource: {
-      label: 'Endocrine Society 2011 clinical practice guideline (Holick et al.)',
-      url: 'https://academic.oup.com/jcem/article/96/7/1911/2833671',
-      audience: 'adults',
+      label:
+        'Optimal 40–80 ng/mL per Endocrine Society 2011 (Holick et al.); sufficiency floor ≥20 ng/mL per IOM / Indian Academy of Pediatrics 2021',
+      url: 'https://pubmed.ncbi.nlm.nih.gov/34969941/',
+      audience: 'adults · India (IOM/IAP sufficiency)',
     },
-    status: 'concern',
+    status: 'attention',
     category: 'vitamins',
     direction: 'up',
     plain:
-      'Low. Affects mood, energy, immunity, bone health — and is the single easiest thing to fix on this report.',
+      'Sufficient by the Indian ≥20 ng/mL cutoff, but below the 40–80 optimal band. Affects mood, energy, immunity, and bone health.',
     problemId: 'low-vit-d',
     history: [
       { date: '2026-01-15', value: 14 },
@@ -507,7 +509,7 @@ export const sampleBiomarkers: Biomarker[] = [
     simpleName: 'Your blood’s oxygen carrier',
     value: 14.8,
     unit: 'g/dL',
-    min: 13.5,
+    min: 13.0,
     max: 17.5,
     status: 'good',
     category: 'blood',
@@ -1165,9 +1167,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['ng/dl', 'ng / dL'],
     min: 300, max: 1000, optimalMin: 600, optimalMax: 900,
     optimalSource: {
-      label: 'Endocrine Society 2018 hypogonadism guideline + Travison 2017 quartile data',
+      label:
+        'Endocrine Society 2018 hypogonadism guideline + Travison 2017 quartile data; the Indian male-hypogonadism consensus (Kalra et al., 2023) uses the same <300 ng/dL low cutoff',
       url: 'https://academic.oup.com/jcem/article/103/5/1715/4939465',
-      audience: 'adult men 18–65',
+      audience: 'adult men 18–65 · India-consistent',
     },
     // Critical floor: severe hypogonadism (<150 ng/dL) warrants prompt
     // endocrinology referral. Critical ceiling: >2000 ng/dL in a man
@@ -1317,9 +1320,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unit: 'mg/dL', unitAliases: ['mg/dl'],
     min: 0, max: 100, optimalMin: 0, optimalMax: 70,
     optimalSource: {
-      label: 'ACC/AHA 2018 Cholesterol Clinical Practice Guideline (Grundy et al.) — <70 mg/dL recommended for ASCVD risk reduction',
-      url: 'https://www.ahajournals.org/doi/10.1161/CIR.0000000000000625',
-      audience: 'adults',
+      label:
+        'Lipid Association of India 2023 (Consensus IV): South Asians are higher-risk — LDL <70 mg/dL (high risk), <50 (very-high, e.g. diabetes/ASCVD), ≤30 (extreme)',
+      url: 'https://www.lipidjournal.com/article/S1933-2874(24)00006-0/fulltext',
+      audience: 'adults · India (LAI)',
     },
     // Critical ceiling: ≥190 mg/dL is the ACC/AHA "severe
     // hypercholesterolemia" threshold — statin therapy is recommended
@@ -1398,15 +1402,21 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     // the '25' inside '(25-OH)' as the value.
     aliases: ['Vitamin D (25-OH)', 'Vitamin D, 25-OH', 'Vitamin D 25-OH', '25-OH Vitamin D', '25-Hydroxyvitamin D', '25(OH)D', 'Vitamin D'],
     unit: 'ng/mL', unitAliases: ['ng/ml'],
-    min: 30, max: 100, optimalMin: 40, optimalMax: 80,
+    // Healthy floor 20 ng/mL — the IOM / Indian sufficiency cutoff (IAP
+    // 2021: deficiency <12, insufficiency 12–20, sufficiency >20). The US
+    // Endocrine Society's 30 ng/mL over-flags the very common 20–30 band
+    // as "deficient" for an India-first audience; with the floor at 20,
+    // 20–40 reads as "sufficient, below optimal" rather than "concern".
+    min: 20, max: 100, optimalMin: 40, optimalMax: 80,
     optimalSource: {
-      label: 'Endocrine Society 2011 clinical practice guideline (Holick et al.)',
-      url: 'https://academic.oup.com/jcem/article/96/7/1911/2833671',
-      audience: 'adults',
+      label:
+        'Optimal 40–80 ng/mL per Endocrine Society 2011 (Holick et al.); sufficiency floor ≥20 ng/mL per IOM / Indian Academy of Pediatrics 2021',
+      url: 'https://pubmed.ncbi.nlm.nih.gov/34969941/',
+      audience: 'adults · India (IOM/IAP sufficiency)',
     },
     category: 'vitamins', direction: 'up',
     simpleName: 'Vitamin D',
-    plain: 'Affects mood, energy, immunity, bone health — and is the single easiest thing to fix on most reports.',
+    plain: 'Affects mood, energy, immunity, and bone health. In India ≥20 ng/mL is considered sufficient; 40–80 is the optimal band.',
     problemId: 'low-vit-d',
   },
   {
@@ -1415,9 +1425,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Vitamin B12', 'B12', 'Cobalamin'],
     unit: 'pg/mL', unitAliases: ['pg/ml'],
     optimalSource: {
-      label: 'Tucker et al., AJCN 2000 — neurological correlates emerge below 350 pg/mL',
+      label:
+        'Tucker et al., AJCN 2000 — neurological correlates emerge below 350 pg/mL; deficiency <200 pg/mL is universal and endemic in India, especially among vegetarians',
       url: 'https://academic.oup.com/ajcn/article/71/2/514/4729084',
-      audience: 'adults',
+      audience: 'adults · India context',
     },
     min: 200, max: 900, optimalMin: 500, optimalMax: 900,
     // Methylcobalamin/cyanocobalamin supplementation routinely pushes
@@ -1513,7 +1524,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     // (along with the spaced "g %" variant) so reports from labs that
     // never updated their templates still parse correctly.
     unit: 'g/dL', unitAliases: ['g/dl', 'gm/dL', 'gm/dl', 'g%', 'g %', 'gm%', 'gm %', 'grams%', 'grams %'],
-    min: 13.5, max: 17.5,
+    // Male anaemia floor 13.0 g/dL per WHO / Indian usage (men); the prior
+    // 13.5 over-flagged the 13.0–13.4 band. This catalog is tuned for the
+    // app's adult-male audience (the female cutoff, <12, differs).
+    min: 13.0, max: 17.5,
     // Critical: <7 g/dL is the transfusion-recommendation threshold
     // for chronic anemia (NIH/AABB); >20 g/dL suggests
     // polycythemia / dehydration / EPO use — needs investigation.

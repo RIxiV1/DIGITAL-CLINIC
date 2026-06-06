@@ -42,8 +42,14 @@ if (!VIT_D || !LDL || !HBA1C || !HB) {
 
 describe('statusForValue', () => {
   it('returns "concern" for a value below the healthy minimum', () => {
-    // Vitamin D: min 30, max 100. 25 < 30 → concern.
-    expect(statusForValue(VIT_D, 25)).toBe('concern');
+    // Vitamin D: floor is now 20 ng/mL (IOM/India). 15 < 20 → concern.
+    expect(statusForValue(VIT_D, 15)).toBe('concern');
+  });
+
+  it('treats the India 20–30 ng/mL Vitamin D band as in-range, not concern', () => {
+    // The 30→20 floor change: 25 ng/mL is "sufficient, below optimal" →
+    // attention, NOT the old "concern". This is the anti-over-flag fix.
+    expect(statusForValue(VIT_D, 25)).toBe('attention');
   });
 
   it('returns "concern" for a value above the healthy maximum', () => {
@@ -52,12 +58,12 @@ describe('statusForValue', () => {
   });
 
   it('returns "good" for a value inside healthy AND inside optimal band', () => {
-    // Vitamin D: healthy 30-100, optimal 40-80. 55 is inside both.
+    // Vitamin D: healthy 20-100, optimal 40-80. 55 is inside both.
     expect(statusForValue(VIT_D, 55)).toBe('good');
   });
 
   it('returns "attention" when inside healthy but outside optimal', () => {
-    // Vitamin D: healthy 30-100, optimal 40-80. 35 is inside healthy
+    // Vitamin D: healthy 20-100, optimal 40-80. 35 is inside healthy
     // but below the optimal floor → attention.
     expect(statusForValue(VIT_D, 35)).toBe('attention');
     // 90 is inside healthy but above the optimal ceiling → attention.
@@ -99,7 +105,7 @@ describe('markerFromTemplate', () => {
 
   it('copies range, optimal range, and direction through to the Biomarker', () => {
     const m = markerFromTemplate(VIT_D, 50);
-    expect(m.min).toBe(30);
+    expect(m.min).toBe(20);
     expect(m.max).toBe(100);
     expect(m.optimalMin).toBe(40);
     expect(m.optimalMax).toBe(80);

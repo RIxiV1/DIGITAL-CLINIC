@@ -260,21 +260,21 @@ describe('extractBiomarkersFromText — lab range takes priority over catalog', 
   // Catalog still owns critical thresholds + the optimal sub-band.
 
   it('uses lab range when it disagrees with catalog (older standard)', () => {
-    // Hemoglobin catalog band is 13.5–17.5 g/dL. A 2010-era report
-    // might print a wider 13.0–18.0 band. A value of 13.2 falls below
-    // the catalog's min (would be 'concern') but INSIDE the lab's
-    // range (should be 'good' — the pathologist said it's normal).
-    const text = 'Hemoglobin 13.2 13.0-18.0 g/dL';
+    // Hemoglobin catalog band is now 13.0–17.5 g/dL. A report might print
+    // a wider 12.5–18.0 band. A value of 12.8 falls below the catalog's
+    // min (would be 'concern') but INSIDE the lab's range (should be
+    // 'good' — the pathologist said it's normal).
+    const text = 'Hemoglobin 12.8 12.5-18.0 g/dL';
     const hb = extractBiomarkersFromText(text).find((m) => m.id === 'hb');
-    expect(hb?.value).toBe(13.2);
-    expect(hb?.labRefMin).toBe(13);
+    expect(hb?.value).toBe(12.8);
+    expect(hb?.labRefMin).toBe(12.5);
     expect(hb?.labRefMax).toBe(18);
     expect(hb?.status).toBe('good');
   });
 
   it('flips status when lab range is TIGHTER than catalog', () => {
     // Inverse: lab prints a tighter range (e.g. 14.0–17.0). A value
-    // of 13.7 is inside the catalog's 13.5–17.5 (would be 'good') but
+    // of 13.7 is inside the catalog's 13.0–17.5 (would be 'good') but
     // OUTSIDE the lab's tighter range — surface as 'concern' to match
     // what the lab itself flagged.
     const text = 'Hemoglobin 13.7 14.0-17.0 g/dL';
@@ -651,8 +651,9 @@ describe('extractBiomarkersFromText — realistic lab fixture', () => {
     const byId = new Map(result.map((m) => [m.id, m]));
     // LDL 120 > healthy max of 100 → concern
     expect(byId.get('ldl')?.status).toBe('concern');
-    // Vitamin D 28 < healthy min of 30 → concern
-    expect(byId.get('vit-d')?.status).toBe('concern');
+    // Vitamin D 28 is in-range under the India/IOM floor of 20 (sufficient,
+    // below the 40–80 optimal band) → attention, not concern.
+    expect(byId.get('vit-d')?.status).toBe('attention');
     // HbA1c 5.2 in optimal band 4.5-5.3 → good
     expect(byId.get('hba1c')?.status).toBe('good');
     // Triglycerides 145 < healthy max of 150 but OUTSIDE optimal
