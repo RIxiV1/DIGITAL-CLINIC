@@ -340,8 +340,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
       {/* Body: 2-col on md — left biomarkers, right sticky filters + deep dives */}
       <Container size="wide" className="mt-6 md:mt-10">
         <div className="grid md:grid-cols-12 gap-6 md:gap-8">
-          {/* LEFT — Biomarker groups */}
-          <main className="md:col-span-8">
+          {/* LEFT — Biomarker groups.
+              min-w-0: a grid item defaults to min-width:auto, so the
+              horizontal-scroll filter strip (`w-max` row inside
+              `overflow-x-auto`) would force this column wider than the
+              mobile viewport — pushing the whole page to ~547px on a
+              393px screen and clipping content on the right. min-w-0 lets
+              the column shrink to its track so the strip scrolls inside
+              its own bounds instead of blowing out the layout. */}
+          <main className="md:col-span-8 min-w-0">
             {/* "Not a diagnosis" disclaimer used to sit here, above the
                 filters and markers. Demoted to a footnote below the
                 marker list — the message is necessary, but blocking
