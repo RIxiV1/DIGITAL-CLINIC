@@ -515,6 +515,13 @@ export function statusColor(s: BiomarkerStatus) {
         // light theme (darker stop) and re-bind to readable pastels
         // on dark theme via the dark-mode CSS overrides.
         text: 'text-good-ink',
+        // Readable color for the label rendered as bare text on a plain
+        // surface (no status fill behind it). Identical to `text` for
+        // every tier EXCEPT critical, whose `text` is `text-on-status`
+        // — correct on the solid `bg-concern` fill, but invisible on a
+        // surface. Always use this field when the label sits on a card/
+        // canvas; use `text` only when paired with `bg`.
+        textOnSurface: 'text-good-ink',
         bg: 'bg-good-soft',
         dot: 'bg-good',
         label: 'ON TRACK',
@@ -522,6 +529,7 @@ export function statusColor(s: BiomarkerStatus) {
     case 'attention':
       return {
         text: 'text-attention-ink',
+        textOnSurface: 'text-attention-ink',
         bg: 'bg-attention-soft',
         dot: 'bg-attention',
         // "BORDERLINE" replaces the older "NEEDS ATTENTION". Same data
@@ -536,6 +544,7 @@ export function statusColor(s: BiomarkerStatus) {
     case 'concern':
       return {
         text: 'text-concern-ink',
+        textOnSurface: 'text-concern-ink',
         bg: 'bg-concern-soft',
         dot: 'bg-concern',
         // Badge keeps "NEEDS CARE" — compact (10 chars) and clinically
@@ -555,6 +564,12 @@ export function statusColor(s: BiomarkerStatus) {
         // red in light theme, deep-navy text on pastel rose in dark.
         // Pure `text-white` would fail WCAG on the dark-mode pastel.
         text: 'text-on-status',
+        // On a plain surface (no fill), text-on-status is invisible in
+        // both themes. Critical has no surface-ink token of its own, so
+        // it borrows concern's readable red — same family, correct
+        // contrast. This is the fix for the "SEE A DOCTOR" label going
+        // dark-on-dark in the deep-dives card.
+        textOnSurface: 'text-concern-ink',
         bg: 'bg-concern',
         dot: 'bg-concern',
         label: 'SEE A DOCTOR',
@@ -792,6 +807,110 @@ export function formatDelta(marker: Biomarker): string | null {
   const rounded = Math.abs(delta) < 1 ? delta.toFixed(1) : Math.round(delta).toString();
   if (delta > 0) return `+${rounded}`;
   return rounded;
+}
+
+/* ------------------------------------------------------------------ */
+/* Trajectory — forward projection from a marker's reading history      */
+/* ------------------------------------------------------------------ */
+
+export type Trajectory = {
+  /** Least-squares slope expressed in marker units per 30 days. */
+  ratePerMonth: number;
+  /** Movement relative to the marker's target band (its optimal
+   *  sub-range when set, else the healthy min/max):
+   *    'toward'  — currently outside the band, closing on it
+   *    'away'    — currently outside the band, drifting further out
+   *    'holding' — change is below the noise floor
+   *    'within'  — current value already sits inside the band */
+  movement: 'toward' | 'away' | 'holding' | 'within';
+  /** Whole months until the linear fit reaches the target band. Set only
+   *  when movement === 'toward' AND the estimate lands inside a sane
+   *  window (≤ MAX_PROJECTION_MONTHS); null otherwise. A slope that
+   *  implies "in range next week" or "in 90 years" is noise, not a
+   *  forecast, so we withhold the number rather than print fiction. */
+  monthsToTarget: number | null;
+};
+
+/** Beyond this horizon a linear extrapolation is fiction, not a forecast. */
+export const MAX_PROJECTION_MONTHS = 24;
+
+/**
+ * Project where a marker is heading from its own reading history.
+ *
+ * Fits a least-squares line to (day-offset, value) across every prior
+ * reading plus the current value — dated `asOf`, the upload date of the
+ * report this marker came from — then classifies the movement relative
+ * to the marker's target band and, only when the marker is outside that
+ * band and closing on it, estimates the months until it arrives.
+ *
+ * This is a transparent "if this pace held" extrapolation, NOT a
+ * clinical prediction; the UI frames it that way. Returns null when
+ * there isn't enough signal to say anything honest: fewer than two
+ * readings, a missing/invalid `asOf`, or readings that don't span any
+ * time. Pure — no clock access; `asOf` is supplied by the caller.
+ */
+export function getTrajectory(
+  marker: Biomarker,
+  asOf: string | undefined,
+): Trajectory | null {
+  if (!asOf) return null;
+  const asOfTs = Date.parse(`${asOf}T00:00:00Z`);
+  if (Number.isNaN(asOfTs)) return null;
+  const history = marker.history ?? [];
+  if (history.length < 1) return null; // need ≥2 points total
+
+  const DAY = 24 * 60 * 60 * 1000;
+  const raw: Array<{ t: number; v: number }> = [];
+  for (const h of history) {
+    const ts = Date.parse(`${h.date}T00:00:00Z`);
+    if (Number.isNaN(ts)) continue;
+    raw.push({ t: ts, v: h.value });
+  }
+  raw.push({ t: asOfTs, v: marker.value });
+  if (raw.length < 2) return null;
+
+  const minT = Math.min(...raw.map((p) => p.t));
+  const pts = raw.map((p) => ({ t: (p.t - minT) / DAY, v: p.v }));
+  const spanDays = Math.max(...pts.map((p) => p.t));
+  if (spanDays <= 0) return null; // all readings on the same day → no slope
+
+  // Least-squares slope in value-units per day.
+  const n = pts.length;
+  const sumT = pts.reduce((s, p) => s + p.t, 0);
+  const sumV = pts.reduce((s, p) => s + p.v, 0);
+  const sumTT = pts.reduce((s, p) => s + p.t * p.t, 0);
+  const sumTV = pts.reduce((s, p) => s + p.t * p.v, 0);
+  const denom = n * sumTT - sumT * sumT;
+  if (denom === 0) return null;
+  const slopePerDay = (n * sumTV - sumT * sumV) / denom;
+  const ratePerMonth = slopePerDay * 30;
+
+  // Target band: optimal sub-range when present, else the healthy range.
+  const lo = typeof marker.optimalMin === 'number' ? marker.optimalMin : marker.min;
+  const hi = typeof marker.optimalMax === 'number' ? marker.optimalMax : marker.max;
+  const value = marker.value;
+  const inBand = value >= lo && value <= hi;
+
+  // Noise floor mirrors getTrend's "1% of value" idea, per month.
+  const noise = Math.max(0.5, Math.abs(value) * 0.01);
+  if (Math.abs(ratePerMonth) < noise) {
+    return { ratePerMonth, movement: inBand ? 'within' : 'holding', monthsToTarget: null };
+  }
+  if (inBand) {
+    return { ratePerMonth, movement: 'within', monthsToTarget: null };
+  }
+
+  // Outside the band — closing on it or drifting away?
+  const below = value < lo;
+  const closing = below ? slopePerDay > 0 : slopePerDay < 0;
+  if (!closing) {
+    return { ratePerMonth, movement: 'away', monthsToTarget: null };
+  }
+  const distance = below ? lo - value : value - hi;
+  const months = distance / Math.abs(slopePerDay) / 30;
+  const monthsToTarget =
+    months <= MAX_PROJECTION_MONTHS ? Math.max(1, Math.round(months)) : null;
+  return { ratePerMonth, movement: 'toward', monthsToTarget };
 }
 
 /* ================================================================== */

@@ -293,7 +293,7 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
             {tier.label}
           </div>
           <div
-            className={`mt-1 text-micro uppercase tracking-widest font-bold ${colors.text}`}
+            className={`mt-1 text-micro uppercase tracking-widest font-bold ${colors.textOnSurface}`}
           >
             {colors.label}
           </div>

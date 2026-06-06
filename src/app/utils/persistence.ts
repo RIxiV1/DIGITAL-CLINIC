@@ -31,6 +31,12 @@ const PENDING_CONFIRM_KEY = `${KEY_PREFIX}pendingConfirm`;
  *  version, the dashboard surfaces a one-time migration notice
  *  explaining why their trendlines may no longer merge cleanly. */
 const CATALOG_ACK_KEY = `${KEY_PREFIX}catalogAck`;
+/** Re-test nudge dismissal — stores the report id the user last
+ *  dismissed the "time to re-test" banner for. The banner re-appears
+ *  only when the latest real report's id differs (i.e. they've uploaded
+ *  something newer since), so dismissing is sticky per report rather
+ *  than per session. */
+const RETEST_ACK_KEY = `${KEY_PREFIX}retestAck`;
 /** User preference: when local lab-report parsing (Tesseract / pdfjs)
  *  fails on an image upload, should we auto-cascade to the Vision-LLM
  *  fallback (Pipeline 3 / Gemini) instead of stopping at the failure
@@ -707,4 +713,23 @@ export function loadCatalogAck(): number {
  *  future version bump. */
 export function saveCatalogAck(version: number): void {
   writeJSON(CATALOG_ACK_KEY, version);
+}
+
+/* ------------------------------------------------------------------ */
+/* Re-test nudge dismissal                                             */
+/* ------------------------------------------------------------------ */
+
+const RetestAckSchema = z.string().min(1).max(80);
+
+/** The report id the user last dismissed the re-test banner for, or
+ *  null for fresh installs / never-dismissed (and on validation
+ *  failure — the read path clears poisoned keys before falling back). */
+export function loadRetestDismissedReportId(): string | null {
+  return readValidated<string | null>(RETEST_ACK_KEY, RetestAckSchema, null);
+}
+
+/** Remember that the user dismissed the re-test banner for this report,
+ *  so it doesn't re-appear until they upload a newer one. */
+export function saveRetestDismissedReportId(reportId: string): void {
+  writeJSON(RETEST_ACK_KEY, reportId);
 }

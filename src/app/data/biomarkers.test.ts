@@ -16,7 +16,9 @@ import {
   biomarkerCatalog,
   categories,
   getTemplateById,
+  getTrajectory,
   markerFromTemplate,
+  MAX_PROJECTION_MONTHS,
   pickHeadlineMarker,
   statusForValue,
   type Biomarker,
@@ -265,5 +267,121 @@ describe('pickHeadlineMarker', () => {
     const snapshot = [...input];
     pickHeadlineMarker(input);
     expect(input).toEqual(snapshot);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* getTrajectory — forward projection from reading history             */
+/* ------------------------------------------------------------------ */
+
+describe('getTrajectory', () => {
+  const trajMarker = (over: Partial<Biomarker>): Biomarker => ({
+    id: 'tm',
+    name: 'TM',
+    value: 0,
+    unit: 'u',
+    min: 0,
+    max: 100,
+    status: 'good',
+    category: 'heart',
+    plain: '.',
+    ...over,
+  });
+
+  it('returns null without enough readings', () => {
+    expect(getTrajectory(trajMarker({ value: 50 }), '2026-03-02')).toBeNull();
+  });
+
+  it('returns null when asOf is missing or invalid', () => {
+    const m = trajMarker({
+      value: 130,
+      history: [{ date: '2026-01-01', value: 160 }],
+    });
+    expect(getTrajectory(m, undefined)).toBeNull();
+    expect(getTrajectory(m, 'not-a-date')).toBeNull();
+  });
+
+  it('returns null when every reading falls on the same day', () => {
+    const m = trajMarker({
+      value: 130,
+      history: [{ date: '2026-03-02', value: 150 }],
+    });
+    expect(getTrajectory(m, '2026-03-02')).toBeNull();
+  });
+
+  it('projects months-to-target when closing on the band', () => {
+    // optimal ≤ 100; value 130, dropping 0.5/day over 60 days → reaches
+    // 100 in 60 more days ≈ 2 months.
+    const m = trajMarker({
+      value: 130,
+      min: 0,
+      max: 200,
+      optimalMin: 0,
+      optimalMax: 100,
+      history: [{ date: '2026-01-01', value: 160 }],
+    });
+    const t = getTrajectory(m, '2026-03-02');
+    expect(t?.movement).toBe('toward');
+    expect(t?.monthsToTarget).toBe(2);
+    expect(t?.ratePerMonth).toBeCloseTo(-15, 0);
+  });
+
+  it('flags drift away from the band (no ETA)', () => {
+    const m = trajMarker({
+      value: 130,
+      min: 0,
+      max: 200,
+      optimalMin: 0,
+      optimalMax: 100,
+      history: [{ date: '2026-01-01', value: 110 }],
+    });
+    const t = getTrajectory(m, '2026-03-02');
+    expect(t?.movement).toBe('away');
+    expect(t?.monthsToTarget).toBeNull();
+  });
+
+  it('reports "within" when the current value already sits in the band', () => {
+    const m = trajMarker({
+      value: 80,
+      min: 0,
+      max: 200,
+      optimalMin: 0,
+      optimalMax: 100,
+      history: [{ date: '2026-01-01', value: 90 }],
+    });
+    const t = getTrajectory(m, '2026-03-02');
+    expect(t?.movement).toBe('within');
+    expect(t?.monthsToTarget).toBeNull();
+  });
+
+  it('reports "holding" when out of band but the slope is below the noise floor', () => {
+    const m = trajMarker({
+      value: 130,
+      min: 0,
+      max: 200,
+      optimalMin: 0,
+      optimalMax: 100,
+      history: [{ date: '2026-01-01', value: 131 }],
+    });
+    const t = getTrajectory(m, '2026-03-02');
+    expect(t?.movement).toBe('holding');
+    expect(t?.monthsToTarget).toBeNull();
+  });
+
+  it('withholds the ETA when the projection runs past the horizon', () => {
+    // value 700, target ≤ 100 (distance 600), dropping only 0.5/day →
+    // ~40 months out, well beyond MAX_PROJECTION_MONTHS.
+    const m = trajMarker({
+      value: 700,
+      min: 0,
+      max: 1000,
+      optimalMin: 0,
+      optimalMax: 100,
+      history: [{ date: '2026-01-01', value: 730 }],
+    });
+    const t = getTrajectory(m, '2026-03-02');
+    expect(t?.movement).toBe('toward');
+    expect(t?.monthsToTarget).toBeNull();
+    expect(MAX_PROJECTION_MONTHS).toBe(24);
   });
 });

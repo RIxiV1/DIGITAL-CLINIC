@@ -8,7 +8,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   getLatestReadyReport,
+  getRetestReminder,
   mergeHistoryFromPriorReports,
+  RETEST_REMINDER_DAYS,
   type Report,
 } from './reports';
 import { pruneExpiredReports } from '../utils/persistence';
@@ -257,6 +259,83 @@ describe('getLatestReadyReport', () => {
     const s1 = sample('rep-001', '2026-04-12');
     const s2 = sample('rep-002', '2026-03-04');
     expect(getLatestReadyReport([s1, s2])?.id).toBe('rep-001');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* getRetestReminder — pure re-test nudge decision                      */
+/* ------------------------------------------------------------------ */
+
+describe('getRetestReminder', () => {
+  const NOW = Date.parse('2026-08-01T00:00:00Z');
+  const DAY_MS = 24 * 60 * 60 * 1000;
+  const dateNDaysAgo = (n: number) =>
+    new Date(NOW - n * DAY_MS).toISOString().slice(0, 10);
+
+  const sample = (id: string, uploadedAt: string): Report => ({
+    id,
+    name: `Sample ${id}`,
+    lab: 'Sample lab',
+    uploadedOn: uploadedAt,
+    uploadedAt,
+    status: 'ready',
+    badge: 'analyzed',
+    isSample: true,
+    biomarkers: [hb(15)],
+  });
+
+  it('returns null when there is no ready report', () => {
+    expect(getRetestReminder([], NOW)).toBeNull();
+  });
+
+  it('returns null when the latest report is recent (under the threshold)', () => {
+    const recent = readyReport(dateNDaysAgo(RETEST_REMINDER_DAYS - 5), [hb(14)]);
+    expect(getRetestReminder([recent], NOW)).toBeNull();
+  });
+
+  it('returns the report + months once past the threshold', () => {
+    const stale = readyReport(dateNDaysAgo(RETEST_REMINDER_DAYS + 30), [hb(14)]);
+    const reminder = getRetestReminder([stale], NOW);
+    expect(reminder?.report.id).toBe(stale.id);
+    expect(reminder?.months).toBe(5); // 150 days ≈ 5 months
+  });
+
+  it('floors months at 1 even right at the threshold', () => {
+    // ~4 months → rounds to 4, but assert the floor holds conceptually
+    // by checking a marker just over the boundary is never reported as 0.
+    const justOver = readyReport(dateNDaysAgo(RETEST_REMINDER_DAYS), [hb(14)]);
+    const reminder = getRetestReminder([justOver], NOW);
+    expect(reminder?.months).toBeGreaterThanOrEqual(1);
+  });
+
+  it('never nudges on a sample-only locker', () => {
+    // A demo report's canned date must not drive a "time to re-test"
+    // message for someone who has never uploaded anything real.
+    const s = sample('rep-001', dateNDaysAgo(365));
+    expect(getRetestReminder([s], NOW)).toBeNull();
+  });
+
+  it('anchors on the latest real report, ignoring older samples', () => {
+    const realStale = readyReport(dateNDaysAgo(RETEST_REMINDER_DAYS + 60), [
+      hb(14),
+    ]);
+    const s = sample('rep-001', dateNDaysAgo(1)); // newer sample, ignored
+    const reminder = getRetestReminder([s, realStale], NOW);
+    expect(reminder?.report.id).toBe(realStale.id);
+  });
+
+  it('returns null when the latest real report is malformed-dated', () => {
+    const bad: Report = {
+      id: 'r-bad',
+      name: 'Bad date',
+      lab: 'Lab',
+      uploadedOn: 'whenever',
+      uploadedAt: 'not-a-date',
+      status: 'ready',
+      badge: 'analyzed',
+      biomarkers: [hb(14)],
+    };
+    expect(getRetestReminder([bad], NOW)).toBeNull();
   });
 });
 
