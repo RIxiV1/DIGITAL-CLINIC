@@ -34,7 +34,19 @@
          crisply, but PNG matches the brand asset exactly. -->
     <link rel="icon" type="image/png" href="/formen-logo.png" />
     <link rel="alternate icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="apple-touch-icon" href="/formen-logo.png" />
+    <!-- Square apple-touch-icon (the wordmark PNG is 1213x689 — iOS would
+         letterbox it). icon-192 is a square brand mark on the dark canvas. -->
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- PWA: installable + standalone. Launching from the home screen
+         drops the browser chrome (address bar), which also removes the
+         iOS/Android dynamic-toolbar resize that makes `dvh` heights feel
+         like they "keep scrolling". Manifest + icons are same-origin, so
+         the `default-src 'self'` CSP covers them. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="ForMen" />
 
     <!-- Preload the hero LCP image so first paint shows it instantly.
          WebP is preferred (~60 KB) — browsers without WebP support skip
