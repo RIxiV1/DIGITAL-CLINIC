@@ -246,6 +246,14 @@ body,
  * keeps working. */
 html {
   overflow-x: clip;
+  /* No scroll-chaining / rubber-band bounce past the content — the
+   * springy overscroll reads as "the page keeps scrolling into empty
+   * space" on phones. */
+  overscroll-behavior-y: none;
+  /* iOS: never auto-inflate text on orientation change — it silently
+   * breaks the carefully-tuned type scale and can overflow rows. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
