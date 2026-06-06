@@ -26,20 +26,33 @@ export default function Sparkline({
   const points = [...history.map((h) => h.value), marker.value];
   if (points.length < 2) return null;
 
-  // Y-axis bounds: include all points + the healthy range so the band is
-  // always visible. Pad by 8% so the line doesn't sit flush with the edges.
-  const yMin = Math.min(...points, marker.min);
-  const yMax = Math.max(...points, marker.max);
-  const span = yMax - yMin || 1;
-  const pad = span * 0.08;
-  const lo = yMin - pad;
-  const hi = yMax + pad;
+  // Y-axis is driven by the DATA, not the healthy band. The old version
+  // forced the axis to span the full band (Math.min(...points, marker.min)
+  // / ...marker.max); when every reading sat outside the band that crushed
+  // the line into an edge-hugging sliver and the area-fill rendered as a
+  // solid block. Scaling to the readings (plus padding) keeps the line the
+  // dominant, readable element however far out of range the values are.
+  const dataMin = Math.min(...points);
+  const dataMax = Math.max(...points);
+  // Flat series (all readings equal) has zero span — fall back to a small
+  // non-zero range so the line lands mid-height instead of dividing by 0.
+  const span = dataMax - dataMin || Math.max(1, Math.abs(dataMax) * 0.1);
+  const pad = span * 0.18;
+  const lo = dataMin - pad;
+  const hi = dataMax + pad;
   const scaleY = (v: number) => height - ((v - lo) / (hi - lo)) * height;
   const stepX = width / (points.length - 1);
 
-  // Healthy range band — drawn behind the polyline.
-  const bandTop = scaleY(marker.max);
-  const bandBottom = scaleY(marker.min);
+  // Healthy-range band — drawn behind the polyline, CLAMPED to the
+  // viewport so a band lying largely or wholly outside the data axis can't
+  // fill the frame. When the band is entirely off-screen (every reading is
+  // outside it) the rect collapses to zero height and the sparkline is
+  // just the trend line — the adjacent "trending toward / away" copy
+  // carries the range relationship.
+  const clampY = (y: number) => Math.max(0, Math.min(height, y));
+  const bandTop = clampY(scaleY(marker.max));
+  const bandBottom = clampY(scaleY(marker.min));
+  const bandHeight = Math.max(0, bandBottom - bandTop);
 
   // Trend stroke color picks up the marker status. Critical reuses the
   // concern color — the differentiation comes from copy + the per-tier
@@ -83,7 +96,7 @@ export default function Sparkline({
         x={0}
         y={bandTop}
         width={width}
-        height={Math.max(0, bandBottom - bandTop)}
+        height={bandHeight}
         fill="rgb(22 163 74 / 0.14)"
       />
 
