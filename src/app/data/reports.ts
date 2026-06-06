@@ -116,6 +116,47 @@ export function getLatestReadyReport(reports: Report[]): Report | undefined {
   return pool[0];
 }
 
+/** Days after which we gently nudge the user to re-test. ~4 months —
+ *  long enough not to nag someone who just uploaded, short enough to
+ *  land inside the 3–6 month cadence most hormone and metabolic panels
+ *  are re-checked on. */
+export const RETEST_REMINDER_DAYS = 120;
+
+export type RetestReminder = {
+  /** The report the nudge is anchored on (the user's latest real one). */
+  report: Report;
+  /** Whole months since it was uploaded (rounded, floored at 1). */
+  months: number;
+};
+
+/**
+ * Decide whether to nudge the user to re-test. Returns the most recent
+ * real (non-sample) ready report and how long ago it was uploaded, but
+ * only when that gap exceeds RETEST_REMINDER_DAYS; otherwise null.
+ *
+ * Sample-only lockers never trigger the nudge — getLatestReadyReport
+ * falls back to a curated sample when the user has nothing real, and we
+ * don't want a demo report's canned date driving a "time to re-test"
+ * message for someone who's never uploaded anything.
+ *
+ * Pure — `now` is injectable so the decision is testable without faking
+ * the clock. Date math anchors on UTC midnight to match the TTL filter
+ * in persistence.ts (avoids a ±24h drift at the boundary by timezone).
+ */
+export function getRetestReminder(
+  reports: Report[],
+  now: number = Date.now(),
+): RetestReminder | null {
+  const latest = getLatestReadyReport(reports);
+  if (!latest || latest.isSample || !latest.uploadedAt) return null;
+  const ts = Date.parse(`${latest.uploadedAt}T00:00:00Z`);
+  if (Number.isNaN(ts)) return null;
+  const elapsedDays = (now - ts) / (24 * 60 * 60 * 1000);
+  if (elapsedDays < RETEST_REMINDER_DAYS) return null;
+  const months = Math.max(1, Math.round(elapsedDays / 30));
+  return { report: latest, months };
+}
+
 export function badgeFor(r: Report): ReportBadge {
   if (r.badge) return r.badge;
   if (r.status === 'processing') return 'processing';

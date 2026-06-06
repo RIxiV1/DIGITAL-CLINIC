@@ -2,6 +2,7 @@ import { useDeferredValue, useId, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
+  CalendarClock,
   ChevronDown,
   FileText,
   Plus,
@@ -34,10 +35,16 @@ import {
 import {
   badgeFor,
   getLatestReadyReport,
+  getRetestReminder,
   getSampleReportForDashboard,
   type Report,
 } from '../data/reports';
-import { loadCatalogAck, saveCatalogAck } from '../utils/persistence';
+import {
+  loadCatalogAck,
+  loadRetestDismissedReportId,
+  saveCatalogAck,
+  saveRetestDismissedReportId,
+} from '../utils/persistence';
 import { getMarkerInfo } from '../data/markerInfo';
 
 type StatusFilter = StatusFilterId;
@@ -133,6 +140,23 @@ export default function HomePage() {
 
   const ready = useMemo(() => getLatestReadyReport(reports), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
+
+  /* ---- Re-test nudge. Surfaced when the user's latest real report is
+   *      older than RETEST_REMINDER_DAYS — the retention loop that turns
+   *      a one-off upload into an ongoing habit. Dismissal is sticky per
+   *      report id (persisted), so it stays gone until they upload a
+   *      newer one. ---- */
+  const retestReminder = useMemo(() => getRetestReminder(reports), [reports]);
+  const [retestDismissedId, setRetestDismissedId] = useState<string | null>(
+    () => loadRetestDismissedReportId(),
+  );
+  const showRetestReminder =
+    !!retestReminder && retestDismissedId !== retestReminder.report.id;
+  const dismissRetestReminder = () => {
+    if (!retestReminder) return;
+    saveRetestDismissedReportId(retestReminder.report.id);
+    setRetestDismissedId(retestReminder.report.id);
+  };
 
   /* ---- Locker controls — surfaced only when expanded AND 3+ reports.
    *      Showing a search box + sort group while only one card is
@@ -375,6 +399,52 @@ export default function HomePage() {
               onClick={dismissSaveError}
               aria-label="Dismiss warning"
               className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-concern hover:bg-concern/10"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </Container>
+      )}
+
+      {/* Re-test nudge. Action-oriented (not just a notice): the user's
+          latest real report has aged past the re-check window. Sits with
+          the other top-of-page banners; dismissal is sticky per report
+          id so it won't nag every load. */}
+      {showRetestReminder && retestReminder && (
+        <Container size="wide" className="pt-4">
+          <div
+            role="status"
+            className="flex items-start gap-3 rounded-2xl bg-indigo-50/70 border border-indigo-200 px-4 py-3"
+          >
+            <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 shrink-0">
+              <CalendarClock size={18} aria-hidden />
+            </div>
+            <div className="flex-1 min-w-0 text-caption leading-relaxed text-ink">
+              <div className="font-semibold text-indigo-900">
+                Time for a fresh reading?
+              </div>
+              <p className="mt-0.5 text-ink-soft">
+                It’s been about {retestReminder.months}{' '}
+                {retestReminder.months === 1 ? 'month' : 'months'} since{' '}
+                <span className="font-medium text-ink">
+                  {retestReminder.report.name}
+                </span>
+                . Most hormone and metabolic markers are worth re-checking
+                every 3–6 months to see whether your changes are working.
+              </p>
+              <button
+                type="button"
+                onClick={() => navigate({ type: 'upload' })}
+                className="mt-2 inline-flex items-center min-h-11 font-semibold text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+              >
+                Upload a new report →
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={dismissRetestReminder}
+              aria-label="Dismiss re-test reminder"
+              className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-indigo-700 hover:bg-indigo-100"
             >
               <X size={14} />
             </button>
