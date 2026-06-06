@@ -17,6 +17,11 @@ import { formatDate } from '../utils/uiUtils';
 import { sanitizeFilename } from '../utils/sanitizeFilename';
 import { classifyOutOfScope, parsePdfFile } from './pdfParser';
 
+/** Re-export so UploadPage can warm the OCR assets through the same
+ *  service facade it already imports from (it never reaches into
+ *  pdfParser directly). */
+export { prewarmOcr } from './pdfParser';
+
 /* ------------------------------------------------------------------ */
 /* Pending-upload bridge                                                */
 /*                                                                      */
