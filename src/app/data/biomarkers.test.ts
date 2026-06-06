@@ -278,17 +278,22 @@ describe('action thresholds (harm-anchor)', () => {
   it('glucose + HbA1c carry cited ADA action thresholds', () => {
     const glu = getTemplateById('glucose');
     const a1c = getTemplateById('hba1c');
+    // India-first: diagnostic cutoffs follow WHO/ICMR (same numbers as
+    // ADA, but cited to the Indian authority for this audience).
     expect(glu?.actionMax).toBe(126);
-    expect(glu?.actionSource?.label).toContain('ADA');
-    expect(glu?.actionSource?.url).toMatch(/diabetes/);
+    expect(glu?.actionSource?.label).toContain('ICMR');
+    expect(glu?.actionSource?.url).toMatch(/icmr/i);
     expect(a1c?.actionMax).toBe(6.5);
-    expect(a1c?.actionSource?.url).toMatch(/diabetes/);
+    expect(a1c?.actionSource?.label).toContain('ICMR');
+    expect(a1c?.actionSource?.url).toMatch(/icmr/i);
+    // HbA1c carries the India-specific anaemia caveat.
+    expect(a1c?.actionSource?.label.toLowerCase()).toContain('anaemia');
   });
 
   it('markerFromTemplate propagates the action threshold + its citation', () => {
     const m = markerFromTemplate(getTemplateById('glucose')!, 110);
     expect(m.actionMax).toBe(126);
-    expect(m.actionSource?.label).toContain('ADA');
+    expect(m.actionSource?.label).toContain('ICMR');
   });
 
   it('markers without an action threshold leave it undefined (no fabrication)', () => {
