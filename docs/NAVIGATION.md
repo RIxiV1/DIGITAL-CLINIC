@@ -47,14 +47,13 @@ switch (page.type) {
 ## The API
 
 ```ts
-const { page, navigate, replace, goBack, canGoBack } = useNavigation();
+const { page, navigate, replace, back } = useNavigation();
 ```
 
-- **`page`** — the current Page. Reactive; re-renders when navigation happens.
-- **`navigate(p)`** — push a new entry into history. Back button returns here.
-- **`replace(p)`** — swap the current entry without pushing.
-- **`goBack()`** — equivalent to the browser back button.
-- **`canGoBack`** — boolean. `false` only at the user's very first entry into the app.
+- **`page`** — the current Page, derived from the URL. Reactive; re-renders when navigation happens.
+- **`navigate(p)`** — go to a page, pushing a new history entry. The back button returns here.
+- **`replace(p)`** — go to a page by rewriting the current history entry (no new entry added).
+- **`back()`** — step back. It defers to the browser's history; if you're already on the entry where the session started (nothing behind you inside the app), it lands you on the dashboard instead of leaving the app.
 
 Two conventions worth knowing:
 
@@ -65,32 +64,47 @@ Two conventions worth knowing:
 
 ## URL ↔ state sync
 
-The Page state is serialised to the URL as `?page=<type>&<paramKey>=<paramValue>`. So `{ type: 'results', reportId: 'rep-001' }` becomes `?page=results&reportId=rep-001`.
+Each Page maps to a clean URL **path** (not a query string). `pageToPath()` and `pathToPage()` in `NavigationContext.tsx` are the two halves of that mapping:
 
-This is bidirectional:
+| Page | Path |
+|---|---|
+| `{ type: 'landing' }` | `/` |
+| `{ type: 'home' }` | `/dashboard` |
+| `{ type: 'upload' }` | `/upload` |
+| `{ type: 'quiz' }` | `/quiz` |
+| `{ type: 'recommendedTests' }` | `/tests` |
+| `{ type: 'results', reportId }` | `/reports/:reportId` |
+| `{ type: 'problem', problemId }` | `/topics/:problemId` |
+| `{ type: 'profile' }` | `/profile` |
 
-- `navigate(p)` updates the URL via `history.pushState` (under the hood, via react-router's `useNavigate`).
-- A user pasting a URL in directly works because mount-time we read `?page=...` and seed the Page state from it.
+(`/processing` and `/manual-entry` round out the set.) The mapping is bidirectional, and the **URL is the source of truth** — `page` is derived from `location.pathname`, so `navigate`/`replace` just change the path and the page follows. Pasting a deep link like `/reports/rep-001` works for free, because `pathToPage()` parses it on mount; unknown paths fall back to `landing`.
 
-There's one route alias outside the `?page=` system: `/minimal` renders a stripped-down LandingPage variant (4 sections instead of 8). `LandingPage.tsx` reads `useLocation().pathname` to decide. Why path-based: it makes the variant URL shareable, and it lets us A/B `/minimal` against `/` cleanly.
+There's one extra path alias: `/minimal` renders a stripped-down LandingPage variant (4 sections instead of 8). `pathToPage()` maps it to the `landing` page type, and `LandingPage.tsx` reads `useLocation().pathname` to pick the variant. Keeping it path-based makes the variant URL shareable and easy to A/B against `/`.
 
 ---
 
 ## How back/forward actually works
 
-This is the part most likely to surprise you.
+Here's the part most likely to surprise you — and it's pleasantly small.
 
-We use `location.key` (from react-router) as our "are we at history-stack position N" signal. Every history entry has a unique `key`. The very first entry — the user's initial landing on the site — has `key === 'default'`.
+Because `page` is derived straight from the URL, back/forward "just work": the browser changes the URL, and the page re-derives. There's no manual history stack, no `popstate` listeners, nothing to keep in sync.
+
+The only thing `back()` has to decide is *"is there anywhere to go back to inside the app?"* We answer that with react-router's `location.key`: every history entry gets a unique key, and we snapshot the one present when the provider mounts (the session's starting point). If `back()` runs while we're still on that entry, there's no in-app history behind us — so we route to the dashboard rather than stepping the user out of the app. Otherwise we hand off to the browser.
 
 ```ts
 // inside NavigationContext.tsx
-const isInitialEntry = location.key === 'default';
-const canGoBack = !isInitialEntry;
+const sessionStartKeyRef = useRef(location.key);   // snapshot at mount
+
+const back = () => {
+  if (location.key === sessionStartKeyRef.current) {
+    routerNavigate(pageToPath({ type: 'home' }));   // nowhere to go back to → dashboard
+    return;
+  }
+  window.history.back();                            // let the browser handle it
+};
 ```
 
-That's the entire mechanism. No manual history stack to maintain, no `popstate` listeners, no fighting the browser. The browser owns the history stack; we just observe its current position.
-
-The previous implementation maintained a `historyRef.current: Page[]` and pushed/popped from it on every `navigate()` call. That broke for back/forward across multiple steps and for direct-URL-paste deep links. The `location.key === 'default'` approach replaced ~80 lines of fragile state-machine code with one comparison.
+An earlier version kept its own `historyRef: Page[]` and pushed/popped on every `navigate()`. It desynced whenever someone used the browser's own back/forward, which made the "fall back to home" branch fire too early (teleporting people to the dashboard mid-navigation). Letting the browser own the history and just observing `location.key` replaced ~80 lines of fragile state-machine code.
 
 ---
 

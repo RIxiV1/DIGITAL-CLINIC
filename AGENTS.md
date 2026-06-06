@@ -1,22 +1,24 @@
 # AGENTS.md
 
-If you're an AI agent or a new engineer working in this repo, read this first. It covers the rules you'll be held to and the gotchas you'd otherwise hit.
+Welcome! Whether you're a new engineer or an AI agent, this is the best place to start. It covers how we work here and the gotchas that are easier to know up front than to hit the hard way.
 
-If a more specific file disagrees with this one (a `README` inside a subfolder, an explicit user instruction, a comment marked CRITICAL in code), the more specific source wins.
+If a more specific source disagrees with this file — a `README` in a subfolder, an explicit instruction from a maintainer, a comment marked CRITICAL in code — trust the more specific one.
 
 ---
 
-## The five rules
+## How we work (the essentials)
 
-1. **Build has to be green.** `npm run build` runs `tsc --noEmit && vitest run && vite build`. If those three don't pass, the work isn't done. CI and Vercel both gate on this.
+A few team agreements that keep the codebase pleasant to work in:
 
-2. **Default to no comments.** Only write a comment when the *why* isn't obvious — a hidden constraint, a workaround for a specific bug, a subtle invariant. Don't explain what a well-named function already says.
+1. **Keep the build green.** `npm run build` runs `tsc --noEmit && vitest run && vite build`. If any of the three is red, it's not ready to merge yet — that's the exact gate CI and Vercel use, so it's worth running locally first.
 
-3. **No Claude attribution in commits.** No `Co-Authored-By: Claude`, no `🤖 Generated with [Claude Code]`, none of that. The repo owner has rewritten history more than once to scrub these.
+2. **Comment the *why*, not the *what*.** A comment earns its place when the reasoning isn't obvious — a hidden constraint, a workaround for a specific bug, a subtle invariant. If a well-named function already says it, you can skip the comment.
 
-4. **Don't expand scope.** A bug fix doesn't need surrounding cleanup. A one-shot script doesn't need a helper. Three similar lines beat a premature abstraction. No "while I'm here" refactors.
+3. **Keep the git history about the code.** Please leave out AI-attribution tags like `Co-Authored-By: Claude` or `🤖 Generated with [Claude Code]`. We've had to scrub these from history before, so skipping them saves everyone the cleanup.
 
-5. **One logical change per commit.** Make it. Test it. Move on. Don't bundle a bug fix with a refactor with a typo fix.
+4. **Keep changes focused.** A bug fix doesn't need surrounding cleanup, a one-shot script doesn't need a helper, and three similar lines are fine — no need to abstract them yet. Save "while I'm here" refactors for their own PR.
+
+5. **One logical change per commit.** Make it, test it, move on. It's far easier to review (and to revert) when a bug fix, a refactor, and a typo fix aren't bundled together.
 
 ---
 
@@ -45,7 +47,7 @@ DIGITAL CLINIC/
 └── package.json
 ```
 
-If you're hunting for something, start at the source listed above and grep outward. Don't read every file front-to-back.
+Hunting for something? Start from the relevant entry above and grep outward — no need to read every file front to back.
 
 ---
 
@@ -63,7 +65,7 @@ Body is optional for trivial commits. For anything non-obvious, include a body t
 
 **Branch naming:** `<type>/<short-kebab-desc>`. Examples: `fix/gemini-2.5-flash`, `feat/ai-auto-fallback`, `polish/pulse-glow-brand-alignment`.
 
-**Main is protected.** You can't push to it directly. Every change goes through a PR. The Vercel preview deploy runs on every PR — green check before you merge.
+**Main is protected,** so every change lands through a PR (direct pushes are rejected). Vercel spins up a preview deploy on each PR — wait for the green check before merging.
 
 ---
 
@@ -85,13 +87,13 @@ Read the one matching what you're touching before you grep — each is a focused
 
 ## Things that will surprise you
 
-These are the parts that look weird until you know why. Each gets its own deep-dive doc; skim them here so you know where to look.
+These parts look surprising until you know the why behind them. Each has its own deep-dive doc; skim here so you know where to look.
 
-### 1. There's no router library — we built our own
+### 1. There's no router library — we rolled our own
 
-The whole app navigates through a typed `Page` union (`contexts/types.ts`) and a `NavigationContext` that syncs the union to `?page=...` URL params. Back/forward buttons work via `location.key`. React Router is in the dependency tree but only used for `useLocation()` to read `pathname` on the landing page.
+The whole app navigates through a typed `Page` union (`contexts/types.ts`) and a `NavigationContext` that maps each page to a clean URL path (`/dashboard`, `/reports/:id`, `/topics/:problemId`, …) and derives the current page *back* from the URL. Back/forward and deep links work naturally because the URL is the single source of truth. React Router is in the dependency tree, but we only use its `useLocation`/`useNavigate` primitives under the hood.
 
-Why: at the time we needed exactly two routes (`/` and `/minimal`) and a dozen typed page states, and the URL-as-state mapping wanted to be hand-rolled so deep links and analytics could read a clean `?page=` enum.
+Why: we needed a handful of path routes plus a dozen typed page states, and a hand-rolled URL-as-state mapping keeps deep links clean and the page state fully typed.
 
 See [docs/NAVIGATION.md](docs/NAVIGATION.md).
 
@@ -145,7 +147,7 @@ Catalog ranges and citations follow Indian guidelines where they diverge (Vitami
 
 ---
 
-## Sharp edges worth memorising
+## Sharp edges worth knowing
 
 - **`Date.now()`, `Math.random()`, `new Date()` are fine in app code, but if you write deterministic-test code, freeze them.** The tests don't currently rely on this; just be aware.
 - **PowerShell 5.1 is the dev shell on Windows.** No `&&` chaining (`A; if ($?) { B }` instead). Bash via WSL also available.

@@ -168,12 +168,12 @@ If you must:
 
 ## Anti-patterns
 
-- **`dark:bg-…` Tailwind variants.** Never. The whole system is semantic re-binding, not class-variant overrides.
-- **`!important` on color rules.** Means you're fighting the cascade wrong. Find the source-order problem instead.
-- **`text-white` on accent backgrounds.** Use the on-color token. Dark mode will eat your contrast otherwise.
-- **`bg-gray-100` / `text-gray-900` / raw color names.** Use semantic tokens. Raw Tailwind colors don't theme.
-- **`rgba(R, G, B, A)` in inline styles.** Use the modern `rgb(R G B / A)` syntax for consistency and `color-mix` interop.
-- **Reading `localStorage.dc_theme` outside `loadTheme()`/`saveTheme()`.** The format is shared with the inline bootstrap; both readers have to agree.
+- **`dark:bg-…` Tailwind variants** — skip them; the whole system is semantic re-binding, not class-variant overrides.
+- **`!important` on color rules** — usually a sign the cascade can be fixed at the source; look for the lower-specificity declaration bleeding through.
+- **`text-white` on accent backgrounds** — use the on-color token, or dark mode will eat your contrast.
+- **`bg-gray-100` / `text-gray-900` / raw color names** — use semantic tokens; raw Tailwind colors don't re-theme.
+- **`rgba(R, G, B, A)` in inline styles** — use the modern `rgb(R G B / A)` syntax for consistency and `color-mix` interop.
+- **Reading `localStorage.dc_theme` outside `loadTheme()`/`saveTheme()`** — the format is shared with the external bootstrap (`public/theme-init.js`), so both readers have to agree.
 
 ---
 
