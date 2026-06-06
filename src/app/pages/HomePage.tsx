@@ -671,6 +671,7 @@ export default function HomePage() {
               >
                 <TrendsPane
                   trendsByPathway={trendsByPathway}
+                  asOf={ready?.uploadedAt}
                   openLearnMore={openLearnMore}
                 />
               </Disclosure>
@@ -976,6 +977,7 @@ function AllMarkersPane({
 
 function TrendsPane({
   trendsByPathway,
+  asOf,
   openLearnMore,
 }: {
   trendsByPathway: Array<{
@@ -985,6 +987,7 @@ function TrendsPane({
     categories: BiomarkerCategoryId[];
     markers: Biomarker[];
   }>;
+  asOf?: string;
   openLearnMore: (name: string) => (e: React.MouseEvent) => void;
 }) {
   return (
@@ -1019,6 +1022,7 @@ function TrendsPane({
                 <TrendRow
                   key={m.id}
                   marker={m}
+                  asOf={asOf}
                   onLearnMore={
                     getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
                   }

@@ -1,7 +1,8 @@
-import { Info, Minus, TrendingDown, TrendingUp } from 'lucide-react';
+import { Info, Minus, Target, TrendingDown, TrendingUp } from 'lucide-react';
 import {
   formatDelta,
   getPreviousValue,
+  getTrajectory,
   getTrend,
   getTrendTone,
   type Biomarker,
@@ -10,6 +11,9 @@ import Sparkline from './Sparkline';
 
 type Props = {
   marker: Biomarker;
+  /** Upload date of the report this marker came from (ISO yyyy-mm-dd).
+   *  Anchors the trajectory projection in real time; omit to hide it. */
+  asOf?: string;
   /** Click handler for the Info button — receives the event so the caller
    *  can capture currentTarget to restore focus when the modal closes. */
   onLearnMore?: (e: React.MouseEvent<HTMLButtonElement>) => void;
@@ -19,11 +23,25 @@ type Props = {
  * One row inside a pathway-grouped trends card (Zone 3 on the dashboard).
  * Shows: marker name • current value • delta vs previous • sparkline.
  */
-export default function TrendRow({ marker, onLearnMore }: Props) {
+export default function TrendRow({ marker, asOf, onLearnMore }: Props) {
   const trend = getTrend(marker);
   const tone = getTrendTone(marker);
   const prev = getPreviousValue(marker);
   const delta = formatDelta(marker);
+
+  // Forward projection. Only surfaced when the marker is out of band and
+  // either closing on it or drifting away — "within" / "holding" carry no
+  // forward-looking news worth a line. The band label tracks which range
+  // the projection targets (optimal sub-range vs healthy min/max) so the
+  // copy never says "healthy" when it means the tighter optimal band.
+  const trajectory = getTrajectory(marker, asOf);
+  const hasOptimal =
+    typeof marker.optimalMin === 'number' &&
+    typeof marker.optimalMax === 'number';
+  const bandLabel = hasOptimal ? 'optimal range' : 'healthy range';
+  const showTrajectory =
+    !!trajectory &&
+    (trajectory.movement === 'toward' || trajectory.movement === 'away');
 
   const Icon =
     trend === 'up' ? TrendingUp : trend === 'down' ? TrendingDown : Minus;
@@ -73,6 +91,24 @@ export default function TrendRow({ marker, onLearnMore }: Props) {
             </span>
           )}
         </div>
+        {showTrajectory && trajectory && (
+          <div
+            className={`mt-1 inline-flex items-center gap-1 text-micro font-semibold leading-tight ${
+              trajectory.movement === 'toward' ? 'text-good' : 'text-concern'
+            }`}
+          >
+            <Target size={10} strokeWidth={2.5} aria-hidden />
+            <span>
+              {trajectory.movement === 'toward'
+                ? trajectory.monthsToTarget
+                  ? `At this pace, in your ${bandLabel} in ~${trajectory.monthsToTarget} ${
+                      trajectory.monthsToTarget === 1 ? 'month' : 'months'
+                    }`
+                  : `Trending toward your ${bandLabel}`
+                : `Trending away from your ${bandLabel}`}
+            </span>
+          </div>
+        )}
       </div>
 
       <div className="shrink-0">
