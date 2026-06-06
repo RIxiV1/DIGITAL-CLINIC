@@ -265,11 +265,12 @@ export default function UploadPage() {
         >
           <Info size={16} className="text-indigo-700 shrink-0 mt-0.5" />
           <p className="text-caption leading-relaxed text-indigo-900">
-            <span className="font-semibold">PDFs and photos are parsed in your browser</span> —
-            text extraction or OCR, all locally. OCR can take 10–30 seconds
-            on a phone. If we can’t recognise anything in your file, you’ll
-            see a clear error — we don’t make up values to fill in. Your
-            file never leaves your device.
+            <span className="font-semibold">Everything is parsed in your browser.</span>{' '}
+            A <span className="font-semibold">PDF with selectable text is
+            near-instant</span>; photos and scans run OCR (10–30 seconds on a
+            phone), so upload the PDF when you have it. If we can’t recognise
+            anything, you’ll see a clear error — we don’t make up values to
+            fill in. Your file never leaves your device.
           </p>
         </div>
 
