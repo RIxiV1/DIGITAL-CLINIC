@@ -68,7 +68,7 @@ export type Page =
   | { type: 'profile' };
 ```
 
-`navigate(page)` pushes a new URL with `?page=...` params; `replace(page)` swaps the current entry. Browser back/forward works through `location.key`. The whole thing is ~250 lines. See [NAVIGATION.md](NAVIGATION.md) for the deep dive.
+`navigate(page)` pushes a new URL **path** (e.g. `/reports/:id`), `replace(page)` rewrites the current entry, and `back()` defers to the browser. `page` is derived from the URL, so back/forward and pasted deep links work for free. The whole thing is ~250 lines. See [NAVIGATION.md](NAVIGATION.md) for the deep dive.
 
 ### QuizContext
 

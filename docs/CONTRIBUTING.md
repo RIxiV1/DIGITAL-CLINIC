@@ -1,6 +1,6 @@
 # Contributing
 
-How to make changes in this repo without breaking things. Geared at engineers and AI agents alike — if you're an AI, also read [`AGENTS.md`](../AGENTS.md) at the root.
+How to make changes here smoothly. Written for engineers and AI agents alike — if you're an AI, [`AGENTS.md`](../AGENTS.md) at the root is a good companion read.
 
 ---
 
@@ -43,7 +43,7 @@ The AI parser pipeline (Pipeline 3) needs a `GEMINI_API_KEY` env var to function
    npm run build   # tsc + vitest + vite — same gates as CI
    ```
 
-   If any of the three fail, you're not done. Don't push.
+   If any of the three fails, it's not ready yet — worth fixing before you push.
 
 3. **Commit. One logical change per commit.**
 
@@ -113,11 +113,11 @@ update aiParser.ts
 
 For trivial commits (typo fixes, lint), one-line is fine. For anything else, write a body that explains the motivation. Future-you will thank present-you.
 
-**Never:**
+**Please skip:**
 
-- Add `Co-Authored-By: Claude` or `🤖 Generated with [Claude Code]`. The repo owner has rewritten history more than once to scrub these.
-- Pass `--no-verify` to skip hooks unless explicitly asked.
-- Force-push to main. (You can't — it's protected — but don't try.)
+- AI-attribution tags like `Co-Authored-By: Claude` or `🤖 Generated with [Claude Code]`. We've had to scrub these from history before, so leaving them out saves everyone the cleanup.
+- `--no-verify` to skip hooks, unless someone explicitly asks for it.
+- Force-pushing to main — it's protected anyway, so it won't go through.
 
 ---
 
@@ -164,15 +164,15 @@ The parser has the deepest test coverage. Real-lab-format fixtures live in [`src
 
 ---
 
-## Don't do these
+## A few things to avoid (and why)
 
-- **Don't add features beyond what the task asks for.** A bug fix doesn't need surrounding cleanup. Three similar lines beat a premature abstraction.
-- **Don't add error handling for things that can't happen.** Trust framework guarantees. Only validate at system boundaries (user input, external APIs, localStorage).
-- **Don't write multi-paragraph docstrings.** A short comment above the function is plenty if the code is well-named.
-- **Don't introduce new dependencies without a hard reason.** Bundle size matters; the current main bundle is ~150 kB gzipped and we want to keep it there.
-- **Don't push WIP to main directly.** Branch + PR. Always.
-- **Don't bypass the `dc_*` zod schemas** when reading localStorage. The validation is the trust boundary against poisoned keys.
-- **Don't create planning, decision, or analysis Markdown files** unless explicitly asked. PR descriptions and commit messages are the durable record.
+- **Scope creep.** Keep a change to what the task asks for — a bug fix doesn't need surrounding cleanup, and three similar lines are fine without a premature abstraction.
+- **Defensive code for things that can't happen.** Trust framework guarantees; validate only at the real boundaries (user input, external APIs, localStorage).
+- **Multi-paragraph docstrings.** A short comment above a well-named function is usually plenty.
+- **New dependencies without a strong reason.** Bundle size matters — the main bundle is ~150 kB gzipped and we'd like to keep it there.
+- **Committing WIP straight to main.** Go through a branch + PR (main is protected anyway).
+- **Reading localStorage around the `dc_*` zod schemas.** That validation is our trust boundary against poisoned keys — go through the helpers.
+- **Creating planning / decision / analysis Markdown files** unless asked. PR descriptions and commit messages are the durable record.
 
 ---
 
