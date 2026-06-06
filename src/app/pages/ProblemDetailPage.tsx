@@ -1,9 +1,10 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   CalendarClock,
   CheckCircle2,
   ChevronDown,
+  Download,
   Info,
   Lightbulb,
 } from 'lucide-react';
@@ -35,9 +36,29 @@ export default function ProblemDetailPage({
    * fall back to sample only when there isn't one (e.g., a user who
    * came straight from the landing CTA without uploading anything).
    */
-  const sourceMarkers = useMemo(() => {
-    return getLatestReadyReport(reports)?.biomarkers ?? sampleBiomarkers;
-  }, [reports]);
+  const latestReport = useMemo(() => getLatestReadyReport(reports), [reports]);
+  const sourceMarkers = useMemo(
+    () => latestReport?.biomarkers ?? sampleBiomarkers,
+    [latestReport],
+  );
+
+  /** Doctor-handoff export. Offered only for a real (non-sample) report —
+   *  the deep dive otherwise dead-ends on "Back to my report" with no way
+   *  to act on what the user just read. Mirrors ReportResultsPage's lazy
+   *  import + ref-dedup so a double-tap doesn't spawn two PDFs while the
+   *  jspdf chunk is still resolving. */
+  const canDownloadDoctorPdf = !!latestReport && !latestReport.isSample;
+  const pdfBusyRef = useRef(false);
+  const handleDoctorPdf = async () => {
+    if (!latestReport || pdfBusyRef.current) return;
+    pdfBusyRef.current = true;
+    try {
+      const { generateReportPdf } = await import('../services/reportPdf');
+      generateReportPdf(latestReport);
+    } finally {
+      pdfBusyRef.current = false;
+    }
+  };
 
   /** Section disclosure. Most users land here from a flagged marker
    *  card on the dashboard — they came for the action plan (which
@@ -344,13 +365,29 @@ export default function ProblemDetailPage({
 
       <Container size="wide" className="mt-6 md:mt-8 md:pb-12">
         <div className="lg:max-w-3xl">
-          <Button
-            size="lg"
-            responsiveFullWidth
-            onClick={back}
-          >
-            Back to my report
-          </Button>
+          <div className="flex flex-col sm:flex-row gap-2.5">
+            {canDownloadDoctorPdf && (
+              <Button
+                size="lg"
+                variant="secondary"
+                responsiveFullWidth
+                leading={<Download size={18} />}
+                onClick={handleDoctorPdf}
+              >
+                Take this to your doctor
+              </Button>
+            )}
+            <Button size="lg" responsiveFullWidth onClick={back}>
+              Back to my report
+            </Button>
+          </div>
+          {canDownloadDoctorPdf && (
+            <p className="mt-2 text-caption text-muted leading-relaxed">
+              Downloads your full latest report as a clean PDF — flagged
+              markers, healthy ranges, and plain-English notes — to share at
+              your appointment.
+            </p>
+          )}
         </div>
       </Container>
 
