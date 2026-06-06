@@ -174,17 +174,10 @@ function HeroVisual() {
 
       {/* Hormonal Health Map card — overlaps the photo. Depicts a
           "window-chrome" mockup of the in-app hormonal-axis visual,
-          like a screenshot pasted onto the hero. `data-theme="light"`
-          scopes it OUT of the global theme so it stays a clean white
-          card with brand-blue ink in both themes — without this, the
-          inner `text-blue-700` / `bg-blue-600` / etc. tokens flip in
-          dark mode but the outer `bg-white` doesn't, producing the
-          same white-on-pastel / pastel-on-white contrast traps that
-          hit the Doctor Summary mockup. */}
+          like a screenshot pasted onto the hero. */}
       <div
-        data-theme="light"
         onMouseMove={prefersReducedMotion ? undefined : handleMouseMove}
-        className="group absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden"
+        className="group absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden"
       >
         {/* Spotlight overlay. Pointer-events-none so it never blocks
             interaction; opacity gated by the parent's :hover (via
@@ -226,7 +219,7 @@ function HeroVisual() {
               hormone="LH · FSH"
             />
             <MapRow
-              icon={<CircleDot size={11} className="text-white" />}
+              icon={<CircleDot size={11} className="text-on-primary" />}
               organ="Testes"
               hormone="Testosterone"
               highlighted
@@ -258,8 +251,8 @@ function MapRow({
       <div
         className={`grid place-items-center w-6 h-6 rounded-full shrink-0 ${
           highlighted
-            ? 'bg-blue-600 ring-2 ring-white'
-            : 'bg-white border border-blue-200'
+            ? 'bg-blue-600 ring-2 ring-surface'
+            : 'bg-surface border border-blue-200'
         }`}
       >
         {icon}

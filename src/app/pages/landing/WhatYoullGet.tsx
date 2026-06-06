@@ -110,20 +110,11 @@ export default function WhatYoullGet() {
 }
 
 function DoctorSummaryMockup() {
-  /* `data-theme="light"` scopes this entire mockup subtree to the
-   * light-mode token values, regardless of the page-level theme. The
-   * mockup depicts a printed PDF "Doctor Summary" letter — its visual
-   * job is to look like a piece of white paper a user could hand to
-   * a clinician, so it must stay paper-white in dark mode too. Without
-   * this opt-out, the mockup's internal text-ink / text-blue-700 /
-   * bg-canvas tokens would flip with the page and produce illegible
-   * white-on-white + muddy gray rows. See the [data-theme='light']
-   * block in index.css for the re-binding details. */
   return (
-    <div className="relative" data-theme="light">
-      <div className="absolute -inset-2 rounded-[24px] bg-gradient-to-br from-blue-100/70 via-white to-blue-50 blur-2xl opacity-60 pointer-events-none" />
+    <div className="relative">
+      <div className="absolute -inset-2 rounded-[24px] bg-gradient-to-br from-blue-100/70 via-surface to-blue-50 blur-2xl opacity-60 pointer-events-none" />
 
-      <div className="relative rounded-2xl bg-white border border-line shadow-clinical-lg overflow-hidden">
+      <div className="relative rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden">
         {/* Header — Doctor Summary */}
         <div className="px-5 md:px-6 py-4 border-b border-line bg-blue-50/40">
           <div className="flex items-center justify-between">
@@ -149,7 +140,7 @@ function DoctorSummaryMockup() {
         <div className="p-5 md:p-6 grid md:grid-cols-5 gap-5">
           {/* Left — Top-line read */}
           <div className="md:col-span-2 space-y-4">
-            <div className="rounded-2xl bg-blue-600 text-white p-5 shadow-clinical relative overflow-hidden">
+            <div className="rounded-2xl bg-blue-600 text-on-primary p-5 shadow-clinical relative overflow-hidden">
               <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-blue-400/30 blur-2xl" />
               <div className="relative">
                 <div className="text-micro font-bold uppercase tracking-label text-blue-100">
@@ -163,7 +154,7 @@ function DoctorSummaryMockup() {
               </div>
             </div>
 
-            <div className="rounded-2xl bg-white border border-line p-4">
+            <div className="rounded-2xl bg-surface border border-line p-4">
               <div className="text-micro font-bold uppercase tracking-label text-blue-700">
                 Specialist
               </div>
@@ -183,7 +174,7 @@ function DoctorSummaryMockup() {
 
           {/* Right — Recommended tests with The Why */}
           <div className="md:col-span-3">
-            <div className="rounded-2xl bg-white border border-line p-4 md:p-5">
+            <div className="rounded-2xl bg-surface border border-line p-4 md:p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <div className="text-micro font-bold uppercase tracking-label text-blue-700">
@@ -260,7 +251,7 @@ function TestRow({
         : 'bg-blue-50 text-blue-700 border-blue-100';
   return (
     <div className="rounded-xl border border-line bg-canvas/40 p-3 flex items-start gap-3">
-      <span className="grid place-items-center shrink-0 w-7 h-7 rounded-lg bg-white border border-blue-100 text-blue-700 font-mono text-micro font-bold">
+      <span className="grid place-items-center shrink-0 w-7 h-7 rounded-lg bg-surface border border-blue-100 text-blue-700 font-mono text-micro font-bold">
         {index}
       </span>
       <div className="flex-1 min-w-0">
