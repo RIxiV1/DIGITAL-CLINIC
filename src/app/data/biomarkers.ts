@@ -69,6 +69,17 @@ export type Biomarker = {
    *  on the BiomarkerBar's expanded view. Undefined when the marker
    *  has no optimal sub-range (no claim to source). */
   optimalSource?: OptimalSource;
+  /** Clinical "action" threshold — the value past which clinicians
+   *  typically diagnose/treat, DISTINCT from the healthy-range edge.
+   *  Rendered as a harm-anchor tick so an out-of-range value sitting
+   *  BELOW it reads as "elevated, not yet at the action line" — the
+   *  over-triage-reducing pattern from Zikmund-Fisher et al., JMIR 2018.
+   *  Set actionMax for down-is-bad markers (glucose, HbA1c); actionMin
+   *  for up-is-good. Requires actionSource — same cite-or-omit rule as
+   *  optimalSource. Never render a fabricated clinical line. */
+  actionMin?: number;
+  actionMax?: number;
+  actionSource?: OptimalSource;
   status: BiomarkerStatus;
   category: BiomarkerCategoryId;
   /**
@@ -970,6 +981,12 @@ export type BiomarkerTemplate = {
    *  undefined; templates that DO set optimal ranges should always
    *  attach a source. */
   optimalSource?: OptimalSource;
+  /** Harm-anchor clinical action threshold + its citation. See the
+   *  Biomarker type for semantics. Cite actionSource whenever set —
+   *  an uncited action line is a fabricated clinical claim. */
+  actionMin?: number;
+  actionMax?: number;
+  actionSource?: OptimalSource;
   category: BiomarkerCategoryId;
   direction?: GradientDirection;
   simpleName?: string;
@@ -1083,6 +1100,9 @@ export function markerFromTemplate(
     optimalMin: template.optimalMin,
     optimalMax: template.optimalMax,
     optimalSource: template.optimalSource,
+    actionMin: template.actionMin,
+    actionMax: template.actionMax,
+    actionSource: template.actionSource,
     status: statusForValue(template, value, labRef),
     category: template.category,
     direction: template.direction,
@@ -1210,6 +1230,15 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     // endocrinology engagement, not a 12-week home plan.
     criticalHigh: 10,
     physicalMin: 3, physicalMax: 18,
+    // Harm-anchor: the ADA diabetes diagnostic line. A reading above the
+    // 5.7% prediabetes ceiling but below 6.5% is "prediabetic, not
+    // diabetic" — the tick shows that gap so it doesn't read as alarming.
+    actionMax: 6.5,
+    actionSource: {
+      label: 'the ADA diabetes diagnostic threshold (HbA1c ≥6.5%)',
+      url: 'https://diabetes.org/about-diabetes/diagnosis',
+      audience: 'adults',
+    },
     category: 'metabolic', direction: 'down',
     simpleName: '3-month sugar average',
     plain: 'Your average blood sugar over 3 months. Below 5.7% is healthy; the optimal band is tighter still.',
@@ -1232,6 +1261,16 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     // Physical bounds: 30 floor (incompatible with consciousness below);
     // 800 ceiling (reported extreme in DKA case literature).
     physicalMin: 30, physicalMax: 800,
+    // Harm-anchor: the ADA diabetes diagnostic line. 100–125 mg/dL is
+    // prediabetic (impaired fasting glucose); ≥126 is diagnostic. The
+    // tick separates "borderline" from "diagnostic" so the former reads
+    // calmly.
+    actionMax: 126,
+    actionSource: {
+      label: 'the ADA diabetes diagnostic threshold (fasting glucose ≥126 mg/dL)',
+      url: 'https://diabetes.org/about-diabetes/diagnosis',
+      audience: 'adults',
+    },
     category: 'metabolic', direction: 'down',
     simpleName: 'Blood sugar this morning',
     plain: 'A walk after every meal pulls a borderline reading comfortably back down.',
