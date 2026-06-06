@@ -333,10 +333,11 @@ a,
 /*                                                                     */
 /* Re-binds every token the dark theme overrides back to its light    */
 /* value, scoped to a [data-theme='light'] DOM subtree. Used to opt   */
-/* specific surfaces OUT of the global theme — currently the          */
-/* WhatYoullGet Doctor Summary mockup, which depicts a printed-PDF    */
-/* representation that has to stay paper-white regardless of the      */
-/* page-level theme.                                                  */
+/* specific surfaces OUT of the global theme. NOTE: currently no       */
+/* consumers — the landing hero card + Doctor-Summary mockup used to   */
+/* be light islands but now follow the page theme. Kept for genuine    */
+/* "must stay paper-white" surfaces (e.g. a print/PDF preview).        */
+/* See docs/THEMING.md → "Scope-local light islands".                  */
 /*                                                                     */
 /* Without this scope, the mockup's mix of static `bg-white`           */
 /* containers and dynamic `text-ink` / `text-blue-700` / `bg-canvas`  */

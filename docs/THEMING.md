@@ -52,24 +52,26 @@ We use `rgb(R G B / A)` and `color-mix(in oklab, …)` throughout — no legacy 
 
 ## How the bootstrap works (no FOUC)
 
-The theme is stamped on `<html data-theme="...">` by an inline script in `index.html` that runs *before* React mounts. Without this, the page would paint in light mode (the CSS default), then flicker to dark when React hydrates and reads `localStorage`.
+The theme is stamped on `<html data-theme="...">` by a script that runs
+*before* React mounts. Without it, the page paints in light mode (the CSS
+default) then flickers to dark when React reads `localStorage`.
 
-```html
-<!-- index.html, inside <head>, BEFORE the React entry script -->
-<script>
-  (function() {
-    var theme = 'dark';
-    try {
-      var saved = localStorage.getItem('dc_theme');
-      if (saved === 'light') theme = 'light';
-    } catch (e) { /* private mode / disabled storage */ }
-    document.documentElement.dataset.theme = theme;
+> ⚠️ **This script lives in [`public/theme-init.js`](../public/theme-init.js) — an EXTERNAL file, loaded synchronously from `<head>`. It is deliberately NOT inline.** The production CSP in `vercel.json` is `script-src 'self'` with **no `'unsafe-inline'`**, which silently blocks inline scripts. As an inline `<script>` the bootstrap never ran in prod — `data-theme` stayed unset and the deployed site loaded in **light** on fresh devices, while local dev (no CSP) looked fine. A same-origin file satisfies `'self'` with no CSP hash to maintain, and a blocking `<head>` script still runs before first paint. **Don't move it back inline.** If you edit it, it's still just one same-origin file — no CSP change needed.
 
-    var themeColor = theme === 'light' ? '#F8F9FA' : '#0B0F1A';
-    var meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', themeColor);
-  })();
-</script>
+```js
+// public/theme-init.js — referenced as <script src="/theme-init.js"></script>
+(function () {
+  var theme = 'dark';
+  try {
+    var saved = localStorage.getItem('dc_theme');
+    if (saved === 'light') theme = 'light';
+  } catch (e) { /* private mode / disabled storage */ }
+  document.documentElement.dataset.theme = theme;
+
+  var themeColor = theme === 'light' ? '#F8F9FA' : '#0B0F1A';
+  var meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', themeColor);
+})();
 ```
 
 Three things this script does:
@@ -116,17 +118,26 @@ The `theme-transitioning` class adds a global `transition: background-color 240m
 
 ## Scope-local light islands
 
-Sometimes you want a section of a dark-mode page to stay light — for example, the Doctor Summary mockup on the landing hero is designed to look like a printed clinic letter. It uses `data-theme="light"` scoped to its DOM subtree:
+The `[data-theme='light']` selector in `index.css` is written without
+`:root`, so it matches **any** element carrying the attribute — not just
+the document root. That lets you force a subtree to the light token
+bindings even on a dark page:
 
 ```tsx
 <div data-theme="light" className="rounded-2xl ...">
-  {/* This subtree uses the light token bindings even if the surrounding page is dark. */}
+  {/* This subtree uses the light token bindings even if the page is dark. */}
 </div>
 ```
 
-This works because the `[data-theme='light']` selector in `index.css` is written without `:root` — so it matches any element with that attribute, not just the document root.
+> **Currently there are no consumers.** The landing hero card and the
+> Doctor-Summary mockup used to be light islands (to look like printed
+> paper), but they were switched to follow the page theme — they now read
+> as dark app-screenshots, which is the better look since dark works
+> end-to-end. The mechanism is kept for genuine "must stay paper-white"
+> surfaces (e.g. a future print/PDF preview).
 
-Use sparingly. Every scope-local island is a place where the global dark/light flip stops being uniform across the page.
+Use sparingly. Every scope-local island is a place where the global
+dark/light flip stops being uniform across the page.
 
 ---
 
@@ -169,7 +180,8 @@ If you must:
 ## Where to look in the code
 
 - [`src/index.css`](../src/index.css) — the entire theme system: `@theme :root`, `[data-theme='light']`, `:root[data-theme='dark']`, plus the global resets and `.theme-transitioning` keyframe.
-- [`index.html`](../index.html) — the no-FOUC bootstrap script.
+- [`public/theme-init.js`](../public/theme-init.js) — the no-FOUC bootstrap (external; loaded from [`index.html`](../index.html)). External because of the CSP — see the bootstrap section above.
+- [`public/manifest.webmanifest`](../public/manifest.webmanifest) — PWA manifest; its `theme_color`/`background_color` mirror the dark canvas. See [MOBILE.md](MOBILE.md).
 - [`src/app/pages/ProfilePage.tsx`](../src/app/pages/ProfilePage.tsx) — the theme toggle UI.
 - [`src/app/utils/persistence.ts`](../src/app/utils/persistence.ts) — `loadTheme()` / `saveTheme()`.
 
