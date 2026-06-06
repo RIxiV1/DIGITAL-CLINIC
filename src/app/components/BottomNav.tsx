@@ -1,8 +1,9 @@
 import { House, ClipboardList, User } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useNavigation, type Page } from '../AppContext';
+import { useLanguage, useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
 import { useIsMdUp } from '../utils/useMediaQuery';
+import type { TranslationKey } from '../i18n/translations';
 
 type ItemId = 'home' | 'quiz' | 'profile';
 
@@ -42,6 +43,7 @@ function navIdFor(page: Page): ItemId {
 
 export default function BottomNav() {
   const { page, replace } = useNavigation();
+  const { t } = useLanguage();
   // Skip mounting on lg+. The previous version used `md:hidden` to hide
   // the nav but still paid the DOM + framer-motion + event-listener cost
   // on desktops where it was never visible. Mirrors Header's
@@ -61,8 +63,9 @@ export default function BottomNav() {
     <nav className="md:hidden no-print fixed inset-x-0 bottom-0 z-30 safe-bottom">
       <div className="mx-auto max-w-md px-5 pb-3 pt-2 bg-gradient-to-t from-canvas via-canvas/95 to-transparent">
         <div className="bg-surface/85 backdrop-blur-md rounded-full border border-line/70 shadow-pop flex items-center p-1.5">
-          {items.map(({ id, label, page: target, Icon }) => {
+          {items.map(({ id, page: target, Icon }) => {
             const active = activeId === id;
+            const label = t(`nav.${id}` as TranslationKey);
             return (
               <button
                 key={id}

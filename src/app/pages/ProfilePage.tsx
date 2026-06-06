@@ -4,6 +4,7 @@ import {
   Bell,
   FileLock2,
   Home,
+  Languages,
   Lock,
   LogOut,
   Moon,
@@ -18,7 +19,8 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
 import DataPanelModal from '../components/DataPanelModal';
-import { useNavigation, useQuiz, useReports } from '../AppContext';
+import { useLanguage, useNavigation, useQuiz, useReports } from '../AppContext';
+import { availableLanguages, type LangCode } from '../i18n/translations';
 import { buildLabelMap, findOptionLabel } from '../data/quiz';
 import {
   loadAiAutoFallbackSetting,
@@ -32,6 +34,7 @@ export default function ProfilePage() {
   const { quiz, resetQuiz } = useQuiz();
   const { reports } = useReports();
   const { navigate, replace } = useNavigation();
+  const { lang, setLang, t } = useLanguage();
 
   const handleSignOut = () => {
     // Anonymous account model — sign out resets the quiz and bounces
@@ -336,10 +339,43 @@ export default function ProfilePage() {
                 Preferences
               </div>
               <h3 className="font-display text-display-sm leading-tight mt-1">
-                Parsing
+                App
               </h3>
 
               <Card padded={false} className="mt-4 overflow-hidden">
+                {/* Language — UI-chrome i18n. availableLanguages() only
+                    lists languages with translations, so a user can't
+                    pick one that would silently render English. The native
+                    16px-min select rule (index.css) avoids iOS zoom. */}
+                <div className="w-full px-5 py-4 flex items-center gap-3 border-b border-line/70">
+                  <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
+                    <Languages size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <label
+                      htmlFor="lang-select"
+                      className="font-semibold text-body-sm text-ink block"
+                    >
+                      {t('profile.language')}
+                    </label>
+                    <div className="text-caption text-muted text-pretty">
+                      {t('profile.languageHint')}
+                    </div>
+                  </div>
+                  <select
+                    id="lang-select"
+                    value={lang}
+                    onChange={(e) => setLang(e.target.value as LangCode)}
+                    aria-label={t('profile.language')}
+                    className="min-h-11 rounded-xl bg-canvas border border-line text-body-sm text-ink px-3 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                  >
+                    {availableLanguages().map((l) => (
+                      <option key={l.code} value={l.code}>
+                        {l.native}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <button
                   type="button"
                   onClick={toggleAiAutoFallback}
