@@ -16,7 +16,7 @@ export default function FinalCta({ onStart }: { onStart: () => void }) {
               }}
             />
             <div className="relative px-5 sm:px-8 md:px-12 py-12 sm:py-16 md:py-20 text-center">
-              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-black/10 dark:bg-white/10 backdrop-blur text-caption font-bold uppercase tracking-label">
+              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-ink/10 backdrop-blur text-caption font-bold uppercase tracking-label">
                 <Sparkles size={11} /> Free during MVP
               </span>
               <h2 className="font-sans font-bold text-display-md sm:text-display-lg md:text-display-xl leading-[1.05] tracking-tight mt-5 text-balance max-w-[22ch] mx-auto">
