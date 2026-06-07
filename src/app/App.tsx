@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { AnimatePresence, MotionConfig, motion } from 'framer-motion';
+import { MotionConfig, motion } from 'framer-motion';
 import { AppProvider, useNavigation, type Page } from './AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import { PageSkeleton } from './components/Skeleton';
@@ -123,32 +123,48 @@ function PageHost() {
       >
         Skip to main content
       </a>
-      {/* popLayout: when a page exits, framer-motion positions the
-          exiting child absolutely so the entering child can immediately
-          take its place in flow. Without an opaque background on the
-          motion.div, the canvas-colored body briefly shows through
-          the small y-translation during the cross-fade — perceived as
-          a white flash on slow devices.
-          - min-h-dvh keeps the exit wrapper at viewport height
-            throughout the animation so it doesn't visually collapse.
-          - bg-canvas makes the wrapper opaque so the body underneath
-            never peeks through during the y-shift. */}
-      <AnimatePresence mode="popLayout">
-        <motion.div
-          key={pageKey(page)}
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-          className="min-h-dvh w-full bg-canvas"
-        >
-          <Suspense fallback={fallbackForPage(page)}>
-            <main id="main-content" tabIndex={-1} className="outline-none">
-              {node}
-            </main>
-          </Suspense>
-        </motion.div>
-      </AnimatePresence>
+      {/* Page transition: enter-only animation, no AnimatePresence.
+
+          Why not AnimatePresence: this app's pages never reliably fired
+          framer-motion's exit-complete callback, so the exiting page was
+          never unmounted. Under mode="popLayout" that left a "ghost" of
+          the previous page (a data-motion-pop-id node) absolutely
+          positioned ON TOP of the live page — it intercepted pointer
+          events (taps hit a dead overlay) and broke scrolling, most
+          visibly after an in-app nav like Sign out where the tall exited
+          page sat over the landing and made it feel like an unresponsive
+          "infinite scroll". Under mode="wait" it was worse: the next page
+          never mounted at all (URL changed, content stayed on the old
+          page). Both failure modes traced to the same missing exit-
+          complete.
+
+          Keying the motion.div on the page identity makes React unmount
+          the old page and mount the new one synchronously on every
+          navigation — no ghost, content always swaps — while the keyed
+          remount still replays the initial→animate enter fade. We drop
+          the exit animation (the thing that never completed); the small
+          y/opacity enter is enough to avoid a hard cut.
+
+          Covered by a navigation DOM-leak test (mains/nav/node counts
+          must stay flat across repeated in-app navigations).
+
+          - min-h-dvh keeps the wrapper at viewport height so it doesn't
+            visually collapse during the enter.
+          - bg-canvas makes the wrapper opaque so the body never peeks
+            through during the y-shift. */}
+      <motion.div
+        key={pageKey(page)}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+        className="min-h-dvh w-full bg-canvas"
+      >
+        <Suspense fallback={fallbackForPage(page)}>
+          <main id="main-content" tabIndex={-1} className="outline-none">
+            {node}
+          </main>
+        </Suspense>
+      </motion.div>
     </div>
   );
 }
@@ -159,7 +175,7 @@ export default function App() {
       {/* MotionConfig with reducedMotion="user" cascades the OS-level
        *  prefers-reduced-motion preference into every framer-motion
        *  child. With this, the page-level entry choreography (the
-       *  PageHost AnimatePresence + the dozen custom cubic-bezier
+       *  PageHost page-enter motion.div + the dozen custom cubic-bezier
        *  transitions sprinkled across charts, sparklines, and the
        *  health ring) stops fighting users who explicitly asked for
        *  less motion. Animations don't disappear — duration collapses
