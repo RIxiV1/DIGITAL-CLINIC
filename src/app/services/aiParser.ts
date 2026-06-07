@@ -186,7 +186,7 @@ function hasContiguousWordMatch(
  * g/dL) return 1; the catalog's per-marker canonical unit already
  * enforces scale on those.
  */
-function unitMultiplier(unit: string | null | undefined): number {
+export function unitMultiplier(unit: string | null | undefined): number {
   if (!unit) return 1;
   const u = unit.toLowerCase().trim();
   if (/(^|[^a-z])(lakh|lac|lakhs)([^a-z]|$)/.test(u)) return 1e5;
@@ -266,7 +266,7 @@ export type AiMapResult = {
  * UI gets to tell the user "we saw N more markers your lab tested,
  * here they are."
  */
-function mapGeminiResultsToCatalog(results: GeminiMarker[]): AiMapResult {
+export function mapGeminiResultsToCatalog(results: GeminiMarker[]): AiMapResult {
   const seen = new Set<string>();
   const mapped: Biomarker[] = [];
   const unmapped: Array<{ name: string; value: number; unit: string }> = [];
