@@ -88,17 +88,23 @@ describe('pathToPage', () => {
   });
 
   /**
-   * Known limitation, documented as a test: pathToPage lowercases the
-   * WHOLE path, so a param with uppercase round-trips lowercased. This is
-   * SAFE today because every id is lowercase by construction (reportId =
-   * crypto.randomUUID hex, problemId = kebab-case). If a future id can
-   * contain uppercase, this test should fail loudly and the lowercasing
-   * must be scoped to the route segment only.
+   * Route params keep their original case (the keyword is still matched
+   * case-insensitively). IDs are lowercase by construction today, but a
+   * deep link must survive an uppercase id rather than silently resolving
+   * to a different (lowercased) id and 404-ing the lookup.
    */
-  it('lowercases param segments (safe only because ids are lowercase)', () => {
+  it('preserves param case while keeping the keyword case-insensitive', () => {
     expect(pathToPage('/reports/REP-AbC')).toEqual({
       type: 'results',
-      reportId: 'rep-abc',
+      reportId: 'REP-AbC',
+    });
+    expect(pathToPage('/Reports/REP-AbC')).toEqual({
+      type: 'results',
+      reportId: 'REP-AbC',
+    });
+    expect(pathToPage('/Topics/Low-VitD')).toEqual({
+      type: 'problem',
+      problemId: 'Low-VitD',
     });
   });
 });
