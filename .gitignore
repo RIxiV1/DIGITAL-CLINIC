@@ -7,12 +7,15 @@ dist-ssr
 *.log
 .DS_Store
 
-# UI-smoke artifacts (Playwright isn't an npm dep — these are
-# scratch scripts + their screenshot outputs). Leading slash limits
-# the PNG match to project root so public/*.png assets aren't caught.
+# Playwright e2e artifacts + ad-hoc UI-smoke scratch. Leading slash on
+# the PNG match limits it to project root so public/*.png assets aren't
+# caught. The committed e2e suite lives in /e2e (config: playwright.config.ts).
 /*.png
 /ui_smoke*.js
 /test-results
+/playwright-report
+/blob-report
+/playwright/.cache
 
 # Local AI assistant configuration
 .claude/

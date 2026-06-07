@@ -11,7 +11,8 @@
     "build": "tsc --noEmit && vitest run && vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@google/generative-ai": "^0.21.0",
@@ -26,6 +27,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.9.1",
