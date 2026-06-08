@@ -101,7 +101,7 @@ function ensureSpace(ctx: Ctx, neededMm: number): void {
  * PDF output. Without this, μIU/mL on screen becomes a blank box in
  * the downloaded PDF.
  */
-function asciize(text: string): string {
+export function asciize(text: string): string {
   return text
     .replace(/[‘’]/g, "'") // curly single quotes
     .replace(/[“”]/g, '"') // curly double quotes
@@ -314,7 +314,7 @@ type Tier = {
   color: readonly [number, number, number];
 };
 
-function tierForMarker(marker: Biomarker): Tier {
+export function tierForMarker(marker: Biomarker): Tier {
   if (marker.status === 'critical') {
     return { label: 'SEE A DOCTOR', color: COLOR.concern };
   }
@@ -385,8 +385,13 @@ function drawFooters(ctx: Ctx): void {
 /* Public entry point                                                   */
 /* ------------------------------------------------------------------ */
 
-/** Build a clean PDF of the given report and trigger a browser download. */
-export function generateReportPdf(report: Report): void {
+/**
+ * Build the report PDF document — everything except triggering the
+ * download. Split out from generateReportPdf so the full layout (page
+ * breaks, two-pass card measure, category ordering, tier badges) can be
+ * exercised in tests without a DOM/save step.
+ */
+export function buildReportPdf(report: Report): jsPDF {
   const ctx = newCtx();
 
   drawHeader(ctx, report);
@@ -414,7 +419,12 @@ export function generateReportPdf(report: Report): void {
 
   drawDisclaimer(ctx);
   drawFooters(ctx);
+  return ctx.doc;
+}
 
+/** Build a clean PDF of the given report and trigger a browser download. */
+export function generateReportPdf(report: Report): void {
+  const doc = buildReportPdf(report);
   // Filename: safe-slug from the report name. The user's browser
   // shows a "Save as" dialog if their settings prompt; otherwise the
   // PDF lands in the default download folder.
@@ -423,5 +433,5 @@ export function generateReportPdf(report: Report): void {
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-+|-+$/g, '') || 'report';
-  ctx.doc.save(`formen-${slug}.pdf`);
+  doc.save(`formen-${slug}.pdf`);
 }
