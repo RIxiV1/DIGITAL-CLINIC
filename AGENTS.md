@@ -33,7 +33,7 @@ DIGITAL CLINIC/
 │   ├── index.css                   # Tailwind v4 @theme + dark-mode token overrides
 │   ├── main.tsx                    # React.StrictMode bootstrap
 │   └── app/
-│       ├── App.tsx                 # PageHost: lazy routing + AnimatePresence
+│       ├── App.tsx                 # PageHost: lazy routing + keyed enter-only page motion (no AnimatePresence)
 │       ├── AppContext.tsx          # Combined provider wrapper
 │       ├── components/             # Shared atoms (Button, Card, Container, Pill, etc.)
 │       ├── contexts/               # Navigation, Quiz, Reports, Language contexts
@@ -78,6 +78,7 @@ Read the one matching what you're touching before you grep — each is a focused
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | The big picture: the four contexts, the upload flow, persistence, code-splitting |
 | [docs/NAVIGATION.md](docs/NAVIGATION.md) | The hand-rolled no-router `Page`-union navigation + the StrictMode async gotcha |
 | [docs/PARSER.md](docs/PARSER.md) | The three-pipeline parser, the biomarker catalog + its fields (optimal / action / critical), India-localized ranges |
+| [docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md) | How a value becomes optimal/borderline/out-of-range/critical, the "trust the pathologist" rule, cite-or-omit, range validation, and known accuracy caveats |
 | [docs/THEMING.md](docs/THEMING.md) | Dark-default semantic tokens, the external (CSP-safe) theme bootstrap, on-color contrast |
 | [docs/I18N.md](docs/I18N.md) | The UI-language system: dictionary, English-fallback chain, adding keys/languages |
 | [docs/MOBILE.md](docs/MOBILE.md) | Mobile-first patterns + footguns: PWA, fixed nav, `min-w-0`, touch targets, OCR prewarm |
@@ -143,7 +144,7 @@ The app ships a web manifest + maskable icons (installable / standalone). Mobile
 
 ### 10. Reference ranges are India-localized; "harm-anchor" ticks must be cited
 
-Catalog ranges and citations follow Indian guidelines where they diverge (Vitamin D ≥20, male haemoglobin ≥13, LDL → Lipid Association of India, diabetes → WHO/ICMR). A marker can carry a cited `actionMin`/`actionMax` ("harm-anchor") rendered as a reference tick on the result bar — but **only with a source** (cite-or-omit, same rule as optimal ranges; never a fabricated clinical line). See [docs/PARSER.md](docs/PARSER.md).
+Catalog ranges and citations follow Indian guidelines where they diverge (Vitamin D ≥20, male haemoglobin ≥13, LDL → Lipid Association of India, diabetes → WHO/ICMR). A marker can carry a cited `actionMin`/`actionMax` ("harm-anchor") rendered as a reference tick on the result bar — but **only with a source** (cite-or-omit, same rule as optimal ranges; never a fabricated clinical line). How a value then becomes a status tier (and why `criticalHigh` fires even when the lab's printed range says otherwise) is in [docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md). See also [docs/PARSER.md](docs/PARSER.md).
 
 ---
 
