@@ -10,7 +10,7 @@ import { useEffect, useState } from 'react';
  * mounts both trees and pays the framer-motion / event-listener cost
  * for the invisible one.
  */
-export function useMediaQuery(query: string): boolean {
+function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() => {
     if (typeof window === 'undefined' || !window.matchMedia) return false;
     return window.matchMedia(query).matches;

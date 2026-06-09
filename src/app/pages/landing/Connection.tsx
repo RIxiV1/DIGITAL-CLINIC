@@ -137,7 +137,7 @@ export default function ConnectionSection({
  * Replaces the previous radial "hub + spokes" treatment, which read as a
  * generic healthtech logo. This version actually teaches the science.
  */
-export function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
+function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
   if (compact) return <CascadeCompact />;
   return <CascadeBig />;
 }

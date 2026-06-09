@@ -9,7 +9,7 @@ type Problem = {
   relatedMarkerIds: string[];
 };
 
-export const problems: Record<string, Problem> = {
+const problems: Record<string, Problem> = {
   'low-testosterone': {
     id: 'low-testosterone',
     title: 'Low Testosterone',

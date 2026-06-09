@@ -24,7 +24,7 @@ import type { QuizAnswers } from '../AppContext';
 /* Marker inventory — every marker the system can recommend            */
 /* ------------------------------------------------------------------ */
 
-export const M = {
+const M = {
   // Foundational
   TOTAL_T: 'Total Testosterone',
   FREE_T: 'Free Testosterone',
@@ -64,7 +64,7 @@ export const M = {
   SEMEN: 'Semen Analysis',
 } as const;
 
-export type Marker = (typeof M)[keyof typeof M];
+type Marker = (typeof M)[keyof typeof M];
 const ALL_MARKERS: Marker[] = Object.values(M);
 
 /* ------------------------------------------------------------------ */

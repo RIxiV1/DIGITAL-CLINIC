@@ -7,7 +7,7 @@ import {
 import type { ReportBadge } from '../components/StatusBadge';
 import { formatDate } from '../utils/uiUtils';
 
-export type ReportStatus = 'processing' | 'ready';
+type ReportStatus = 'processing' | 'ready';
 
 export type Report = {
   id: string;

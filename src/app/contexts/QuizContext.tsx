@@ -41,7 +41,7 @@ export type RiskSystemId =
   | 'erectileDysfunction'
   | 'cardiovascular';
 
-export type RiskTier = 'low' | 'moderate' | 'high';
+type RiskTier = 'low' | 'moderate' | 'high';
 
 /** Human-facing label for each clinical system. Phrased as "signals
  *  for X" rather than "X risk indicators" — the algorithm outputs a

@@ -16,7 +16,3 @@ dist-ssr
 
 # Local AI assistant configuration
 .claude/
-
-# Deployment / Environment config
-vercel.json
-.nvmrc

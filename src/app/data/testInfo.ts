@@ -6,7 +6,7 @@
 
 import type { LearnMore } from './markerInfo';
 
-export const testInfo: Record<string, LearnMore> = {
+const testInfo: Record<string, LearnMore> = {
   foundational: {
     measures:
       'The six numbers every man should know: testosterone (total and the active part), the protein that carries it (SHBG), Vitamin D, the thyroid signal (TSH), and morning blood sugar. Done first thing in the morning, on an empty stomach — that’s when testosterone is naturally highest.',

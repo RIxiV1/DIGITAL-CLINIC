@@ -227,7 +227,7 @@ function isPdfTextItem(item: unknown): item is PdfTextItemLike {
  * path (reportPdf.ts) flips back to U+00B5 because that's the only
  * one in Helvetica's WinAnsiEncoding.
  */
-export function normalizeMu(s: string): string {
+function normalizeMu(s: string): string {
   return s.replace(/µ/g, 'μ');
 }
 
@@ -567,15 +567,8 @@ type PdfOcrResult = {
  * `===` or `PAGE_BOUNDARY`). Used as a split point downstream so a
  * skipped page can't glue a marker on page 1 to a digit on page 3
  * through the [^\n]{0,80}? between-window.
- *
- * Kept private — callers should use `splitOnPageBoundary()` rather
- * than reach for the string literal.
  */
 const PAGE_BOUNDARY_SENTINEL = '\n\n===PAGE_BOUNDARY===\n\n';
-
-export function splitOnPageBoundary(text: string): string[] {
-  return text.split(PAGE_BOUNDARY_SENTINEL);
-}
 
 /**
  * Strip the internal page-boundary sentinel from text headed to the
