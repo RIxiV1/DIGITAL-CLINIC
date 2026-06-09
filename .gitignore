@@ -7,11 +7,12 @@ dist-ssr
 *.log
 .DS_Store
 
-# UI-smoke artifacts (Playwright isn't an npm dep — these are
-# scratch scripts + their screenshot outputs). Leading slash limits
-# the PNG match to project root so public/*.png assets aren't caught.
+# Scratch / smoke artifacts (one-off scripts + their screenshot outputs).
+# Leading slash limits the PNG match to project root so public/*.png
+# assets aren't caught.
 /*.png
 /ui_smoke*.js
+/tmp_*
 /test-results
 
 # Local AI assistant configuration
