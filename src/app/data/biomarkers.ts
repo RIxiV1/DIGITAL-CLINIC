@@ -43,7 +43,7 @@ export type BiomarkerReading = {
  * men, age 18-65), specify it here so the UI can disclose the scope of
  * the claim. Undefined audience defaults to "adults" in the render.
  */
-export type OptimalSource = {
+type OptimalSource = {
   label: string;
   url?: string;
   audience?: string;
@@ -672,47 +672,6 @@ export function bottomLineFor(markers: Biomarker[] = sampleBiomarkers) {
     line = `Two things to focus on: ${concerns.slice(0, 2).join(' and ')}. Both are reversible with the same set of habits — sleep, movement, and a couple of nutrient swaps.`;
   }
   return line;
-}
-
-/* ------------------------------------------------------------------ */
-/* Cleared-status helper — celebrates the "fixed" case in the UI       */
-/* ------------------------------------------------------------------ */
-
-/**
- * `true` when the marker's most recent prior reading was 'attention',
- * 'concern' or 'critical' AND the current reading is 'good'. Used by
- * the dashboard to surface "you fixed it!" copy on markers that have
- * crossed back into the optimal band — without this, an improvement
- * gets visually indistinguishable from a marker that's always been
- * fine.
- *
- * Does NOT mutate status. This is a transient UI-only derivation;
- * persistence treats the current reading as 'good' like any other.
- */
-export function isClearedSinceLast(marker: Biomarker): boolean {
-  if (marker.status !== 'good') return false;
-  if (!marker.history || marker.history.length === 0) return false;
-  // We don't store prior status; re-derive it by running statusForValue
-  // against the catalog template that produced this marker. Walk the
-  // catalog for the template — at this layer we have a Biomarker, not
-  // its template, but we can rebuild a synthetic template from the
-  // current marker's bounds (which were copied from the template at
-  // markerFromTemplate time).
-  const lastReading = marker.history[marker.history.length - 1];
-  const synthetic: BiomarkerTemplate = {
-    id: marker.id,
-    name: marker.name,
-    aliases: [],
-    unit: marker.unit,
-    min: marker.min,
-    max: marker.max,
-    optimalMin: marker.optimalMin,
-    optimalMax: marker.optimalMax,
-    category: marker.category,
-    plain: '',
-  };
-  const priorStatus = statusForValue(synthetic, lastReading.value);
-  return priorStatus !== 'good';
 }
 
 /* ------------------------------------------------------------------ */

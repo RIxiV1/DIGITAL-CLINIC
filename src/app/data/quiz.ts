@@ -31,7 +31,7 @@ export type QuizOption = {
  * opt-out option ("Nothing specific") can sit on its own without a
  * pseudo-heading.
  */
-export type QuizOptionGroup = {
+type QuizOptionGroup = {
   label?: string;
   options: QuizOption[];
 };
@@ -39,7 +39,7 @@ export type QuizOptionGroup = {
 /**
  * A sub-question inside a compound step (e.g. age + activity on one screen).
  */
-export type QuizSubStep = {
+type QuizSubStep = {
   field: 'age' | 'activity';
   question: string;
   layout: 'pills' | 'cards';

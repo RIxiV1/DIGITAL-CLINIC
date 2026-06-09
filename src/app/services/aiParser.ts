@@ -393,7 +393,7 @@ export type AiParseResult = {
   unmapped: Array<{ name: string; value: number; unit: string }>;
 };
 
-export class AiParseError extends Error {
+class AiParseError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
