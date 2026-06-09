@@ -12,6 +12,7 @@ import {
 import Button from '../components/Button';
 import Container from '../components/Container';
 import Header from '../components/Header';
+import Illustration from '../components/Illustration';
 import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useReports } from '../AppContext';
 import { makeReport } from '../data/reports';
@@ -372,21 +373,31 @@ export default function UploadPage() {
                   : 'border-line-strong bg-surface hover:border-blue-400 hover:bg-blue-50/40'
             }`}
           >
-            <motion.div
-              animate={{
-                y: dragging ? -6 : 0,
-                scale: dragging ? 1.06 : 1,
-                rotate: dragging ? -3 : 0,
-              }}
-              transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-              className={`mx-auto grid place-items-center w-16 h-16 rounded-3xl transition-colors ${
-                fileName
-                  ? 'bg-good-soft text-good'
-                  : 'bg-blue-50 text-blue-700 group-hover:bg-blue-100'
-              }`}
-            >
-              {fileName ? <FileText size={28} /> : <UploadCloud size={28} />}
-            </motion.div>
+            {!fileName && !dragging ? (
+              // Idle empty state: a friendly illustration of adding a
+              // report. Drag / chosen states fall through to the animated
+              // icon tile below so the drop affordance still reacts.
+              <Illustration
+                src="/illustrations/add-report.svg"
+                className="mx-auto w-32 sm:w-36 h-auto"
+              />
+            ) : (
+              <motion.div
+                animate={{
+                  y: dragging ? -6 : 0,
+                  scale: dragging ? 1.06 : 1,
+                  rotate: dragging ? -3 : 0,
+                }}
+                transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+                className={`mx-auto grid place-items-center w-16 h-16 rounded-3xl transition-colors ${
+                  fileName
+                    ? 'bg-good-soft text-good'
+                    : 'bg-blue-50 text-blue-700 group-hover:bg-blue-100'
+                }`}
+              >
+                {fileName ? <FileText size={28} /> : <UploadCloud size={28} />}
+              </motion.div>
+            )}
             <div className="mt-4 font-display text-body-lg text-ink leading-tight break-words">
               {fileName ?? (dragging ? 'Drop it here' : 'Tap to choose a file')}
             </div>

@@ -1,0 +1,15 @@
+Illustrations in this folder are from unDraw (https://undraw.co).
+
+License: unDraw license (https://undraw.co/license)
+  - Free for commercial and non-commercial use.
+  - No attribution required.
+  - Restriction: do not redistribute the illustrations as a pack, and do
+    not replicate the unDraw service itself.
+
+Source illustrations used (recolored: primary #6c63ff -> brand #2A6FD9):
+  report-analysis.svg  <- "Document Analysis"  (document-analysis_3c0y)
+  empty-reports.svg    <- "No data"            (no-data_ig65)
+  add-report.svg       <- "Add Files"          (add-files_s0fz)
+  error-warning.svg    <- "Warning"            (warning_tl76)
+
+Fetched from https://cdn.undraw.co/illustrations/<slug>.svg on 2026-06-09.
