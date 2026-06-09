@@ -143,6 +143,54 @@ describe('extractBiomarkersFromText — unit-in-alias matching', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Alias token boundaries + cross-row binding (P006 seminogram OCR)     */
+/*                                                                      */
+/* Regression suite for a real upload (Dr Lal PathLabs seminogram run   */
+/* through Tesseract): OCR dropped whole result-row blocks, leaving a    */
+/* stray row directly under each section header. The matcher then        */
+/* surfaced three WRONG clinical values, charted as fact:                */
+/*   - pH 11   (alias "pH" matched the "Ph" in "Physical Examination",   */
+/*              then bound the next number "Collection time 11.00")      */
+/*   - motility 5  ("Motility" header bound "Vitality 5.00 %")           */
+/*   - morphology 0 ("Morphology (Pap stain)" bound                      */
+/*                   "Excess residual cytoplasm 0.00 %")                  */
+/* The fix: a letter boundary on the alias, plus a letter-free crossed-  */
+/* line prefix so a header can't reach into the next labelled row.       */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — alias boundaries + cross-row binding', () => {
+  it('does not match alias "pH" inside the word "Physical"', () => {
+    const text = 'Physical Examination\nCollection time 11.00 AM/PM';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'semen-ph')).toBeUndefined();
+  });
+
+  it('still extracts a real same-line pH', () => {
+    const result = extractBiomarkersFromText('pH 7.5');
+    expect(result.find((m) => m.id === 'semen-ph')?.value).toBe(7.5);
+  });
+
+  it('does not bind the "Motility" header to the next row\'s value', () => {
+    const text = 'Motility\nVitality 5.00 % >54';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'sperm-motility-total')).toBeUndefined();
+  });
+
+  it('does not bind "Morphology" header to a different next-row value', () => {
+    const text = 'Morphology (Pap stain)\nExcess residual cytoplasm 0.00 %';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'sperm-morphology')).toBeUndefined();
+  });
+
+  it('still binds a value cell on the line below its own label', () => {
+    // The letter-free crossed-line guard must NOT break the genuine
+    // "label on its own line, bare value on the next" tabular layout.
+    const result = extractBiomarkersFromText('Hemoglobin\n13.5 g/dL');
+    expect(result.find((m) => m.id === 'hb')?.value).toBe(13.5);
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* Decimal repair + comma stripping (normalize)                        */
 /* ------------------------------------------------------------------ */
 

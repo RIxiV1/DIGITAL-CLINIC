@@ -765,7 +765,23 @@ function extractMarkerValue(
   // the current line to land on a digit on the next line — turning
   // "Total WBC Count 7200 /cumm\nTotal RBC Count 5.2 …" into a WBC
   // match for "5.2" when the right answer is "7200" on the same line.
-  const between = '(?:[^\\n]{0,40}?\\n)??[^\\n]{0,80}?';
+  // Two binding shapes, same-line preferred:
+  //   sameLine — alias and number on one reconstructed line.
+  //   nextLine — the "label on its own line, value on the next line"
+  //     tabular layout Indian labs use heavily. The post-newline run is
+  //     LETTER-FREE so we only bind to a bare value cell ("13.5",
+  //     "5.00 %"), never to a DIFFERENT row's label+value.
+  // Why the letter-free guard: when OCR drops a section's real data rows,
+  // a leftover row can sit directly under the section header. The header
+  // word then reaches across the newline into that unrelated row —
+  // "Motility\nVitality 5.00 %" made Total motility read 5 (vitality), and
+  // "Morphology (Pap stain)\nExcess residual cytoplasm 0.00 %" made
+  // Morphology read 0. Both are a header binding to the next labelled
+  // row's value; banning letters before the number on the crossed line
+  // structurally prevents it while preserving genuine value-cell layouts.
+  const sameLine = '[^\\n]{0,80}?';
+  const nextLine = '[^\\n]{0,40}?\\n[^A-Za-z\\n]{0,80}?';
+  const between = `(?:${sameLine}|${nextLine})`;
   // Number pattern with a leading negative lookbehind. Rejects:
   //   - one-sided reference cutoffs (`<2.00`, `>5.00`, `≤140`, `≥1.5`)
   //     — labs print these as their reference threshold, not as the
@@ -852,9 +868,20 @@ function extractMarkerValue(
     // version of the pattern. Adding `(?!\\w)` makes the engine reject
     // a digit run that abuts a letter on the right, which catches the
     // metadata-row false positives.
+    // Token-boundary guards around the alias. Without a RIGHT-side
+    // letter boundary, a short alias that is a prefix of a longer word
+    // matches inside it: 'pH' matched the "Ph" in "Physical Examination"
+    // (the seminogram section header), and the between-window then bound
+    // the next number — "Collection time 11.00" — so pH surfaced as 11
+    // instead of the real 7.5 two rows down. The LEFT-side guard is the
+    // mirror case (alias as a suffix, e.g. a stray "...someRBC"). Digits
+    // and symbols are intentionally NOT boundaries: aliases legitimately
+    // abut a value ("Density (million per ml)103") or end in '%'/')'.
+    const lb = '(?<![A-Za-z])';
+    const rb = '(?![A-Za-z])';
     const pattern = skipUnit
-      ? `${aliasEsc}${between}${numPattern}(?!\\w)`
-      : `${aliasEsc}${between}${numPattern}${tail}${unitGate}`;
+      ? `${lb}${aliasEsc}${rb}${between}${numPattern}(?!\\w)`
+      : `${lb}${aliasEsc}${rb}${between}${numPattern}${tail}${unitGate}`;
     const m = text.match(new RegExp(pattern, 'i'));
     if (!m) continue;
     const raw = parseFloat(m[1]);
