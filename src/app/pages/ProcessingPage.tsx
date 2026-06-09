@@ -9,13 +9,13 @@ import {
   FileText,
   Pencil,
   RotateCcw,
-  ScanLine,
   Sparkles,
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
 import Emoji from '../components/Emoji';
+import Illustration from '../components/Illustration';
 import Logo from '../components/Logo';
 import Pill from '../components/Pill';
 import StickyBottomBar from '../components/StickyBottomBar';
@@ -645,25 +645,22 @@ export default function ProcessingPage() {
           transition={{ duration: 0.4 }}
           className="relative"
         >
+          {/* Soft pulsing glow keeps the screen feeling alive while the
+              parse runs; the illustration itself floats gently above it. */}
           <motion.div
-            animate={{
-              boxShadow: [
-                '0 0 0 0 rgba(0,102,204,0.20)',
-                '0 0 0 28px rgba(0,102,204,0)',
-              ],
-            }}
-            transition={{ duration: 1.6, repeat: Infinity }}
-            className="grid place-items-center w-24 h-24 rounded-3xl bg-indigo-600 text-gold-400"
-          >
-            <ScanLine size={44} />
-          </motion.div>
+            aria-hidden
+            animate={{ opacity: [0.3, 0.55, 0.3], scale: [0.92, 1.06, 0.92] }}
+            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
+            className="absolute inset-0 -z-10 rounded-full bg-indigo-500/20 blur-2xl"
+          />
           <motion.div
-            initial={{ opacity: 0, scale: 0.5 }}
-            animate={{ opacity: [0, 1, 0], y: [4, -10] }}
-            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
-            className="absolute -top-2 -right-2 grid place-items-center w-7 h-7 rounded-full bg-gold-500 text-indigo-900"
+            animate={{ y: [0, -8, 0] }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
           >
-            <Sparkles size={14} />
+            <Illustration
+              src="/illustrations/report-analysis.svg"
+              className="mx-auto w-56 md:w-64 h-auto"
+            />
           </motion.div>
         </motion.div>
 

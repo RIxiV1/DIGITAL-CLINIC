@@ -18,6 +18,7 @@ import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import StatusBadge from '../components/StatusBadge';
 import DashboardHeadline from '../components/DashboardHeadline';
+import Illustration from '../components/Illustration';
 import MarkerAttentionCard from '../components/MarkerAttentionCard';
 import TrendRow from '../components/TrendRow';
 import LearnMoreModal from '../components/LearnMoreModal';
@@ -473,6 +474,10 @@ export default function HomePage() {
           mirrors what the user sees in each state. */}
       {!ready && reports.every((r) => r.status !== 'ready') && (
         <Container size="wide" className="mt-6 md:mt-8">
+          <Illustration
+            src="/illustrations/empty-reports.svg"
+            className="mx-auto mb-6 w-36 md:w-44 h-auto"
+          />
           <Pill tone="indigo" size="sm">
             What you’ll see
           </Pill>

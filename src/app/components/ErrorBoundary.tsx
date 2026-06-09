@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import Illustration from './Illustration';
 import { isChunkLoadError } from '../utils/lazyWithReload';
 import { wipeAllData } from '../utils/persistence';
 import { clearPendingUpload } from '../services/api';
@@ -106,12 +107,11 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-dvh bg-canvas grid place-items-center px-6 py-12">
           <div className="max-w-md text-center">
-            <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-concern-soft text-concern">
-              <span className="font-display text-display-md leading-none">
-                !
-              </span>
-            </div>
-            <div className="mt-5 text-micro uppercase tracking-eyebrow font-bold text-concern">
+            <Illustration
+              src="/illustrations/error-warning.svg"
+              className="mx-auto w-40 sm:w-48 h-auto"
+            />
+            <div className="mt-6 text-micro uppercase tracking-eyebrow font-bold text-concern">
               {isChunkError ? 'New version available' : 'Something broke'}
             </div>
             <h1 className="font-display text-display-md leading-tight mt-2 text-balance">
