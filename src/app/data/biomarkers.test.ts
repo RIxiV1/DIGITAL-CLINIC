@@ -67,6 +67,25 @@ describe('Blood Urea (bun) — urea-scale grading', () => {
   });
 });
 
+const SHBG = getTemplateById('shbg');
+if (!SHBG) {
+  throw new Error('Fixture template missing from catalog: shbg');
+}
+
+describe('SHBG — adult-male ceiling raised to 57 nmol/L', () => {
+  it('grades a healthy older-male value of 55 as good (was concern at the old max of 50)', () => {
+    expect(statusForValue(SHBG, 55)).toBe('good'); // inside 10–57
+  });
+
+  it('still flags a genuinely high SHBG above the ceiling', () => {
+    expect(statusForValue(SHBG, 60)).toBe('concern'); // above 57
+  });
+
+  it('still flags low SHBG (the metabolically relevant direction, unchanged)', () => {
+    expect(statusForValue(SHBG, 8)).toBe('concern'); // below 10
+  });
+});
+
 /* ------------------------------------------------------------------ */
 /* statusForValue                                                       */
 /* ------------------------------------------------------------------ */

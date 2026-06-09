@@ -1253,8 +1253,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     category: 'metabolic',
     direction: 'down',
     simpleName: '3-month sugar average',
+    // Plain copy carries the India reliability caveat at every tier (not
+    // just the harm-anchor tick, which only shows at concern/critical):
+    // iron-deficiency anaemia — very common in India — can skew HbA1c, so
+    // a borderline/raised value should be confirmed with fasting glucose.
     plain:
-      'Your average blood sugar over 3 months. Below 5.7% is healthy; the optimal band is tighter still.',
+      'Your average blood sugar over 3 months. Below 5.7% is healthy; the optimal band is tighter still. In India, anaemia (very common) can skew this number — confirm a borderline or raised result with a fasting glucose test.',
   },
   {
     id: 'glucose',
@@ -1813,7 +1817,13 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unit: 'nmol/L',
     unitAliases: ['nmol/l'],
     min: 10,
-    max: 50,
+    // Adult-male consensus is ~10–57 nmol/L (Mayo, LabCorp 16.5–55.9 for
+    // 20–49y, rising to 76.4 for >49y). The old ceiling of 50 sat below
+    // even the young-adult upper limit, so healthy older men — whose SHBG
+    // physiologically rises with age — read as falsely "high". 57 is the
+    // consensus ceiling; a lab printing its own range overrides this band
+    // anyway. The low end (10) is correct and unchanged.
+    max: 57,
     category: 'hormones',
     direction: 'band',
     simpleName: 'How much testosterone is biologically locked up',
