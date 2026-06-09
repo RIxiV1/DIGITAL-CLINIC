@@ -172,7 +172,11 @@ describe('cleanupOrphanProcessing', () => {
   });
 
   it('keeps a processing report whose pendingConfirm survives (restore path)', () => {
-    savePendingConfirm({ processingId: 'mid', fileName: 'f.pdf', biomarkers: [] });
+    savePendingConfirm({
+      processingId: 'mid',
+      fileName: 'f.pdf',
+      biomarkers: [],
+    });
     setReports([makeReport({ id: 'mid', status: 'processing' })]);
     expect(cleanupOrphanProcessing().pruned).toBe(0);
     expect((loadReports() as Array<{ id: string }>).map((r) => r.id)).toEqual([
@@ -207,7 +211,11 @@ describe('loadQuiz — partial-tolerance via .catch([])', () => {
 
 describe('loadPendingConfirm — injection guard', () => {
   it('round-trips a valid record', () => {
-    savePendingConfirm({ processingId: 'p1', fileName: 'r.pdf', biomarkers: [] });
+    savePendingConfirm({
+      processingId: 'p1',
+      fileName: 'r.pdf',
+      biomarkers: [],
+    });
     expect(loadPendingConfirm()?.processingId).toBe('p1');
   });
 

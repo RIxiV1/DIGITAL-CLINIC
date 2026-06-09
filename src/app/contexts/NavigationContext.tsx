@@ -86,12 +86,16 @@ export function pageToPath(page: Page): string {
  * Page union.
  */
 export function pathToPage(pathname: string): Page {
-  // Strip trailing slash and lowercase the leading segment for forgiving
-  // matches like "/Quiz" or "/quiz/".
-  const path = pathname.replace(/\/+$/, '').toLowerCase() || '/';
+  // Strip the trailing slash, then match the route KEYWORD case-
+  // insensitively (so "/Quiz" or "/quiz/" still resolve) while keeping
+  // the original case of route PARAMS. Lowercasing the whole path would
+  // corrupt a case-sensitive id — e.g. "/reports/REP-AbC" must not become
+  // reportId "rep-abc" (a "report not found" on refresh / deep link).
+  const trimmed = pathname.replace(/\/+$/, '') || '/';
+  const keyword = trimmed.toLowerCase();
 
   // Exact-match routes first.
-  switch (path) {
+  switch (keyword) {
     case '/':
     case '/minimal':
       return { type: 'landing' };
@@ -111,12 +115,13 @@ export function pathToPage(pathname: string): Page {
       return { type: 'profile' };
   }
 
-  // Parameterised routes.
-  const reportMatch = path.match(/^\/reports\/([^/]+)$/);
+  // Parameterised routes — keyword case-insensitive (`/i`), param case
+  // preserved by matching against `trimmed` rather than `keyword`.
+  const reportMatch = trimmed.match(/^\/reports\/([^/]+)$/i);
   if (reportMatch) {
     return { type: 'results', reportId: decodeURIComponent(reportMatch[1]) };
   }
-  const topicMatch = path.match(/^\/topics\/([^/]+)$/);
+  const topicMatch = trimmed.match(/^\/topics\/([^/]+)$/i);
   if (topicMatch) {
     return { type: 'problem', problemId: decodeURIComponent(topicMatch[1]) };
   }
@@ -150,7 +155,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   // back to history; this version inverts that, so back/forward and
   // direct URL entry naturally produce the right page without any
   // popstate handling at all.
-  const page = useMemo<Page>(() => pathToPage(location.pathname), [location.pathname]);
+  const page = useMemo<Page>(
+    () => pathToPage(location.pathname),
+    [location.pathname],
+  );
 
   // Session-start sentinel. react-router stamps every history entry
   // with a `location.key`; the very first one is "default". We capture
@@ -245,6 +253,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
 export function useNavigation(): NavigationValue {
   const ctx = useContext(NavigationContext);
-  if (!ctx) throw new Error('useNavigation must be used within NavigationProvider');
+  if (!ctx)
+    throw new Error('useNavigation must be used within NavigationProvider');
   return ctx;
 }

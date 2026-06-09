@@ -81,7 +81,11 @@ export function acquireBodyScrollLock(): () => void {
       // 'instant' so we don't smooth-scroll back — the user perceives
       // the modal closing AND the page snapping into place as one
       // continuous motion, not a two-stage animation.
-      window.scrollTo({ left: 0, top: restored.scrollY, behavior: 'instant' as ScrollBehavior });
+      window.scrollTo({
+        left: 0,
+        top: restored.scrollY,
+        behavior: 'instant' as ScrollBehavior,
+      });
     }
   };
 }

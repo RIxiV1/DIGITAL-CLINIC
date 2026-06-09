@@ -47,9 +47,7 @@ describe('buildLabelMap', () => {
 
 describe('findOptionLabel', () => {
   it('resolves an option id to its label for the right field', () => {
-    const step = quizSteps.find(
-      (s) => s.field && getStepOptions(s).length > 0,
-    );
+    const step = quizSteps.find((s) => s.field && getStepOptions(s).length > 0);
     expect(step?.field).toBeTruthy();
     const opt = getStepOptions(step!)[0];
     expect(findOptionLabel(step!.field!, opt.id)).toBe(opt.label);

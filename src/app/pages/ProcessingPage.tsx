@@ -149,7 +149,9 @@ export default function ProcessingPage() {
    *  navigate to /results until the user confirms — previously the
    *  app auto-routed and the user had no chance to verify what was
    *  extracted before being shown a "your report" dashboard. */
-  const [pendingConfirm, setPendingConfirm] = useState<ConfirmState | null>(null);
+  const [pendingConfirm, setPendingConfirm] = useState<ConfirmState | null>(
+    null,
+  );
   /** When set, ProcessingPage is in the auto-cascade state: the local
    *  pipeline failed on an image and we're invoking the Vision-LLM
    *  fallback automatically (without requiring the user to tap the
@@ -729,7 +731,9 @@ export default function ProcessingPage() {
                         className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full"
                       />
                     ) : (
-                      <span className="text-caption font-semibold">{i + 1}</span>
+                      <span className="text-caption font-semibold">
+                        {i + 1}
+                      </span>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -740,7 +744,9 @@ export default function ProcessingPage() {
                       <div className="mt-2 h-1 rounded-full bg-indigo-50 overflow-hidden">
                         <motion.div
                           initial={false}
-                          animate={{ width: `${Math.round(stepProgress * 100)}%` }}
+                          animate={{
+                            width: `${Math.round(stepProgress * 100)}%`,
+                          }}
                           transition={{ duration: 0.15, ease: 'linear' }}
                           className="h-full bg-indigo-600 rounded-full"
                         />
@@ -811,8 +817,8 @@ function AiCascadeView({
           Trying AI parser
         </h1>
         <p className="mt-2 text-body-sm text-ink-soft max-w-[22rem] text-pretty">
-          Our on-device read couldn’t recognise this layout. Handing the
-          image to Google Gemini for a second look.
+          Our on-device read couldn’t recognise this layout. Handing the image
+          to Google Gemini for a second look.
         </p>
 
         {/* Privacy disclosure — same copy as the manual button on
@@ -1000,13 +1006,16 @@ function ParseFailedView({
                         Partial OCR
                       </span>
                       {failure.ocrPagesSkipped} of {failure.ocrPagesAttempted}{' '}
-                      page{failure.ocrPagesAttempted === 1 ? '' : 's'}{' '}
-                      timed out before we could read{' '}
+                      page{failure.ocrPagesAttempted === 1 ? '' : 's'} timed out
+                      before we could read{' '}
                       {failure.ocrPagesAttempted === 1 ? 'it' : 'them'}. The
-                      remaining page{failure.ocrPagesAttempted - failure.ocrPagesSkipped === 1 ? '' : 's'}{' '}
-                      may not have had the values you were expecting.
-                      Retrying — or cropping the relevant section into a
-                      clearer photo — usually helps.
+                      remaining page
+                      {failure.ocrPagesAttempted - failure.ocrPagesSkipped === 1
+                        ? ''
+                        : 's'}{' '}
+                      may not have had the values you were expecting. Retrying —
+                      or cropping the relevant section into a clearer photo —
+                      usually helps.
                     </div>
                   )}
               </div>
@@ -1045,8 +1054,8 @@ function ParseFailedView({
                 </Button>
                 <p className="text-micro text-muted leading-relaxed -mt-1.5 px-1">
                   Sends this image to Google Gemini for parsing. The image
-                  leaves your device for this step; Google may retain it
-                  to improve their service. Free, no account needed.
+                  leaves your device for this step; Google may retain it to
+                  improve their service. Free, no account needed.
                 </p>
                 {aiError && (
                   <div
@@ -1223,9 +1232,9 @@ function ConfirmExtractedValuesView({
       .filter((c) => byCategory.has(c.id))
       .map((c) => ({
         category: c,
-        markers: (byCategory.get(c.id) ?? []).slice().sort(
-          (a, b) => severityRank[a.status] - severityRank[b.status],
-        ),
+        markers: (byCategory.get(c.id) ?? [])
+          .slice()
+          .sort((a, b) => severityRank[a.status] - severityRank[b.status]),
       }));
   }, [biomarkers]);
 
@@ -1248,9 +1257,9 @@ function ConfirmExtractedValuesView({
           </h1>
           <p className="mt-3 text-body-sm lg:text-body text-ink-soft text-pretty max-w-xl">
             Check each number against your report before continuing. We
-            deliberately only show what we could pull out — if a marker
-            you expected isn’t listed, it wasn’t in our catalog or our
-            parser couldn’t find a match.
+            deliberately only show what we could pull out — if a marker you
+            expected isn’t listed, it wasn’t in our catalog or our parser
+            couldn’t find a match.
           </p>
 
           {/* Status summary chips. Rendered ONLY when the category-card
@@ -1266,13 +1275,25 @@ function ConfirmExtractedValuesView({
           {grouped.length === 0 && (
             <div className="mt-5 flex flex-wrap gap-2">
               {counts.critical > 0 && (
-                <SummaryChip tone="critical" count={counts.critical} label="see a doctor" />
+                <SummaryChip
+                  tone="critical"
+                  count={counts.critical}
+                  label="see a doctor"
+                />
               )}
               {counts.concern > 0 && (
-                <SummaryChip tone="concern" count={counts.concern} label="need care" />
+                <SummaryChip
+                  tone="concern"
+                  count={counts.concern}
+                  label="need care"
+                />
               )}
               {counts.attention > 0 && (
-                <SummaryChip tone="attention" count={counts.attention} label="borderline" />
+                <SummaryChip
+                  tone="attention"
+                  count={counts.attention}
+                  label="borderline"
+                />
               )}
               {counts.good > 0 && (
                 <SummaryChip tone="good" count={counts.good} label="on track" />
@@ -1307,7 +1328,11 @@ function ConfirmExtractedValuesView({
           {counts.critical > 0 && (
             <Card padded={false} className="overflow-hidden border-concern">
               <div className="px-5 py-4 bg-concern text-on-status flex items-start gap-3">
-                <span aria-hidden role="img" className="text-body-lg leading-none">
+                <span
+                  aria-hidden
+                  role="img"
+                  className="text-body-lg leading-none"
+                >
                   🚨
                 </span>
                 <div className="flex-1 min-w-0">
@@ -1317,9 +1342,9 @@ function ConfirmExtractedValuesView({
                       : `${counts.critical} readings are in same-day-attention range`}
                   </div>
                   <p className="mt-1 text-caption text-white/85 leading-relaxed">
-                    These values are far enough outside the healthy range
-                    that magnitude itself is a clinical signal. Don't wait
-                    for a follow-up — contact a doctor today.
+                    These values are far enough outside the healthy range that
+                    magnitude itself is a clinical signal. Don't wait for a
+                    follow-up — contact a doctor today.
                   </p>
                 </div>
               </div>
@@ -1332,9 +1357,16 @@ function ConfirmExtractedValuesView({
               an older report's "Low / Borderline" verdicts may
               disagree with ours and the user deserves to know why. */}
           {semenStandardMismatch && (
-            <Card padded={false} className="overflow-hidden border-indigo-200/70">
+            <Card
+              padded={false}
+              className="overflow-hidden border-indigo-200/70"
+            >
               <div className="px-5 py-4 bg-indigo-50/60 flex items-start gap-3">
-                <span aria-hidden role="img" className="text-body-lg leading-none">
+                <span
+                  aria-hidden
+                  role="img"
+                  className="text-body-lg leading-none"
+                >
                   ℹ️
                 </span>
                 <div className="flex-1 min-w-0">
@@ -1342,12 +1374,12 @@ function ConfirmExtractedValuesView({
                     Your report uses WHO 2010 reference ranges
                   </div>
                   <p className="mt-1 text-caption text-ink-soft leading-relaxed">
-                    We score semen-axis markers against the WHO 2021
-                    (6th edition) standard. Your lab's "Low / Borderline /
-                    Normal" calls may disagree with ours — that's a
-                    real reference-standard difference, not a parser
-                    bug. The numbers are the numbers; the verdicts are
-                    where the standards diverge.
+                    We score semen-axis markers against the WHO 2021 (6th
+                    edition) standard. Your lab's "Low / Borderline / Normal"
+                    calls may disagree with ours — that's a real
+                    reference-standard difference, not a parser bug. The numbers
+                    are the numbers; the verdicts are where the standards
+                    diverge.
                   </p>
                 </div>
               </div>
@@ -1361,9 +1393,16 @@ function ConfirmExtractedValuesView({
           {ocrPagesAttempted &&
             ocrPagesSkipped !== undefined &&
             ocrPagesSkipped > 0 && (
-              <Card padded={false} className="overflow-hidden border-attention/30">
+              <Card
+                padded={false}
+                className="overflow-hidden border-attention/30"
+              >
                 <div className="px-5 py-4 bg-attention-soft/50 flex items-start gap-3">
-                  <span aria-hidden role="img" className="text-body-lg leading-none">
+                  <span
+                    aria-hidden
+                    role="img"
+                    className="text-body-lg leading-none"
+                  >
                     ⚠️
                   </span>
                   <div className="flex-1 min-w-0">
@@ -1371,10 +1410,11 @@ function ConfirmExtractedValuesView({
                       Some pages couldn’t be read
                     </div>
                     <p className="mt-1 text-caption text-ink-soft leading-relaxed">
-                      {ocrPagesSkipped} of {ocrPagesAttempted} page{ocrPagesAttempted === 1 ? '' : 's'}{' '}
-                      failed during text extraction (OCR timeout). Any values
-                      on those pages aren’t in the list below. If the report
-                      looks short, try re-uploading or use manual entry.
+                      {ocrPagesSkipped} of {ocrPagesAttempted} page
+                      {ocrPagesAttempted === 1 ? '' : 's'} failed during text
+                      extraction (OCR timeout). Any values on those pages aren’t
+                      in the list below. If the report looks short, try
+                      re-uploading or use manual entry.
                     </p>
                   </div>
                 </div>
@@ -1384,7 +1424,11 @@ function ConfirmExtractedValuesView({
           {grouped.map(({ category, markers }) => {
             const open = expandedCategoryIds.has(category.id);
             return (
-              <Card key={category.id} padded={false} className="overflow-hidden">
+              <Card
+                key={category.id}
+                padded={false}
+                className="overflow-hidden"
+              >
                 {/* Tinted category header — clickable to toggle the
                     marker list. Default-open for categories with any
                     concern marker; collapsed otherwise. Icon badge +
@@ -1400,7 +1444,10 @@ function ConfirmExtractedValuesView({
                   }`}
                 >
                   <div className="grid place-items-center w-10 h-10 rounded-2xl bg-surface border border-line/60 shadow-soft shrink-0">
-                    <Emoji label={category.name} className="text-body-lg leading-none">
+                    <Emoji
+                      label={category.name}
+                      className="text-body-lg leading-none"
+                    >
                       {category.icon}
                     </Emoji>
                   </div>
@@ -1426,11 +1473,7 @@ function ConfirmExtractedValuesView({
                 {open && (
                   <ul id={`confirm-category-${category.id}`}>
                     {markers.map((m, i) => (
-                      <MarkerRow
-                        key={m.id}
-                        marker={m}
-                        showTopBorder={i > 0}
-                      />
+                      <MarkerRow key={m.id} marker={m} showTopBorder={i > 0} />
                     ))}
                   </ul>
                 )}
@@ -1445,7 +1488,10 @@ function ConfirmExtractedValuesView({
               rows panel below as if the parser had missed them — but
               we deliberately don't analyze those sections. */}
           {ignoredCategory && (
-            <Card padded={false} className="overflow-hidden border-indigo-200/70">
+            <Card
+              padded={false}
+              className="overflow-hidden border-indigo-200/70"
+            >
               <div className="px-5 pt-4 pb-3 border-b border-indigo-100 bg-indigo-50/40 flex items-center gap-2">
                 <span aria-hidden role="img" className="text-body leading-none">
                   ℹ️
@@ -1482,10 +1528,17 @@ function ConfirmExtractedValuesView({
               default — the header still shows the count, the body
               expands on intent. Mirrors the raw-text disclosure below. */}
           {unrecognizedRows && unrecognizedRows.length > 0 && (
-            <Card padded={false} className="overflow-hidden border-amber-200/70">
+            <Card
+              padded={false}
+              className="overflow-hidden border-amber-200/70"
+            >
               <details className="group">
                 <summary className="cursor-pointer list-none px-5 pt-4 pb-3 bg-amber-50/40 flex items-center gap-2 hover:bg-amber-50/60 transition-colors">
-                  <span aria-hidden role="img" className="text-body leading-none">
+                  <span
+                    aria-hidden
+                    role="img"
+                    className="text-body leading-none"
+                  >
                     🔍
                   </span>
                   <div className="font-display text-body-sm leading-tight">
@@ -1502,10 +1555,10 @@ function ConfirmExtractedValuesView({
                 </summary>
                 <div className="px-5 py-3 border-t border-amber-100">
                   <p className="text-caption text-ink-soft leading-relaxed mb-2">
-                    Your report mentioned these values, but they aren’t in
-                    our catalog yet. Nothing was discarded — they just won’t
-                    appear in the dashboard. If any of these look important
-                    to you, let us know and we’ll add them.
+                    Your report mentioned these values, but they aren’t in our
+                    catalog yet. Nothing was discarded — they just won’t appear
+                    in the dashboard. If any of these look important to you, let
+                    us know and we’ll add them.
                   </p>
                   <ul className="text-caption font-mono text-ink-soft space-y-1">
                     {unrecognizedRows.map((row, i) => (
@@ -1599,21 +1652,21 @@ function SummaryChip({
   // "need care".
   if (tone === 'critical') {
     return (
-      <div
-        className="inline-flex items-center gap-2 pl-2.5 pr-3.5 h-9 rounded-full bg-concern text-on-status"
-      >
+      <div className="inline-flex items-center gap-2 pl-2.5 pr-3.5 h-9 rounded-full bg-concern text-on-status">
         <span className="w-2 h-2 rounded-full bg-white" aria-hidden />
         <span className="font-display text-body tabular-nums leading-none">
           {count}
         </span>
-        <span className="text-caption font-medium leading-none">
-          {label}
-        </span>
+        <span className="text-caption font-medium leading-none">{label}</span>
       </div>
     );
   }
   const dot =
-    tone === 'concern' ? 'bg-concern' : tone === 'attention' ? 'bg-attention' : 'bg-good';
+    tone === 'concern'
+      ? 'bg-concern'
+      : tone === 'attention'
+        ? 'bg-attention'
+        : 'bg-good';
   const bg =
     tone === 'concern'
       ? 'bg-concern-soft'
@@ -1621,13 +1674,19 @@ function SummaryChip({
         ? 'bg-attention-soft'
         : 'bg-good-soft';
   const text =
-    tone === 'concern' ? 'text-concern' : tone === 'attention' ? 'text-attention' : 'text-good';
+    tone === 'concern'
+      ? 'text-concern'
+      : tone === 'attention'
+        ? 'text-attention'
+        : 'text-good';
   return (
     <div
       className={`inline-flex items-center gap-2 pl-2.5 pr-3.5 h-9 rounded-full ${bg}`}
     >
       <span className={`w-2 h-2 rounded-full ${dot}`} aria-hidden />
-      <span className={`font-display text-body tabular-nums ${text} leading-none`}>
+      <span
+        className={`font-display text-body tabular-nums ${text} leading-none`}
+      >
         {count}
       </span>
       <span className={`text-caption font-medium ${text} leading-none`}>
@@ -1662,11 +1721,12 @@ function MarkerRow({
   // already the strongest signal in the design system; doubling it
   // would dilute. The fatter edge + the same-day-care banner above is
   // the differentiator.
-  const accentBg = isCritical || isConcern
-    ? 'bg-concern'
-    : isAttention
-      ? 'bg-attention'
-      : 'bg-transparent';
+  const accentBg =
+    isCritical || isConcern
+      ? 'bg-concern'
+      : isAttention
+        ? 'bg-attention'
+        : 'bg-transparent';
   const accentWidth = isCritical ? 'w-1.5' : 'w-1';
   // Critical rows get a slightly stronger tint than concern (50 vs 40)
   // so the row reads as "the most important one to look at right now"

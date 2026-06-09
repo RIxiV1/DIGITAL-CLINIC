@@ -85,7 +85,11 @@ export default function BottomNav() {
                     <motion.div
                       layoutId="nav-pill"
                       className="absolute inset-0 rounded-full bg-indigo-600"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      transition={{
+                        type: 'spring',
+                        stiffness: 380,
+                        damping: 30,
+                      }}
                     />
                   )}
                   <div

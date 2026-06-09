@@ -42,12 +42,10 @@ type Props = Omit<HTMLMotionProps<'button'>, 'children'> & {
 const variantClasses: Record<Variant, string> = {
   primary:
     'bg-primary-600 text-on-primary hover:bg-primary-700 active:bg-primary-800 shadow-indigo',
-  dark:
-    'bg-ink text-canvas hover:opacity-90 shadow-soft',
+  dark: 'bg-ink text-canvas hover:opacity-90 shadow-soft',
   secondary:
     'bg-surface text-primary-700 hover:bg-primary-50 active:bg-primary-100 border border-line shadow-soft',
-  gold:
-    'bg-gold-500 text-on-gold hover:bg-gold-400 active:bg-gold-600 shadow-soft',
+  gold: 'bg-gold-500 text-on-gold hover:bg-gold-400 active:bg-gold-600 shadow-soft',
   outline: 'border border-primary-600 text-primary-700 hover:bg-primary-50',
   ghost: 'text-primary-700 hover:bg-primary-50',
 };

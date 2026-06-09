@@ -97,8 +97,8 @@ export default function ConnectionSection({
                 </h3>
                 <p className="mt-3 text-body-sm text-ink-soft leading-relaxed">
                   Hair clinic for the hair. Gym for the belly. A bad night
-                  followed by another bad night. Each fix targeting one
-                  symptom — none of them touching the source.
+                  followed by another bad night. Each fix targeting one symptom
+                  — none of them touching the source.
                 </p>
                 <ul className="mt-5 grid gap-2.5 text-caption">
                   {[
@@ -137,7 +137,7 @@ export default function ConnectionSection({
  * Replaces the previous radial "hub + spokes" treatment, which read as a
  * generic healthtech logo. This version actually teaches the science.
  */
-export function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
+function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
   if (compact) return <CascadeCompact />;
   return <CascadeBig />;
 }
@@ -147,10 +147,10 @@ function CascadeBig() {
     <div className="mx-auto w-full max-w-[480px]">
       <span className="sr-only">
         Your hormone system runs as a chain — brain signals trigger a relay
-        gland, which tells your testes to produce testosterone. When any
-        step is off-balance, it shows up as eight everyday symptoms — hair
-        loss, low sex drive, belly fat, fertility problems, low energy,
-        erection issues, poor sleep, and brain fog.
+        gland, which tells your testes to produce testosterone. When any step is
+        off-balance, it shows up as eight everyday symptoms — hair loss, low sex
+        drive, belly fat, fertility problems, low energy, erection issues, poor
+        sleep, and brain fog.
       </span>
 
       {/* Axis title strip */}
@@ -372,7 +372,10 @@ function OrganGlyph({ variant }: { variant: string }) {
           className="w-5 h-5"
           aria-hidden
         >
-          <path d="M7 9 L13 6 M13 6 L17 11 M17 11 L11 14 M11 14 L14 17 M7 9 L11 14" strokeOpacity="0.5" />
+          <path
+            d="M7 9 L13 6 M13 6 L17 11 M17 11 L11 14 M11 14 L14 17 M7 9 L11 14"
+            strokeOpacity="0.5"
+          />
           <circle cx="7" cy="9" r="1.6" fill="currentColor" />
           <circle cx="13" cy="6" r="1.3" fill="currentColor" />
           <circle cx="17" cy="11" r="1.5" fill="currentColor" />

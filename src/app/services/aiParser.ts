@@ -89,11 +89,7 @@ async function downscaleImage(file: File): Promise<Blob> {
     ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
     bmp.close?.();
     return await new Promise<Blob>((resolve) => {
-      canvas.toBlob(
-        (b) => resolve(b ?? file),
-        'image/jpeg',
-        JPEG_QUALITY,
-      );
+      canvas.toBlob((b) => resolve(b ?? file), 'image/jpeg', JPEG_QUALITY);
     });
   } catch {
     return file;
@@ -186,7 +182,7 @@ function hasContiguousWordMatch(
  * g/dL) return 1; the catalog's per-marker canonical unit already
  * enforces scale on those.
  */
-function unitMultiplier(unit: string | null | undefined): number {
+export function unitMultiplier(unit: string | null | undefined): number {
   if (!unit) return 1;
   const u = unit.toLowerCase().trim();
   if (/(^|[^a-z])(lakh|lac|lakhs)([^a-z]|$)/.test(u)) return 1e5;
@@ -266,7 +262,9 @@ export type AiMapResult = {
  * UI gets to tell the user "we saw N more markers your lab tested,
  * here they are."
  */
-function mapGeminiResultsToCatalog(results: GeminiMarker[]): AiMapResult {
+export function mapGeminiResultsToCatalog(
+  results: GeminiMarker[],
+): AiMapResult {
   const seen = new Set<string>();
   const mapped: Biomarker[] = [];
   const unmapped: Array<{ name: string; value: number; unit: string }> = [];
@@ -360,9 +358,7 @@ export function pruneSuspectShortNameMarkers(input: AiMapResult): AiMapResult {
   const kept: Biomarker[] = [];
   const newUnmapped = [...input.unmapped];
   for (const b of input.biomarkers) {
-    const normalised = b.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '');
+    const normalised = b.name.toLowerCase().replace(/[^a-z0-9]/g, '');
     const isShortName = normalised.length > 0 && normalised.length <= 3;
     const isFertility = b.category === 'fertility';
     if (isFertility && isShortName && fertilityCount < 2) {
@@ -393,7 +389,7 @@ export type AiParseResult = {
   unmapped: Array<{ name: string; value: number; unit: string }>;
 };
 
-export class AiParseError extends Error {
+class AiParseError extends Error {
   constructor(
     message: string,
     public readonly status?: number,

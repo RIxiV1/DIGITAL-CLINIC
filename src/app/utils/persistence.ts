@@ -202,11 +202,7 @@ function rawRead(key: string): string | null {
  * fallback is returned. Logs a single warn so corruption is debuggable
  * without spamming the console on every read.
  */
-function readValidated<T>(
-  key: string,
-  schema: z.ZodType<T>,
-  fallback: T,
-): T {
+function readValidated<T>(key: string, schema: z.ZodType<T>, fallback: T): T {
   const raw = rawRead(key);
   if (!raw) return fallback;
   let parsed: unknown;
@@ -324,9 +320,11 @@ export function saveReports<T>(reports: T[]): boolean {
 }
 
 export function loadQuiz<T = z.infer<typeof QuizAnswersSchema>>(): T | null {
-  return readValidated(QUIZ_KEY, QuizAnswersSchema, null as
-    | z.infer<typeof QuizAnswersSchema>
-    | null) as T | null;
+  return readValidated(
+    QUIZ_KEY,
+    QuizAnswersSchema,
+    null as z.infer<typeof QuizAnswersSchema> | null,
+  ) as T | null;
 }
 
 export function saveQuiz<T>(quiz: T): void {
@@ -388,7 +386,6 @@ export function saveTheme(theme: Theme): void {
   }
 }
 
-
 /* ------------------------------------------------------------------ */
 /* Pending-confirm record                                              */
 /*                                                                      */
@@ -430,9 +427,9 @@ export function savePendingConfirm<T>(record: PendingConfirmRecord<T>): void {
   writeJSON(PENDING_CONFIRM_KEY, record);
 }
 
-export function loadPendingConfirm<T = z.infer<typeof BiomarkerSchema>>():
-  | PendingConfirmRecord<T>
-  | null {
+export function loadPendingConfirm<
+  T = z.infer<typeof BiomarkerSchema>,
+>(): PendingConfirmRecord<T> | null {
   const result = readValidated(
     PENDING_CONFIRM_KEY,
     PendingConfirmSchema,
@@ -511,9 +508,10 @@ export function pruneExpiredReports<T extends ExpirableReport>(
  * continued as if pruning had succeeded, and the next save error came
  * from an unrelated path).
  */
-export function cleanupExpiredReports(
-  now: number = Date.now(),
-): { pruned: number; quotaError: boolean } {
+export function cleanupExpiredReports(now: number = Date.now()): {
+  pruned: number;
+  quotaError: boolean;
+} {
   // Tolerant envelope-only validation — we don't want a single bad
   // biomarker to make the TTL cleanup skip itself entirely. The TTL
   // filter only needs the `uploadedAt` + `isSample` shape, both of
@@ -570,8 +568,7 @@ export function cleanupOrphanProcessing(): {
   const candidates = stored.reports as Trimmed[];
   const kept = candidates.filter(
     (r) =>
-      r?.status !== 'processing' ||
-      (keepId !== undefined && r?.id === keepId),
+      r?.status !== 'processing' || (keepId !== undefined && r?.id === keepId),
   );
   if (kept.length === candidates.length) {
     return { pruned: 0, quotaError: false };

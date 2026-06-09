@@ -7,11 +7,12 @@ dist-ssr
 *.log
 .DS_Store
 
-# Playwright e2e artifacts + ad-hoc UI-smoke scratch. Leading slash on
-# the PNG match limits it to project root so public/*.png assets aren't
-# caught. The committed e2e suite lives in /e2e (config: playwright.config.ts).
+# Playwright e2e artifacts + ad-hoc scratch/screenshot scripts. Leading
+# slash on the PNG match limits it to project root so public/*.png assets
+# aren't caught. The committed e2e suite lives in /e2e.
 /*.png
 /ui_smoke*.js
+/tmp_*
 /test-results
 /playwright-report
 /blob-report
@@ -19,7 +20,3 @@ dist-ssr
 
 # Local AI assistant configuration
 .claude/
-
-# Deployment / Environment config
-vercel.json
-.nvmrc

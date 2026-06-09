@@ -200,7 +200,7 @@ export async function parseUploadedReport(
   onProgress: (state: {
     stepIndex: number;
     stepProgress: number; // 0..1 within the current step
-    overall: number;      // 0..1 across the whole pipeline
+    overall: number; // 0..1 across the whole pipeline
     /** Optional copy override for the active step. The pipeline emits
      *  this when the parser is still running well after the visual
      *  stages finished — usually means we're mid-OCR on a phone.
@@ -284,12 +284,17 @@ export async function parseUploadedReport(
               ocrPagesSkipped: r.ocrPagesSkipped,
             };
           })
-          .catch((err: unknown): ExtractionOutcome => ({
-            biomarkers: null,
-            reason: 'parser-error',
-            message: err instanceof Error ? err.message : String(err),
-          }))
-      : Promise.resolve<ExtractionOutcome>({ biomarkers: null, reason: 'no-file' });
+          .catch(
+            (err: unknown): ExtractionOutcome => ({
+              biomarkers: null,
+              reason: 'parser-error',
+              message: err instanceof Error ? err.message : String(err),
+            }),
+          )
+      : Promise.resolve<ExtractionOutcome>({
+          biomarkers: null,
+          reason: 'no-file',
+        });
   void extractionPromise.then(() => {
     extractionDone = true;
   });
@@ -327,7 +332,9 @@ export async function parseUploadedReport(
       // Cap the LAST stage at 90% while extraction is still pending —
       // the user shouldn't see "100% complete" if we're actually still
       // waiting on Tesseract.
-      const stepProgress = isLastStage ? Math.min(rawProgress, 0.9) : rawProgress;
+      const stepProgress = isLastStage
+        ? Math.min(rawProgress, 0.9)
+        : rawProgress;
       const overall = isLastStage ? Math.min(rawOverall, 0.95) : rawOverall;
       onProgress({ stepIndex: i, stepProgress, overall });
     }
@@ -424,16 +431,11 @@ const MAX_FILENAME_LENGTH = 200; // keep filenames under 200 chars in localStora
  *  Tesseract handles cleanly through a `<canvas>` decode. HEIC/HEIF is
  *  handled by `isHeic` earlier in the validator with a more specific
  *  message about iOS Photos conversion. */
-const ACCEPTED_IMAGE_MIME = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
+const ACCEPTED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp']);
 /** File extensions matched as a fallback when `file.type` is empty —
  *  some Android share-sheet paths drop the MIME and only the filename
  *  survives. Mirror of ACCEPTED_IMAGE_MIME above. */
 const ACCEPTED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp'];
-
 
 export type FileValidationError =
   | { kind: 'empty'; message: string }

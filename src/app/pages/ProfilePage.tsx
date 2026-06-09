@@ -93,19 +93,15 @@ export default function ProfilePage() {
   const priorityLabels = useMemo(() => buildLabelMap(), []);
 
   const ageLabel = quiz.age
-    ? findOptionLabel('age', quiz.age) ?? 'Not set'
+    ? (findOptionLabel('age', quiz.age) ?? 'Not set')
     : 'Not set';
   const activityLabel = quiz.activity
-    ? findOptionLabel('activity', quiz.activity) ?? 'Not set'
+    ? (findOptionLabel('activity', quiz.activity) ?? 'Not set')
     : 'Not set';
 
   return (
     <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
-      <Header
-        variant="page"
-        title="Profile"
-        subtitle="Account & preferences"
-      />
+      <Header variant="page" title="Profile" subtitle="Account & preferences" />
 
       <Container size="wide" className="pt-5 md:pt-10">
         <div className="hidden md:block mb-7">
@@ -169,10 +165,7 @@ export default function ProfilePage() {
                       label="Age band"
                       value={quiz.age ? ageLabel : '—'}
                     />
-                    <ProfileStat
-                      label="Activity"
-                      value={activityLabel}
-                    />
+                    <ProfileStat label="Activity" value={activityLabel} />
                   </div>
                 </div>
               </Card>
@@ -392,9 +385,8 @@ export default function ProfilePage() {
                       AI auto-fallback
                     </div>
                     <div className="text-caption text-muted text-pretty">
-                      When local read fails on a photo, automatically try
-                      Google Gemini. The image leaves your device for that
-                      step.
+                      When local read fails on a photo, automatically try Google
+                      Gemini. The image leaves your device for that step.
                     </div>
                   </div>
                   <span
@@ -429,13 +421,10 @@ export default function ProfilePage() {
                     <Moon size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-body-sm">
-                      Dark theme
-                    </div>
+                    <div className="font-semibold text-body-sm">Dark theme</div>
                     <div className="text-caption text-muted text-pretty">
-                      On by default. Turn off for higher readability in
-                      bright environments (outdoor light, clinic
-                      fluorescents).
+                      On by default. Turn off for higher readability in bright
+                      environments (outdoor light, clinic fluorescents).
                     </div>
                   </div>
                   <span

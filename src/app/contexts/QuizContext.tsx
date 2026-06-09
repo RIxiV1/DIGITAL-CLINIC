@@ -41,7 +41,7 @@ export type RiskSystemId =
   | 'erectileDysfunction'
   | 'cardiovascular';
 
-export type RiskTier = 'low' | 'moderate' | 'high';
+type RiskTier = 'low' | 'moderate' | 'high';
 
 /** Human-facing label for each clinical system. Phrased as "signals
  *  for X" rather than "X risk indicators" — the algorithm outputs a
@@ -105,15 +105,19 @@ export const SYMPTOM_WEIGHTS: Record<
   string,
   Partial<Record<RiskSystemId, number>>
 > = {
-  'low-energy':         { hypogonadism: 4, erectileDysfunction: 1, cardiovascular: 2 },
-  'hair-loss':          { hypogonadism: 3 },
-  'low-libido':         { hypogonadism: 5, erectileDysfunction: 4 },
-  'belly-fat':          { hypogonadism: 3, erectileDysfunction: 2, cardiovascular: 4 },
-  'brain-fog':          { hypogonadism: 2, cardiovascular: 1 },
-  'poor-sleep':         { hypogonadism: 3, erectileDysfunction: 1, cardiovascular: 3 },
-  'low-mood':           { hypogonadism: 3, erectileDysfunction: 2, cardiovascular: 1 },
-  'stress':             { hypogonadism: 2, erectileDysfunction: 2, cardiovascular: 3 },
-  'difficulty-in-bed':  { hypogonadism: 4, erectileDysfunction: 5, cardiovascular: 3 },
+  'low-energy': { hypogonadism: 4, erectileDysfunction: 1, cardiovascular: 2 },
+  'hair-loss': { hypogonadism: 3 },
+  'low-libido': { hypogonadism: 5, erectileDysfunction: 4 },
+  'belly-fat': { hypogonadism: 3, erectileDysfunction: 2, cardiovascular: 4 },
+  'brain-fog': { hypogonadism: 2, cardiovascular: 1 },
+  'poor-sleep': { hypogonadism: 3, erectileDysfunction: 1, cardiovascular: 3 },
+  'low-mood': { hypogonadism: 3, erectileDysfunction: 2, cardiovascular: 1 },
+  stress: { hypogonadism: 2, erectileDysfunction: 2, cardiovascular: 3 },
+  'difficulty-in-bed': {
+    hypogonadism: 4,
+    erectileDysfunction: 5,
+    cardiovascular: 3,
+  },
   'fertility-concerns': { hypogonadism: 5, erectileDysfunction: 2 },
   // 'proactive' deliberately omitted — no risk signal when the user is
   // symptom-free.
@@ -132,8 +136,8 @@ const ALL_SYSTEMS: readonly RiskSystemId[] = [
  * "Score 9". The denominator helps the user understand the signal as
  * bounded rather than a free-floating number.
  */
-export const SYSTEM_MAX_SCORES: Record<RiskSystemId, number> = ALL_SYSTEMS
-  .reduce(
+export const SYSTEM_MAX_SCORES: Record<RiskSystemId, number> =
+  ALL_SYSTEMS.reduce(
     (acc, sysId) => {
       let total = 0;
       for (const weights of Object.values(SYMPTOM_WEIGHTS)) {
@@ -264,8 +268,8 @@ export function QuizProvider({ children }: { children: ReactNode }) {
     }
     return emptyQuiz;
   });
-  const [hasCompletedQuiz, setHasCompletedQuiz] = useState<boolean>(
-    () => loadQuizComplete(),
+  const [hasCompletedQuiz, setHasCompletedQuiz] = useState<boolean>(() =>
+    loadQuizComplete(),
   );
 
   const setQuiz = useCallback((next: Partial<QuizAnswers>) => {
@@ -331,7 +335,9 @@ export function QuizProvider({ children }: { children: ReactNode }) {
           ? {
               ...emptyQuiz,
               ...fresh,
-              priorities: Array.isArray(fresh.priorities) ? fresh.priorities : [],
+              priorities: Array.isArray(fresh.priorities)
+                ? fresh.priorities
+                : [],
               symptoms: Array.isArray(fresh.symptoms) ? fresh.symptoms : [],
             }
           : emptyQuiz;

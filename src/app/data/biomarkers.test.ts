@@ -158,7 +158,8 @@ describe('biomarkerCatalog integrity', () => {
 
   it('every entry’s optimal band (when defined) is inside its healthy range', () => {
     const violators = biomarkerCatalog.filter((t) => {
-      if (t.optimalMin === undefined || t.optimalMax === undefined) return false;
+      if (t.optimalMin === undefined || t.optimalMax === undefined)
+        return false;
       return (
         t.optimalMin < t.min ||
         t.optimalMax > t.max ||
@@ -316,7 +317,10 @@ describe('action thresholds (harm-anchor)', () => {
       const hasThreshold =
         typeof t.actionMin === 'number' || typeof t.actionMax === 'number';
       if (hasThreshold) {
-        expect(t.actionSource, `${t.id} sets an action threshold without a source`).toBeTruthy();
+        expect(
+          t.actionSource,
+          `${t.id} sets an action threshold without a source`,
+        ).toBeTruthy();
       }
     }
   });

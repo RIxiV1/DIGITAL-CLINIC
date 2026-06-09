@@ -17,7 +17,7 @@ export type LearnMore = {
   improve: string[];
 };
 
-export const markerInfo: Record<string, LearnMore> = {
+const markerInfo: Record<string, LearnMore> = {
   /* -------------------------------- Hormonal -------------------------------- */
 
   'Total Testosterone': {

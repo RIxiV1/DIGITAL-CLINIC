@@ -271,12 +271,17 @@ export default function UploadPage() {
         >
           <Info size={16} className="text-indigo-700 shrink-0 mt-0.5" />
           <p className="text-caption leading-relaxed text-indigo-900">
-            <span className="font-semibold">Everything is parsed in your browser.</span>{' '}
-            A <span className="font-semibold">PDF with selectable text is
-            near-instant</span>; photos and scans run OCR (10–30 seconds on a
-            phone), so upload the PDF when you have it. If we can’t recognise
-            anything, you’ll see a clear error — we don’t make up values to
-            fill in. Your file never leaves your device.
+            <span className="font-semibold">
+              Everything is parsed in your browser.
+            </span>{' '}
+            A{' '}
+            <span className="font-semibold">
+              PDF with selectable text is near-instant
+            </span>
+            ; photos and scans run OCR (10–30 seconds on a phone), so upload the
+            PDF when you have it. If we can’t recognise anything, you’ll see a
+            clear error — we don’t make up values to fill in. Your file never
+            leaves your device.
           </p>
         </div>
 
@@ -492,9 +497,9 @@ export default function UploadPage() {
             >
               <Info size={16} className="text-attention shrink-0 mt-0.5" />
               <p className="text-caption text-ink leading-relaxed">
-                <span className="font-semibold">Heads up:</span> this is a
-                large file — text extraction may take 20–30 seconds, especially
-                on phones. Hang in there.
+                <span className="font-semibold">Heads up:</span> this is a large
+                file — text extraction may take 20–30 seconds, especially on
+                phones. Hang in there.
               </p>
             </motion.div>
           )}
@@ -513,7 +518,10 @@ export default function UploadPage() {
               role="alert"
               className="mt-3 flex items-start gap-2.5 rounded-[14px] border border-concern/30 bg-concern-soft px-4 py-3"
             >
-              <AlertTriangle size={16} className="text-concern shrink-0 mt-0.5" />
+              <AlertTriangle
+                size={16}
+                className="text-concern shrink-0 mt-0.5"
+              />
               <p className="text-caption text-concern leading-relaxed">
                 {error?.message}
               </p>

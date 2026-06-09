@@ -126,7 +126,12 @@ export default function LegalModal({ kind, onClose }: Props) {
 
             {/* Footer */}
             <div className="px-6 py-4 border-t border-line/70 bg-canvas/40">
-              <Button variant="primary" size="md" responsiveFullWidth onClick={onClose}>
+              <Button
+                variant="primary"
+                size="md"
+                responsiveFullWidth
+                onClick={onClose}
+              >
                 Got it
               </Button>
             </div>
@@ -164,12 +169,12 @@ const CONTENT: Record<LegalKind, Doc> = {
       {
         heading: 'What we store, and where',
         paragraphs: [
-          'Quiz answers, uploaded report metadata, extracted biomarker values, and the anonymous local ID that identifies your session — all kept in your browser\'s localStorage under keys prefixed dc_*.',
+          "Quiz answers, uploaded report metadata, extracted biomarker values, and the anonymous local ID that identifies your session — all kept in your browser's localStorage under keys prefixed dc_*.",
           'Because storage is per-browser-per-device, your data does not sync across phones, laptops, or browsers. Clearing your browser data (or using private/incognito mode) will wipe it.',
         ],
       },
       {
-        heading: 'What this protects against (and what it doesn\'t)',
+        heading: "What this protects against (and what it doesn't)",
         paragraphs: [
           'Because there is no server, there is nothing for us — or anyone breaching us — to leak. We cannot sell, share, or accidentally expose data we never received.',
           'However: anyone with access to your unlocked device can open the app and read your data, and any browser extension you have installed can read localStorage on this site. We do not encrypt the values. Use this product on a device you trust.',
@@ -228,7 +233,7 @@ const CONTENT: Record<LegalKind, Doc> = {
       {
         heading: 'Men, hormones, India',
         paragraphs: [
-          '29% of Indian men over 40 have an undiagnosed hormonal deficiency. 2.2% have heard of andropause. There is no consumer-grade product that takes a man\'s blood report and tells him what it actually means.',
+          "29% of Indian men over 40 have an undiagnosed hormonal deficiency. 2.2% have heard of andropause. There is no consumer-grade product that takes a man's blood report and tells him what it actually means.",
           'Digital Clinic is that product. Built on HPG-axis endocrinology, focused on Indian male physiology, and designed to be the bridge between "I got my bloods done" and "I know what to do about them".',
         ],
       },
@@ -260,7 +265,7 @@ const CONTENT: Record<LegalKind, Doc> = {
       {
         heading: 'Press + medical advisors',
         paragraphs: [
-          'team@formen.co.in — clinical reviewers, advisors, or anyone writing about men\'s hormonal health in India.',
+          "team@formen.co.in — clinical reviewers, advisors, or anyone writing about men's hormonal health in India.",
         ],
       },
     ],

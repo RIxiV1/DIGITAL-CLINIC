@@ -7,7 +7,7 @@ import {
 import type { ReportBadge } from '../components/StatusBadge';
 import { formatDate } from '../utils/uiUtils';
 
-export type ReportStatus = 'processing' | 'ready';
+type ReportStatus = 'processing' | 'ready';
 
 export type Report = {
   id: string;
@@ -77,7 +77,10 @@ export function findReport(
   userReports: Report[],
   id: string,
 ): Report | undefined {
-  return userReports.find((r) => r.id === id) ?? sampleReports.find((r) => r.id === id);
+  return (
+    userReports.find((r) => r.id === id) ??
+    sampleReports.find((r) => r.id === id)
+  );
 }
 
 /** Returns the first curated sample report — used by the "Load sample
@@ -183,7 +186,10 @@ export function badgeFor(r: Report): ReportBadge {
  * eliminates the ~30-bit-entropy worry the audit flagged.
  */
 export function makeReportId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+  if (
+    typeof crypto !== 'undefined' &&
+    typeof crypto.randomUUID === 'function'
+  ) {
     return `rep-${crypto.randomUUID().slice(0, 8)}`;
   }
   return `rep-${Math.random().toString(36).slice(2, 8)}`;

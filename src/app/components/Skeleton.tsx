@@ -10,7 +10,7 @@
  */
 
 /** Pulsing rectangle. Default rounded; pass overrides via className. */
-export function Skeleton({ className = '' }: { className?: string }) {
+function Skeleton({ className = '' }: { className?: string }) {
   return (
     <div
       aria-hidden
