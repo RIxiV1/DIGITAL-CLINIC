@@ -1175,6 +1175,21 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Free Testosterone', 'Testosterone Free', 'Free T'],
     unit: 'pg/mL',
     unitAliases: ['pg/ml'],
+    // Method-dependent marker. This 8.7–25.1 pg/mL band is the DIRECT
+    // (analog immunoassay) male range — the method most Indian labs run.
+    // Calculated free-T and equilibrium-dialysis assays read on a wholly
+    // different scale (~120–368 pg/mL) yet report in the same pg/mL unit,
+    // so one band can't serve both AND the two can't be told apart from
+    // the number alone (a high direct value ~55 and a low calculated
+    // value ~55 mean opposite things). We deliberately do NOT auto-switch
+    // the band by magnitude — that would misread a pathologically high
+    // direct value as a low calculated one (false assurance). Instead:
+    //   - the plain copy tells the user the band assumes a direct assay
+    //     and to defer to their report's printed range (which
+    //     statusForValue already prioritises when captured), and
+    //   - the extraction physicalMax (60) drops calculated-scale values
+    //     to the "couldn't map" list rather than grading them here.
+    // Full method-aware grading is deferred. See docs/CLINICAL-ACCURACY.md.
     min: 8.7,
     max: 25.1,
     // No optimal sub-band yet — Bhasin et al. didn't issue a single
@@ -1192,7 +1207,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'up',
     simpleName: 'Testosterone your body can actually use',
     plain:
-      'The testosterone your body can actually use. Even a small lift here makes a noticeable daily difference.',
+      'The testosterone your body can actually use. Even a small lift here makes a noticeable daily difference. This range assumes the direct (immunoassay) method most labs use — calculated or equilibrium-dialysis free-T reads on a much higher scale, so go by your report’s own reference range.',
   },
   {
     id: 'estradiol',
