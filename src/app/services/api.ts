@@ -178,6 +178,10 @@ export type ParsedReport = {
    *  be read, so a partial extraction doesn't masquerade as complete. */
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
+  /** Mean OCR confidence (0–100) when Tesseract ran; undefined for the
+   *  text-layer path. A low value drives a "double-check these values"
+   *  banner in the confirm view. */
+  ocrConfidence?: number;
 };
 
 /**
@@ -221,6 +225,7 @@ export async function parseUploadedReport(
         ignoredCategory: 'viral' | 'imaging' | 'physical-exam' | null;
         ocrPagesAttempted?: number;
         ocrPagesSkipped?: number;
+        ocrConfidence?: number;
       }
     | {
         biomarkers: null;
@@ -234,6 +239,7 @@ export async function parseUploadedReport(
         // your phone and the one it got didn't have markers."
         ocrPagesAttempted?: number;
         ocrPagesSkipped?: number;
+        ocrConfidence?: number;
       };
 
   let extractionDone = false;
@@ -266,6 +272,7 @@ export async function parseUploadedReport(
                 ignoredCategory: classifyOutOfScope(r.rawText, 'strict'),
                 ocrPagesAttempted: r.ocrPagesAttempted,
                 ocrPagesSkipped: r.ocrPagesSkipped,
+                ocrConfidence: r.ocrConfidence,
               };
             }
             // Zero matches AND the text reads as a viral/imaging/dental
@@ -282,6 +289,7 @@ export async function parseUploadedReport(
               unrecognizedRows: r.unrecognizedRows,
               ocrPagesAttempted: r.ocrPagesAttempted,
               ocrPagesSkipped: r.ocrPagesSkipped,
+              ocrConfidence: r.ocrConfidence,
             };
           })
           .catch(
@@ -399,6 +407,7 @@ export async function parseUploadedReport(
       ignoredCategory: outcome.ignoredCategory ?? undefined,
       ocrPagesAttempted: outcome.ocrPagesAttempted,
       ocrPagesSkipped: outcome.ocrPagesSkipped,
+      ocrConfidence: outcome.ocrConfidence,
     };
   }
   // outcome.biomarkers === null branch — narrow to the failure variant
@@ -416,6 +425,7 @@ export async function parseUploadedReport(
     unrecognizedRows: outcome.unrecognizedRows,
     ocrPagesAttempted: outcome.ocrPagesAttempted,
     ocrPagesSkipped: outcome.ocrPagesSkipped,
+    ocrConfidence: outcome.ocrConfidence,
   };
 }
 

@@ -22,7 +22,18 @@ import {
   classifyOutOfScope,
   extractBiomarkersFromText,
   findUnrecognizedRows,
+  __testInternals,
 } from './pdfParser';
+
+/** Encode a plain-ASCII string the way a symbol-encoded (ASCII+0xF000,
+ *  no ToUnicode) subset font lands in pdfjs's getTextContent output. */
+const toPua = (s: string) =>
+  [...s]
+    .map((c) => {
+      const cp = c.codePointAt(0)!;
+      return cp >= 0x20 && cp <= 0xff ? String.fromCharCode(cp + 0xf000) : c;
+    })
+    .join('');
 
 /* ------------------------------------------------------------------ */
 /* Basic extraction                                                    */
@@ -187,6 +198,90 @@ describe('extractBiomarkersFromText — alias boundaries + cross-row binding', (
     // "label on its own line, bare value on the next" tabular layout.
     const result = extractBiomarkersFromText('Hemoglobin\n13.5 g/dL');
     expect(result.find((m) => m.id === 'hb')?.value).toBe(13.5);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Symbol-font (PUA) glyph recovery — the P006 OCR-fallback root cause  */
+/*                                                                      */
+/* P006's body fonts were symbol-encoded (glyphs at ASCII+0xF000, no    */
+/* ToUnicode), so pdfjs returned invisible U+F0xx code points, the      */
+/* matcher found nothing, and the pipeline fell back to OCR that        */
+/* mangled the report. dePuaGlyphs recovers the real text.              */
+/* ------------------------------------------------------------------ */
+
+describe('dePuaGlyphs — symbol-font recovery', () => {
+  it('maps ASCII+0xF000 code points back to ASCII', () => {
+    expect(__testInternals.dePuaGlyphs(toPua('pH 7.5'))).toBe('pH 7.5');
+    expect(__testInternals.dePuaGlyphs(toPua('Normal forms 23.00 %'))).toBe(
+      'Normal forms 23.00 %',
+    );
+  });
+
+  it('also recovers the 0xF100 and 0xF200 symbol ranges', () => {
+    // The cmap (3,0) spec allows F000/F100/F200 offsets; recover all.
+    const f100 = String.fromCharCode(0xf100 + 0x41, 0xf100 + 0x42); // "AB"
+    const f200 = String.fromCharCode(0xf200 + 0x31, 0xf200 + 0x32); // "12"
+    expect(__testInternals.dePuaGlyphs(f100)).toBe('AB');
+    expect(__testInternals.dePuaGlyphs(f200)).toBe('12');
+  });
+
+  it('leaves a normal (mapped) text layer untouched', () => {
+    const plain = 'Total Sperm Concentration 160.0 million/mL';
+    expect(__testInternals.dePuaGlyphs(plain)).toBe(plain);
+  });
+
+  it('does NOT remap a page that is only incidentally PUA (page gate)', () => {
+    // A normal text layer with one stray PUA glyph must be left alone -
+    // we only rewrite when the page is dominantly symbol-encoded.
+    const dingbat = String.fromCharCode(0xf0a7);
+    const content = {
+      items: [
+        { str: 'Fasting Glucose 92 mg/dL', transform: [1, 0, 0, 1, 50, 700] },
+        { str: dingbat, transform: [1, 0, 0, 1, 50, 680] },
+      ],
+    };
+    const out = __testInternals.remapPuaTextContent(content);
+    // Unchanged: the stray PUA char is preserved, not forced to ASCII.
+    expect((out.items[1] as { str: string }).str).toBe(dingbat);
+  });
+
+  it('reconstructs + extracts from PUA-encoded pdfjs items', () => {
+    // Simulate the real failure: items carry PUA strings. Remap, then
+    // reconstruct, then match — the values must come through clean.
+    const content = {
+      items: [
+        { str: toPua('pH 7.5'), transform: [1, 0, 0, 1, 50, 700], width: 40 },
+        {
+          str: toPua('Normal forms 23.00 %'),
+          transform: [1, 0, 0, 1, 50, 680],
+          width: 80,
+        },
+      ],
+    };
+    const remapped = __testInternals.remapPuaTextContent(content);
+    const text = __testInternals.reconstructByPosition(remapped);
+    const out = extractBiomarkersFromText(text);
+    expect(out.find((m) => m.id === 'semen-ph')?.value).toBe(7.5);
+    expect(out.find((m) => m.id === 'sperm-morphology')?.value).toBe(23);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Impossible-percentage guard                                          */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — impossible percentages', () => {
+  it('rejects a >100% value for a percent-unit marker (P006: 117%)', () => {
+    const text = 'Total motile (a+b+c) 117.00 % >42';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'sperm-motility-total')).toBeUndefined();
+  });
+
+  it('still extracts a valid percentage via the "Total motile" alias', () => {
+    const text = 'Total motile (a+b+c) 73.00 % >42';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'sperm-motility-total')?.value).toBe(73);
   });
 });
 

@@ -117,6 +117,15 @@ const OCR_LANG = 'eng';
  *  spinner. */
 const OCR_WORKER_INIT_TIMEOUT_MS = 60_000;
 
+/** Mean Tesseract confidence (0–100) at or below which an OCR read is
+ *  treated as degraded. Clean scans land ~85–95; low-resolution, noisy,
+ *  or oddly-encoded pages drop well under this. We don't discard the
+ *  values — OCR can still be mostly right — but the confirm screen shows
+ *  a "double-check these against your report" banner so a shaky read
+ *  isn't presented as authoritative. Surfaced via `ocrConfidence` on the
+ *  parse result; the UI imports this threshold so the line lives once. */
+export const OCR_LOW_CONFIDENCE_THRESHOLD = 65;
+
 /** Hard cap on input to the unknown-row matcher. Defensive — the regex
  *  is bounded (`{0,50}?` on the label window), but `matchAll` over a
  *  100 KB OCR blob with adversarial structure can still spike a phone
@@ -259,6 +268,97 @@ function normalize(text: string): string {
 /* ------------------------------------------------------------------ */
 
 type TextContentLike = { items: unknown[] };
+
+/* ------------------------------------------------------------------ */
+/* Symbol-font (PUA) glyph recovery                                     */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Map one Microsoft "symbol font" (cmap 3,0) code point back to its ASCII
+ * byte, or return null if it isn't a symbol-range code point.
+ *
+ * The OpenType cmap spec says a (3,0) subtable derives its codes by adding
+ * a 0xF?00 offset to the base byte, and the valid ranges are 0xF000–0xF0FF
+ * (the overwhelmingly common one), 0xF100–0xF1FF, and 0xF200–0xF2FF. We
+ * reverse all three. See
+ * https://learn.microsoft.com/en-us/typography/opentype/spec/cmap
+ */
+function symbolPuaToByte(cp: number): number | null {
+  if (cp >= 0xf000 && cp <= 0xf0ff) return cp - 0xf000;
+  if (cp >= 0xf100 && cp <= 0xf1ff) return cp - 0xf100;
+  if (cp >= 0xf200 && cp <= 0xf2ff) return cp - 0xf200;
+  return null;
+}
+
+/**
+ * Recover "symbol-encoded" subset fonts. Many lab PDF generators — very
+ * common in Indian pathology software — embed body fonts whose glyphs are
+ * addressed in the symbol-font PUA (ASCII + 0xF?00) with NO ToUnicode
+ * CMap. pdfjs renders them correctly, but getTextContent hands back the
+ * raw U+F0xx code points, so the extracted "text" is invisible garbage:
+ * the catalog matcher finds nothing and the pipeline falls back to OCR,
+ * which then mis-reads numbers and drops whole result rows.
+ *
+ * Observed in P006 (Dr Lal PathLabs seminogram): the entire body was
+ * ASCII+0xF000, so OCR turned pH 7.5 into "75" and lost the Motility and
+ * Morphology result blocks entirely. The encoding is trivially reversible
+ * (subtract the 0xF?00 offset). A fast pre-scan makes this a no-op for the
+ * normal case of a properly mapped text layer.
+ */
+function dePuaGlyphs(s: string): string {
+  let hasSymbol = false;
+  for (const ch of s) {
+    if (symbolPuaToByte(ch.codePointAt(0)!) !== null) {
+      hasSymbol = true;
+      break;
+    }
+  }
+  if (!hasSymbol) return s;
+  let out = '';
+  for (const ch of s) {
+    const byte = symbolPuaToByte(ch.codePointAt(0)!);
+    out += byte !== null ? String.fromCharCode(byte) : ch;
+  }
+  return out;
+}
+
+/** A page is treated as symbol-encoded (and recovered) only when this
+ *  share of its visible characters fall in the symbol PUA. Gating at the
+ *  page level means a normal text layer that happens to use a stray PUA
+ *  glyph (a dingbat, a logo ligature) is left untouched — we only rewrite
+ *  when the layer is genuinely broken, which is the failure we're fixing. */
+const SYMBOL_PUA_PAGE_THRESHOLD = 0.5;
+
+/**
+ * Apply {@link dePuaGlyphs} to every text item of a pdfjs text-content
+ * object — but only when the page is dominantly symbol-encoded. Run once
+ * at ingestion so the char-count gate, all three reconstructions, the
+ * matcher, and the "what we read" display all see recovered text from a
+ * single place.
+ */
+function remapPuaTextContent(tc: TextContentLike): TextContentLike {
+  let symbolChars = 0;
+  let visibleChars = 0;
+  for (const it of tc.items) {
+    if (!isPdfTextItem(it)) continue;
+    for (const ch of it.str) {
+      const cp = ch.codePointAt(0)!;
+      if (cp > 0x20) visibleChars += 1;
+      if (symbolPuaToByte(cp) !== null) symbolChars += 1;
+    }
+  }
+  if (
+    visibleChars === 0 ||
+    symbolChars / visibleChars < SYMBOL_PUA_PAGE_THRESHOLD
+  ) {
+    return tc;
+  }
+  return {
+    items: tc.items.map((it) =>
+      isPdfTextItem(it) ? { ...it, str: dePuaGlyphs(it.str) } : it,
+    ),
+  };
+}
 
 /**
  * Position-aware reconstruction: groups items by Y coordinate
@@ -524,7 +624,9 @@ async function preprocessImageForOcr(file: Blob): Promise<Blob> {
   }
 }
 
-async function runImageOcr(file: Blob): Promise<string> {
+async function runImageOcr(
+  file: Blob,
+): Promise<{ text: string; confidence: number }> {
   const createWorker = await loadTesseract();
   const worker = await withTimeout(
     createWorker(OCR_LANG),
@@ -546,7 +648,7 @@ async function runImageOcr(file: Blob): Promise<string> {
       OCR_PAGE_TIMEOUT_MS,
       'OCR',
     );
-    return result.data.text;
+    return { text: result.data.text, confidence: result.data.confidence };
   } finally {
     await worker.terminate();
   }
@@ -559,6 +661,9 @@ type PdfOcrResult = {
    *  result doesn't masquerade as a complete one. */
   pagesAttempted: number;
   pagesSkipped: number;
+  /** Mean Tesseract confidence (0–100) across the pages that were read.
+   *  0 when no page produced text. Drives the low-confidence banner. */
+  confidence: number;
 };
 
 /**
@@ -601,6 +706,8 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
     let fullText = '';
     const pagesAttempted = Math.min(pdf.numPages, OCR_MAX_PAGES);
     let pagesSkipped = 0;
+    let confidenceSum = 0;
+    let pagesRead = 0;
     for (let i = 1; i <= pagesAttempted; i++) {
       try {
         const imgData = await renderPageToImage(pdf, i);
@@ -610,6 +717,8 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
           `OCR page ${i}`,
         );
         fullText += result.data.text;
+        confidenceSum += result.data.confidence;
+        pagesRead += 1;
         // Page boundary sentinel. Catalog matcher splits on this so a
         // marker on page N can't glue to a number on page N+1 via the
         // [^\n]{0,80}? between-window.
@@ -625,7 +734,12 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
         pagesSkipped += 1;
       }
     }
-    return { text: fullText, pagesAttempted, pagesSkipped };
+    return {
+      text: fullText,
+      pagesAttempted,
+      pagesSkipped,
+      confidence: pagesRead > 0 ? confidenceSum / pagesRead : 0,
+    };
   } finally {
     await worker.terminate();
   }
@@ -917,6 +1031,13 @@ function extractMarkerValue(
     // are non-negative even though the regex now refuses '-' anyway,
     // belt-and-braces).
     if (v < 0) continue;
+    // A percentage cannot exceed 100. Values above it are data errors,
+    // not measurements — e.g. P006's dummy seminogram printed "Total
+    // motile (a+b+c) 117.00 %" and "Immotile (d) -17.00 %". Charting an
+    // impossible 117% motility is worse than omitting it; reject and let
+    // it surface in the unrecognized-rows panel instead. (The < 0 guard
+    // above already drops the negative case.)
+    if (template.unit === '%' && v > 100) continue;
     // Physical bound check — use template's explicit physicalMin/Max
     // when set, otherwise fall back to the 5×-span heuristic. Critical
     // status is decided later by statusForValue; this check is only
@@ -1143,6 +1264,8 @@ const REF_ROW_KEYWORDS =
  */
 export const __testInternals = {
   normalize,
+  dePuaGlyphs,
+  remapPuaTextContent,
   reconstructByPosition,
   reconstructByEOL,
   reconstructByStream,
@@ -1436,6 +1559,10 @@ export type PdfParseResult = {
    *  path, since every page contributes text there. */
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
+  /** Mean Tesseract confidence (0–100) for OCR paths. Undefined on the
+   *  text-layer path (no OCR ran). When low (≤ OCR_LOW_CONFIDENCE_
+   *  THRESHOLD) the UI warns that the read may be unreliable. */
+  ocrConfidence?: number;
 };
 
 const EMPTY_RESULT: PdfParseResult = {
@@ -1505,7 +1632,10 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     let totalCharCount = 0;
     for (let i = 1; i <= pdf.numPages; i++) {
       const page = await pdf.getPage(i);
-      const tc = await page.getTextContent();
+      // Recover symbol-encoded (ASCII+0xF000) fonts before anything else,
+      // so the char-count gate, reconstruction, matcher, and display all
+      // operate on real text instead of falling back to OCR.
+      const tc = remapPuaTextContent(await page.getTextContent());
       pageContents.push(tc);
       for (const item of tc.items) {
         if (isPdfTextItem(item)) totalCharCount += item.str.length;
@@ -1578,6 +1708,7 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
       unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
       ocrPagesAttempted: ocr.pagesAttempted,
       ocrPagesSkipped: ocr.pagesSkipped,
+      ocrConfidence: ocr.confidence,
     };
   } finally {
     // Release pdfjs worker buffers. Without this, repeated uploads on
@@ -1587,12 +1718,13 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
 }
 
 async function parseImage(file: File): Promise<PdfParseResult> {
-  const text = await runImageOcr(file);
+  const { text, confidence } = await runImageOcr(file);
   const biomarkers = extractBiomarkersFromText(text);
   return {
     biomarkers,
     source: 'image-ocr',
     rawText: text,
     unrecognizedRows: findUnrecognizedRows(text, biomarkers),
+    ocrConfidence: confidence,
   };
 }

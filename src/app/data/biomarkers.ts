@@ -1765,7 +1765,17 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'sperm-motility-total',
     name: 'Total motility',
-    aliases: ['Total motility %', 'Total motility', 'Motility'],
+    // "Total motile (a+b+c)" is the WHO grading wording many Indian labs
+    // print (Dr Lal PathLabs etc.) — the same quantity as total motility.
+    // Listed before the bare "Motility" alias so the real data row wins
+    // over the section header.
+    aliases: [
+      'Total motility %',
+      'Total motility',
+      'Total motile (a+b+c)',
+      'Total motile',
+      'Motility',
+    ],
     unit: '%',
     min: 42,
     max: 100,

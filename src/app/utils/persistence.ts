@@ -181,6 +181,7 @@ const PendingConfirmSchema = z.object({
   ignoredCategory: z.enum(['viral', 'imaging', 'physical-exam']).optional(),
   ocrPagesAttempted: z.number().int().nonnegative().max(50).optional(),
   ocrPagesSkipped: z.number().int().nonnegative().max(50).optional(),
+  ocrConfidence: z.number().min(0).max(100).optional(),
 });
 
 /* ------------------------------------------------------------------ */
@@ -421,6 +422,7 @@ export type PendingConfirmRecord<TBiomarker> = {
   ignoredCategory?: 'viral' | 'imaging' | 'physical-exam';
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
+  ocrConfidence?: number;
 };
 
 export function savePendingConfirm<T>(record: PendingConfirmRecord<T>): void {
