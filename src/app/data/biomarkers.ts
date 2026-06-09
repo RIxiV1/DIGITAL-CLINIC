@@ -2156,32 +2156,48 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   /* ---- Additional Kidney --------------------------------------- */
   {
     id: 'bun',
-    // Renders as "BUN (Urea)" because Indian labs print either or both
-    // — same chemistry, different convention. The alias array catches
-    // every variant.
-    name: 'BUN (Urea)',
+    // Indian labs overwhelmingly print "Blood Urea" / "Urea" on the
+    // UREA scale (~15–40 mg/dL), NOT the US "BUN" nitrogen scale
+    // (~7–20). These measure the same chemistry but differ by ~2.14×
+    // (Urea = BUN × 2.14), so one band cannot be correct for both. We
+    // grade on the India-first urea scale. A report that prints its own
+    // reference range overrides this band anyway (statusForValue trusts
+    // the lab's printed range), so a "BUN"-scale report still grades
+    // correctly off its printed range; only the fallback band + the
+    // critical cliff assume the urea scale. A clean BUN-vs-Urea split
+    // would be more precise but needs a matcher change (bare "Urea"
+    // substring-matches "Blood Urea Nitrogen", and the matcher emits
+    // every matching template), so it's deferred. See
+    // docs/CLINICAL-ACCURACY.md.
+    name: 'Blood Urea',
     aliases: [
-      'BUN',
-      'Blood Urea Nitrogen',
       'Blood Urea',
       'Urea',
-      'Urea Nitrogen',
       'Serum Urea',
+      'BUN',
+      'Blood Urea Nitrogen',
+      'Urea Nitrogen',
     ],
     unit: 'mg/dL',
     unitAliases: ['mg/dl'],
-    min: 7,
-    max: 20,
-    // Critical: ≥47 mg/dL ≈ Urea ≥100 mg/dL — dialysis-consideration
-    // territory; same-day nephrology engagement expected.
-    criticalHigh: 47,
-    physicalMin: 1,
-    physicalMax: 200,
+    min: 15,
+    max: 40,
+    // Critical: Urea ≥100 mg/dL (≈ BUN ≥47) is dialysis-consideration
+    // territory — same-day nephrology. Pitched on the urea scale to
+    // match the dominant Indian convention. This previously sat at 47
+    // (the BUN scale) and fired a FALSE 'critical' on normal urea
+    // values of ~48–99 mg/dL on every path — the cliff is checked
+    // before the lab-range override, so even a correctly-printed range
+    // couldn't rescue it. A genuinely high BUN-scale value still
+    // surfaces as 'concern' rather than a silent normal.
+    criticalHigh: 100,
+    physicalMin: 2,
+    physicalMax: 430,
     category: 'kidney',
     direction: 'band',
     simpleName: 'A waste product filtered by your kidneys',
     plain:
-      'High BUN can mean kidney issues, dehydration, or high-protein diet. Pair with creatinine for kidney-specific reading.',
+      'High blood urea can mean kidney issues, dehydration, or a high-protein diet. Pair with creatinine for a kidney-specific reading.',
   },
   {
     id: 'egfr',

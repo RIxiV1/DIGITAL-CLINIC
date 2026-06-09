@@ -36,6 +36,37 @@ if (!VIT_D || !LDL || !HBA1C || !HB) {
   );
 }
 
+const UREA = getTemplateById('bun');
+if (!UREA) {
+  throw new Error('Fixture template missing from catalog: bun');
+}
+
+/* ------------------------------------------------------------------ */
+/* Blood Urea (bun) — India-first urea-scale grading, no false critical */
+/* ------------------------------------------------------------------ */
+
+describe('Blood Urea (bun) — urea-scale grading', () => {
+  it('grades a normal Indian urea value as good (was concern on the old 7–20 BUN band)', () => {
+    expect(statusForValue(UREA, 30)).toBe('good'); // inside 15–40
+  });
+
+  it('does NOT fire a false critical for an elevated-but-not-panic urea value', () => {
+    // 55 mg/dL: criticalHigh used to be 47 (the BUN scale), so a normal
+    // urea reading tripped a 'critical' same-day-care alarm. Now 'concern'.
+    expect(statusForValue(UREA, 55)).toBe('concern');
+  });
+
+  it('still escalates a genuinely high urea value to critical', () => {
+    expect(statusForValue(UREA, 110)).toBe('critical'); // ≥100 ≈ BUN ≥47
+  });
+
+  it("respects the lab's printed range over the catalog band", () => {
+    // A BUN-scale report printing its own range grades off that range,
+    // not the urea-scale catalog band.
+    expect(statusForValue(UREA, 15, { min: 7, max: 20 })).toBe('good');
+  });
+});
+
 /* ------------------------------------------------------------------ */
 /* statusForValue                                                       */
 /* ------------------------------------------------------------------ */
