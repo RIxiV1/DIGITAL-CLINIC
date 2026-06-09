@@ -38,6 +38,7 @@ import {
   savePendingConfirm,
 } from '../utils/persistence';
 import { AI_PARSER_PRIVACY_COPY, parseWithAi } from '../services/aiParser';
+import { OCR_LOW_CONFIDENCE_THRESHOLD } from '../services/pdfParser';
 import { sanitizeFilename } from '../utils/sanitizeFilename';
 
 /**
@@ -102,6 +103,10 @@ type ConfirmState = {
    *  mistaken for a complete one. */
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
+  /** Mean OCR confidence (0–100); undefined when no OCR ran. A low value
+   *  drives a "double-check these values" banner so a shaky read isn't
+   *  presented as authoritative. */
+  ocrConfidence?: number;
   /** Set when the raw text mentions WHO 2010 (or the WHO 5th edition).
    *  Our semen-axis catalog scores against WHO 2021 (6th edition); a
    *  report graded against the older reference will surface a verdict
@@ -251,6 +256,7 @@ export default function ProcessingPage() {
         ignoredCategory: persisted.ignoredCategory,
         ocrPagesAttempted: persisted.ocrPagesAttempted,
         ocrPagesSkipped: persisted.ocrPagesSkipped,
+        ocrConfidence: persisted.ocrConfidence,
       });
       return;
     }
@@ -299,6 +305,7 @@ export default function ProcessingPage() {
           ignoredCategory: result.ignoredCategory,
           ocrPagesAttempted: result.ocrPagesAttempted,
           ocrPagesSkipped: result.ocrPagesSkipped,
+          ocrConfidence: result.ocrConfidence,
           semenStandardMismatch,
         };
         // Persist so a navigate-away-then-back can restore this view
@@ -605,6 +612,7 @@ export default function ProcessingPage() {
         ignoredCategory={pendingConfirm.ignoredCategory}
         ocrPagesAttempted={pendingConfirm.ocrPagesAttempted}
         ocrPagesSkipped={pendingConfirm.ocrPagesSkipped}
+        ocrConfidence={pendingConfirm.ocrConfidence}
         semenStandardMismatch={pendingConfirm.semenStandardMismatch}
         onConfirm={confirmExtractedValues}
         onReject={rejectAndRetry}
@@ -1148,6 +1156,7 @@ function ConfirmExtractedValuesView({
   ignoredCategory,
   ocrPagesAttempted,
   ocrPagesSkipped,
+  ocrConfidence,
   semenStandardMismatch,
   onConfirm,
   onReject,
@@ -1159,6 +1168,7 @@ function ConfirmExtractedValuesView({
   ignoredCategory?: 'viral' | 'imaging' | 'physical-exam';
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
+  ocrConfidence?: number;
   semenStandardMismatch?: boolean;
   onConfirm: () => void;
   onReject: () => void;
@@ -1412,6 +1422,41 @@ function ConfirmExtractedValuesView({
                       extraction (OCR timeout). Any values on those pages aren’t
                       in the list below. If the report looks short, try
                       re-uploading or use manual entry.
+                    </p>
+                  </div>
+                </div>
+              </Card>
+            )}
+
+          {/* Low-confidence OCR banner. When the report had no readable
+              text layer we fall back to image OCR, which can misread
+              digits and decimals (8↔3, 7.5↔75). Below the confidence
+              threshold we can't vouch for the numbers, so we tell the
+              user to verify against the original rather than presenting a
+              shaky read as authoritative. */}
+          {ocrConfidence !== undefined &&
+            ocrConfidence <= OCR_LOW_CONFIDENCE_THRESHOLD && (
+              <Card
+                padded={false}
+                className="overflow-hidden border-attention/30"
+              >
+                <div className="px-5 py-4 bg-attention-soft/50 flex items-start gap-3">
+                  <span
+                    aria-hidden
+                    role="img"
+                    className="text-body-lg leading-none"
+                  >
+                    ⚠️
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-display text-body-sm leading-tight">
+                      Please double-check these values
+                    </div>
+                    <p className="mt-1 text-caption text-ink-soft leading-relaxed">
+                      This file had no readable text, so we read it from the
+                      image — and the scan quality was low. A few numbers may be
+                      misread. Compare each value against your original report
+                      before relying on it, or use manual entry to be sure.
                     </p>
                   </div>
                 </div>
