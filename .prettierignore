@@ -1,0 +1,12 @@
+# Build output & deps
+node_modules
+dist
+dist-ssr
+.vite
+
+# Generated / not ours to format
+package-lock.json
+
+# Docs are hand-formatted prose (tables, deliberate wrapping) — leave them
+*.md
+docs

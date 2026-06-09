@@ -148,8 +148,7 @@ function DoctorSummaryMockup() {
                 </div>
                 <p className="mt-2 font-sans font-semibold text-body leading-snug">
                   Two hormone markers flagged — low free testosterone and
-                  vitamin D. Likely connected to fatigue + low libido on
-                  intake.
+                  vitamin D. Likely connected to fatigue + low libido on intake.
                 </p>
               </div>
             </div>
@@ -159,7 +158,10 @@ function DoctorSummaryMockup() {
                 Specialist
               </div>
               <div className="mt-2 flex items-start gap-2">
-                <Microscope size={14} className="text-ink-soft mt-0.5 shrink-0" />
+                <Microscope
+                  size={14}
+                  className="text-ink-soft mt-0.5 shrink-0"
+                />
                 <div>
                   <div className="text-caption font-semibold text-ink">
                     Endocrinologist

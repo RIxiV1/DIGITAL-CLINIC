@@ -40,10 +40,7 @@ const STRIP_PATTERN = new RegExp(
 );
 
 export function sanitizeFilename(name: string, maxLength = 200): string {
-  const cleaned = name
-    .replace(STRIP_PATTERN, '')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const cleaned = name.replace(STRIP_PATTERN, '').replace(/\s+/g, ' ').trim();
   const truncated = cleaned.slice(0, maxLength);
   return truncated || 'report';
 }

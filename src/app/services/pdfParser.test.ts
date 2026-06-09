@@ -53,7 +53,9 @@ describe('extractBiomarkersFromText — basic extraction', () => {
       HDL Cholesterol 55 mg/dL
       Triglycerides 110 mg/dL
     `;
-    const ids = extractBiomarkersFromText(text).map((m) => m.id).sort();
+    const ids = extractBiomarkersFromText(text)
+      .map((m) => m.id)
+      .sort();
     expect(ids).toEqual(['hdl', 'ldl', 'tg', 'total-chol']);
   });
 
@@ -351,8 +353,7 @@ describe('extractBiomarkersFromText — HOMA-IR auto-derivation', () => {
   // on the lab to print it.
 
   it('derives HOMA-IR when glucose + insulin both extracted', () => {
-    const text =
-      'Fasting Glucose 95 mg/dL\nFasting Insulin 12 µIU/mL';
+    const text = 'Fasting Glucose 95 mg/dL\nFasting Insulin 12 µIU/mL';
     const result = extractBiomarkersFromText(text);
     const homa = result.find((m) => m.id === 'homa-ir');
     // 95 * 12 / 405 = 2.8148...
@@ -575,7 +576,9 @@ describe('extractBiomarkersFromText — dedup', () => {
       Fasting Glucose 95 mg/dL
       Note: Fasting Glucose was re-tested at 92 mg/dL on a follow-up visit.
     `;
-    const glucoseHits = extractBiomarkersFromText(text).filter((m) => m.id === 'glucose');
+    const glucoseHits = extractBiomarkersFromText(text).filter(
+      (m) => m.id === 'glucose',
+    );
     expect(glucoseHits).toHaveLength(1);
     // First match wins — 95, not 92.
     expect(glucoseHits[0].value).toBe(95);
@@ -615,7 +618,9 @@ describe('extractBiomarkersFromText — realistic lab fixture', () => {
   `;
 
   it('extracts the expected markers from a multi-panel report', () => {
-    const ids = extractBiomarkersFromText(sampleText).map((m) => m.id).sort();
+    const ids = extractBiomarkersFromText(sampleText)
+      .map((m) => m.id)
+      .sort();
     expect(ids).toEqual(
       [
         'glucose',
@@ -908,7 +913,9 @@ describe('extractBiomarkersFromText — value/ref-range/unit order', () => {
 
 describe('findUnrecognizedRows', () => {
   it('returns empty when the text has no value-like rows', () => {
-    expect(findUnrecognizedRows('This is just narrative text.', [])).toEqual([]);
+    expect(findUnrecognizedRows('This is just narrative text.', [])).toEqual(
+      [],
+    );
   });
 
   it('surfaces a value-like row with a known unit but no catalog match', () => {
@@ -988,7 +995,10 @@ describe('findUnrecognizedRows', () => {
   });
 
   it('caps output at 10 rows', () => {
-    const text = Array.from({ length: 25 }, (_, i) => `Marker${i} ${10 + i} mg/dL`).join('\n');
+    const text = Array.from(
+      { length: 25 },
+      (_, i) => `Marker${i} ${10 + i} mg/dL`,
+    ).join('\n');
     const rows = findUnrecognizedRows(text, []);
     expect(rows.length).toBeLessThanOrEqual(10);
   });
@@ -1249,7 +1259,7 @@ describe('extractBiomarkersFromText — vigorous edge cases', () => {
     const text = 'Fasting Glucose 999.999.999 mg/dL';
     const result = extractBiomarkersFromText(text);
     // The parser might match a substring like 999.999 which violates the Fasting Glucose sanity bounds (max 99 + 5*29 = 244)
-    expect(result.find(m => m.id === 'glucose')).toBeUndefined();
+    expect(result.find((m) => m.id === 'glucose')).toBeUndefined();
   });
 
   it('rejects values exactly at the negative sanity boundary limit', () => {
@@ -1258,7 +1268,7 @@ describe('extractBiomarkersFromText — vigorous edge cases', () => {
     // Let's test a value below -75 (e.g. -76), it should be rejected.
     const text = 'Fasting Glucose -76 mg/dL';
     const result = extractBiomarkersFromText(text);
-    expect(result.find(m => m.id === 'glucose')).toBeUndefined();
+    expect(result.find((m) => m.id === 'glucose')).toBeUndefined();
   });
 
   it('handles extremely long spaces, tabs, and carriage returns in text', () => {
@@ -1276,4 +1286,3 @@ describe('extractBiomarkersFromText — vigorous edge cases', () => {
     expect(result[0].value).toBe(92);
   });
 });
-

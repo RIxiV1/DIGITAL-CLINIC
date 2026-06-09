@@ -64,9 +64,7 @@ export default function Sparkline({
         ? '#D97706' // matches text-attention
         : '#16A34A'; // matches text-good
 
-  const polyline = points
-    .map((v, i) => `${i * stepX},${scaleY(v)}`)
-    .join(' ');
+  const polyline = points.map((v, i) => `${i * stepX},${scaleY(v)}`).join(' ');
 
   const lastX = (points.length - 1) * stepX;
   const lastY = scaleY(points[points.length - 1]);

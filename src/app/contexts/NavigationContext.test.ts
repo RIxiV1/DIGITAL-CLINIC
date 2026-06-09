@@ -31,7 +31,9 @@ describe('pageToPath', () => {
     expect(pageToPath({ type: 'processing' })).toBe('/processing');
     expect(pageToPath({ type: 'manualEntry' })).toBe('/manual-entry');
     expect(pageToPath({ type: 'profile' })).toBe('/profile');
-    expect(pageToPath({ type: 'results', reportId: 'abc' })).toBe('/reports/abc');
+    expect(pageToPath({ type: 'results', reportId: 'abc' })).toBe(
+      '/reports/abc',
+    );
     expect(pageToPath({ type: 'problem', problemId: 'high-ldl' })).toBe(
       '/topics/high-ldl',
     );

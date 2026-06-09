@@ -52,7 +52,8 @@ describe('calculateRisk', () => {
     expect(calculateRisk(['low-libido']).systemTiers.hypogonadism).toBe('low');
     // 'low-libido' + 'difficulty-in-bed': hypogonadism 5 + 4 = 9 → moderate.
     expect(
-      calculateRisk(['low-libido', 'difficulty-in-bed']).systemTiers.hypogonadism,
+      calculateRisk(['low-libido', 'difficulty-in-bed']).systemTiers
+        .hypogonadism,
     ).toBe('moderate');
     // 5 + 4 + 3 (belly-fat) + 3 (poor-sleep) = 15 → high.
     expect(

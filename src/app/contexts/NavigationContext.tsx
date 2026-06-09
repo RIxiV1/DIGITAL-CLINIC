@@ -155,7 +155,10 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
   // back to history; this version inverts that, so back/forward and
   // direct URL entry naturally produce the right page without any
   // popstate handling at all.
-  const page = useMemo<Page>(() => pathToPage(location.pathname), [location.pathname]);
+  const page = useMemo<Page>(
+    () => pathToPage(location.pathname),
+    [location.pathname],
+  );
 
   // Session-start sentinel. react-router stamps every history entry
   // with a `location.key`; the very first one is "default". We capture
@@ -250,6 +253,7 @@ export function NavigationProvider({ children }: { children: ReactNode }) {
 
 export function useNavigation(): NavigationValue {
   const ctx = useContext(NavigationContext);
-  if (!ctx) throw new Error('useNavigation must be used within NavigationProvider');
+  if (!ctx)
+    throw new Error('useNavigation must be used within NavigationProvider');
   return ctx;
 }

@@ -183,9 +183,7 @@ export default function ProblemDetailPage({
                 {/* Focal: the worst-status related marker. Full
                     BiomarkerBar so the user can see range + position +
                     delta for the one that brought them here. */}
-                {focalMarker && (
-                  <BiomarkerBar marker={focalMarker} compact />
-                )}
+                {focalMarker && <BiomarkerBar marker={focalMarker} compact />}
                 {/* Companions: every other related marker as a compact
                     inline strip — name + value + unit, dot-separated.
                     Reading order matches the focal's pathway, not
@@ -199,9 +197,7 @@ export default function ProblemDetailPage({
                     <p className="text-caption text-ink-soft leading-relaxed">
                       {companionMarkers.map((m, i) => (
                         <span key={m.id}>
-                          {i > 0 && (
-                            <span className="text-muted/60"> · </span>
-                          )}
+                          {i > 0 && <span className="text-muted/60"> · </span>}
                           {m.name}{' '}
                           <span className="tabular-nums font-semibold text-ink">
                             {m.value}
@@ -255,7 +251,10 @@ export default function ProblemDetailPage({
 
       {/* Why it matters — collapsed by default. Same shape as What. */}
       <Container size="wide" className="mt-3">
-        <Card padded={false} className="!bg-gold-50 border-gold-200 lg:max-w-3xl">
+        <Card
+          padded={false}
+          className="!bg-gold-50 border-gold-200 lg:max-w-3xl"
+        >
           <button
             type="button"
             onClick={() => toggleSection('why')}

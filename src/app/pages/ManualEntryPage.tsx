@@ -1,11 +1,5 @@
 import { useDeferredValue, useMemo, useState } from 'react';
-import {
-  AlertTriangle,
-  ArrowRight,
-  Pencil,
-  Search,
-  X,
-} from 'lucide-react';
+import { AlertTriangle, ArrowRight, Pencil, Search, X } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
@@ -151,7 +145,9 @@ export default function ManualEntryPage() {
   }, [values]);
 
   const validCount = validBiomarkers.length;
-  const filledCount = Object.values(values).filter((v) => v.trim() !== '').length;
+  const filledCount = Object.values(values).filter(
+    (v) => v.trim() !== '',
+  ).length;
 
   const save = () => {
     if (validBiomarkers.length === 0) {
@@ -177,7 +173,10 @@ export default function ManualEntryPage() {
     // fails ReportSchema.name.max(200) on next app boot — the tolerant
     // loader would drop only this report, but the user would silently
     // lose their manual entry after a refresh.
-    const safeName = sanitizeFilename(reportName.trim() || 'My lab report', 200);
+    const safeName = sanitizeFilename(
+      reportName.trim() || 'My lab report',
+      200,
+    );
     const now = new Date();
     const report: Report = {
       id: makeReportId(),
@@ -206,9 +205,9 @@ export default function ManualEntryPage() {
             Type in the values you have.
           </h1>
           <p className="mt-2 text-body-sm lg:text-body text-ink-soft text-pretty">
-            Skip anything that wasn’t in your report — we’ll only show what
-            you enter. Numbers outside reasonable ranges are dropped
-            automatically to catch typos.
+            Skip anything that wasn’t in your report — we’ll only show what you
+            enter. Numbers outside reasonable ranges are dropped automatically
+            to catch typos.
           </p>
 
           {/* Optional report-name input. Empty falls back to "My lab
@@ -369,7 +368,11 @@ export default function ManualEntryPage() {
               role="alert"
               className="mb-3 flex items-start gap-2 rounded-[14px] bg-concern-soft border border-concern/30 px-3.5 py-2.5 text-caption text-concern leading-relaxed"
             >
-              <AlertTriangle size={14} className="shrink-0 mt-0.5" aria-hidden />
+              <AlertTriangle
+                size={14}
+                className="shrink-0 mt-0.5"
+                aria-hidden
+              />
               <span>{saveError}</span>
             </div>
           )}
@@ -379,14 +382,19 @@ export default function ManualEntryPage() {
               aria-live="polite"
               className="mb-3 flex items-start gap-2 rounded-[14px] bg-attention-soft border border-attention/30 px-3.5 py-2.5 text-caption text-attention leading-relaxed"
             >
-              <AlertTriangle size={14} className="shrink-0 mt-0.5" aria-hidden />
+              <AlertTriangle
+                size={14}
+                className="shrink-0 mt-0.5"
+                aria-hidden
+              />
               <span>
                 {filledCount - validCount} value
                 {filledCount - validCount === 1 ? ' is' : 's are'} outside the
                 plausible range and{' '}
                 {filledCount - validCount === 1 ? "won't" : "won't"} be saved.
-                Fix or clear {filledCount - validCount === 1 ? 'it' : 'them'} above
-                to include {filledCount - validCount === 1 ? 'it' : 'them'}.
+                Fix or clear {filledCount - validCount === 1 ? 'it' : 'them'}{' '}
+                above to include{' '}
+                {filledCount - validCount === 1 ? 'it' : 'them'}.
               </span>
             </div>
           )}

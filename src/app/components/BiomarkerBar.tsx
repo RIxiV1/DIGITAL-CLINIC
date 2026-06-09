@@ -443,8 +443,8 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
               <span className="font-semibold text-ink-soft">
                 The dashed marker
               </span>{' '}
-              is {marker.actionSource.label} — being above the healthy range
-              but to its left is the borderline zone, not the action point.
+              is {marker.actionSource.label} — being above the healthy range but
+              to its left is the borderline zone, not the action point.
               {marker.actionSource.url && (
                 <>
                   {' · '}
@@ -478,12 +478,12 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
                     {marker.labRefMin}–{marker.labRefMax}
                     {marker.unit ? ` ${marker.unit}` : ''}
                   </span>{' '}
-                  (your lab) · Digital Clinic's catalog{' '}
-                  {marker.min}–{marker.max}
-                  {marker.unit ? ` ${marker.unit}` : ''} would have been
-                  used if your lab hadn't printed a range. We trust the
-                  pathologist who signed your report over our hardcoded
-                  defaults when the two disagree.
+                  (your lab) · Digital Clinic's catalog {marker.min}–
+                  {marker.max}
+                  {marker.unit ? ` ${marker.unit}` : ''} would have been used if
+                  your lab hadn't printed a range. We trust the pathologist who
+                  signed your report over our hardcoded defaults when the two
+                  disagree.
                 </div>
               </div>
             )}
@@ -531,9 +531,9 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
                   "you're not sick"; the other says "you're not at
                   the sweet spot yet." */}
               <p className="mt-2 text-micro text-muted/90 leading-snug italic">
-                A value inside your lab's "Normal" range but outside
-                this optimal sub-band isn't a sign of disease — it's
-                a long-term-outcome nudge, not a clinical alarm.
+                A value inside your lab's "Normal" range but outside this
+                optimal sub-band isn't a sign of disease — it's a
+                long-term-outcome nudge, not a clinical alarm.
               </p>
             </>
           )}

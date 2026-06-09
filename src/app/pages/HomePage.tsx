@@ -126,7 +126,9 @@ export default function HomePage() {
 
   /** Per-report delete dialog. State lives at the page level so the
    *  one-modal-at-a-time invariant is easy to enforce. */
-  const [reportPendingDelete, setReportPendingDelete] = useState<string | null>(null);
+  const [reportPendingDelete, setReportPendingDelete] = useState<string | null>(
+    null,
+  );
 
   const loadSampleData = () => {
     // Navigate to the curated sample report directly. We deliberately
@@ -164,7 +166,11 @@ export default function HomePage() {
   const [lockerQuery, setLockerQuery] = useState('');
   const [lockerSort, setLockerSort] = useState<LockerSort>('newest');
   const displayedReports = useMemo(() => {
-    const tokens = lockerQuery.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const tokens = lockerQuery
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
     const filtered =
       tokens.length > 0
         ? reports.filter((r) => {
@@ -203,12 +209,7 @@ export default function HomePage() {
     return biomarkers.filter((m) => {
       let queryHit = true;
       if (tokens.length > 0) {
-        const haystack = [
-          m.name,
-          m.simpleName ?? '',
-          m.plain,
-          m.category,
-        ]
+        const haystack = [m.name, m.simpleName ?? '', m.plain, m.category]
           .join(' ')
           .toLowerCase();
         queryHit = tokens.every((t) => haystack.includes(t));
@@ -277,8 +278,7 @@ export default function HomePage() {
       // Critical preserves its semantics via the separate `critical`
       // field so the strip can promote those tiles visually.
       const concern =
-        critical +
-        markers.filter((m) => m.status === 'concern').length;
+        critical + markers.filter((m) => m.status === 'concern').length;
       const attention = markers.filter((m) => m.status === 'attention').length;
       return { ...p, critical, concern, attention, total: markers.length };
     }).filter((p) => p.total > 0);
@@ -296,7 +296,9 @@ export default function HomePage() {
    * disclosure body's grid, and the trend rows. */
   const [openMarkerName, setOpenMarkerName] = useState<string | null>(null);
   const triggerRef = useRef<HTMLElement | null>(null);
-  const openMarkerLM = openMarkerName ? getMarkerInfo(openMarkerName) ?? null : null;
+  const openMarkerLM = openMarkerName
+    ? (getMarkerInfo(openMarkerName) ?? null)
+    : null;
 
   const openLearnMore = (name: string) => (e: React.MouseEvent) => {
     triggerRef.current = e.currentTarget as HTMLElement;
@@ -345,7 +347,11 @@ export default function HomePage() {
             role="status"
             className="flex items-start gap-3 rounded-2xl bg-indigo-50/70 border border-indigo-200 px-4 py-3"
           >
-            <span aria-hidden role="img" className="text-body-lg leading-none mt-0.5">
+            <span
+              aria-hidden
+              role="img"
+              className="text-body-lg leading-none mt-0.5"
+            >
               ℹ️
             </span>
             <div className="flex-1 min-w-0 text-caption leading-relaxed text-ink">
@@ -353,12 +359,11 @@ export default function HomePage() {
                 We updated our biomarker catalog
               </div>
               <p className="mt-0.5 text-ink-soft">
-                Some of your trendlines might be missing readings from
-                older reports — that's because the marker shape (id or
-                unit) changed between catalog versions, and we don't
-                fuse readings across the change. Past reports are still
-                in your locker; we just won't merge their history into
-                a different-shaped marker.
+                Some of your trendlines might be missing readings from older
+                reports — that's because the marker shape (id or unit) changed
+                between catalog versions, and we don't fuse readings across the
+                change. Past reports are still in your locker; we just won't
+                merge their history into a different-shaped marker.
               </p>
             </div>
             <button
@@ -389,9 +394,9 @@ export default function HomePage() {
                 Your browser ran out of storage space.
               </div>
               <p className="mt-0.5 text-ink-soft">
-                Your reports are still here for now, but closing this tab
-                will lose them. Delete some old reports or download them
-                as PDFs to free up space.
+                Your reports are still here for now, but closing this tab will
+                lose them. Delete some old reports or download them as PDFs to
+                free up space.
               </p>
             </div>
             <button
@@ -429,8 +434,8 @@ export default function HomePage() {
                 <span className="font-medium text-ink">
                   {retestReminder.report.name}
                 </span>
-                . Most hormone and metabolic markers are worth re-checking
-                every 3–6 months to see whether your changes are working.
+                . Most hormone and metabolic markers are worth re-checking every
+                3–6 months to see whether your changes are working.
               </p>
               <button
                 type="button"
@@ -529,10 +534,7 @@ export default function HomePage() {
           the headline carries the message. */}
       {ready && topConcern && (
         <Container size="wide" className="mt-6 md:mt-8">
-          <SectionHeading
-            eyebrow="Worth a look"
-            title="The one to focus on"
-          />
+          <SectionHeading eyebrow="Worth a look" title="The one to focus on" />
           <div className="mt-4">
             <MarkerAttentionCard
               marker={topConcern}
@@ -659,7 +661,9 @@ export default function HomePage() {
               <Disclosure
                 open={showTrends}
                 onToggle={() => setShowTrends((v) => !v)}
-                label={showTrends ? 'Hide trends' : 'Compare to your last report'}
+                label={
+                  showTrends ? 'Hide trends' : 'Compare to your last report'
+                }
                 hint={
                   showTrends
                     ? undefined
@@ -686,11 +690,7 @@ export default function HomePage() {
               <Disclosure
                 open={showReports}
                 onToggle={() => setShowReports((v) => !v)}
-                label={
-                  showReports
-                    ? 'Hide reports'
-                    : `Your reports`
-                }
+                label={showReports ? 'Hide reports' : `Your reports`}
                 hint={
                   showReports
                     ? undefined
@@ -915,8 +915,8 @@ function AllMarkersPane({
           ) : (
             <span>
               Showing{' '}
-              <span className="font-semibold text-ink">{totalMatches}</span>{' '}
-              of {totalMarkers} markers
+              <span className="font-semibold text-ink">{totalMatches}</span> of{' '}
+              {totalMarkers} markers
             </span>
           )}
           <button
@@ -953,15 +953,14 @@ function AllMarkersPane({
           </div>
           <div className="font-display text-body-lg">Nothing matched.</div>
           <p className="text-caption text-ink-soft mt-1.5 max-w-sm mx-auto leading-relaxed">
-            Try a different keyword, or switch the filter back to "All
-            markers".
+            Try a different keyword, or switch the filter back to "All markers".
           </p>
         </Card>
       ) : (
         <Card className="mt-4 text-center !py-8">
           <div className="text-caption text-ink-soft leading-relaxed">
-            Everything is on track. Switch the filter to "All markers" to
-            browse everything in this report.
+            Everything is on track. Switch the filter to "All markers" to browse
+            everything in this report.
           </div>
         </Card>
       )}
@@ -1293,9 +1292,9 @@ function DeleteReportConfirm({
                   Delete this report?
                 </h2>
                 <p className="mt-1.5 text-caption text-ink-soft leading-relaxed break-words">
-                  <span className="font-semibold text-ink">{report.name}</span>
-                  {' '}({report.lab}) will be removed from your locker. This
-                  can’t be undone.
+                  <span className="font-semibold text-ink">{report.name}</span>{' '}
+                  ({report.lab}) will be removed from your locker. This can’t be
+                  undone.
                 </p>
               </div>
             </div>
@@ -1343,10 +1342,20 @@ type Pathway = {
 // adjacent: hormonal/metabolic/thyroid are the "system" reads;
 // nutritional comes last because it's a lifestyle-adjacent fix.
 const PATHWAYS: Pathway[] = [
-  { id: 'hormonal',    name: 'Hormonal',   icon: '🔥', categories: ['hormones'] },
-  { id: 'metabolic',   name: 'Metabolic',  icon: '⚡', categories: ['metabolic', 'heart'] },
-  { id: 'thyroid',     name: 'Thyroid',    icon: '🦋', categories: ['thyroid'] },
-  { id: 'nutritional', name: 'Nutritional', icon: '☀️', categories: ['vitamins'] },
+  { id: 'hormonal', name: 'Hormonal', icon: '🔥', categories: ['hormones'] },
+  {
+    id: 'metabolic',
+    name: 'Metabolic',
+    icon: '⚡',
+    categories: ['metabolic', 'heart'],
+  },
+  { id: 'thyroid', name: 'Thyroid', icon: '🦋', categories: ['thyroid'] },
+  {
+    id: 'nutritional',
+    name: 'Nutritional',
+    icon: '☀️',
+    categories: ['vitamins'],
+  },
 ];
 
 function SectionHeading({

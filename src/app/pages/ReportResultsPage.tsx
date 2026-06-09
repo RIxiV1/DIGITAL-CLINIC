@@ -62,15 +62,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     });
   }, [biomarkers, filter, activeCategory]);
 
-  const summary = useMemo(
-    () => summarizeStatuses(biomarkers),
-    [biomarkers],
-  );
+  const summary = useMemo(() => summarizeStatuses(biomarkers), [biomarkers]);
 
-  const bottomLine = useMemo(
-    () => bottomLineFor(biomarkers),
-    [biomarkers],
-  );
+  const bottomLine = useMemo(() => bottomLineFor(biomarkers), [biomarkers]);
 
   const groups = useMemo(() => biomarkersByCategory(filtered), [filtered]);
   const presentCategoryIds = useMemo(
@@ -80,9 +74,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
   const deepDives = useMemo(
     () =>
-      biomarkers
-        .filter((m) => m.problemId && m.status !== 'good')
-        .slice(0, 4),
+      biomarkers.filter((m) => m.problemId && m.status !== 'good').slice(0, 4),
     [biomarkers],
   );
 
@@ -153,10 +145,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               It may have been removed, or the link may be out of date. Head
               back to your dashboard to pick another one.
             </p>
-            <Button
-              className="mt-6"
-              onClick={() => navigate({ type: 'home' })}
-            >
+            <Button className="mt-6" onClick={() => navigate({ type: 'home' })}>
               Back to dashboard
             </Button>
           </div>
@@ -241,7 +230,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                         aria-hidden
                       />
                       <span className="tabular-nums">{summary.concern}</span>
-                      <span>{summary.concern === 1 ? 'needs' : 'need'} care</span>
+                      <span>
+                        {summary.concern === 1 ? 'needs' : 'need'} care
+                      </span>
                     </span>
                   )}
                   {summary.attention > 0 && (
@@ -410,144 +401,146 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               // app-level MotionConfig reducedMotion="user" cascade
               // automatically.
               <Reveal className="mt-4 md:mt-0">
-              <div className="grid gap-4">
-                {groups.map(({ category, markers }) => {
-                  // Collapsed categories hide the BiomarkerBar list to
-                  // keep the report scannable. The header still carries
-                  // the actionable info — emoji + name + status-count
-                  // dots — so a user can see at a glance "this category
-                  // has 1 concern and 2 in range" without opening it.
-                  // Default-open: any category with a concern marker
-                  // (set in expandedCategoryIds at mount). Default-
-                  // closed: everything else.
-                  const open = isCategoryOpen(category.id);
-                  const counts = {
-                    // Critical rolls up into the concern count for the
-                    // header dot row — the category-card header dots are
-                    // a coarse signal; per-marker rendering inside the
-                    // panel still distinguishes critical from concern.
-                    concern:
-                      markers.filter(
+                <div className="grid gap-4">
+                  {groups.map(({ category, markers }) => {
+                    // Collapsed categories hide the BiomarkerBar list to
+                    // keep the report scannable. The header still carries
+                    // the actionable info — emoji + name + status-count
+                    // dots — so a user can see at a glance "this category
+                    // has 1 concern and 2 in range" without opening it.
+                    // Default-open: any category with a concern marker
+                    // (set in expandedCategoryIds at mount). Default-
+                    // closed: everything else.
+                    const open = isCategoryOpen(category.id);
+                    const counts = {
+                      // Critical rolls up into the concern count for the
+                      // header dot row — the category-card header dots are
+                      // a coarse signal; per-marker rendering inside the
+                      // panel still distinguishes critical from concern.
+                      concern: markers.filter(
                         (m) =>
                           m.status === 'critical' || m.status === 'concern',
                       ).length,
-                    attention: markers.filter((m) => m.status === 'attention')
-                      .length,
-                    good: markers.filter((m) => m.status === 'good').length,
-                  };
-                  return (
-                    <div key={category.id}>
-                      <Card padded={false}>
-                        <button
-                          type="button"
-                          onClick={() => toggleCategory(category.id)}
-                          disabled={filtersAreNarrowing}
-                          aria-expanded={open}
-                          aria-controls={`category-panel-${category.id}`}
-                          className={`w-full px-5 pt-5 pb-4 flex items-center gap-3 text-left transition-colors ${
-                            open ? 'border-b border-line' : ''
-                          } ${
-                            filtersAreNarrowing
-                              ? 'cursor-default'
-                              : 'hover:bg-canvas/40'
-                          }`}
-                        >
-                          <Emoji
-                            label={category.name}
-                            className="text-display-md leading-none"
+                      attention: markers.filter((m) => m.status === 'attention')
+                        .length,
+                      good: markers.filter((m) => m.status === 'good').length,
+                    };
+                    return (
+                      <div key={category.id}>
+                        <Card padded={false}>
+                          <button
+                            type="button"
+                            onClick={() => toggleCategory(category.id)}
+                            disabled={filtersAreNarrowing}
+                            aria-expanded={open}
+                            aria-controls={`category-panel-${category.id}`}
+                            className={`w-full px-5 pt-5 pb-4 flex items-center gap-3 text-left transition-colors ${
+                              open ? 'border-b border-line' : ''
+                            } ${
+                              filtersAreNarrowing
+                                ? 'cursor-default'
+                                : 'hover:bg-canvas/40'
+                            }`}
                           >
-                            {category.icon}
-                          </Emoji>
-                          <div className="flex-1 min-w-0">
-                            <div className="font-display text-body-lg leading-tight">
-                              {category.name}
-                            </div>
-                            {/* Status-count dots replace the category
+                            <Emoji
+                              label={category.name}
+                              className="text-display-md leading-none"
+                            >
+                              {category.icon}
+                            </Emoji>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-display text-body-lg leading-tight">
+                                {category.name}
+                              </div>
+                              {/* Status-count dots replace the category
                                 description here. The description
                                 ("Hormones, thyroid, sex drive" etc.)
                                 was descriptive but not informative —
                                 the dots tell the user what to do at
                                 a glance, which is the job of the
                                 collapsed header. */}
-                            <div className="mt-1 inline-flex items-center gap-3 text-caption text-ink-soft">
-                              {counts.concern > 0 && (
-                                <span className="inline-flex items-center gap-1.5 font-semibold text-concern">
-                                  <span
-                                    className="w-1.5 h-1.5 rounded-full bg-concern"
-                                    aria-hidden
-                                  />
-                                  {counts.concern}
-                                  <span className="sr-only"> need care</span>
-                                </span>
-                              )}
-                              {counts.attention > 0 && (
-                                <span className="inline-flex items-center gap-1.5 font-semibold text-attention">
-                                  <span
-                                    className="w-1.5 h-1.5 rounded-full bg-attention"
-                                    aria-hidden
-                                  />
-                                  {counts.attention}
-                                  <span className="sr-only"> need attention</span>
-                                </span>
-                              )}
-                              {counts.good > 0 && (
-                                <span className="inline-flex items-center gap-1.5 text-ink-soft">
-                                  <span
-                                    className="w-1.5 h-1.5 rounded-full bg-good"
-                                    aria-hidden
-                                  />
-                                  {counts.good}
-                                  <span className="sr-only"> on track</span>
-                                </span>
-                              )}
+                              <div className="mt-1 inline-flex items-center gap-3 text-caption text-ink-soft">
+                                {counts.concern > 0 && (
+                                  <span className="inline-flex items-center gap-1.5 font-semibold text-concern">
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full bg-concern"
+                                      aria-hidden
+                                    />
+                                    {counts.concern}
+                                    <span className="sr-only"> need care</span>
+                                  </span>
+                                )}
+                                {counts.attention > 0 && (
+                                  <span className="inline-flex items-center gap-1.5 font-semibold text-attention">
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full bg-attention"
+                                      aria-hidden
+                                    />
+                                    {counts.attention}
+                                    <span className="sr-only">
+                                      {' '}
+                                      need attention
+                                    </span>
+                                  </span>
+                                )}
+                                {counts.good > 0 && (
+                                  <span className="inline-flex items-center gap-1.5 text-ink-soft">
+                                    <span
+                                      className="w-1.5 h-1.5 rounded-full bg-good"
+                                      aria-hidden
+                                    />
+                                    {counts.good}
+                                    <span className="sr-only"> on track</span>
+                                  </span>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          {filtersAreNarrowing ? (
-                            // When the user is filtering (status or
-                            // single-category), all visible categories
-                            // are forced-open and the chevron toggle
-                            // is meaningless. Show the marker count
-                            // pill instead.
-                            <Pill tone="neutral" size="sm">
-                              {markers.length}
-                            </Pill>
-                          ) : (
-                            <ChevronDown
-                              size={20}
-                              className={`text-muted shrink-0 transition-transform duration-200 ${
-                                open ? 'rotate-180' : ''
-                              }`}
-                              aria-hidden
-                            />
-                          )}
-                        </button>
-                        {open && (
-                          <div
-                            id={`category-panel-${category.id}`}
-                            className="divide-y divide-line/70"
-                          >
-                            {markers.map((m) => (
-                              <BiomarkerBar
-                                key={m.id}
-                                marker={m}
-                                onClick={
-                                  m.problemId
-                                    ? () =>
-                                        navigate({
-                                          type: 'problem',
-                                          problemId: m.problemId!,
-                                        })
-                                    : undefined
-                                }
+                            {filtersAreNarrowing ? (
+                              // When the user is filtering (status or
+                              // single-category), all visible categories
+                              // are forced-open and the chevron toggle
+                              // is meaningless. Show the marker count
+                              // pill instead.
+                              <Pill tone="neutral" size="sm">
+                                {markers.length}
+                              </Pill>
+                            ) : (
+                              <ChevronDown
+                                size={20}
+                                className={`text-muted shrink-0 transition-transform duration-200 ${
+                                  open ? 'rotate-180' : ''
+                                }`}
+                                aria-hidden
                               />
-                            ))}
-                          </div>
-                        )}
-                      </Card>
-                    </div>
-                  );
-                })}
-              </div>
+                            )}
+                          </button>
+                          {open && (
+                            <div
+                              id={`category-panel-${category.id}`}
+                              className="divide-y divide-line/70"
+                            >
+                              {markers.map((m) => (
+                                <BiomarkerBar
+                                  key={m.id}
+                                  marker={m}
+                                  onClick={
+                                    m.problemId
+                                      ? () =>
+                                          navigate({
+                                            type: 'problem',
+                                            problemId: m.problemId!,
+                                          })
+                                      : undefined
+                                  }
+                                />
+                              ))}
+                            </div>
+                          )}
+                        </Card>
+                      </div>
+                    );
+                  })}
+                </div>
               </Reveal>
             )}
             {/* The mid-page "Download report as PDF" button used to sit
@@ -567,7 +560,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             <div className="mt-6 rounded-xl bg-indigo-50/50 border border-indigo-100 p-3 flex items-start gap-2.5 print-shadow-none">
               <Info size={16} className="text-indigo-600 shrink-0 mt-0.5" />
               <p className="text-caption text-indigo-900 leading-snug">
-                <strong>Not a diagnosis.</strong> We translate your report, but you should always consult a doctor before acting on these results.
+                <strong>Not a diagnosis.</strong> We translate your report, but
+                you should always consult a doctor before acting on these
+                results.
               </p>
             </div>
           </main>
@@ -579,18 +574,18 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
               correct when this aside is present; on mobile the aside is
               absent, the main column naturally spans full width. */}
           {isMdUp && (
-          <aside className="md:col-span-4 no-print">
-            <div className="sticky top-24 grid gap-5">
-              <Card padded={false} className="overflow-hidden">
-                <div className="px-5 pt-5 pb-3 border-b border-line">
-                  <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
-                    Filter
+            <aside className="md:col-span-4 no-print">
+              <div className="sticky top-24 grid gap-5">
+                <Card padded={false} className="overflow-hidden">
+                  <div className="px-5 pt-5 pb-3 border-b border-line">
+                    <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
+                      Filter
+                    </div>
+                    <div className="font-display text-body mt-1">
+                      Refine view
+                    </div>
                   </div>
-                  <div className="font-display text-body mt-1">
-                    Refine view
-                  </div>
-                </div>
-                {/* Horizontal-wrap pill row. The previous treatment
+                  {/* Horizontal-wrap pill row. The previous treatment
                     here was a vertical stack of rounded-xl buttons with
                     left-aligned labels — a control vocabulary used
                     nowhere else in the app. Switched to the same
@@ -601,99 +596,99 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                     a tablet user rotates between portrait and
                     landscape and watches the controls jump from one
                     layout to another. */}
-                <div className="p-4 flex flex-wrap gap-1.5">
-                  {STATUS_FILTER_OPTIONS.map((f) => {
-                    const active = filter === f.id;
-                    return (
-                      <button
-                        key={f.id}
-                        onClick={() => setFilter(f.id)}
-                        aria-pressed={active}
-                        className={`inline-flex items-center px-3 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
-                          active
-                            ? 'bg-indigo-600 text-on-primary shadow-soft'
-                            : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div className="px-5 pt-4 pb-3 border-t border-line">
-                  <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
-                    Categories
-                  </div>
-                </div>
-                <div className="px-4 pb-4 flex flex-wrap gap-1.5">
-                  <CategoryChip
-                    label="All"
-                    active={activeCategory === 'all'}
-                    onClick={() => setActiveCategory('all')}
-                  />
-                  {categories
-                    .filter((c) => presentCategoryIds.has(c.id))
-                    .map((c) => (
-                      <CategoryChip
-                        key={c.id}
-                        emoji={c.icon}
-                        label={c.name}
-                        active={activeCategory === c.id}
-                        onClick={() => setActiveCategory(c.id)}
-                      />
-                    ))}
-                </div>
-              </Card>
-
-              {deepDives.length > 0 && (
-                <Card padded={false}>
-                  <div className="px-5 pt-5 pb-3 border-b border-line">
-                    <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
-                      Suggested deep dives
-                    </div>
-                    <div className="font-display text-body mt-1">
-                      What to look at first
-                    </div>
-                  </div>
-                  <div className="divide-y divide-line/70">
-                    {deepDives.map((m) => {
-                      const c = statusColor(m.status);
+                  <div className="p-4 flex flex-wrap gap-1.5">
+                    {STATUS_FILTER_OPTIONS.map((f) => {
+                      const active = filter === f.id;
                       return (
                         <button
-                          key={m.id}
-                          onClick={() =>
-                            navigate({
-                              type: 'problem',
-                              problemId: m.problemId!,
-                            })
-                          }
-                          className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-canvas/60 transition-colors"
+                          key={f.id}
+                          onClick={() => setFilter(f.id)}
+                          aria-pressed={active}
+                          className={`inline-flex items-center px-3 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
+                            active
+                              ? 'bg-indigo-600 text-on-primary shadow-soft'
+                              : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
+                          }`}
                         >
-                          <div className="grid place-items-center w-9 h-9 rounded-xl bg-gold-100 text-gold-700 shrink-0">
-                            <Sparkles size={16} />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="text-micro uppercase tracking-label font-bold text-muted truncate">
-                              {m.name}
-                            </div>
-                            <div
-                              className={`text-caption mt-0.5 ${c.textOnSurface} font-bold uppercase tracking-widest`}
-                            >
-                              {c.label}
-                            </div>
-                          </div>
-                          <ChevronRight
-                            size={16}
-                            className="text-muted shrink-0"
-                          />
+                          {f.label}
                         </button>
                       );
                     })}
                   </div>
+                  <div className="px-5 pt-4 pb-3 border-t border-line">
+                    <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
+                      Categories
+                    </div>
+                  </div>
+                  <div className="px-4 pb-4 flex flex-wrap gap-1.5">
+                    <CategoryChip
+                      label="All"
+                      active={activeCategory === 'all'}
+                      onClick={() => setActiveCategory('all')}
+                    />
+                    {categories
+                      .filter((c) => presentCategoryIds.has(c.id))
+                      .map((c) => (
+                        <CategoryChip
+                          key={c.id}
+                          emoji={c.icon}
+                          label={c.name}
+                          active={activeCategory === c.id}
+                          onClick={() => setActiveCategory(c.id)}
+                        />
+                      ))}
+                  </div>
                 </Card>
-              )}
-            </div>
-          </aside>
+
+                {deepDives.length > 0 && (
+                  <Card padded={false}>
+                    <div className="px-5 pt-5 pb-3 border-b border-line">
+                      <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
+                        Suggested deep dives
+                      </div>
+                      <div className="font-display text-body mt-1">
+                        What to look at first
+                      </div>
+                    </div>
+                    <div className="divide-y divide-line/70">
+                      {deepDives.map((m) => {
+                        const c = statusColor(m.status);
+                        return (
+                          <button
+                            key={m.id}
+                            onClick={() =>
+                              navigate({
+                                type: 'problem',
+                                problemId: m.problemId!,
+                              })
+                            }
+                            className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-canvas/60 transition-colors"
+                          >
+                            <div className="grid place-items-center w-9 h-9 rounded-xl bg-gold-100 text-gold-700 shrink-0">
+                              <Sparkles size={16} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="text-micro uppercase tracking-label font-bold text-muted truncate">
+                                {m.name}
+                              </div>
+                              <div
+                                className={`text-caption mt-0.5 ${c.textOnSurface} font-bold uppercase tracking-widest`}
+                              >
+                                {c.label}
+                              </div>
+                            </div>
+                            <ChevronRight
+                              size={16}
+                              className="text-muted shrink-0"
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </Card>
+                )}
+              </div>
+            </aside>
           )}
         </div>
 
@@ -704,7 +699,6 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
       </Container>
 
       <BottomNav />
-
     </div>
   );
 }

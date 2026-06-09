@@ -88,7 +88,10 @@ export function useModalA11y<T extends HTMLElement>({
       const active = document.activeElement as HTMLElement | null;
       // Wrap focus around the card so keyboard users can't tab into the
       // (visually hidden) page underneath the modal.
-      if (e.shiftKey && (active === first || !cardRef.current?.contains(active))) {
+      if (
+        e.shiftKey &&
+        (active === first || !cardRef.current?.contains(active))
+      ) {
         e.preventDefault();
         last.focus();
       } else if (!e.shiftKey && active === last) {

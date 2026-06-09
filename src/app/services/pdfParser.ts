@@ -137,8 +137,9 @@ async function loadPdfjs(): Promise<PdfjsModule> {
   if (!pdfjsPromise) {
     pdfjsPromise = (async () => {
       const mod = await import('pdfjs-dist');
-      const workerUrl = (await import('pdfjs-dist/build/pdf.worker.min.mjs?url'))
-        .default;
+      const workerUrl = (
+        await import('pdfjs-dist/build/pdf.worker.min.mjs?url')
+      ).default;
       mod.GlobalWorkerOptions.workerSrc = workerUrl;
       return mod;
     })();
@@ -233,11 +234,11 @@ function normalizeMu(s: string): string {
 
 function normalize(text: string): string {
   let t = normalizeMu(text);
-  t = t.replace(/[ \t\r\f\v]+/g, ' ');             // collapse horizontal ws
-  t = t.replace(/ *\n+ */g, '\n');                 // clean newlines
-  t = t.replace(/(\d) \./g, '$1.');                // "5 ." -> "5."
-  t = t.replace(/\. (\d)/g, '.$1');                // ". 5" -> ".5"
-  t = t.replace(/(\d) %/g, '$1%');                 // "5 %" -> "5%"
+  t = t.replace(/[ \t\r\f\v]+/g, ' '); // collapse horizontal ws
+  t = t.replace(/ *\n+ */g, '\n'); // clean newlines
+  t = t.replace(/(\d) \./g, '$1.'); // "5 ." -> "5."
+  t = t.replace(/\. (\d)/g, '.$1'); // ". 5" -> ".5"
+  t = t.replace(/(\d) %/g, '$1%'); // "5 %" -> "5%"
   // Strip number-internal commas — handles both US "240,000" and
   // Indian "2,40,000" notation. Without this, "Platelets 2,40,000"
   // parses as 2 (the regex only captures up to the first comma).
@@ -290,10 +291,7 @@ function reconstructByPosition(content: TextContentLike): string {
   // Use the median of the bottom 90% — drops the top decile of
   // outliers before computing. For a 200-item page, that's the lower
   // 180 items' median; resilient to up to ~10% oversize garbage.
-  const trimmedEnd = Math.max(
-    1,
-    Math.floor(sortedHeights.length * 0.9),
-  );
+  const trimmedEnd = Math.max(1, Math.floor(sortedHeights.length * 0.9));
   const trimmed = sortedHeights.slice(0, trimmedEnd);
   const medianHeight = trimmed.length
     ? trimmed[Math.floor(trimmed.length / 2)]
@@ -331,8 +329,7 @@ function reconstructByPosition(content: TextContentLike): string {
   for (const item of items) {
     const x = item.transform?.[4] ?? 0;
     const y = item.transform?.[5] ?? 0;
-    const width =
-      item.width ?? item.str.length * (item.height ?? 8) * 0.5;
+    const width = item.width ?? item.str.length * (item.height ?? 8) * 0.5;
     const bucket = Math.round(y / yTolerance);
 
     // Look at this bucket and ±1 to handle items straddling boundaries.
@@ -416,7 +413,7 @@ function reconstructByStream(content: TextContentLike): string {
  *  Using the real exported type keeps the page.render() API signature
  *  in sync with whatever pdfjs version is installed. */
 type PdfDoc = Awaited<
-  ReturnType<typeof import('pdfjs-dist')['getDocument']>['promise']
+  ReturnType<(typeof import('pdfjs-dist'))['getDocument']>['promise']
 >;
 
 /**
@@ -467,7 +464,11 @@ async function renderPageToImage(
 
 /** Race a promise against an OCR-page timeout. Skips this page rather
  *  than failing the entire extraction. */
-async function withTimeout<T>(p: Promise<T>, ms: number, label: string): Promise<T> {
+async function withTimeout<T>(
+  p: Promise<T>,
+  ms: number,
+  label: string,
+): Promise<T> {
   return Promise.race([
     p,
     new Promise<T>((_, reject) => {
@@ -803,8 +804,7 @@ function extractMarkerValue(
   // and the ":" / "Reference Range" lead-ins that some templates use.
   const refRangeBody =
     '(\\d+(?:\\.\\d+)?)\\s*(?:[-–—]|to)\\s*(\\d+(?:\\.\\d+)?)';
-  const tail =
-    `[^\\d\\n]{0,30}?(?:${refRangeBody}[^\\d\\n]{0,30}?)?`;
+  const tail = `[^\\d\\n]{0,30}?(?:${refRangeBody}[^\\d\\n]{0,30}?)?`;
 
   // normalizeMu on the catalog side mirrors the call inside normalize()
   // for the input text — without both sides agreeing on µ vs μ, units
@@ -885,9 +885,7 @@ function extractMarkerValue(
     // on a clinical dashboard. `toPrecision(12)` keeps 12 significant
     // digits (well above any real measurement precision) and drops the
     // floating-point error.
-    const v = scale !== 1
-      ? parseFloat((raw * scale).toPrecision(12))
-      : raw;
+    const v = scale !== 1 ? parseFloat((raw * scale).toPrecision(12)) : raw;
     // Reject obviously-broken values up front. Floor at 0 (biomarkers
     // are non-negative even though the regex now refuses '-' anyway,
     // belt-and-braces).
@@ -1011,10 +1009,8 @@ function deriveComputedMarkers(extracted: Biomarker[]): Biomarker[] {
 // to remember to invalidate. Built from the *normalized* (U+03BC) form
 // of every catalog unit so it agrees with the text returned from
 // normalize().
-const UNKNOWN_ROW_REGEX_CACHE: WeakMap<
-  typeof biomarkerCatalog,
-  RegExp
-> = new WeakMap();
+const UNKNOWN_ROW_REGEX_CACHE: WeakMap<typeof biomarkerCatalog, RegExp> =
+  new WeakMap();
 function getUnknownRowRegex(): RegExp {
   const cached = UNKNOWN_ROW_REGEX_CACHE.get(biomarkerCatalog);
   if (cached) return cached;
@@ -1333,7 +1329,12 @@ for (const cat of Object.keys(OUT_OF_SCOPE) as OutOfScopeCategory[]) {
 function countDistinctHits(text: string, keywords: readonly string[]): number {
   let hits = 0;
   for (const kw of keywords) {
-    if (kw.includes(' ') || kw.includes('-') || kw.includes('/') || kw.includes('+')) {
+    if (
+      kw.includes(' ') ||
+      kw.includes('-') ||
+      kw.includes('/') ||
+      kw.includes('+')
+    ) {
       if (text.includes(kw)) hits += 1;
     } else {
       // Single-word — require non-letter boundary to avoid substring traps.
@@ -1460,7 +1461,10 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     }).promise;
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    if (/password/i.test(message) || (err instanceof Error && err.name === 'PasswordException')) {
+    if (
+      /password/i.test(message) ||
+      (err instanceof Error && err.name === 'PasswordException')
+    ) {
       throw new Error(
         'This PDF is password-protected. Please unlock it first, then re-upload.',
       );

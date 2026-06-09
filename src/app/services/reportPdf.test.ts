@@ -50,7 +50,9 @@ const mk = (over: Partial<Biomarker>): Biomarker =>
 
 describe('tierForMarker', () => {
   it('critical → SEE A DOCTOR', () => {
-    expect(tierForMarker(mk({ status: 'critical' })).label).toBe('SEE A DOCTOR');
+    expect(tierForMarker(mk({ status: 'critical' })).label).toBe(
+      'SEE A DOCTOR',
+    );
   });
   it('concern → OUT OF RANGE', () => {
     expect(tierForMarker(mk({ status: 'concern' })).label).toBe('OUT OF RANGE');
@@ -60,14 +62,16 @@ describe('tierForMarker', () => {
   });
   it('good + inside optimal band → OPTIMAL', () => {
     expect(
-      tierForMarker(mk({ status: 'good', value: 5, optimalMin: 4, optimalMax: 6 }))
-        .label,
+      tierForMarker(
+        mk({ status: 'good', value: 5, optimalMin: 4, optimalMax: 6 }),
+      ).label,
     ).toBe('OPTIMAL');
   });
   it('good but outside optimal band → BORDERLINE', () => {
     expect(
-      tierForMarker(mk({ status: 'good', value: 9, optimalMin: 4, optimalMax: 6 }))
-        .label,
+      tierForMarker(
+        mk({ status: 'good', value: 9, optimalMin: 4, optimalMax: 6 }),
+      ).label,
     ).toBe('BORDERLINE');
   });
   it('good with no optimal band → OPTIMAL', () => {
