@@ -2226,8 +2226,29 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'ml/min/1.73m²',
       'ml/min/1.73m2',
     ],
-    min: 90,
+    // KDIGO CKD staging mapped onto the four status tiers via the band:
+    //   ≥90   (G1, normal)          → good      (optimal band below)
+    //   60–89 (G2, mildly reduced)  → attention — NOT CKD on its own
+    //                                 without kidney-damage markers, so
+    //                                 deliberately calm, not 'concern'
+    //   <60   (G3, sustained = CKD) → concern   — the clinically
+    //                                 meaningful cutoff, now visible in
+    //                                 the band (was hidden when the floor
+    //                                 was 90: 60–89 and <60 both read the
+    //                                 same 'concern')
+    //   <30   (G4/G5)               → critical
+    // The healthy floor sits at the KDIGO 60 cutoff so a mildly-reduced
+    // older-adult eGFR (60–89) doesn't read as a false 'out of range'.
+    min: 60,
     max: 150,
+    optimalMin: 90,
+    optimalMax: 150,
+    optimalSource: {
+      label:
+        'KDIGO 2024 CKD classification — G1 (≥90 mL/min/1.73m²) is normal kidney function; an eGFR <60 sustained ≥3 months defines CKD',
+      url: 'https://kdigo.org/guidelines/ckd-evaluation-and-management/',
+      audience: 'adults (CKD-EPI 2021, race-free)',
+    },
     // Critical floor: <30 = CKD stage 4 (advanced kidney disease,
     // nephrology referral expected). <15 = end-stage, dialysis
     // territory.
@@ -2238,7 +2259,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'up',
     simpleName: 'How fast your kidneys filter blood',
     plain:
-      'The most direct kidney function number. ≥90 is normal; persistent <60 indicates chronic kidney disease.',
+      'The most direct kidney function number. ≥90 is ideal and 60–89 is mildly reduced (often normal with age); a persistent reading below 60 indicates chronic kidney disease, and below 30 needs prompt kidney care.',
   },
   {
     id: 'uric-acid',

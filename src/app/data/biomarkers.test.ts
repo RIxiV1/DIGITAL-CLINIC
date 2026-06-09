@@ -86,6 +86,31 @@ describe('SHBG — adult-male ceiling raised to 57 nmol/L', () => {
   });
 });
 
+const EGFR = getTemplateById('egfr');
+if (!EGFR) {
+  throw new Error('Fixture template missing from catalog: egfr');
+}
+
+describe('eGFR — KDIGO stages mapped onto the four tiers', () => {
+  it('grades a normal eGFR (G1, ≥90) as good', () => {
+    expect(statusForValue(EGFR, 100)).toBe('good');
+  });
+
+  it('grades a mildly-reduced eGFR (G2, 60–89) as attention, not a false out-of-range', () => {
+    // 75 used to read 'concern' (healthy floor was 90); G2 isn't CKD on
+    // its own, so it should read borderline, not alarming.
+    expect(statusForValue(EGFR, 75)).toBe('attention');
+  });
+
+  it('surfaces CKD (G3, <60) as concern — the clinically meaningful cutoff', () => {
+    expect(statusForValue(EGFR, 50)).toBe('concern');
+  });
+
+  it('escalates advanced CKD (G4/G5, <30) to critical', () => {
+    expect(statusForValue(EGFR, 25)).toBe('critical');
+  });
+});
+
 /* ------------------------------------------------------------------ */
 /* statusForValue                                                       */
 /* ------------------------------------------------------------------ */
