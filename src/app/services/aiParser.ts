@@ -89,11 +89,7 @@ async function downscaleImage(file: File): Promise<Blob> {
     ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
     bmp.close?.();
     return await new Promise<Blob>((resolve) => {
-      canvas.toBlob(
-        (b) => resolve(b ?? file),
-        'image/jpeg',
-        JPEG_QUALITY,
-      );
+      canvas.toBlob((b) => resolve(b ?? file), 'image/jpeg', JPEG_QUALITY);
     });
   } catch {
     return file;
@@ -266,7 +262,9 @@ export type AiMapResult = {
  * UI gets to tell the user "we saw N more markers your lab tested,
  * here they are."
  */
-export function mapGeminiResultsToCatalog(results: GeminiMarker[]): AiMapResult {
+export function mapGeminiResultsToCatalog(
+  results: GeminiMarker[],
+): AiMapResult {
   const seen = new Set<string>();
   const mapped: Biomarker[] = [];
   const unmapped: Array<{ name: string; value: number; unit: string }> = [];
@@ -360,9 +358,7 @@ export function pruneSuspectShortNameMarkers(input: AiMapResult): AiMapResult {
   const kept: Biomarker[] = [];
   const newUnmapped = [...input.unmapped];
   for (const b of input.biomarkers) {
-    const normalised = b.name
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '');
+    const normalised = b.name.toLowerCase().replace(/[^a-z0-9]/g, '');
     const isShortName = normalised.length > 0 && normalised.length <= 3;
     const isFertility = b.category === 'fertility';
     if (isFertility && isShortName && fertilityCount < 2) {

@@ -107,7 +107,9 @@ export default class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-dvh bg-canvas grid place-items-center px-6 py-12">
           <div className="max-w-md text-center">
             <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-concern-soft text-concern">
-              <span className="font-display text-display-md leading-none">!</span>
+              <span className="font-display text-display-md leading-none">
+                !
+              </span>
             </div>
             <div className="mt-5 text-micro uppercase tracking-eyebrow font-bold text-concern">
               {isChunkError ? 'New version available' : 'Something broke'}

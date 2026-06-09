@@ -41,10 +41,7 @@ export default function QuizPage() {
   /* ---- simple-step helpers ---- */
   const currentValue =
     !isCompound && step.field
-      ? (quiz[step.field as keyof QuizAnswers] as
-          | string
-          | string[]
-          | undefined)
+      ? (quiz[step.field as keyof QuizAnswers] as string | string[] | undefined)
       : undefined;
 
   const isSelectedFor = (id: string, field: Field): boolean => {
@@ -226,7 +223,9 @@ export default function QuizPage() {
     // a navigation. A drag from a button that crosses SWIPE_THRESHOLD_PX
     // would otherwise both select the option AND advance the step.
     const target = e.target as HTMLElement | null;
-    if (target?.closest('button, a, input, select, textarea, [role="button"]')) {
+    if (
+      target?.closest('button, a, input, select, textarea, [role="button"]')
+    ) {
       swipeStartRef.current = null;
       return;
     }
@@ -620,16 +619,11 @@ function ExitConfirm({
             Honest framing also sets up the tertiary Start over below
             ("answers ARE saved → here's how to clear them deliberately"). */}
         <p className="mt-2 text-body-sm text-ink-soft leading-relaxed">
-          Your answers are saved — come back any time to pick up where you
-          left off.
+          Your answers are saved — come back any time to pick up where you left
+          off.
         </p>
         <div className="mt-5 flex flex-col-reverse sm:flex-row gap-2.5">
-          <Button
-            variant="secondary"
-            size="md"
-            fullWidth
-            onClick={onCancel}
-          >
+          <Button variant="secondary" size="md" fullWidth onClick={onCancel}>
             Keep going
           </Button>
           <Button variant="primary" size="md" fullWidth onClick={onConfirm}>

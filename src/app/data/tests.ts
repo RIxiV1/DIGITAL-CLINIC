@@ -74,31 +74,43 @@ const ALL_MARKERS: Marker[] = Object.values(M);
 const ABOUT: Record<Marker, string> = {
   [M.TOTAL_T]: 'Your main male hormone. Drives energy, sex drive, and muscle.',
   [M.FREE_T]: 'The bit of testosterone your body can actually use.',
-  [M.SHBG]: 'A protein that decides how much testosterone gets used vs. wasted.',
-  [M.VIT_D]: 'The sunshine vitamin. Most Indian men are low — affects mood, energy, immunity.',
+  [M.SHBG]:
+    'A protein that decides how much testosterone gets used vs. wasted.',
+  [M.VIT_D]:
+    'The sunshine vitamin. Most Indian men are low — affects mood, energy, immunity.',
   [M.TSH]: 'Your brain’s message to the thyroid. Sets your overall pace.',
   [M.FASTING_GLUCOSE]: 'Your blood sugar this morning, before breakfast.',
 
   [M.LH]: 'A signal from your brain telling your testes to make testosterone.',
   [M.FSH]: 'A signal from your brain telling your testes to make sperm.',
-  [M.PROLACTIN]: 'When too high, it quietly shuts down the testosterone system.',
-  [M.E2]: 'The estrogen your body makes from testosterone. Men need a little, not a lot.',
+  [M.PROLACTIN]:
+    'When too high, it quietly shuts down the testosterone system.',
+  [M.E2]:
+    'The estrogen your body makes from testosterone. Men need a little, not a lot.',
   [M.DHT]: 'A stronger form of testosterone. Drives male hair loss.',
-  [M.CORTISOL_AM]: 'Your stress hormone. The more stressed you are, the less testosterone gets made.',
-  [M.DHEA_S]: 'A backup hormone that helps you handle stress. Drops when you’re burned out.',
+  [M.CORTISOL_AM]:
+    'Your stress hormone. The more stressed you are, the less testosterone gets made.',
+  [M.DHEA_S]:
+    'A backup hormone that helps you handle stress. Drops when you’re burned out.',
 
   [M.HBA1C]: 'Your average blood sugar over the last 3 months.',
-  [M.FASTING_INSULIN]: 'How hard your pancreas is working to keep sugar normal.',
+  [M.FASTING_INSULIN]:
+    'How hard your pancreas is working to keep sugar normal.',
   [M.HOMA_IR]: 'A simple score showing how well your body listens to insulin.',
-  [M.LIPID]: 'Cholesterol and fats in your blood. Tells you how clear your arteries are.',
+  [M.LIPID]:
+    'Cholesterol and fats in your blood. Tells you how clear your arteries are.',
   [M.IGF1]: 'A growth-hormone marker. Naturally drops with age.',
 
-  [M.IRON_FERRITIN]: 'Your iron stores. Low iron means low energy, slower hair growth.',
+  [M.IRON_FERRITIN]:
+    'Your iron stores. Low iron means low energy, slower hair growth.',
   [M.B12]: 'Fuel for your brain and nerves. Often low in vegetarian diets.',
-  [M.ZINC]: 'Mineral needed to make testosterone. Often depleted, easy to top up.',
-  [M.MAGNESIUM_RBC]: 'Sleep, stress, and muscle mineral. Most men don’t get enough.',
+  [M.ZINC]:
+    'Mineral needed to make testosterone. Often depleted, easy to top up.',
+  [M.MAGNESIUM_RBC]:
+    'Sleep, stress, and muscle mineral. Most men don’t get enough.',
 
-  [M.T3_T4]: 'The full thyroid picture, when the simple thyroid test isn’t enough.',
+  [M.T3_T4]:
+    'The full thyroid picture, when the simple thyroid test isn’t enough.',
   [M.CBC]: 'A general blood health check — red cells, white cells, platelets.',
   [M.PSA]: 'A prostate health marker. Worth a baseline reading after 40.',
 
@@ -163,7 +175,10 @@ const AGE_ADDS: Record<string, Marker[]> = {
 };
 
 /** Activity modifiers (from PDF page 5). */
-function activityAdds(activity: string | undefined, symptoms: string[]): Marker[] {
+function activityAdds(
+  activity: string | undefined,
+  symptoms: string[],
+): Marker[] {
   if (!activity) return [];
   if (activity === 'sedentary') return [M.FASTING_INSULIN, M.HOMA_IR];
   if (activity === 'active') {
@@ -227,14 +242,7 @@ const CATEGORIES: PanelCategory[] = [
     id: 'foundational',
     name: 'The Starter Check',
     short: 'The 6 numbers every man should know',
-    markers: [
-      M.TOTAL_T,
-      M.FREE_T,
-      M.SHBG,
-      M.VIT_D,
-      M.TSH,
-      M.FASTING_GLUCOSE,
-    ],
+    markers: [M.TOTAL_T, M.FREE_T, M.SHBG, M.VIT_D, M.TSH, M.FASTING_GLUCOSE],
     fasting: true,
     turnaround: '24 hrs',
   },
@@ -242,15 +250,7 @@ const CATEGORIES: PanelCategory[] = [
     id: 'hormonal',
     name: 'Full Hormone Read',
     short: 'How your hormones talk to each other',
-    markers: [
-      M.LH,
-      M.FSH,
-      M.PROLACTIN,
-      M.E2,
-      M.DHT,
-      M.CORTISOL_AM,
-      M.DHEA_S,
-    ],
+    markers: [M.LH, M.FSH, M.PROLACTIN, M.E2, M.DHT, M.CORTISOL_AM, M.DHEA_S],
     fasting: true,
     turnaround: '24 hrs',
   },
@@ -258,13 +258,7 @@ const CATEGORIES: PanelCategory[] = [
     id: 'metabolic',
     name: 'Sugar & Energy Check',
     short: 'Blood sugar, insulin, cholesterol',
-    markers: [
-      M.HBA1C,
-      M.FASTING_INSULIN,
-      M.HOMA_IR,
-      M.LIPID,
-      M.IGF1,
-    ],
+    markers: [M.HBA1C, M.FASTING_INSULIN, M.HOMA_IR, M.LIPID, M.IGF1],
     fasting: true,
     turnaround: '24 hrs',
   },
@@ -390,14 +384,15 @@ function whyForFertility(_q: QuizAnswers): string {
   return 'Fertility in men runs on two tracks — the hormones telling your testes what to do (LH, FSH) and the output itself. Semen analysis is a separate appointment.';
 }
 
-const WHY_FNS: Record<string, (q: QuizAnswers, triggered: Marker[]) => string> = {
-  foundational: whyForFoundational,
-  hormonal: whyForHormonal,
-  metabolic: whyForMetabolic,
-  nutritional: whyForNutritional,
-  screening: whyForScreening,
-  fertility: whyForFertility,
-};
+const WHY_FNS: Record<string, (q: QuizAnswers, triggered: Marker[]) => string> =
+  {
+    foundational: whyForFoundational,
+    hormonal: whyForHormonal,
+    metabolic: whyForMetabolic,
+    nutritional: whyForNutritional,
+    screening: whyForScreening,
+    fertility: whyForFertility,
+  };
 
 /* ------------------------------------------------------------------ */
 /* Core engine                                                          */

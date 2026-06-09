@@ -62,26 +62,30 @@ const RAW_ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? '')
 
 const allowedOriginEntries = (
   RAW_ALLOWED_ORIGINS.length ? RAW_ALLOWED_ORIGINS : DEFAULT_ALLOWED_ORIGINS
-).map((entry): { kind: 'literal'; value: string } | { kind: 'regex'; value: RegExp } => {
-  if (entry.startsWith('re:')) {
-    try {
-      return { kind: 'regex', value: new RegExp(entry.slice(3)) };
-    } catch {
-      // A malformed pattern would otherwise open-fail to "always
-      // reject" silently. Log + fall back to literal so misconfig
-      // surfaces in deploy logs rather than 100% of users getting
-      // 403s with no diagnostic.
-      // eslint-disable-next-line no-console
-      console.error(
-        'parse-image: invalid regex in ALLOWED_ORIGINS:',
-        entry,
-        '— treating as literal.',
-      );
-      return { kind: 'literal', value: entry };
+).map(
+  (
+    entry,
+  ): { kind: 'literal'; value: string } | { kind: 'regex'; value: RegExp } => {
+    if (entry.startsWith('re:')) {
+      try {
+        return { kind: 'regex', value: new RegExp(entry.slice(3)) };
+      } catch {
+        // A malformed pattern would otherwise open-fail to "always
+        // reject" silently. Log + fall back to literal so misconfig
+        // surfaces in deploy logs rather than 100% of users getting
+        // 403s with no diagnostic.
+        // eslint-disable-next-line no-console
+        console.error(
+          'parse-image: invalid regex in ALLOWED_ORIGINS:',
+          entry,
+          '— treating as literal.',
+        );
+        return { kind: 'literal', value: entry };
+      }
     }
-  }
-  return { kind: 'literal', value: entry };
-});
+    return { kind: 'literal', value: entry };
+  },
+);
 
 function isOriginAllowed(origin: string): boolean {
   for (const entry of allowedOriginEntries) {
@@ -132,11 +136,7 @@ const allowNoOrigin = process.env.ALLOW_NO_ORIGIN === '1';
  *  our client-side allowlist. Anything else gets rejected before it
  *  reaches the model — the client downscales to JPEG so this is
  *  belt-and-braces. */
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-]);
+const ALLOWED_MIME_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
 /**
  * Strict JSON shape the model returns. Matches what the client maps
@@ -219,7 +219,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // limiting (a determined attacker can spoof Origin via curl), but it
   // closes the easy-browser-abuse vector.
   const origin = req.headers.origin;
-  const host = typeof req.headers.host === 'string' ? req.headers.host : undefined;
+  const host =
+    typeof req.headers.host === 'string' ? req.headers.host : undefined;
   if (typeof origin === 'string' && origin.length > 0) {
     if (!isOriginAllowed(origin) && !isSameOriginRequest(origin, host)) {
       return res.status(403).json({ error: 'Forbidden' });

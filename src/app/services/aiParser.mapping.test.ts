@@ -22,7 +22,13 @@ describe('unitMultiplier — Indian count-prefix reconciliation', () => {
   });
 
   it('resolves thousand-family prefixes to 1e3', () => {
-    for (const u of ['thou/cumm', 'thousand/cumm', '10^3/uL', '10³/µL', 'x10^3']) {
+    for (const u of [
+      'thou/cumm',
+      'thousand/cumm',
+      '10^3/uL',
+      '10³/µL',
+      'x10^3',
+    ]) {
       expect(unitMultiplier(u)).toBe(1e3);
     }
   });
@@ -34,7 +40,13 @@ describe('unitMultiplier — Indian count-prefix reconciliation', () => {
   });
 
   it('resolves million-family prefixes to 1e6', () => {
-    for (const u of ['million/cumm', 'mill/cumm', '10^6/uL', '10⁶/µL', 'x10^6']) {
+    for (const u of [
+      'million/cumm',
+      'mill/cumm',
+      '10^6/uL',
+      '10⁶/µL',
+      'x10^6',
+    ]) {
       expect(unitMultiplier(u)).toBe(1e6);
     }
   });
@@ -99,7 +111,11 @@ describe('mapGeminiResultsToCatalog — match, scale, bound, dedupe, route', () 
     // The hardened matcher must NOT resolve "total testosterone" out of an
     // arbitrary phrase — that was a real loose-match hallucination vector.
     const out = mapGeminiResultsToCatalog([
-      { name: 'totally insane testosterone-like reading', value: 5, unit: 'ng/dL' },
+      {
+        name: 'totally insane testosterone-like reading',
+        value: 5,
+        unit: 'ng/dL',
+      },
     ]);
     expect(out.biomarkers).toHaveLength(0);
   });

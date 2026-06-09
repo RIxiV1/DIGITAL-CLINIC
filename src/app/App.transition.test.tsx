@@ -22,7 +22,13 @@
  * repeated real-browser navigations), not this test.
  */
 
-import { render, screen, waitFor, cleanup, fireEvent } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  cleanup,
+  fireEvent,
+} from '@testing-library/react';
 import { describe, it, expect, afterEach, vi } from 'vitest';
 import App from './App';
 
@@ -31,15 +37,26 @@ if (typeof window !== 'undefined' && !window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
     writable: true,
     value: vi.fn().mockImplementation((query: string) => ({
-      matches: false, media: query, onchange: null,
-      addListener: vi.fn(), removeListener: vi.fn(),
-      addEventListener: vi.fn(), removeEventListener: vi.fn(), dispatchEvent: vi.fn(),
+      matches: false,
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
     })),
   });
 }
-if (typeof window !== 'undefined' && !window.scrollTo) window.scrollTo = vi.fn();
+if (typeof window !== 'undefined' && !window.scrollTo)
+  window.scrollTo = vi.fn();
 class StubObserver {
-  observe() {} unobserve() {} disconnect() {} takeRecords() { return []; }
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() {
+    return [];
+  }
 }
 for (const key of ['IntersectionObserver', 'ResizeObserver'] as const) {
   if (typeof window !== 'undefined' && !(key in window)) {
@@ -61,10 +78,14 @@ describe('PageHost navigation', () => {
 
     // Landing is eager — one main from the first paint.
     expect(mains()).toHaveLength(1);
-    expect(screen.getAllByText(/men.s hormonal health/i).length).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/men.s hormonal health/i).length,
+    ).toBeGreaterThan(0);
 
     // Navigate to the sample report (lazy page behind Suspense).
-    const sample = screen.getAllByRole('button', { name: /see a sample report/i })[0];
+    const sample = screen.getAllByRole('button', {
+      name: /see a sample report/i,
+    })[0];
     fireEvent.click(sample);
 
     // The landing page is gone immediately on the keyed swap...

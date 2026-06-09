@@ -3,7 +3,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Database, Download, Trash2, X } from 'lucide-react';
 import Button from './Button';
 import { useModalA11y } from '../utils/useModalA11y';
-import { exportAllData, getStorageStats, wipeAllData } from '../utils/persistence';
+import {
+  exportAllData,
+  getStorageStats,
+  wipeAllData,
+} from '../utils/persistence';
 import { clearPendingUpload } from '../services/api';
 import { formatBytes, formatDate } from '../utils/uiUtils';
 
@@ -43,7 +47,9 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
   // was frozen at open time, so post-wipe the download button still
   // saw the old keyCount and stayed enabled, downloading an empty
   // payload — a benign bug, but visibly inconsistent.
-  const [stats, setStats] = useState<ReturnType<typeof getStorageStats> | null>(null);
+  const [stats, setStats] = useState<ReturnType<typeof getStorageStats> | null>(
+    null,
+  );
   useEffect(() => {
     if (open) setStats(getStorageStats());
     else setStats(null);
@@ -154,13 +160,16 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
             <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
               <p className="text-caption leading-relaxed text-ink-soft">
                 Everything in your Digital Clinic — reports, quiz answers,
-                preferences — lives in your browser only. We don't store any
-                of it on our servers.
+                preferences — lives in your browser only. We don't store any of
+                it on our servers.
               </p>
 
               {stats && (
                 <div className="rounded-[14px] border border-line bg-canvas/60 divide-y divide-line/70">
-                  <StatRow label="Stored entries" value={String(stats.keyCount)} />
+                  <StatRow
+                    label="Stored entries"
+                    value={String(stats.keyCount)}
+                  />
                   <StatRow
                     label="Approximate size"
                     value={formatBytes(stats.approxBytes)}
@@ -189,8 +198,8 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
 
               {wiped ? (
                 <div className="rounded-[14px] bg-good-soft border border-good/30 p-4 text-caption text-good leading-relaxed">
-                  Everything's gone. Your browser storage is empty —
-                  refresh the page to start fresh.
+                  Everything's gone. Your browser storage is empty — refresh the
+                  page to start fresh.
                 </div>
               ) : confirming ? (
                 <div className="rounded-[14px] bg-concern-soft border border-concern/30 p-4 space-y-3">
@@ -233,14 +242,19 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
               )}
 
               <p className="text-caption text-muted leading-relaxed">
-                Inactive reports are auto-deleted after 6 months. Need a
-                copy first? Use "Download as PDF" on any report.
+                Inactive reports are auto-deleted after 6 months. Need a copy
+                first? Use "Download as PDF" on any report.
               </p>
             </div>
 
             {/* Footer */}
             <div className="px-6 py-4 border-t border-line/70 bg-canvas/40">
-              <Button variant="primary" size="md" responsiveFullWidth onClick={onClose}>
+              <Button
+                variant="primary"
+                size="md"
+                responsiveFullWidth
+                onClick={onClose}
+              >
                 Done
               </Button>
             </div>

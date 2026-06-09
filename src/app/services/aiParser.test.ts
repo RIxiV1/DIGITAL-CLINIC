@@ -86,9 +86,7 @@ describe('pruneSuspectShortNameMarkers', () => {
     });
     expect(result.biomarkers).toHaveLength(3);
     expect(result.biomarkers.find((b) => b.name === 'pH')).toBeUndefined();
-    expect(result.unmapped).toEqual([
-      { name: 'pH', value: 4.2, unit: '' },
-    ]);
+    expect(result.unmapped).toEqual([{ name: 'pH', value: 4.2, unit: '' }]);
   });
 
   it('keeps pH when at least one other fertility marker is present', () => {

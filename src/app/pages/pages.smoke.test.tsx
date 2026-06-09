@@ -70,12 +70,15 @@ class StubResizeObserver {
   disconnect() {}
 }
 if (typeof window !== 'undefined' && !('IntersectionObserver' in window)) {
-  (window as unknown as { IntersectionObserver: typeof IntersectionObserver }).IntersectionObserver =
+  (
+    window as unknown as { IntersectionObserver: typeof IntersectionObserver }
+  ).IntersectionObserver =
     StubIntersectionObserver as unknown as typeof IntersectionObserver;
 }
 if (typeof window !== 'undefined' && !('ResizeObserver' in window)) {
-  (window as unknown as { ResizeObserver: typeof ResizeObserver }).ResizeObserver =
-    StubResizeObserver as unknown as typeof ResizeObserver;
+  (
+    window as unknown as { ResizeObserver: typeof ResizeObserver }
+  ).ResizeObserver = StubResizeObserver as unknown as typeof ResizeObserver;
 }
 
 afterEach(cleanup);

@@ -37,7 +37,13 @@ type Item = {
 
 function item(
   str: string,
-  opts: { x?: number; y?: number; width?: number; height?: number; hasEOL?: boolean } = {},
+  opts: {
+    x?: number;
+    y?: number;
+    width?: number;
+    height?: number;
+    hasEOL?: boolean;
+  } = {},
 ): Item {
   const { x = 0, y = 0, width, height = 10, hasEOL } = opts;
   return {
@@ -220,7 +226,11 @@ describe('reconstructByPosition', () => {
   it('separates items into different lines when Y differs by more than tolerance', () => {
     const result = reconstructByPosition({
       items: [
-        item('Hemoglobin 14.5'.replace(/ /g, ''), { x: 50, y: 700, height: 10 }),
+        item('Hemoglobin 14.5'.replace(/ /g, ''), {
+          x: 50,
+          y: 700,
+          height: 10,
+        }),
         item('LDL 120'.replace(/ /g, ''), { x: 50, y: 680, height: 10 }),
       ],
     });
@@ -273,7 +283,10 @@ describe('reconstructByPosition', () => {
       ],
     });
     expect(result).toBe(
-      ['Total Cholesterol 195 mg/dL <200', 'LDL Cholesterol 120 mg/dL <100'].join('\n'),
+      [
+        'Total Cholesterol 195 mg/dL <200',
+        'LDL Cholesterol 120 mg/dL <100',
+      ].join('\n'),
     );
   });
 });

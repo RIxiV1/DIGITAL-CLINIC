@@ -147,31 +147,28 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     setReports((prev) => [report, ...prev]);
   }, []);
 
-  const markReportReady = useCallback(
-    (id: string, patch?: Partial<Report>) => {
-      setReports((prev) => {
-        // Merge history from prior ready reports into the new
-        // biomarkers, if we're committing new biomarkers. Without this,
-        // trend/delta surfaces are dark for users with only their own
-        // data — see mergeHistoryFromPriorReports.
-        const otherReady = prev.filter(
-          (r) => r.id !== id && r.status === 'ready',
-        );
-        const mergedBiomarkers = patch?.biomarkers
-          ? mergeHistoryFromPriorReports(patch.biomarkers, otherReady)
-          : undefined;
-        const effectivePatch: Partial<Report> = mergedBiomarkers
-          ? { ...patch, biomarkers: mergedBiomarkers }
-          : (patch ?? {});
-        return prev.map((r) =>
-          r.id === id
-            ? { ...r, ...effectivePatch, status: 'ready', badge: 'analyzed' }
-            : r,
-        );
-      });
-    },
-    [],
-  );
+  const markReportReady = useCallback((id: string, patch?: Partial<Report>) => {
+    setReports((prev) => {
+      // Merge history from prior ready reports into the new
+      // biomarkers, if we're committing new biomarkers. Without this,
+      // trend/delta surfaces are dark for users with only their own
+      // data — see mergeHistoryFromPriorReports.
+      const otherReady = prev.filter(
+        (r) => r.id !== id && r.status === 'ready',
+      );
+      const mergedBiomarkers = patch?.biomarkers
+        ? mergeHistoryFromPriorReports(patch.biomarkers, otherReady)
+        : undefined;
+      const effectivePatch: Partial<Report> = mergedBiomarkers
+        ? { ...patch, biomarkers: mergedBiomarkers }
+        : (patch ?? {});
+      return prev.map((r) =>
+        r.id === id
+          ? { ...r, ...effectivePatch, status: 'ready', badge: 'analyzed' }
+          : r,
+      );
+    });
+  }, []);
 
   const removeReport = useCallback((id: string) => {
     setReports((prev) => prev.filter((r) => r.id !== id));
@@ -186,7 +183,14 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
       saveError,
       dismissSaveError,
     }),
-    [reports, addReport, markReportReady, removeReport, saveError, dismissSaveError],
+    [
+      reports,
+      addReport,
+      markReportReady,
+      removeReport,
+      saveError,
+      dismissSaveError,
+    ],
   );
 
   return (

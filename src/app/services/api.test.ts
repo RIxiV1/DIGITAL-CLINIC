@@ -3,7 +3,7 @@ import {
   validateUpload,
   parseUploadedReport,
   setPendingUpload,
-  consumePendingUpload
+  consumePendingUpload,
 } from './api';
 import { parsePdfFile, classifyOutOfScope } from './pdfParser';
 
@@ -53,7 +53,9 @@ describe('api — validateUpload', () => {
   });
 
   it('returns error for unsupported mime type', () => {
-    const file = new File([''], 'doc.docx', { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const file = new File([''], 'doc.docx', {
+      type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    });
     const res = validateUpload(file);
     expect(res.ok).toBe(false);
     if (!res.ok) {
@@ -74,7 +76,9 @@ describe('api — validateUpload', () => {
   });
 
   it('returns ok for valid PDF file and sanitizes its name', () => {
-    const file = new File([''], 'my\u0000report\u202E.pdf', { type: 'application/pdf' });
+    const file = new File([''], 'my\u0000report\u202E.pdf', {
+      type: 'application/pdf',
+    });
     const res = validateUpload(file);
     expect(res.ok).toBe(true);
     if (res.ok) {
@@ -96,20 +100,29 @@ describe('api — parseUploadedReport', () => {
 
   it('reports progress stages and returns successfully parsed report', async () => {
     const mockBiomarkers = [
-      { id: 'glucose', name: 'Glucose', value: 90, unit: 'mg/dL', status: 'good' }
+      {
+        id: 'glucose',
+        name: 'Glucose',
+        value: 90,
+        unit: 'mg/dL',
+        status: 'good',
+      },
     ] as any;
 
     vi.mocked(parsePdfFile).mockResolvedValue({
       biomarkers: mockBiomarkers,
       source: 'pdf-text',
       rawText: 'Glucose 90 mg/dL',
-      unrecognizedRows: []
+      unrecognizedRows: [],
     });
 
     const file = new File([''], 'report.pdf', { type: 'application/pdf' });
     const onProgress = vi.fn();
 
-    const parsePromise = parseUploadedReport({ name: 'Test Report', file }, onProgress);
+    const parsePromise = parseUploadedReport(
+      { name: 'Test Report', file },
+      onProgress,
+    );
 
     await vi.runAllTimersAsync();
     const result = await parsePromise;
@@ -119,7 +132,8 @@ describe('api — parseUploadedReport', () => {
     expect(result.report.name).toBe('Test Report');
     expect(onProgress).toHaveBeenCalled();
 
-    const lastProgress = onProgress.mock.calls[onProgress.mock.calls.length - 1][0];
+    const lastProgress =
+      onProgress.mock.calls[onProgress.mock.calls.length - 1][0];
     expect(lastProgress.overall).toBe(1);
   });
 
@@ -139,14 +153,17 @@ describe('api — parseUploadedReport', () => {
       biomarkers: [],
       source: 'pdf-text',
       rawText: 'X-RAY CHEST shows normal lungs. Sinus rhythm on EKG.',
-      unrecognizedRows: []
+      unrecognizedRows: [],
     });
     vi.mocked(classifyOutOfScope).mockReturnValue('imaging');
 
     const file = new File([''], 'xray.pdf', { type: 'application/pdf' });
     const onProgress = vi.fn();
 
-    const parsePromise = parseUploadedReport({ name: 'X-ray Report', file }, onProgress);
+    const parsePromise = parseUploadedReport(
+      { name: 'X-ray Report', file },
+      onProgress,
+    );
 
     await vi.runAllTimersAsync();
     const result = await parsePromise;
@@ -161,7 +178,10 @@ describe('api — parseUploadedReport', () => {
     const file = new File([''], 'locked.pdf', { type: 'application/pdf' });
     const onProgress = vi.fn();
 
-    const parsePromise = parseUploadedReport({ name: 'Locked', file }, onProgress);
+    const parsePromise = parseUploadedReport(
+      { name: 'Locked', file },
+      onProgress,
+    );
 
     await vi.runAllTimersAsync();
     const result = await parsePromise;

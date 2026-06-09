@@ -84,7 +84,9 @@ export default function TrendRow({ marker, asOf, onLearnMore }: Props) {
           {delta && (
             <span
               className={`inline-flex items-center gap-0.5 text-micro font-bold tabular-nums ${toneCls}`}
-              title={prev !== undefined ? `Was ${prev} ${marker.unit}` : undefined}
+              title={
+                prev !== undefined ? `Was ${prev} ${marker.unit}` : undefined
+              }
             >
               <Icon size={10} strokeWidth={2.5} />
               {delta}

@@ -77,10 +77,12 @@ export default function RecommendedTestsPage() {
   const triggerRef = useRef<HTMLElement | null>(null);
 
   const openTest = openTestId
-    ? tests.find((t) => t.id === openTestId) ?? null
+    ? (tests.find((t) => t.id === openTestId) ?? null)
     : null;
-  const openTestLM = openTestId ? getTestInfo(openTestId) ?? null : null;
-  const openMarkerLM = openMarkerName ? getMarkerInfo(openMarkerName) ?? null : null;
+  const openTestLM = openTestId ? (getTestInfo(openTestId) ?? null) : null;
+  const openMarkerLM = openMarkerName
+    ? (getMarkerInfo(openMarkerName) ?? null)
+    : null;
   const modalTitle = openTest?.name ?? openMarkerName ?? '';
   const modalSubtitle = openTest ? openTest.short : 'Marker · Learn more';
   const modalInfo = openTestLM ?? openMarkerLM;
@@ -125,10 +127,10 @@ export default function RecommendedTestsPage() {
             <span className="tabular-nums">
               {tests.length} {tests.length === 1 ? 'test' : 'tests'}
             </span>
-            <span aria-hidden className="text-line">·</span>
-            <span className="tabular-nums">
-              {totalMarkers} markers
+            <span aria-hidden className="text-line">
+              ·
             </span>
+            <span className="tabular-nums">{totalMarkers} markers</span>
           </div>
         </div>
 
@@ -149,10 +151,10 @@ export default function RecommendedTestsPage() {
                     Talk to a doctor before acting on this.
                   </div>
                   <p className="mt-1.5 text-caption text-ink-soft leading-relaxed">
-                    Your answers cluster strongly toward at least one
-                    system. The tests below help confirm or rule it out —
-                    but the interpretation belongs in a consultation,
-                    not a self-diagnosis from a screener.
+                    Your answers cluster strongly toward at least one system.
+                    The tests below help confirm or rule it out — but the
+                    interpretation belongs in a consultation, not a
+                    self-diagnosis from a screener.
                   </p>
                 </div>
               </div>
@@ -202,10 +204,7 @@ export default function RecommendedTestsPage() {
             the secondary list, with different padding classes so the body
             content aligns under each layout's collapsed title. */}
         {(() => {
-          const renderExpandedBody = (
-            t: RecommendedTest,
-            padClass: string,
-          ) => (
+          const renderExpandedBody = (t: RecommendedTest, padClass: string) => (
             <div className={padClass}>
               {/* "Why this for you" — left-accent treatment (no background
                   wash) so the personalised reasoning sits flush with the
@@ -280,73 +279,72 @@ export default function RecommendedTestsPage() {
           return (
             <div className="mt-7 grid gap-4 lg:max-w-3xl">
               {/* === STARTER CHECK — HERO CARD === */}
-              {starter && (() => {
-                const open = expanded === starter.id;
-                return (
-                  <Card
-                    padded={false}
-                    className="border-gold-500/40 ring-1 ring-gold-500/30 overflow-hidden"
-                  >
-                    <button
-                      onClick={() =>
-                        setExpanded(open ? null : starter.id)
-                      }
-                      className="w-full text-left flex items-start gap-3 p-5"
+              {starter &&
+                (() => {
+                  const open = expanded === starter.id;
+                  return (
+                    <Card
+                      padded={false}
+                      className="border-gold-500/40 ring-1 ring-gold-500/30 overflow-hidden"
                     >
-                      <div className="grid place-items-center w-11 h-11 rounded-2xl font-display text-body shrink-0 bg-gold-500 text-indigo-900">
-                        01
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <div className="font-semibold text-ink">
-                            {starter.name}
-                          </div>
-                          <Pill tone="gold" size="sm">
-                            Start here
-                          </Pill>
+                      <button
+                        onClick={() => setExpanded(open ? null : starter.id)}
+                        className="w-full text-left flex items-start gap-3 p-5"
+                      >
+                        <div className="grid place-items-center w-11 h-11 rounded-2xl font-display text-body shrink-0 bg-gold-500 text-indigo-900">
+                          01
                         </div>
-                        <div className="text-caption text-muted mt-0.5">
-                          {starter.short}
-                        </div>
-                        <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
-                          {starter.fasting && (
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <div className="font-semibold text-ink">
+                              {starter.name}
+                            </div>
                             <Pill tone="gold" size="sm">
-                              <Coffee size={10} /> Fasting
+                              Start here
                             </Pill>
-                          )}
-                          <Pill tone="indigo" size="sm">
-                            <Clock size={10} /> {starter.turnaround}
-                          </Pill>
-                          <Pill tone="neutral" size="sm">
-                            {starter.includes.length} markers
-                          </Pill>
-                        </div>
-                        {starter.includes.length > 0 && (
-                          <div className="mt-2 text-caption text-ink-soft leading-relaxed">
-                            <span className="font-semibold">Includes:</span>{' '}
-                            <span className="text-muted">
-                              {starter.includes
-                                .slice(0, 3)
-                                .map((m) => m.name)
-                                .join(', ')}
-                              {starter.includes.length > 3 &&
-                                ` +${starter.includes.length - 3} more`}
-                            </span>
                           </div>
-                        )}
-                      </div>
-                      <div className="text-indigo-700 shrink-0 mt-1">
-                        {open ? (
-                          <ChevronUp size={20} />
-                        ) : (
-                          <ChevronDown size={20} />
-                        )}
-                      </div>
-                    </button>
-                    {open && renderExpandedBody(starter, 'px-5 pb-5')}
-                  </Card>
-                );
-              })()}
+                          <div className="text-caption text-muted mt-0.5">
+                            {starter.short}
+                          </div>
+                          <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                            {starter.fasting && (
+                              <Pill tone="gold" size="sm">
+                                <Coffee size={10} /> Fasting
+                              </Pill>
+                            )}
+                            <Pill tone="indigo" size="sm">
+                              <Clock size={10} /> {starter.turnaround}
+                            </Pill>
+                            <Pill tone="neutral" size="sm">
+                              {starter.includes.length} markers
+                            </Pill>
+                          </div>
+                          {starter.includes.length > 0 && (
+                            <div className="mt-2 text-caption text-ink-soft leading-relaxed">
+                              <span className="font-semibold">Includes:</span>{' '}
+                              <span className="text-muted">
+                                {starter.includes
+                                  .slice(0, 3)
+                                  .map((m) => m.name)
+                                  .join(', ')}
+                                {starter.includes.length > 3 &&
+                                  ` +${starter.includes.length - 3} more`}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-indigo-700 shrink-0 mt-1">
+                          {open ? (
+                            <ChevronUp size={20} />
+                          ) : (
+                            <ChevronDown size={20} />
+                          )}
+                        </div>
+                      </button>
+                      {open && renderExpandedBody(starter, 'px-5 pb-5')}
+                    </Card>
+                  );
+                })()}
 
               {/* === DIVIDER EYEBROW === */}
               {starter && others.length > 0 && (

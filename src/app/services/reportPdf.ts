@@ -188,9 +188,30 @@ function drawBottomLine(ctx: Ctx, biomarkers: Biomarker[]): void {
   // Three counters along the bottom
   const counterY = cardY + cardHeight - 12;
   const counterStep = (CONTENT_W - 14) / 3;
-  drawCounter(ctx, cardX + 7 + counterStep * 0, counterY, 'ON TRACK', summary.good, COLOR.good);
-  drawCounter(ctx, cardX + 7 + counterStep * 1, counterY, 'NEEDS ATTENTION', summary.attention, COLOR.attention);
-  drawCounter(ctx, cardX + 7 + counterStep * 2, counterY, 'NEEDS CARE', summary.concern, COLOR.concern);
+  drawCounter(
+    ctx,
+    cardX + 7 + counterStep * 0,
+    counterY,
+    'ON TRACK',
+    summary.good,
+    COLOR.good,
+  );
+  drawCounter(
+    ctx,
+    cardX + 7 + counterStep * 1,
+    counterY,
+    'NEEDS ATTENTION',
+    summary.attention,
+    COLOR.attention,
+  );
+  drawCounter(
+    ctx,
+    cardX + 7 + counterStep * 2,
+    counterY,
+    'NEEDS CARE',
+    summary.concern,
+    COLOR.concern,
+  );
 
   ctx.y += cardHeight + 10;
 }
@@ -288,8 +309,13 @@ function drawMarker(ctx: Ctx, marker: Biomarker): void {
   const rangeStr = asciize(`Healthy ${marker.min}-${marker.max}${unitSuffix}`);
   doc.text(rangeStr, MARGIN_L, ctx.y);
 
-  if (typeof marker.optimalMin === 'number' && typeof marker.optimalMax === 'number') {
-    const optStr = asciize(`  -  Optimal ${marker.optimalMin}-${marker.optimalMax}${unitSuffix}`);
+  if (
+    typeof marker.optimalMin === 'number' &&
+    typeof marker.optimalMax === 'number'
+  ) {
+    const optStr = asciize(
+      `  -  Optimal ${marker.optimalMin}-${marker.optimalMax}${unitSuffix}`,
+    );
     setText(ctx, 8, 'normal', COLOR.good);
     doc.text(optStr, MARGIN_L + doc.getTextWidth(rangeStr), ctx.y);
   }

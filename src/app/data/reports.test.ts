@@ -289,12 +289,16 @@ describe('getRetestReminder', () => {
   });
 
   it('returns null when the latest report is recent (under the threshold)', () => {
-    const recent = readyReport(dateNDaysAgo(RETEST_REMINDER_DAYS - 5), [hb(14)]);
+    const recent = readyReport(dateNDaysAgo(RETEST_REMINDER_DAYS - 5), [
+      hb(14),
+    ]);
     expect(getRetestReminder([recent], NOW)).toBeNull();
   });
 
   it('returns the report + months once past the threshold', () => {
-    const stale = readyReport(dateNDaysAgo(RETEST_REMINDER_DAYS + 30), [hb(14)]);
+    const stale = readyReport(dateNDaysAgo(RETEST_REMINDER_DAYS + 30), [
+      hb(14),
+    ]);
     const reminder = getRetestReminder([stale], NOW);
     expect(reminder?.report.id).toBe(stale.id);
     expect(reminder?.months).toBe(5); // 150 days ≈ 5 months
