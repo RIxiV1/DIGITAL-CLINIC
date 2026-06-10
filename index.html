@@ -77,9 +77,10 @@
          bundle parses, so the first paint already carries the user's
          persisted theme (no light/dark flash on cold visits).
 
-         EXTERNAL, not inline, on purpose: the production CSP in
-         vercel.json is `script-src 'self'` with no 'unsafe-inline', which
-         silently blocks inline scripts. As an inline script this never
+         EXTERNAL, not inline, on purpose: the production CSP's
+         `script-src` in vercel.json allows 'self', 'wasm-unsafe-eval',
+         and the jsdelivr CDN — but no 'unsafe-inline', which silently
+         blocks inline scripts. As an inline script this never
          ran in prod — `data-theme` stayed unset and the deployed site
          fell back to the light base palette (dark looked broken on
          mobile). A same-origin file satisfies 'self' with no CSP hash to
