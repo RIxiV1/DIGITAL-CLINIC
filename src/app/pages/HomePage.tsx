@@ -553,7 +553,17 @@ export default function HomePage() {
           the headline carries the message. */}
       {ready && topConcern && (
         <Container size="wide" className="mt-6 md:mt-8">
-          <SectionHeading eyebrow="Worth a look" title="The one to focus on" />
+          <SectionHeading
+            eyebrow={
+              topConcern.status === 'critical'
+                ? 'Needs prompt attention'
+                : 'Worth a look'
+            }
+            eyebrowTone={
+              topConcern.status === 'critical' ? 'concern' : 'indigo'
+            }
+            title="The one to focus on"
+          />
           <div className="mt-4">
             <MarkerAttentionCard
               marker={topConcern}
@@ -1380,11 +1390,17 @@ const PATHWAYS: Pathway[] = [
 
 function SectionHeading({
   eyebrow,
+  eyebrowTone = 'indigo',
   title,
   subtitle,
   rightSlot,
 }: {
   eyebrow: string;
+  /** Pill tone for the eyebrow. Defaults to brand indigo; the top-concern
+   *  heading passes 'concern' for a critical marker so the section's
+   *  urgency matches the card's "talk to a doctor today" framing instead
+   *  of a casual "worth a look". */
+  eyebrowTone?: React.ComponentProps<typeof Pill>['tone'];
   title: string;
   subtitle?: string;
   rightSlot?: React.ReactNode;
@@ -1392,7 +1408,7 @@ function SectionHeading({
   return (
     <div className="flex items-end justify-between gap-3">
       <div className="min-w-0">
-        <Pill tone="indigo" size="sm">
+        <Pill tone={eyebrowTone} size="sm">
           {eyebrow}
         </Pill>
         <h2 className="font-display text-display-md leading-tight mt-2">
