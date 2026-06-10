@@ -16,6 +16,11 @@ type Props = {
   /** Click handler for the Info button — receives the event so the caller
    *  can capture currentTarget to restore focus when the modal closes. */
   onLearnMore?: (e: React.MouseEvent<HTMLButtonElement>) => void;
+  /** Render the marker's plain-English explanation inline. On by default
+   *  for the dashboard hero ("the one to focus on") so an anxious reader
+   *  gets the *why* without hunting for the (i). The 12-card grid leaves
+   *  it off to stay scannable — those cards defer context to the modal. */
+  showExplanation?: boolean;
 };
 
 /**
@@ -30,6 +35,7 @@ export default function MarkerAttentionCard({
   marker,
   onAction,
   onLearnMore,
+  showExplanation = false,
 }: Props) {
   const c = statusColor(marker.status);
   const trend = getTrend(marker);
@@ -178,15 +184,17 @@ export default function MarkerAttentionCard({
           {c.label}
         </div>
 
-        {/* The plain-English explanation paragraph used to live here
-            (three lines of `marker.plain`, line-clamped). It was a
-            second-order signal on a card whose primary job is "act on
-            this": users had to parse a paragraph on each of the 3
-            visible cards before deciding which to click. The Info
-            button in the top-right corner already opens a richer
-            LearnMoreModal for users who want the context — keeping
-            the in-card paragraph was duplicate, eager disclosure.
-            Drop here, surface there. */}
+        {/* Plain-English explanation. Shown on the hero card (the single
+            "one to focus on") so the reader gets the *why* in context, not
+            via a hunt for the (i). Deliberately OFF in the 12-card grid
+            (showExplanation defaults false): a paragraph on every card
+            there would turn a scannable list into a wall of text, so those
+            cards defer context to the LearnMoreModal. */}
+        {showExplanation && marker.plain && (
+          <p className="mt-3 text-caption text-ink-soft leading-relaxed">
+            {marker.plain}
+          </p>
+        )}
 
         {actionLabel &&
           (onAction ? (

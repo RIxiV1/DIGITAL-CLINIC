@@ -543,6 +543,7 @@ export default function HomePage() {
           <div className="mt-4">
             <MarkerAttentionCard
               marker={topConcern}
+              showExplanation
               onAction={onMarkerAction(topConcern)}
               onLearnMore={
                 getMarkerInfo(topConcern.name)
