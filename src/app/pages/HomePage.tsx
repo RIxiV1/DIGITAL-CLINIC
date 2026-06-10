@@ -325,7 +325,14 @@ export default function HomePage() {
       : undefined;
 
   const topConcern = flaggedMarkersAll[0];
-  const moreFlaggedCount = Math.max(0, flaggedMarkersAll.length - 1);
+  // Surface the worst few flags on first paint (boss card + up to two
+  // more) instead of one card with everything else behind a drawer —
+  // the dashboard should show what's off, not read empty when it isn't.
+  const topFlagged = flaggedMarkersAll.slice(0, 3);
+  const moreFlaggedCount = Math.max(
+    0,
+    flaggedMarkersAll.length - topFlagged.length,
+  );
   const totalMatches = visibleMarkers.length;
   const hasAnyMarkers = biomarkers.length > 0;
   const hasTrends = trendsByPathway.length > 0;
@@ -562,7 +569,9 @@ export default function HomePage() {
             eyebrowTone={
               topConcern.status === 'critical' ? 'concern' : 'indigo'
             }
-            title="The one to focus on"
+            title={
+              topFlagged.length > 1 ? 'Where to start' : 'The one to focus on'
+            }
           />
           <div className="mt-4">
             <MarkerAttentionCard
@@ -576,8 +585,23 @@ export default function HomePage() {
               }
             />
           </div>
+          {topFlagged.length > 1 && (
+            <div className="mt-3 grid sm:grid-cols-2 gap-3">
+              {topFlagged.slice(1).map((m) => (
+                <div key={m.id} className="h-full">
+                  <MarkerAttentionCard
+                    marker={m}
+                    onAction={onMarkerAction(m)}
+                    onLearnMore={
+                      getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          )}
           {moreFlaggedCount > 0 && (
-            <div className="mt-2">
+            <div className="mt-3">
               <button
                 type="button"
                 onClick={() => setShowAllMarkers(true)}
