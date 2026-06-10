@@ -1005,6 +1005,15 @@ export function statusForValue(
    *  the catalog's healthy band remains the source of truth. */
   labRef?: { min?: number; max?: number },
 ): BiomarkerStatus {
+  // Safety boundary: a non-finite value means we never got a real reading
+  // (a failed / garbage parse). Every comparison below against NaN is
+  // false, so without this guard a NaN would fall straight through to
+  // 'good' — the exact false-assurance failure the four-tier system
+  // exists to prevent. Grade it 'concern' so a broken value can never
+  // read as reassuring. The parser already rejects NaN upstream
+  // (pdfParser drops it before markerFromTemplate); this is defence in
+  // depth at the grading boundary itself.
+  if (!Number.isFinite(value)) return 'concern';
   if (
     (typeof template.criticalLow === 'number' &&
       value < template.criticalLow) ||
