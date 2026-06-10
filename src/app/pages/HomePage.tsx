@@ -8,6 +8,7 @@ import {
   Plus,
   Search,
   Trash2,
+  Upload,
   X,
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -331,7 +332,20 @@ export default function HomePage() {
 
   return (
     <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
-      <Header variant="home" />
+      <Header
+        variant="home"
+        rightSlot={
+          <button
+            type="button"
+            onClick={() => navigate({ type: 'upload' })}
+            aria-label="Upload a report"
+            className="inline-flex items-center gap-1.5 h-10 px-3.5 sm:px-4 rounded-full bg-indigo-600 text-on-primary text-caption font-semibold shadow-blue hover:bg-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+          >
+            <Upload size={15} strokeWidth={2.5} aria-hidden />
+            Upload
+          </button>
+        }
+      />
 
       {/* Storage-quota warning. Set by ReportsContext when localStorage
           fails to persist (quota exceeded, private mode, storage
