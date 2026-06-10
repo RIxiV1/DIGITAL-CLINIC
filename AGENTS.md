@@ -100,7 +100,7 @@ See [docs/NAVIGATION.md](docs/NAVIGATION.md).
 
 ### 2. Dark is the default theme — light is opt-in
 
-The whole semantic token system runs on `:root[data-theme='dark']` overrides, not `dark:` Tailwind variants. The theme is stamped on `<html>` *before* React mounts (no FOUC) by an **external** bootstrap, `public/theme-init.js` — external, **not** inline, because the production CSP (`script-src 'self'`, no `'unsafe-inline'`) blocks inline scripts. As an inline script it silently failed in prod and the deployed site loaded in light; don't move it back inline. `prefers-color-scheme` is deliberately ignored — dark is the brand identity on first paint regardless of OS.
+The whole semantic token system runs on `:root[data-theme='dark']` overrides, not `dark:` Tailwind variants. The theme is stamped on `<html>` *before* React mounts (no FOUC) by an **external** bootstrap, `public/theme-init.js` — external, **not** inline, because the production CSP's `script-src` allows `'self'`, `'wasm-unsafe-eval'`, and the jsdelivr CDN — but no `'unsafe-inline'`, so inline scripts are blocked. As an inline script it silently failed in prod and the deployed site loaded in light; don't move it back inline. `prefers-color-scheme` is deliberately ignored — dark is the brand identity on first paint regardless of OS.
 
 See [docs/THEMING.md](docs/THEMING.md).
 
