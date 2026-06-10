@@ -399,6 +399,44 @@ describe('action thresholds (harm-anchor)', () => {
       }
     }
   });
+
+  it('every template with an optimal band also cites a source', () => {
+    // Cite-or-omit, the symmetric half of the action-source rule above:
+    // an optimal sub-band with no citation reads as an invented "ideal
+    // range" and erodes trust (the catalog comments warn against exactly
+    // this). The action side was pinned; this locks the optimal side so a
+    // future un-sourced optimal band fails CI instead of shipping quietly.
+    for (const t of biomarkerCatalog) {
+      const hasOptimal =
+        typeof t.optimalMin === 'number' || typeof t.optimalMax === 'number';
+      if (hasOptimal) {
+        expect(
+          t.optimalSource,
+          `${t.id} sets an optimal band without a source`,
+        ).toBeTruthy();
+      }
+    }
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* statusForValue — non-finite guard                                    */
+/* ------------------------------------------------------------------ */
+
+describe('statusForValue — non-finite guard', () => {
+  // A failed / garbage parse must never read as the most reassuring tier.
+  // Comparisons against NaN are all false, so without the guard NaN would
+  // fall through to 'good'. Pin that non-finite input never grades 'good'.
+  it('NaN never grades as good', () => {
+    expect(statusForValue(VIT_D, NaN)).not.toBe('good');
+    expect(statusForValue(LDL, NaN)).not.toBe('good');
+    expect(statusForValue(HBA1C, NaN)).not.toBe('good');
+  });
+
+  it('Infinity and -Infinity never grade as good', () => {
+    expect(statusForValue(VIT_D, Infinity)).not.toBe('good');
+    expect(statusForValue(VIT_D, -Infinity)).not.toBe('good');
+  });
 });
 
 /* ------------------------------------------------------------------ */
