@@ -833,12 +833,16 @@ function Disclosure({
   hint?: string;
   children: React.ReactNode;
 }) {
+  // Link trigger → panel per the ARIA APG disclosure pattern, so screen
+  // readers announce what the button controls and can jump to it.
+  const panelId = useId();
   return (
     <div className="rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
+        aria-controls={panelId}
         className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-canvas/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
       >
         <div className="min-w-0">
@@ -858,7 +862,7 @@ function Disclosure({
         </span>
       </button>
       {open && (
-        <div className="border-t border-line/70">
+        <div id={panelId} className="border-t border-line/70">
           <div className="p-4 sm:p-5">{children}</div>
         </div>
       )}
