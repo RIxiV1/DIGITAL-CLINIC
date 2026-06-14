@@ -3,7 +3,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
   CalendarClock,
-  ChevronDown,
   ChevronRight,
   FileText,
   Map as MapIcon,
@@ -92,6 +91,7 @@ type StatusFilter = StatusFilterId;
  * disclosures behind drawers when there's nothing to disclose.
  */
 type LockerSort = 'newest' | 'oldest' | 'lab';
+type ExploreTab = 'markers' | 'trends' | 'reports';
 
 export default function HomePage() {
   const { reports, removeReport, saveError, dismissSaveError } = useReports();
@@ -288,13 +288,13 @@ export default function HomePage() {
     }).filter((p) => p.total > 0);
   }, [biomarkers]);
 
-  /** Disclosure toggles. All three default to false — first paint is
-   *  the emotional-anchor view (headline + top concern + vitals strip
-   *  only). The locker became the third disclosure in this pass so the
-   *  default view shows insight, not file-management chrome. */
-  const [showAllMarkers, setShowAllMarkers] = useState(false);
-  const [showTrends, setShowTrends] = useState(false);
-  const [showReports, setShowReports] = useState(false);
+  /** Explore-section tab. The deep content (all markers / trends /
+   *  reports) used to be three independent collapsible drawers; opening
+   *  more than one stacked them into a page three screens tall. They're
+   *  now one segmented control showing a single pane at a time. `null` =
+   *  collapsed (the concise emotional-anchor first paint is preserved);
+   *  tapping a chip opens its pane, tapping the open chip collapses. */
+  const [activeTab, setActiveTab] = useState<ExploreTab | null>(null);
 
   /* Learn More modal — shared across the top concern card, the
    * disclosure body's grid, and the trend rows. */
@@ -617,7 +617,7 @@ export default function HomePage() {
             <div className="mt-3">
               <button
                 type="button"
-                onClick={() => setShowAllMarkers(true)}
+                onClick={() => setActiveTab('markers')}
                 className="inline-flex items-center gap-1 min-h-11 text-caption font-semibold text-indigo-700 hover:text-indigo-900 underline-offset-2 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
               >
                 See {moreFlaggedCount} more flagged{' '}
@@ -712,104 +712,132 @@ export default function HomePage() {
         </Container>
       )}
 
-      {/* ZONE 4 · Disclosures. Three collapsible drawers behind explicit
-          user intent. All default-closed so first paint stays the
-          emotional-anchor view (headline + top concern + vitals strip).
-          Only render the disclosure container when there's at least one
-          drawer with content. */}
-      {ready && (hasAnyMarkers || hasTrends || reports.length > 0) && (
-        <Container size="wide" className="mt-6 md:mt-8">
-          <div className="grid gap-3">
-            {hasAnyMarkers && (
-              <Disclosure
-                open={showAllMarkers}
-                onToggle={() => setShowAllMarkers((v) => !v)}
-                label={
-                  showAllMarkers
-                    ? 'Hide all markers'
-                    : `See all ${biomarkers.length} markers`
-                }
-                hint={
-                  showAllMarkers
-                    ? undefined
-                    : 'Search, filter, and browse everything'
-                }
-              >
-                <AllMarkersPane
-                  query={query}
-                  setQuery={setQuery}
-                  statusFilter={statusFilter}
-                  setStatusFilter={setStatusFilter}
-                  isFiltering={isFiltering}
-                  totalMatches={totalMatches}
-                  totalMarkers={biomarkers.length}
-                  disclosedMarkers={disclosedMarkers}
-                  onMarkerAction={onMarkerAction}
-                  openLearnMore={openLearnMore}
-                />
-              </Disclosure>
-            )}
+      {/* ZONE 4 · Explore. The deep content — every marker, trends, and
+          the report locker — used to be three independent drawers that
+          stacked into a three-screen wall when more than one was open.
+          They're now one segmented control showing a single pane at a
+          time, so the page stays short and the sections stay discoverable.
+          Collapsed by default to preserve the concise first paint. */}
+      {ready &&
+        (() => {
+          const trendCount = trendsByPathway.reduce(
+            (sum, p) => sum + p.markers.length,
+            0,
+          );
+          const tabs: { id: ExploreTab; label: string; hint: string }[] = [];
+          if (hasAnyMarkers)
+            tabs.push({
+              id: 'markers',
+              label: 'All markers',
+              hint: `${biomarkers.length} tracked · search & filter`,
+            });
+          if (hasTrends)
+            tabs.push({
+              id: 'trends',
+              label: 'Trends',
+              hint: `${trendCount} markers with history`,
+            });
+          if (reports.length > 0)
+            tabs.push({
+              id: 'reports',
+              label: 'Reports',
+              hint: `${reports.length} ${reports.length === 1 ? 'report' : 'reports'} · upload, search, delete`,
+            });
+          if (tabs.length === 0) return null;
 
-            {hasTrends && (
-              <Disclosure
-                open={showTrends}
-                onToggle={() => setShowTrends((v) => !v)}
-                label={
-                  showTrends ? 'Hide trends' : 'Compare to your last report'
-                }
-                hint={
-                  showTrends
-                    ? undefined
-                    : `${trendsByPathway.reduce(
-                        (sum, p) => sum + p.markers.length,
-                        0,
-                      )} markers with history`
-                }
-              >
-                <TrendsPane
-                  trendsByPathway={trendsByPathway}
-                  asOf={ready?.uploadedAt}
-                  openLearnMore={openLearnMore}
-                />
-              </Disclosure>
-            )}
+          const active =
+            activeTab && tabs.some((t) => t.id === activeTab)
+              ? activeTab
+              : null;
+          const activeHint = tabs.find((t) => t.id === active)?.hint;
 
-            {/* Reports disclosure — the file locker, now hidden behind a
-                tap. Default view shows insight (headline + top concern
-                + vitals strip), not file-management chrome. Opening
-                this exposes the upload action, search/sort controls
-                (when 3+ reports), and the full grid of reports. */}
-            {reports.length > 0 && (
-              <Disclosure
-                open={showReports}
-                onToggle={() => setShowReports((v) => !v)}
-                label={showReports ? 'Hide reports' : `Your reports`}
-                hint={
-                  showReports
-                    ? undefined
-                    : `${reports.length} ${reports.length === 1 ? 'report' : 'reports'} · upload, search, delete`
-                }
+          return (
+            <Container size="wide" className="mt-6 md:mt-8">
+              <h2 className="text-micro uppercase tracking-eyebrow font-bold text-muted mb-3">
+                Explore your data
+              </h2>
+              <div
+                role="tablist"
+                aria-label="Explore your data"
+                className="inline-flex flex-wrap gap-1 p-1 rounded-full bg-surface border border-line/70"
               >
-                <LockerPane
-                  reports={reports}
-                  displayedReports={displayedReports}
-                  lockerQuery={lockerQuery}
-                  setLockerQuery={setLockerQuery}
-                  lockerSort={lockerSort}
-                  setLockerSort={setLockerSort}
-                  onUpload={() => navigate({ type: 'upload' })}
-                  onOpenReport={(r) =>
-                    r.status === 'ready'
-                      ? navigate({ type: 'results', reportId: r.id })
-                      : navigate({ type: 'processing' })
-                  }
-                  onDeleteReport={(id) => setReportPendingDelete(id)}
-                />
-              </Disclosure>
-            )}
-          </div>
-        </Container>
-      )}
+                {tabs.map((t) => {
+                  const isActive = t.id === active;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={isActive}
+                      // Tapping the open chip collapses it back to the
+                      // concise view; tapping a closed one switches panes.
+                      onClick={() =>
+                        setActiveTab((prev) => (prev === t.id ? null : t.id))
+                      }
+                      className={`px-4 h-9 rounded-full text-caption font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ${
+                        isActive
+                          ? 'bg-indigo-600 text-white shadow-soft'
+                          : 'text-ink-soft hover:text-ink'
+                      }`}
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {active && (
+                <div className="mt-3 rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden">
+                  {activeHint && (
+                    <div className="px-5 pt-4 text-caption text-muted">
+                      {activeHint}
+                    </div>
+                  )}
+                  <div className="p-4 sm:p-5">
+                    {active === 'markers' && (
+                      <AllMarkersPane
+                        query={query}
+                        setQuery={setQuery}
+                        statusFilter={statusFilter}
+                        setStatusFilter={setStatusFilter}
+                        isFiltering={isFiltering}
+                        totalMatches={totalMatches}
+                        totalMarkers={biomarkers.length}
+                        disclosedMarkers={disclosedMarkers}
+                        onMarkerAction={onMarkerAction}
+                        openLearnMore={openLearnMore}
+                      />
+                    )}
+                    {active === 'trends' && (
+                      <TrendsPane
+                        trendsByPathway={trendsByPathway}
+                        asOf={ready?.uploadedAt}
+                        openLearnMore={openLearnMore}
+                      />
+                    )}
+                    {active === 'reports' && (
+                      <LockerPane
+                        reports={reports}
+                        displayedReports={displayedReports}
+                        lockerQuery={lockerQuery}
+                        setLockerQuery={setLockerQuery}
+                        lockerSort={lockerSort}
+                        setLockerSort={setLockerSort}
+                        onUpload={() => navigate({ type: 'upload' })}
+                        onOpenReport={(r) =>
+                          r.status === 'ready'
+                            ? navigate({ type: 'results', reportId: r.id })
+                            : navigate({ type: 'processing' })
+                        }
+                        onDeleteReport={(id) => setReportPendingDelete(id)}
+                      />
+                    )}
+                  </div>
+                </div>
+              )}
+            </Container>
+          );
+        })()}
 
       <BottomNav />
 
@@ -835,74 +863,14 @@ export default function HomePage() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Disclosure — the progressive-disclosure primitive used by Zone 4    */
-/*                                                                      */
-/* Renders a full-width card-like button as the trigger; expanded body  */
-/* renders below. Chevron rotates 180° when open.                       */
-/*                                                                      */
-/* Earlier version animated `height: 0 → auto` via framer-motion.       */
-/* Killed it because nesting motion children (MarkerAttentionCard,      */
-/* TrendRow with their own whileHover / count-up animations) inside a   */
-/* parent that's mid-height-animation created a layout-measurement race */
-/* — the parent could end up measuring an unstable child height and     */
-/* never settle, producing a page that visually "kept growing" as the   */
-/* user scrolled past the disclosure. A simple conditional render with  */
-/* a CSS-driven chevron rotation is jank-free and indistinguishable in  */
-/* feel for the disclosure's actual job (revealing/hiding a panel).     */
+/* The old Disclosure primitive was removed here: Zone 4's three        */
+/* independent drawers (which stacked into a three-screen wall when more */
+/* than one was open) are replaced by the segmented "Explore your data"  */
+/* control in the main render, showing a single pane at a time.          */
 /* ------------------------------------------------------------------ */
 
-function Disclosure({
-  open,
-  onToggle,
-  label,
-  hint,
-  children,
-}: {
-  open: boolean;
-  onToggle: () => void;
-  label: string;
-  hint?: string;
-  children: React.ReactNode;
-}) {
-  // Link trigger → panel per the ARIA APG disclosure pattern, so screen
-  // readers announce what the button controls and can jump to it.
-  const panelId = useId();
-  return (
-    <div className="rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={open}
-        aria-controls={panelId}
-        className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-canvas/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-      >
-        <div className="min-w-0">
-          <div className="font-semibold text-body-sm text-ink">{label}</div>
-          {hint && (
-            <div className="text-caption text-muted mt-0.5 truncate">
-              {hint}
-            </div>
-          )}
-        </div>
-        <span
-          className={`grid place-items-center w-9 h-9 rounded-full bg-indigo-50 text-indigo-700 shrink-0 transition-transform duration-200 ${
-            open ? 'rotate-180' : ''
-          }`}
-        >
-          <ChevronDown size={16} />
-        </span>
-      </button>
-      {open && (
-        <div id={panelId} className="border-t border-line/70">
-          <div className="p-4 sm:p-5">{children}</div>
-        </div>
-      )}
-    </div>
-  );
-}
-
 /* ------------------------------------------------------------------ */
-/* AllMarkersPane — body of the "See all markers" disclosure           */
+/* AllMarkersPane — body of the "All markers" tab                      */
 /*                                                                      */
 /* Contains the search input, status filter pills, match-count live    */
 /* region, and the marker grid. Lifted out of the main render so the    */
