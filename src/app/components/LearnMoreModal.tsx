@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, X } from 'lucide-react';
 import Button from './Button';
 import type { LearnMore } from '../data/markerInfo';
+import type { BiomarkerStatus } from '../data/biomarkers';
 import { useModalA11y } from '../utils/useModalA11y';
 
 type Props = {
@@ -11,6 +12,11 @@ type Props = {
   /** Optional eyebrow line shown above the title (e.g. test "short" tagline) */
   subtitle?: string;
   info: LearnMore | null;
+  /** The marker's status. When flagged (not 'good'), the modal leads with
+   *  a status-aware "What to do now" block — concrete next step + the
+   *  improve steps — instead of burying the action under the educational
+   *  sections. Omit (or 'good') to keep the education-first order. */
+  status?: BiomarkerStatus;
   onClose: () => void;
 };
 
@@ -37,9 +43,24 @@ export default function LearnMoreModal({
   title,
   subtitle,
   info,
+  status,
   onClose,
 }: Props) {
   const titleId = useId();
+  // When the marker is flagged, lead with action. A calm, status-aware
+  // next step (risk-communication: tell people what to DO, don't just
+  // alarm them) sits above the concrete improve steps — surfaced first,
+  // not buried under three paragraphs of education.
+  const isFlagged =
+    status === 'attention' || status === 'concern' || status === 'critical';
+  const nextStep =
+    status === 'critical'
+      ? 'Worth prompt attention — see a doctor soon and bring this result.'
+      : status === 'concern'
+        ? 'Worth acting on now. A re-check in about 90 days shows whether it’s moving.'
+        : status === 'attention'
+          ? 'Not urgent — keep an eye on it. A re-check in ~90 days confirms the trend.'
+          : '';
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
@@ -100,6 +121,17 @@ export default function LearnMoreModal({
 
             {/* Scrollable body */}
             <div className="flex-1 overflow-y-auto px-6 py-5">
+              {isFlagged && (
+                <Section eyebrow="What to do now">
+                  {nextStep && (
+                    <p className="text-body-sm leading-relaxed text-ink font-medium mb-3">
+                      {nextStep}
+                    </p>
+                  )}
+                  <ImproveList items={info.improve} />
+                </Section>
+              )}
+
               <Section eyebrow="What it measures">
                 <p className="text-body-sm leading-relaxed text-ink-soft">
                   {info.measures}
@@ -112,27 +144,17 @@ export default function LearnMoreModal({
                 </p>
               </Section>
 
-              <Section eyebrow="How it affects you">
+              <Section eyebrow="How it affects you" last={isFlagged}>
                 <p className="text-body-sm leading-relaxed text-ink-soft">
                   {info.hormonalImpact}
                 </p>
               </Section>
 
-              <Section eyebrow="Ways to improve" last>
-                <ul className="grid gap-2">
-                  {info.improve.map((line) => (
-                    <li key={line} className="flex items-start gap-2.5">
-                      <CheckCircle2
-                        size={15}
-                        className="text-indigo-600 shrink-0 mt-0.5"
-                      />
-                      <span className="text-body-sm leading-relaxed text-ink-soft">
-                        {line}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </Section>
+              {!isFlagged && (
+                <Section eyebrow="Ways to improve" last>
+                  <ImproveList items={info.improve} />
+                </Section>
+              )}
             </div>
 
             {/* Footer */}
@@ -151,6 +173,21 @@ export default function LearnMoreModal({
         </motion.div>
       )}
     </AnimatePresence>
+  );
+}
+
+function ImproveList({ items }: { items: string[] }) {
+  return (
+    <ul className="grid gap-2">
+      {items.map((line) => (
+        <li key={line} className="flex items-start gap-2.5">
+          <CheckCircle2 size={15} className="text-indigo-600 shrink-0 mt-0.5" />
+          <span className="text-body-sm leading-relaxed text-ink-soft">
+            {line}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
