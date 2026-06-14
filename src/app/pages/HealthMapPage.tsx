@@ -1,20 +1,37 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronRight, Map as MapIcon, Upload } from 'lucide-react';
+import {
+  ChevronRight,
+  Dna,
+  Droplet,
+  Droplets,
+  FlaskConical,
+  Flame,
+  Gauge,
+  Heart,
+  Scale,
+  ShieldAlert,
+  Sun,
+  TrendingDown,
+  TrendingUp,
+  Upload,
+  Zap,
+  type LucideIcon,
+} from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
 import Header from '../components/Header';
-import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
-import Emoji from '../components/Emoji';
 import Illustration from '../components/Illustration';
 import { useNavigation, useReports } from '../AppContext';
 import {
   biomarkersByCategory,
   bottomLineFor,
+  getTrendTone,
   statusColor,
   summarizeStatuses,
   type Biomarker,
+  type BiomarkerCategoryId,
 } from '../data/biomarkers';
 import {
   getLatestReadyReport,
@@ -22,31 +39,58 @@ import {
 } from '../data/reports';
 
 /**
- * Health Map — the single, calm "whole body at a glance" overview.
+ * Health Map — the single, calm "whole body at a glance" overview, built
+ * to be worth opening more than once.
  *
- * The dashboard answers "what's the one thing to act on?"; the full
- * report answers "what did the lab measure?"; a problem page answers
- * "how do I fix this one thing?". None of them showed the *whole
- * picture* — every body system, its rolled-up status, in one quiet
- * screen. That's this page.
+ * The earlier draft was a static reference table: a ragged wall of
+ * cryptic marker chips, colour everywhere, nothing that rewarded a second
+ * visit. This rebuild borrows the loop that makes Apple Health / Oura /
+ * Function genuinely sticky — WITHOUT fabricating clinical data:
  *
- * It is deliberately an OVERVIEW, not a fourth detail view: each system
- * card rolls up the worst status across its markers and lists them, then
- * taps through to the full report (the existing reference surface) where
- * the per-category sections and BiomarkerBars already live. No new
- * detail UI is duplicated here.
+ *   1. A number that grows. An Apple-style ring shows the share of
+ *      markers on track. It's an honest metric (good / total) and it's
+ *      the thing you come back to push upward.
+ *   2. Movement. "↑ N improved since your last test" — computed from real
+ *      history via getTrendTone. Seeing yourself get better is the hook,
+ *      and it rewards the re-test loop the product depends on.
+ *   3. Wins first, calm colour. Systems are sorted worst-first so the eye
+ *      lands on what matters; on-track systems read quiet, not a green
+ *      wall. Colour is reserved for status.
+ *   4. Uniform, scannable cards. Each system is an OVERVIEW tile of fixed
+ *      shape (icon, status, a slim on-track bar, counts) — never a dump
+ *      of every marker. The full list lives one tap away in the report.
+ *
+ * Visual language is Apple Health's "Browse" (a line icon in a rounded
+ * tile, a clear name, a chevron) over its "Summary" (big number, generous
+ * whitespace, hairlines, restraint).
  *
  * Grouping uses biomarkersByCategory (the catalog's full 11-category
  * metadata), so EVERY system present in the report appears — unlike the
  * dashboard's 4-pathway Vitals Strip, which intentionally shows only the
- * four headline pathways and silently omits liver/kidney/blood/etc.
+ * four headline pathways.
  */
+
+/** A clean line icon per body system — the Apple Health "Browse" idiom. */
+const SYSTEM_ICON: Record<BiomarkerCategoryId, LucideIcon> = {
+  hormones: Zap,
+  metabolic: Flame,
+  heart: Heart,
+  thyroid: Gauge,
+  vitamins: Sun,
+  liver: FlaskConical,
+  kidney: Droplet,
+  blood: Droplets,
+  fertility: Dna,
+  electrolytes: Scale,
+  inflammation: ShieldAlert,
+};
 
 type SystemRollup = {
   critical: number;
   concern: number; // includes critical (mirrors the Vitals Strip rollup)
   attention: number;
   good: number;
+  total: number;
   /** Worst status present — drives the card's accent + summary pill. */
   worst: Biomarker['status'];
 };
@@ -68,6 +112,7 @@ export function rollup(markers: Biomarker[]): SystemRollup {
     concern: s.critical + s.concern,
     attention: s.attention,
     good: s.good,
+    total: s.total,
     worst,
   };
 }
@@ -81,31 +126,108 @@ export function summaryText(r: SystemRollup): string {
   return 'On track';
 }
 
+/** Worst-first ordering so the eye lands on what matters. */
+const SEVERITY: Record<Biomarker['status'], number> = {
+  critical: 0,
+  concern: 1,
+  attention: 2,
+  good: 3,
+};
+
+/* ------------------------------------------------------------------ */
+/* Sub-pieces                                                          */
+/* ------------------------------------------------------------------ */
+
+/** Apple-style progress ring. `pct` is 0–100; the arc is the on-track
+ *  share, the track is the remainder. Pure SVG, no deps. Collapses to a
+ *  static ring under reduced-motion via the parent MotionConfig. */
+function ProgressRing({ pct }: { pct: number }) {
+  const r = 34;
+  const c = 2 * Math.PI * r;
+  const clamped = Math.max(0, Math.min(100, pct));
+  const offset = c * (1 - clamped / 100);
+  return (
+    <div className="relative grid place-items-center w-[88px] h-[88px] shrink-0">
+      <svg width="88" height="88" viewBox="0 0 88 88" className="-rotate-90">
+        <circle
+          cx="44"
+          cy="44"
+          r={r}
+          fill="none"
+          strokeWidth="8"
+          className="stroke-line/60"
+        />
+        <motion.circle
+          cx="44"
+          cy="44"
+          r={r}
+          fill="none"
+          strokeWidth="8"
+          strokeLinecap="round"
+          className="stroke-good"
+          strokeDasharray={c}
+          initial={{ strokeDashoffset: c }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+        />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center">
+        <span className="font-display text-display-sm leading-none text-ink">
+          {clamped}%
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Page                                                                */
+/* ------------------------------------------------------------------ */
+
 export default function HealthMapPage() {
   const { reports } = useReports();
   const { navigate } = useNavigation();
 
   const ready = useMemo(() => getLatestReadyReport(reports), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
-  const groups = useMemo(
-    () => biomarkersByCategory(biomarkers),
-    [biomarkers],
-  );
   const summary = useMemo(() => summarizeStatuses(biomarkers), [biomarkers]);
   const bottomLine = useMemo(() => bottomLineFor(biomarkers), [biomarkers]);
 
-  const flaggedSystems = useMemo(
-    () =>
-      groups.filter((g) => {
-        const r = rollup(g.markers);
-        return r.worst !== 'good';
-      }).length,
-    [groups],
-  );
+  // Worst-first so flagged systems lead and on-track ones recede.
+  const groups = useMemo(() => {
+    return biomarkersByCategory(biomarkers)
+      .map((g) => ({ ...g, r: rollup(g.markers) }))
+      .sort((a, b) => SEVERITY[a.r.worst] - SEVERITY[b.r.worst]);
+  }, [biomarkers]);
 
-  /* ---- Empty state: no parsed report yet. Mirror the dashboard's calm
-   *      "nothing to show, here's the way in" framing rather than a bare
-   *      message — the map is only meaningful once there's data. ---- */
+  // The number that grows: share of markers on track.
+  const onTrackPct =
+    summary.total > 0 ? Math.round((summary.good / summary.total) * 100) : 0;
+
+  // Movement since the last test — the come-back-and-check hook. Only
+  // meaningful when markers carry history (a prior report was merged in).
+  const movement = useMemo(() => {
+    let improved = 0;
+    let declined = 0;
+    for (const m of biomarkers) {
+      const tone = getTrendTone(m);
+      if (tone === 'improving') improved++;
+      else if (tone === 'declining') declined++;
+    }
+    return { improved, declined, any: improved + declined > 0 };
+  }, [biomarkers]);
+
+  // Encouraging-but-honest headline keyed off the worst status present.
+  const headline =
+    summary.critical > 0
+      ? 'A few things need a doctor'
+      : summary.concern > 0
+        ? 'A handful of things to work on'
+        : summary.attention > 0
+          ? 'Looking good — a few to keep an eye on'
+          : 'Everything’s on track';
+
+  /* ---- Empty state: no parsed report yet. ---- */
   if (!ready || biomarkers.length === 0) {
     return (
       <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
@@ -122,8 +244,8 @@ export default function HealthMapPage() {
               </h1>
               <p className="text-body-sm text-ink-soft max-w-sm">
                 Upload a blood test and we’ll lay out every system — hormones,
-                heart, thyroid, and the rest — on one calm screen, colour-coded
-                by what’s on track and what’s worth a look.
+                heart, thyroid, and the rest — on one calm screen, scored by
+                what’s on track and tracking how it moves over time.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
@@ -157,103 +279,132 @@ export default function HealthMapPage() {
     <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
       <Header variant="page" title="Health Map" />
 
-      {/* Intro — calm orientation, not an alarm. The bottom-line sentence
-          is the same honest one-liner the report uses, so the map and the
-          report tell one consistent story. */}
-      <Container size="wide" className="pt-6 md:pt-8">
-        <Pill tone={flaggedSystems > 0 ? 'concern' : 'good'} size="sm" dot>
-          {flaggedSystems > 0
-            ? `${flaggedSystems} ${
-                flaggedSystems === 1 ? 'system' : 'systems'
-              } worth a look`
-            : 'Everything on track'}
-        </Pill>
-        <h1 className="font-display text-display-lg leading-tight mt-2 flex items-center gap-2">
-          <MapIcon size={26} className="text-indigo-600 shrink-0" />
-          Your Health Map
-        </h1>
-        <p className="text-body-sm text-ink-soft mt-1.5 max-w-2xl">
-          {bottomLine}
-        </p>
-        <p className="text-caption text-muted mt-2">
-          {summary.total} markers across {groups.length}{' '}
+      {/* HERO — the score you come back to grow, plus movement since last
+          test. Apple "Summary": a big ring, a confident headline, one
+          honest line, and a celebratory/honest movement signal. */}
+      <Container size="wide" className="pt-7 md:pt-9">
+        <div className="rounded-3xl border border-line/70 bg-surface shadow-soft p-5 sm:p-6">
+          <div className="flex items-center gap-5">
+            <ProgressRing pct={onTrackPct} />
+            <div className="min-w-0">
+              <h1 className="font-display text-display-md sm:text-display-lg leading-tight tracking-tight">
+                {headline}
+              </h1>
+              <p className="text-caption text-muted mt-1">
+                {summary.good} of {summary.total} markers on track
+              </p>
+              {movement.any && (
+                <div className="flex flex-wrap items-center gap-2 mt-3">
+                  {movement.improved > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-good-soft text-good-ink px-2.5 h-7 text-caption font-semibold">
+                      <TrendingUp size={14} />
+                      {movement.improved} improved
+                    </span>
+                  )}
+                  {movement.declined > 0 && (
+                    <span className="inline-flex items-center gap-1.5 rounded-full bg-concern-soft text-concern-ink px-2.5 h-7 text-caption font-semibold">
+                      <TrendingDown size={14} />
+                      {movement.declined} slipped
+                    </span>
+                  )}
+                  <span className="text-micro text-muted">
+                    since your last test
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* The honest plain-language line the report also leads with — so
+              the map and the report tell one consistent story. */}
+          <p className="text-body-sm text-ink-soft mt-4 leading-relaxed border-t border-line/60 pt-4">
+            {bottomLine}
+          </p>
+        </div>
+
+        <p className="text-caption text-muted mt-3">
+          {summary.total} markers · {groups.length}{' '}
           {groups.length === 1 ? 'system' : 'systems'} · {ready.name} ·{' '}
           {ready.uploadedOn}
         </p>
       </Container>
 
-      {/* System grid — one card per body system present in this report.
-          Whole card is the tap target → the full report (the existing
-          reference surface), so this stays an overview and never
-          duplicates the report's detail rows. */}
-      <Container size="wide" className="mt-5 md:mt-7">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {/* Section label — grouped-list header, the iOS table idiom. */}
+      <Container size="wide" className="mt-8 md:mt-10">
+        <h2 className="text-micro uppercase tracking-eyebrow font-bold text-muted">
+          Body systems · worst first
+        </h2>
+      </Container>
+
+      {/* System grid — uniform overview tiles. Whole card taps through to
+          the full report (the existing reference surface). */}
+      <Container size="wide" className="mt-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-stretch">
           {groups.map((g, i) => {
-            const r = rollup(g.markers);
+            const r = g.r;
             const c = statusColor(r.worst);
-            const accent =
+            const Icon = SYSTEM_ICON[g.category.id] ?? Gauge;
+            // Icon tile carries the status colour — one calm colour story
+            // per card. "good" stays neutral-brand so a healthy map reads
+            // quiet, not a wall of green.
+            const tileCls =
               r.worst === 'good'
-                ? 'border-l-good'
-                : r.worst === 'attention'
-                  ? 'border-l-attention'
-                  : 'border-l-concern';
+                ? 'bg-indigo-50 text-indigo-700'
+                : `${c.bg} ${c.textOnSurface}`;
+            const goodPct = r.total > 0 ? (r.good / r.total) * 100 : 0;
             return (
               <motion.button
                 key={g.category.id}
                 type="button"
-                onClick={() =>
-                  navigate({ type: 'results', reportId: ready.id })
-                }
+                onClick={() => navigate({ type: 'results', reportId: ready.id })}
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{
                   duration: 0.28,
-                  delay: Math.min(i * 0.03, 0.18),
+                  delay: Math.min(i * 0.03, 0.2),
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                className={`group text-left bg-surface rounded-2xl border border-line/70 border-l-4 ${accent} shadow-soft p-4 transition-shadow hover:shadow-pop focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60`}
+                className="group h-full text-left bg-surface rounded-3xl border border-line/70 shadow-soft p-4 sm:p-5 transition-all hover:shadow-pop hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
               >
-                <div className="flex items-center gap-2">
-                  <Emoji
-                    label={`${g.category.name} system`}
-                    className="text-body leading-none"
+                {/* Header row — icon tile · name + status · chevron. */}
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`grid place-items-center w-11 h-11 rounded-2xl shrink-0 ${tileCls}`}
                   >
-                    {g.category.icon}
-                  </Emoji>
-                  <span className="font-display text-body text-ink leading-tight truncate">
-                    {g.category.name}
+                    <Icon size={20} strokeWidth={2.2} />
                   </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="font-display text-body text-ink leading-tight truncate">
+                      {g.category.name}
+                    </div>
+                    <div
+                      className={`inline-flex items-center gap-1.5 text-caption font-semibold mt-0.5 ${c.textOnSurface}`}
+                    >
+                      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
+                      {summaryText(r)}
+                    </div>
+                  </div>
                   <ChevronRight
-                    size={16}
-                    className="ml-auto shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
+                    size={18}
+                    className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
                   />
                 </div>
 
-                <div className="mt-2">
-                  <span
-                    className={`inline-flex items-center gap-1.5 text-caption font-semibold ${c.textOnSurface}`}
-                  >
-                    <span className={`w-2 h-2 rounded-full ${c.dot}`} />
-                    {summaryText(r)}
-                  </span>
-                </div>
-
-                {/* Marker chips — every marker in the system, tinted by its
-                    own status, so the card reads as a tiny map of that
-                    system rather than just a status badge. */}
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {g.markers.map((m) => {
-                    const mc = statusColor(m.status);
-                    return (
-                      <span
-                        key={m.id}
-                        className={`inline-flex items-center gap-1 rounded-full px-2 h-6 text-micro font-medium ${mc.bg} ${mc.textOnSurface}`}
-                      >
-                        <span className={`w-1.5 h-1.5 rounded-full ${mc.dot}`} />
-                        {m.simpleName ?? m.name}
-                      </span>
-                    );
-                  })}
+                {/* Slim on-track bar + count — a per-system mini-score that
+                    keeps every card the same height and gives a number to
+                    nudge upward. */}
+                <div className="mt-4">
+                  <div className="h-1.5 rounded-full bg-line/60 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${
+                        r.worst === 'good' ? 'bg-good' : c.dot
+                      }`}
+                      style={{ width: `${Math.max(goodPct, 4)}%` }}
+                    />
+                  </div>
+                  <div className="text-micro text-muted mt-2">
+                    {r.good} of {r.total} on track
+                  </div>
                 </div>
               </motion.button>
             );
@@ -262,8 +413,8 @@ export default function HealthMapPage() {
       </Container>
 
       {/* Footer — gentle exit toward the detailed read + adding more data. */}
-      <Container size="wide" className="mt-7 md:mt-9">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-line/60 pt-5">
+      <Container size="wide" className="mt-8 md:mt-10">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-t border-line/60 pt-6">
           <p className="text-caption text-ink-soft">
             Tap any system to open its full breakdown in your report.
           </p>
