@@ -23,7 +23,7 @@ export default function FinalCta({ onStart }: { onStart: () => void }) {
                 See what your hormones are telling you.
               </h2>
               <p className="mt-5 text-body md:text-body-lg leading-relaxed text-blue-100 max-w-[42ch] mx-auto text-pretty">
-                3 minutes. One clear picture.
+                2 minutes. One clear picture.
               </p>
 
               <div className="mt-8 sm:mt-9 flex justify-center">

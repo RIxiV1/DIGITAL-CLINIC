@@ -13,11 +13,11 @@ export default function HowItWorks() {
               <>
                 Find out what’s actually going on —{' '}
                 <span className="text-blue-700 italic font-serif">
-                  in 3 minutes.
+                  in 2 minutes.
                 </span>
               </>
             }
-            subtitle="Three honest steps. About three minutes total. You leave knowing which tests, which specialist, and what your symptoms might mean."
+            subtitle="Three honest steps, about two minutes. You leave knowing which tests, which specialist, and what your symptoms might mean."
           />
         </Reveal>
 
@@ -27,7 +27,7 @@ export default function HowItWorks() {
               step="01"
               Icon={ClipboardList}
               title="Tell us what you’re experiencing"
-              body="Hair changes, energy, sexual health, sleep, mood, weight — check everything that’s off. Takes 3 minutes."
+              body="Hair changes, energy, sexual health, sleep, mood, weight — check everything that’s off. Takes about a minute."
             />
           </Reveal>
           <Reveal delay={0.08}>
