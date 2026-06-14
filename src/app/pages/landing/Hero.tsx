@@ -99,7 +99,7 @@ export default function Hero({
                 trailing={<ArrowRight size={16} />}
                 className="w-full sm:w-auto shadow-blue"
               >
-                Find out in 3 minutes
+                Find out in 2 minutes
               </Button>
               <button
                 onClick={onSample}

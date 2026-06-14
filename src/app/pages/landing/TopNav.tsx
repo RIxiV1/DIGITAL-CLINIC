@@ -52,7 +52,7 @@ export default function TopNav({
             See a sample report
           </button>
           {/* Returning-user shortcut — only shown when there's actual
-              data to land on. On mobile we hide "Find out in 3 min"
+              data to land on. On mobile we hide "Find out in 2 min"
               when this button is present so the bar doesn't get crowded;
               desktop has room for both. */}
           {onDashboard && (
@@ -74,7 +74,7 @@ export default function TopNav({
                   'inline-flex bg-blue-600 hover:bg-blue-700 text-on-primary shadow-clinical'
             }`}
           >
-            {onDashboard ? 'Retake the quiz' : 'Find out in 3 min'}
+            {onDashboard ? 'Retake the quiz' : 'Find out in 2 min'}
             <ArrowRight size={14} />
           </button>
         </div>
