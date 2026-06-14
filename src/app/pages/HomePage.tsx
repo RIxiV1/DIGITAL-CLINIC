@@ -328,7 +328,14 @@ export default function HomePage() {
       : undefined;
 
   const topConcern = flaggedMarkersAll[0];
-  const moreFlaggedCount = Math.max(0, flaggedMarkersAll.length - 1);
+  // Surface the worst few flags on first paint (boss card + up to two
+  // more) instead of one card with everything else behind a drawer —
+  // the dashboard should show what's off, not read empty when it isn't.
+  const topFlagged = flaggedMarkersAll.slice(0, 3);
+  const moreFlaggedCount = Math.max(
+    0,
+    flaggedMarkersAll.length - topFlagged.length,
+  );
   const totalMatches = visibleMarkers.length;
   const hasAnyMarkers = biomarkers.length > 0;
   const hasTrends = trendsByPathway.length > 0;
@@ -536,7 +543,7 @@ export default function HomePage() {
             ))}
           </div>
           {reports.length === 0 && (
-            <div className="mt-4 flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-caption text-ink-soft">
+            <div className="mt-4 flex flex-wrap items-center justify-start gap-x-2 gap-y-1 text-caption text-ink-soft">
               <span>No report on hand?</span>
               <button
                 type="button"
@@ -555,22 +562,57 @@ export default function HomePage() {
           a flagged marker; an all-green report skips this zone since
           the headline carries the message. */}
       {ready && topConcern && (
-        <Container size="wide" className="mt-6 md:mt-8">
-          <SectionHeading eyebrow="Worth a look" title="The one to focus on" />
-          <div className="mt-4">
-            <MarkerAttentionCard
-              marker={topConcern}
-              showExplanation
-              onAction={onMarkerAction(topConcern)}
-              onLearnMore={
-                getMarkerInfo(topConcern.name)
-                  ? openLearnMore(topConcern.name)
-                  : undefined
-              }
-            />
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-6 md:mt-8"
+        >
+          <Container size="wide">
+          <SectionHeading
+            eyebrow={
+              topConcern.status === 'critical'
+                ? 'Needs prompt attention'
+                : 'Worth a look'
+            }
+            eyebrowTone={
+              topConcern.status === 'critical' ? 'concern' : 'indigo'
+            }
+            title={
+              topFlagged.length > 1 ? 'Where to start' : 'The one to focus on'
+            }
+          />
+          {/* One grid for all surfaced flags so they share gutters + gaps
+              exactly. The boss card (top concern, with its explanation)
+              spans both columns; the next flags fill the 2-col grid below
+              it, edges aligned to the same track. */}
+          <div className="mt-4 grid sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2 h-full">
+              <MarkerAttentionCard
+                marker={topConcern}
+                showExplanation
+                onAction={onMarkerAction(topConcern)}
+                onLearnMore={
+                  getMarkerInfo(topConcern.name)
+                    ? openLearnMore(topConcern.name)
+                    : undefined
+                }
+              />
+            </div>
+            {topFlagged.slice(1).map((m) => (
+              <div key={m.id} className="h-full">
+                <MarkerAttentionCard
+                  marker={m}
+                  onAction={onMarkerAction(m)}
+                  onLearnMore={
+                    getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
+                  }
+                />
+              </div>
+            ))}
           </div>
           {moreFlaggedCount > 0 && (
-            <div className="mt-2">
+            <div className="mt-3">
               <button
                 type="button"
                 onClick={() => setShowAllMarkers(true)}
@@ -581,7 +623,8 @@ export default function HomePage() {
               </button>
             </div>
           )}
-        </Container>
+          </Container>
+        </motion.div>
       )}
 
       {/* ZONE 2c · Vitals Strip. One tile per pathway showing the worst
@@ -593,7 +636,7 @@ export default function HomePage() {
           to pathways that have any markers in this report so we don't
           render a "0 on track" tile for an absent pathway. */}
       {ready && pathwayVitals.length > 0 && (
-        <Container size="wide" className="mt-5 md:mt-6">
+        <Container size="wide" className="mt-6 md:mt-8">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {pathwayVitals.map((p) => {
               const borderCls =
@@ -794,12 +837,16 @@ function Disclosure({
   hint?: string;
   children: React.ReactNode;
 }) {
+  // Link trigger → panel per the ARIA APG disclosure pattern, so screen
+  // readers announce what the button controls and can jump to it.
+  const panelId = useId();
   return (
     <div className="rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
+        aria-controls={panelId}
         className="w-full flex items-center justify-between gap-3 px-5 py-4 text-left hover:bg-canvas/40 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
       >
         <div className="min-w-0">
@@ -819,7 +866,7 @@ function Disclosure({
         </span>
       </button>
       {open && (
-        <div className="border-t border-line/70">
+        <div id={panelId} className="border-t border-line/70">
           <div className="p-4 sm:p-5">{children}</div>
         </div>
       )}
@@ -1384,11 +1431,17 @@ const PATHWAYS: Pathway[] = [
 
 function SectionHeading({
   eyebrow,
+  eyebrowTone = 'indigo',
   title,
   subtitle,
   rightSlot,
 }: {
   eyebrow: string;
+  /** Pill tone for the eyebrow. Defaults to brand indigo; the top-concern
+   *  heading passes 'concern' for a critical marker so the section's
+   *  urgency matches the card's "talk to a doctor today" framing instead
+   *  of a casual "worth a look". */
+  eyebrowTone?: React.ComponentProps<typeof Pill>['tone'];
   title: string;
   subtitle?: string;
   rightSlot?: React.ReactNode;
@@ -1396,7 +1449,7 @@ function SectionHeading({
   return (
     <div className="flex items-end justify-between gap-3">
       <div className="min-w-0">
-        <Pill tone="indigo" size="sm">
+        <Pill tone={eyebrowTone} size="sm">
           {eyebrow}
         </Pill>
         <h2 className="font-display text-display-md leading-tight mt-2">
