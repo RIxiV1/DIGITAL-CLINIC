@@ -1,6 +1,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowLeft, ArrowRight, Brain, Check, Sparkles, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  ArrowRight,
+  Brain,
+  Check,
+  ShieldCheck,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
 import Emoji from '../components/Emoji';
@@ -367,6 +375,23 @@ export default function QuizPage() {
               <p className="mt-2 text-body text-ink-soft text-pretty">
                 {step.subtitle}
               </p>
+
+              {stepIndex === 0 && (
+                /* Validation beat — shown only at the front door (first
+                   step). The PRD's "you're not alone" moment, placed at the
+                   point he commits. Calm and quiet, not a banner. */
+                <div className="mt-4 flex items-start gap-2.5 rounded-2xl bg-indigo-50/60 border border-line/70 px-4 py-3">
+                  <ShieldCheck
+                    size={15}
+                    className="text-indigo-700 shrink-0 mt-0.5"
+                  />
+                  <p className="text-caption text-ink-soft leading-relaxed text-pretty">
+                    You’re not alone — most men have wondered about at least one
+                    of these. It’s completely private, and there’s no wrong
+                    answer.
+                  </p>
+                </div>
+              )}
 
               {isCompound ? (
                 <CompoundOptions
