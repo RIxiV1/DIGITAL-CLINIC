@@ -76,9 +76,10 @@ export default function Hero({
               variants={fadeUp}
               className="mt-4 text-body md:text-body-lg leading-relaxed text-ink-soft max-w-[40ch] text-pretty"
             >
-              One hormonal system controls all three. Most Indian men have never
-              had it tested. Upload any lab report — we’ll translate the whole
-              panel, not just the hormones.
+              You’re not alone, and you’re not broken. One hormonal system
+              quietly drives all three — answer a few private questions for a
+              clear, science-backed read on what’s going on. No account, no
+              judgment.
             </motion.p>
 
             <motion.div
