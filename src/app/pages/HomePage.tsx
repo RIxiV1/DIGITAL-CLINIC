@@ -540,7 +540,7 @@ export default function HomePage() {
             ))}
           </div>
           {reports.length === 0 && (
-            <div className="mt-4 flex flex-wrap items-center justify-center sm:justify-start gap-x-2 gap-y-1 text-caption text-ink-soft">
+            <div className="mt-4 flex flex-wrap items-center justify-start gap-x-2 gap-y-1 text-caption text-ink-soft">
               <span>No report on hand?</span>
               <button
                 type="button"
@@ -573,33 +573,35 @@ export default function HomePage() {
               topFlagged.length > 1 ? 'Where to start' : 'The one to focus on'
             }
           />
-          <div className="mt-4">
-            <MarkerAttentionCard
-              marker={topConcern}
-              showExplanation
-              onAction={onMarkerAction(topConcern)}
-              onLearnMore={
-                getMarkerInfo(topConcern.name)
-                  ? openLearnMore(topConcern.name)
-                  : undefined
-              }
-            />
-          </div>
-          {topFlagged.length > 1 && (
-            <div className="mt-3 grid sm:grid-cols-2 gap-3">
-              {topFlagged.slice(1).map((m) => (
-                <div key={m.id} className="h-full">
-                  <MarkerAttentionCard
-                    marker={m}
-                    onAction={onMarkerAction(m)}
-                    onLearnMore={
-                      getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
-                    }
-                  />
-                </div>
-              ))}
+          {/* One grid for all surfaced flags so they share gutters + gaps
+              exactly. The boss card (top concern, with its explanation)
+              spans both columns; the next flags fill the 2-col grid below
+              it, edges aligned to the same track. */}
+          <div className="mt-4 grid sm:grid-cols-2 gap-3">
+            <div className="sm:col-span-2 h-full">
+              <MarkerAttentionCard
+                marker={topConcern}
+                showExplanation
+                onAction={onMarkerAction(topConcern)}
+                onLearnMore={
+                  getMarkerInfo(topConcern.name)
+                    ? openLearnMore(topConcern.name)
+                    : undefined
+                }
+              />
             </div>
-          )}
+            {topFlagged.slice(1).map((m) => (
+              <div key={m.id} className="h-full">
+                <MarkerAttentionCard
+                  marker={m}
+                  onAction={onMarkerAction(m)}
+                  onLearnMore={
+                    getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
+                  }
+                />
+              </div>
+            ))}
+          </div>
           {moreFlaggedCount > 0 && (
             <div className="mt-3">
               <button
@@ -624,7 +626,7 @@ export default function HomePage() {
           to pathways that have any markers in this report so we don't
           render a "0 on track" tile for an absent pathway. */}
       {ready && pathwayVitals.length > 0 && (
-        <Container size="wide" className="mt-5 md:mt-6">
+        <Container size="wide" className="mt-6 md:mt-8">
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             {pathwayVitals.map((p) => {
               const borderCls =
