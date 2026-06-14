@@ -559,7 +559,13 @@ export default function HomePage() {
           a flagged marker; an all-green report skips this zone since
           the headline carries the message. */}
       {ready && topConcern && (
-        <Container size="wide" className="mt-6 md:mt-8">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
+          className="mt-6 md:mt-8"
+        >
+          <Container size="wide">
           <SectionHeading
             eyebrow={
               topConcern.status === 'critical'
@@ -614,7 +620,8 @@ export default function HomePage() {
               </button>
             </div>
           )}
-        </Container>
+          </Container>
+        </motion.div>
       )}
 
       {/* ZONE 2c · Vitals Strip. One tile per pathway showing the worst
