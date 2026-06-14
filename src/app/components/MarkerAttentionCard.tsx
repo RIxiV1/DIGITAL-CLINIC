@@ -1,4 +1,10 @@
-import { ArrowRight, Info, TrendingDown, TrendingUp } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  Info,
+  TrendingDown,
+  TrendingUp,
+} from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   formatDelta,
@@ -175,12 +181,20 @@ export default function MarkerAttentionCard({
         <div
           className={`mt-2 inline-flex self-start items-center gap-1.5 px-2 h-5 rounded-full text-micro font-bold uppercase tracking-widest ${c.bg} ${c.text}`}
         >
-          <span className="relative grid place-items-center w-1.5 h-1.5">
-            <span
-              className={`absolute inset-0 rounded-full ${c.dot} opacity-60 motion-safe:animate-ping`}
-            />
-            <span className={`relative w-1.5 h-1.5 rounded-full ${c.dot}`} />
-          </span>
+          {marker.status === 'critical' ? (
+            // Critical gets an alert glyph instead of the pulsing dot —
+            // the "alert-icon adjacent" treatment statusColor documents
+            // but the card never rendered. Weight + meaning (an icon a
+            // colour-blind user also reads), not an alarmist red glow.
+            <AlertTriangle size={11} strokeWidth={2.75} aria-hidden />
+          ) : (
+            <span className="relative grid place-items-center w-1.5 h-1.5">
+              <span
+                className={`absolute inset-0 rounded-full ${c.dot} opacity-60 motion-safe:animate-ping`}
+              />
+              <span className={`relative w-1.5 h-1.5 rounded-full ${c.dot}`} />
+            </span>
+          )}
           {c.label}
         </div>
 
