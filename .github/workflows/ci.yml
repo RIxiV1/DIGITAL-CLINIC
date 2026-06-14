@@ -1,0 +1,36 @@
+name: CI
+
+# Runs the exact gate AGENTS.md and Vercel rely on
+# (tsc --noEmit && vitest run && vite build, via `npm run build`) on every
+# PR into main and every push to main — so "keep the build green" is
+# enforced by machine, not honor system. A type error, a failing test, or
+# a broken bundle now blocks the merge instead of slipping through.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+# A newer commit on the same branch/PR cancels the older in-flight run, so
+# rapid pushes don't pile up redundant CI.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: typecheck · test · build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          # Pinned via .nvmrc (20.11.1) so CI matches local + the engines
+          # range in package.json (>=20.11 <23).
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build
