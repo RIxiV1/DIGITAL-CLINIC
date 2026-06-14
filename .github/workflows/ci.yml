@@ -28,8 +28,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          # Pinned via .nvmrc (20.11.1) so CI matches local + the engines
-          # range in package.json (>=20.11 <23).
+          # Pinned via .nvmrc (20.19.0) so CI matches local + the engines
+          # range in package.json (>=20.19 <23). 20.19 is the floor that
+          # enables require(ESM) by default — older 20.x (e.g. 20.11)
+          # throws ERR_REQUIRE_ESM when the jsdom test stack loads its
+          # now-ESM-only transitive deps (@exodus/bytes).
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
