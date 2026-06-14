@@ -27,6 +27,7 @@ import ProcessingPage from './ProcessingPage';
 import ProfilePage from './ProfilePage';
 import ReportResultsPage from './ReportResultsPage';
 import ProblemDetailPage from './ProblemDetailPage';
+import HealthMapPage from './HealthMapPage';
 
 // jspdf needs window.matchMedia for some setup paths; framer-motion
 // reads it via prefers-reduced-motion. jsdom doesn't ship one by
@@ -107,6 +108,11 @@ describe('page smoke tests', () => {
 
   it('HomePage renders (empty locker state)', () => {
     const { container } = renderWithProvider(<HomePage />);
+    expect(container.firstChild).toBeTruthy();
+  });
+
+  it('HealthMapPage renders (empty locker → empty state)', () => {
+    const { container } = renderWithProvider(<HealthMapPage />);
     expect(container.firstChild).toBeTruthy();
   });
 

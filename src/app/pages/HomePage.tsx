@@ -4,7 +4,9 @@ import {
   AlertTriangle,
   CalendarClock,
   ChevronDown,
+  ChevronRight,
   FileText,
+  Map as MapIcon,
   Plus,
   Search,
   Trash2,
@@ -682,6 +684,31 @@ export default function HomePage() {
               );
             })}
           </div>
+          {/* Bridge to the full Health Map. The Vitals Strip above is the
+              four-pathway teaser; this opens the calm whole-body overview
+              (every system, not just the headline four). Sits right under
+              the strip so the relationship reads "summary → full map". */}
+          <button
+            type="button"
+            onClick={() => navigate({ type: 'healthMap' })}
+            className="group mt-2.5 w-full flex items-center gap-2.5 rounded-[14px] border border-line/70 bg-surface/60 hover:bg-surface px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+          >
+            <span className="grid place-items-center w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 shrink-0">
+              <MapIcon size={16} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-caption font-semibold text-ink">
+                See your full Health Map
+              </span>
+              <span className="block text-micro text-muted truncate">
+                Every system on one calm screen
+              </span>
+            </span>
+            <ChevronRight
+              size={16}
+              className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
+            />
+          </button>
         </Container>
       )}
 
