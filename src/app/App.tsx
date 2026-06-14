@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { MotionConfig, motion } from 'framer-motion';
 import { AppProvider, useNavigation, type Page } from './AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
+import PrivacyScreen from './components/PrivacyScreen';
 import { PageSkeleton } from './components/Skeleton';
 import LandingPage from './pages/LandingPage';
 import { assertNever } from './utils/assertNever';
@@ -189,6 +190,7 @@ export default function App() {
       <MotionConfig reducedMotion="user">
         <AppProvider>
           <PageHost />
+          <PrivacyScreen />
         </AppProvider>
       </MotionConfig>
     </ErrorBoundary>

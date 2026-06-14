@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bell,
+  EyeOff,
   FileLock2,
   Home,
   Languages,
@@ -19,7 +20,13 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
 import DataPanelModal from '../components/DataPanelModal';
-import { useLanguage, useNavigation, useQuiz, useReports } from '../AppContext';
+import {
+  useDiscreet,
+  useLanguage,
+  useNavigation,
+  useQuiz,
+  useReports,
+} from '../AppContext';
 import { availableLanguages, type LangCode } from '../i18n/translations';
 import { buildLabelMap, findOptionLabel } from '../data/quiz';
 import {
@@ -35,6 +42,7 @@ export default function ProfilePage() {
   const { reports } = useReports();
   const { navigate, replace } = useNavigation();
   const { lang, setLang, t } = useLanguage();
+  const { discreet, setDiscreet } = useDiscreet();
 
   const handleSignOut = () => {
     // Anonymous account model — sign out resets the quiz and bounces
@@ -398,6 +406,46 @@ export default function ProfilePage() {
                     <span
                       className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform ${
                         aiAutoFallback ? 'translate-x-5' : 'translate-x-0.5'
+                      }`}
+                    />
+                  </span>
+                </button>
+
+                {/* Discreet Mode. Hides the screen the instant the app
+                    loses focus or is backgrounded (app switcher, glance
+                    away) and lifts when you return — the PRD's core
+                    discretion promise for a user worried someone sees what
+                    he's looking at. */}
+                <button
+                  type="button"
+                  onClick={() => setDiscreet(!discreet)}
+                  role="switch"
+                  aria-checked={discreet}
+                  aria-label="Discreet Mode"
+                  className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-canvas/60 transition-colors cursor-pointer border-b border-line/70"
+                >
+                  <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
+                    <EyeOff size={16} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="font-semibold text-body-sm">
+                      Discreet Mode
+                    </div>
+                    <div className="text-caption text-muted text-pretty">
+                      Hide the screen the moment you switch apps or look away —
+                      it reveals when you’re back, and shows nothing in the app
+                      switcher.
+                    </div>
+                  </div>
+                  <span
+                    aria-hidden="true"
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                      discreet ? 'bg-indigo-600' : 'bg-line'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-5 w-5 transform rounded-full bg-surface shadow transition-transform ${
+                        discreet ? 'translate-x-5' : 'translate-x-0.5'
                       }`}
                     />
                   </span>
