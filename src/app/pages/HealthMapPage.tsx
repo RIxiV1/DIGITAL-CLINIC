@@ -23,6 +23,7 @@ import Container from '../components/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import Illustration from '../components/Illustration';
+import ProgressRing from '../components/ProgressRing';
 import { useNavigation, useReports } from '../AppContext';
 import {
   biomarkersByCategory,
@@ -133,52 +134,6 @@ const SEVERITY: Record<Biomarker['status'], number> = {
   attention: 2,
   good: 3,
 };
-
-/* ------------------------------------------------------------------ */
-/* Sub-pieces                                                          */
-/* ------------------------------------------------------------------ */
-
-/** Apple-style progress ring. `pct` is 0–100; the arc is the on-track
- *  share, the track is the remainder. Pure SVG, no deps. Collapses to a
- *  static ring under reduced-motion via the parent MotionConfig. */
-function ProgressRing({ pct }: { pct: number }) {
-  const r = 34;
-  const c = 2 * Math.PI * r;
-  const clamped = Math.max(0, Math.min(100, pct));
-  const offset = c * (1 - clamped / 100);
-  return (
-    <div className="relative grid place-items-center w-[88px] h-[88px] shrink-0">
-      <svg width="88" height="88" viewBox="0 0 88 88" className="-rotate-90">
-        <circle
-          cx="44"
-          cy="44"
-          r={r}
-          fill="none"
-          strokeWidth="8"
-          className="stroke-line/60"
-        />
-        <motion.circle
-          cx="44"
-          cy="44"
-          r={r}
-          fill="none"
-          strokeWidth="8"
-          strokeLinecap="round"
-          className="stroke-good"
-          strokeDasharray={c}
-          initial={{ strokeDashoffset: c }}
-          animate={{ strokeDashoffset: offset }}
-          transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
-        />
-      </svg>
-      <div className="absolute inset-0 grid place-items-center">
-        <span className="font-display text-display-sm leading-none text-ink">
-          {clamped}%
-        </span>
-      </div>
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ */
 /* Page                                                                */

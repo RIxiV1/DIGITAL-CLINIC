@@ -1,5 +1,6 @@
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ProgressRing from './ProgressRing';
 import {
   formatDelta,
   getPreviousValue,
@@ -68,61 +69,73 @@ export default function DashboardHeadline({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-[24px] bg-surface border border-line/70 p-6 md:p-8 shadow-pop"
+      className="relative overflow-hidden rounded-[28px] bg-surface border border-line/70 p-6 md:p-8 shadow-pop"
     >
       {/* Soft status-tinted glow — the card's only colour, and it means
           something. Sits behind the content, never intercepts taps. */}
       <div
         aria-hidden
-        className={`pointer-events-none absolute -top-24 -right-16 w-72 h-72 rounded-full blur-3xl ${glow}`}
+        className={`pointer-events-none absolute -top-28 -right-20 w-80 h-80 rounded-full blur-3xl ${glow}`}
       />
 
-      <div className="relative">
-        <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-eyebrow font-bold text-indigo-600">
-          <Sparkles size={11} />
-          {eyebrow}
+      <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
+        {/* Text column — the narrative. */}
+        <div className="order-2 md:order-1 flex-1 min-w-0">
+          <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-eyebrow font-bold text-indigo-600">
+            <Sparkles size={11} />
+            {eyebrow}
+          </div>
+          <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.12] text-balance text-ink">
+            {headline}
+          </h1>
+          {qualifier && (
+            <p className="mt-2 text-caption lg:text-body-sm text-ink-soft leading-relaxed max-w-[60ch]">
+              {qualifier}
+            </p>
+          )}
+          {sub && (
+            <p className="mt-1 text-caption lg:text-body-sm text-muted leading-relaxed max-w-[60ch]">
+              {sub}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={onPrimaryCTA}
+            className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-caption font-semibold shadow-soft transition-colors whitespace-nowrap"
+          >
+            {ctaLabel}
+            <ArrowRight size={14} />
+          </button>
         </div>
-        <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.15] text-balance text-ink">
-          {headline}
-        </h1>
-        {qualifier && (
-          <p className="mt-2 text-caption lg:text-body-sm text-ink-soft leading-relaxed max-w-[60ch]">
-            {qualifier}
-          </p>
-        )}
-        {sub && (
-          <p className="mt-1 text-caption lg:text-body-sm text-muted leading-relaxed max-w-[60ch]">
-            {sub}
-          </p>
-        )}
 
-        {/* Slim on-track bar — the same score language as the Health Map,
-            kept subordinate so it doesn't compete with the headline. */}
+        {/* Score ring — the visual anchor. Same "on-track" language as the
+            Health Map. On mobile it leads (order-1) as the hero element;
+            on desktop it anchors the right. */}
         {onTrackPct !== null && (
-          <div className="mt-4 max-w-sm">
-            <div className="flex items-center justify-between text-micro text-muted mb-1.5">
-              <span>On track</span>
-              <span className="font-semibold text-ink-soft">{onTrackPct}%</span>
-            </div>
-            <div className="h-1.5 rounded-full bg-line/60 overflow-hidden">
-              <motion.div
-                className="h-full rounded-full bg-good"
-                initial={{ width: 0 }}
-                animate={{ width: `${onTrackPct}%` }}
-                transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-              />
-            </div>
+          <div className="order-1 md:order-2 shrink-0 flex flex-col items-center gap-2 self-center">
+            <ProgressRing pct={onTrackPct} size={120} stroke={10}>
+              <div className="text-center leading-none">
+                <span className="font-display text-display-md text-ink">
+                  {onTrackPct}
+                </span>
+                <span className="font-display text-body-sm text-muted align-top">
+                  %
+                </span>
+                <div className="text-micro uppercase tracking-eyebrow font-bold text-muted mt-1.5">
+                  on track
+                </div>
+              </div>
+            </ProgressRing>
+            {summary && (
+              <div className="text-caption text-muted">
+                <span className="font-semibold text-ink-soft">
+                  {summary.good}
+                </span>{' '}
+                of {summary.total} markers
+              </div>
+            )}
           </div>
         )}
-
-        <button
-          type="button"
-          onClick={onPrimaryCTA}
-          className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-caption font-semibold shadow-soft transition-colors whitespace-nowrap"
-        >
-          {ctaLabel}
-          <ArrowRight size={14} />
-        </button>
       </div>
     </motion.div>
   );

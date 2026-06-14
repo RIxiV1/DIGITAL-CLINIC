@@ -49,6 +49,20 @@ export default function MarkerAttentionCard({
   const prev = getPreviousValue(marker);
   const delta = formatDelta(marker);
 
+  // Range position — where this value sits relative to the healthy band,
+  // on a domain padded 60% beyond [min,max] so an out-of-range value
+  // still lands on the track instead of pinning to the very edge. Gives
+  // the card the "here's where you are" read a bare number can't.
+  const span = marker.max - marker.min;
+  const hasRange = Number.isFinite(span) && span > 0;
+  const domainMin = marker.min - span * 0.6;
+  const domainMax = marker.max + span * 0.6;
+  const pctOf = (v: number) =>
+    Math.max(0, Math.min(100, ((v - domainMin) / (domainMax - domainMin)) * 100));
+  const valuePos = hasRange ? pctOf(marker.value) : 0;
+  const bandLeft = hasRange ? pctOf(marker.min) : 0;
+  const bandRight = hasRange ? pctOf(marker.max) : 100;
+
   // Whole numbers count up as ints; decimal markers (e.g. 8.4 free T)
   // animate at one decimal.
   const decimals = Number.isInteger(marker.value) ? 0 : 1;
@@ -197,6 +211,33 @@ export default function MarkerAttentionCard({
           )}
           {c.label}
         </div>
+
+        {/* Range bar — where the value sits vs the healthy band. The band
+            is the green segment; the dot is this reading, coloured by
+            status. Turns a bare number into a positional read. */}
+        {hasRange && (
+          <div className="mt-3.5">
+            <div className="relative h-2 rounded-full bg-line/50">
+              <div
+                className="absolute inset-y-0 rounded-full bg-good/25"
+                style={{ left: `${bandLeft}%`, right: `${100 - bandRight}%` }}
+                aria-hidden
+              />
+              <div
+                className={`absolute top-1/2 w-3 h-3 -translate-y-1/2 -translate-x-1/2 rounded-full ring-2 ring-surface ${c.dot}`}
+                style={{ left: `${valuePos}%` }}
+                aria-hidden
+              />
+            </div>
+            <div className="mt-1.5 flex justify-between text-micro text-muted tabular-nums">
+              <span>{marker.min}</span>
+              <span className="text-good-ink font-medium normal-case tracking-normal">
+                healthy
+              </span>
+              <span>{marker.max}</span>
+            </div>
+          </div>
+        )}
 
         {/* Plain-English explanation. Shown on the hero card (the single
             "one to focus on") so the reader gets the *why* in context, not
