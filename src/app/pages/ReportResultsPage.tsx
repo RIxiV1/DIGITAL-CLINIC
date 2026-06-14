@@ -78,21 +78,20 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     [biomarkers],
   );
 
-  /** Per-category expansion. Default-expanded: any category with at
-   *  least one `concern` marker. Everything else collapses by default
-   *  so a 30-marker report doesn't render 30 BiomarkerBar rows on
-   *  first paint — the user sees what to act on, expands the rest on
-   *  intent. Local state per visit; resets when the user navigates to
-   *  a different report (URL key triggers remount via pageKey). */
+  /** Per-category expansion. Default-expanded: ONLY the single most-
+   *  pressing category (one with a critical marker, else the first with
+   *  a concern). Everything else collapses so a 47-marker report opens
+   *  as a short, scannable list of category headers — each header still
+   *  shows its status + counts — instead of a wall of every flagged
+   *  section stacked open. The user expands the rest on intent. Local
+   *  state per visit; resets on navigation to another report (pageKey
+   *  remount). */
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(
     () => {
-      const initial = new Set<string>();
-      for (const m of biomarkers) {
-        if (m.status === 'critical' || m.status === 'concern') {
-          initial.add(m.category);
-        }
-      }
-      return initial;
+      const lead =
+        biomarkers.find((m) => m.status === 'critical')?.category ??
+        biomarkers.find((m) => m.status === 'concern')?.category;
+      return new Set(lead ? [lead] : []);
     },
   );
   const toggleCategory = (id: string) => {
@@ -182,9 +181,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         >
           <Card
             raised
-            className="!bg-gold-500 border-gold-500 text-indigo-900 relative overflow-hidden !p-5 sm:!p-6 lg:!p-8"
+            className="bg-surface border border-line/70 text-ink relative overflow-hidden !p-5 sm:!p-6 lg:!p-8"
           >
-            <div className="absolute -top-8 -right-8 w-40 h-40 lg:w-56 lg:h-56 rounded-full bg-gold-400/40 blur-2xl pointer-events-none" />
+            <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
             {/* Single-column layout. The 1/3 column on the right used
                 to carry three display-md count tiles (good / attention
                 / concern) — that's three large numbers competing with
@@ -194,10 +193,10 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 supporting metadata, not a parallel focal point. */}
             <div className="relative">
               <div className="flex items-center gap-2">
-                <Pill tone="dark" size="sm">
+                <Pill tone="indigo" size="sm">
                   <Sparkles size={10} /> The Bottom Line
                 </Pill>
-                <span className="text-micro uppercase tracking-label font-bold text-indigo-900/70">
+                <span className="text-micro uppercase tracking-label font-bold text-muted">
                   {report.uploadedOn}
                 </span>
               </div>
@@ -222,7 +221,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   triumphant headline reads like a participation trophy
                   and dilutes the flagged counts when they exist. */}
               {(summary.concern > 0 || summary.attention > 0) && (
-                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption font-semibold text-indigo-900/80 no-print">
+                <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption font-semibold text-ink-soft no-print">
                   {summary.concern > 0 && (
                     <span className="inline-flex items-center gap-1.5">
                       <span
@@ -250,7 +249,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
               <div className="mt-5 flex flex-wrap items-center gap-2 no-print">
                 <Button
-                  variant="dark"
+                  variant="gold"
                   size="sm"
                   leading={<Download size={14} />}
                   onClick={handleDownload}
