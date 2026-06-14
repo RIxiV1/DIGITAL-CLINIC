@@ -15,6 +15,7 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import { LanguageProvider } from './contexts/LanguageContext';
+import { DiscreetProvider } from './contexts/DiscreetContext';
 import { NavigationProvider } from './contexts/NavigationContext';
 import { QuizProvider } from './contexts/QuizContext';
 import { ReportsProvider } from './contexts/ReportsContext';
@@ -24,6 +25,7 @@ export { useNavigation } from './contexts/NavigationContext';
 export { useQuiz } from './contexts/QuizContext';
 export { useReports } from './contexts/ReportsContext';
 export { useLanguage } from './contexts/LanguageContext';
+export { useDiscreet } from './contexts/DiscreetContext';
 
 /**
  * Root provider stack. The optional `router` prop swaps the router
@@ -48,11 +50,13 @@ export function AppProvider({
   return (
     <Router {...routerProps}>
       <LanguageProvider>
-        <NavigationProvider>
-          <QuizProvider>
-            <ReportsProvider>{children}</ReportsProvider>
-          </QuizProvider>
-        </NavigationProvider>
+        <DiscreetProvider>
+          <NavigationProvider>
+            <QuizProvider>
+              <ReportsProvider>{children}</ReportsProvider>
+            </QuizProvider>
+          </NavigationProvider>
+        </DiscreetProvider>
       </LanguageProvider>
     </Router>
   );

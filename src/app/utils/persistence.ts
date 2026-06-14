@@ -47,6 +47,7 @@ const RETEST_ACK_KEY = `${KEY_PREFIX}retestAck`;
  *  consent stays just-in-time. Profile → "AI auto-fallback" turns it
  *  off permanently for users who want zero implicit network egress. */
 const AI_AUTO_FALLBACK_KEY = `${KEY_PREFIX}aiAutoFallback`;
+const DISCREET_KEY = `${KEY_PREFIX}discreet`;
 
 /** Color theme preference. Two values: 'dark' (the default — set on
  *  <html> by an inline bootstrap script in index.html before React
@@ -171,6 +172,7 @@ const QuizAnswersSchema = z.object({
 
 const QuizCompleteSchema = z.boolean();
 const AiAutoFallbackSchema = z.boolean();
+const DiscreetSchema = z.boolean();
 
 const PendingConfirmSchema = z.object({
   processingId: z.string().min(1).max(80),
@@ -354,6 +356,23 @@ export function loadAiAutoFallbackSetting(): boolean {
 
 export function saveAiAutoFallbackSetting(enabled: boolean): void {
   writeJSON(AI_AUTO_FALLBACK_KEY, enabled);
+}
+
+/* ------------------------------------------------------------------ */
+/* Discreet Mode preference                                            */
+/*                                                                     */
+/* Defaults to FALSE. When on, a privacy veil hides all content the    */
+/* moment the app loses focus / is backgrounded (app switcher, glance  */
+/* away) and lifts when the user returns — the "soundproof room"       */
+/* promise for someone terrified a passer-by sees his screen.          */
+/* ------------------------------------------------------------------- */
+
+export function loadDiscreetMode(): boolean {
+  return readValidated(DISCREET_KEY, DiscreetSchema, false);
+}
+
+export function saveDiscreetMode(enabled: boolean): void {
+  writeJSON(DISCREET_KEY, enabled);
 }
 
 /* ------------------------------------------------------------------ */
