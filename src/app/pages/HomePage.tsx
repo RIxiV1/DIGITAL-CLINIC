@@ -301,6 +301,9 @@ export default function HomePage() {
   const openMarkerLM = openMarkerName
     ? (getMarkerInfo(openMarkerName) ?? null)
     : null;
+  const openMarkerStatus = openMarkerName
+    ? biomarkers.find((m) => m.name === openMarkerName)?.status
+    : undefined;
 
   const openLearnMore = (name: string) => (e: React.MouseEvent) => {
     triggerRef.current = e.currentTarget as HTMLElement;
@@ -745,6 +748,7 @@ export default function HomePage() {
         title={openMarkerName ?? ''}
         subtitle="Marker · Learn more"
         info={openMarkerLM}
+        status={openMarkerStatus}
         onClose={closeLearnMore}
       />
 
