@@ -138,6 +138,14 @@ const BiomarkerSchema = z.object({
    *  for display alongside the catalog's healthy band. Optional. */
   labRefMin: z.number().finite().optional(),
   labRefMax: z.number().finite().optional(),
+  /** Clinical-critical cliff bounds, propagated from the catalog so the
+   *  BiomarkerBar can scale its zones against the real same-day-care
+   *  thresholds after a reload (otherwise the bar reverts to a span
+   *  heuristic and a moderately-out-of-range value re-pegs to the end of
+   *  the track). Optional — markers with no documented panic value omit
+   *  them. */
+  criticalLow: z.number().finite().optional(),
+  criticalHigh: z.number().finite().optional(),
 });
 
 const ReportSchema = z.object({
@@ -168,6 +176,10 @@ const QuizAnswersSchema = z.object({
   activity: z.string().max(40).optional(),
   priorities: z.array(z.string().max(80)).max(40).catch([]),
   symptoms: z.array(z.string().max(80)).max(40).catch([]),
+  // Same tolerant treatment as the other arrays: absent on quizzes
+  // persisted before this field existed, so default to [] rather than
+  // failing validation and wiping the whole record.
+  comorbidities: z.array(z.string().max(80)).max(40).catch([]),
 });
 
 const QuizCompleteSchema = z.boolean();

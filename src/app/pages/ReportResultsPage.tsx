@@ -214,17 +214,17 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   Von Restorff fails. "12 on track" alongside a
                   triumphant headline reads like a participation trophy
                   and dilutes the flagged counts when they exist. */}
-              {(summary.concern > 0 || summary.attention > 0) && (
+              {(summary.needCare > 0 || summary.attention > 0) && (
                 <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption font-semibold text-ink-soft no-print">
-                  {summary.concern > 0 && (
+                  {summary.needCare > 0 && (
                     <span className="inline-flex items-center gap-1.5">
                       <span
                         className="w-2 h-2 rounded-full bg-concern"
                         aria-hidden
                       />
-                      <span className="tabular-nums">{summary.concern}</span>
+                      <span className="tabular-nums">{summary.needCare}</span>
                       <span>
-                        {summary.concern === 1 ? 'needs' : 'need'} care
+                        {summary.needCare === 1 ? 'needs' : 'need'} care
                       </span>
                     </span>
                   )}

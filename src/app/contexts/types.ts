@@ -22,4 +22,12 @@ export type QuizAnswers = {
   activity?: string;
   priorities: string[];
   symptoms: string[];
+  /** Cardiometabolic red-flag comorbidities the user discloses (heart
+   *  condition, high blood pressure, diabetes, nitrate/angina meds, or an
+   *  explicit "none"). Drives the "see a doctor first" safety banner on
+   *  the recommendations screen — sexual/energy symptoms alongside these
+   *  conditions can be an early sign of cardiovascular disease, and some
+   *  treatments are unsafe with them (e.g. nitrates). Optional/array so
+   *  pre-existing persisted quizzes (no field) hydrate cleanly. */
+  comorbidities: string[];
 };
