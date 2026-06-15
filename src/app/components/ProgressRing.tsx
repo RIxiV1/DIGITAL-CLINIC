@@ -12,6 +12,12 @@ type Props = {
   children?: ReactNode;
   /** Arc colour token class (e.g. 'stroke-good'). Defaults to good. */
   arcClass?: string;
+  /** Track (the un-filled remainder) colour. Pass a status tint (e.g.
+   *  'stroke-concern/40') so the ring reads as an honest two-tone split —
+   *  green = the in-range share, red = the share that needs attention —
+   *  instead of a single green arc that looks like a passing grade.
+   *  Defaults to a neutral hairline. */
+  trackClass?: string;
 };
 
 /**
@@ -27,6 +33,7 @@ export default function ProgressRing({
   stroke = 9,
   children,
   arcClass = 'stroke-good',
+  trackClass = 'stroke-line/50',
 }: Props) {
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -49,7 +56,7 @@ export default function ProgressRing({
           r={r}
           fill="none"
           strokeWidth={stroke}
-          className="stroke-line/50"
+          className={trackClass}
         />
         <motion.circle
           cx={size / 2}

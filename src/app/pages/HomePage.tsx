@@ -23,6 +23,7 @@ import Illustration from '../components/Illustration';
 import MarkerAttentionCard from '../components/MarkerAttentionCard';
 import TrendRow from '../components/TrendRow';
 import LearnMoreModal from '../components/LearnMoreModal';
+import StatusKey from '../components/StatusKey';
 import { useNavigation, useReports } from '../AppContext';
 import { useModalA11y } from '../utils/useModalA11y';
 import {
@@ -494,6 +495,7 @@ export default function HomePage() {
           }
           onPrimaryCTA={primaryCTA}
         />
+        {ready && <StatusKey className="mt-3 px-1" />}
       </Container>
 
       {/* ZONE 2a · Empty-state preview. Replaces the entire top-concern

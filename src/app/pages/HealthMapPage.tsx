@@ -7,6 +7,7 @@ import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import Illustration from '../components/Illustration';
 import ProgressRing from '../components/ProgressRing';
+import StatusKey from '../components/StatusKey';
 import { useNavigation, useReports } from '../AppContext';
 import {
   biomarkersByCategory,
@@ -126,6 +127,15 @@ export default function HealthMapPage() {
   const onTrackPct =
     summary.total > 0 ? Math.round((summary.good / summary.total) * 100) : 0;
 
+  // Two-tone ring: the remainder is tinted by the worst status, not grey,
+  // so the green share can't be misread as a passing grade.
+  const ringTrack =
+    summary.concern > 0 || summary.critical > 0
+      ? 'stroke-concern/40'
+      : summary.attention > 0
+        ? 'stroke-attention/40'
+        : 'stroke-line/50';
+
   // Movement since the last test — the come-back-and-check hook. Only
   // meaningful when markers carry history (a prior report was merged in).
   const movement = useMemo(() => {
@@ -207,13 +217,25 @@ export default function HealthMapPage() {
       <Container size="wide" className="pt-7 md:pt-9">
         <div className="rounded-3xl border border-line/70 bg-surface shadow-soft p-5 sm:p-6">
           <div className="flex items-center gap-5">
-            <ProgressRing pct={onTrackPct} />
+            <ProgressRing pct={onTrackPct} trackClass={ringTrack}>
+              <div className="text-center leading-none">
+                <span className="font-display text-display-sm text-ink">
+                  {onTrackPct}
+                </span>
+                <span className="font-display text-caption text-muted align-top">
+                  %
+                </span>
+                <div className="text-micro uppercase tracking-eyebrow font-bold text-muted mt-1">
+                  in range
+                </div>
+              </div>
+            </ProgressRing>
             <div className="min-w-0">
               <h1 className="font-display text-display-md sm:text-display-lg leading-tight tracking-tight">
                 {headline}
               </h1>
               <p className="text-caption text-muted mt-1">
-                {summary.good} of {summary.total} markers on track
+                {summary.good} of {summary.total} in a healthy range
               </p>
               {movement.any && (
                 <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -249,6 +271,7 @@ export default function HealthMapPage() {
           {groups.length === 1 ? 'system' : 'systems'} · {ready.name} ·{' '}
           {ready.uploadedOn}
         </p>
+        <StatusKey className="mt-3" />
       </Container>
 
       {/* Section label — grouped-list header, the iOS table idiom. */}
@@ -302,17 +325,23 @@ export default function HealthMapPage() {
                 {/* Slim on-track bar + count — a per-system mini-score that
                     keeps every card the same height and gives a number to
                     nudge upward. */}
+                {/* Two-tone bar: green = the in-range share, the tinted
+                    track = the share that needs a look. So "0 of 2" reads
+                    as a full red bar, "8 of 8" as a full green one — no
+                    ambiguous part-filled red. */}
                 <div className="mt-4">
-                  <div className="h-1.5 rounded-full bg-line/60 overflow-hidden">
+                  <div
+                    className={`h-1.5 rounded-full overflow-hidden ${
+                      r.worst === 'good' ? 'bg-line/60' : c.bg
+                    }`}
+                  >
                     <div
-                      className={`h-full rounded-full ${
-                        r.worst === 'good' ? 'bg-good' : c.dot
-                      }`}
-                      style={{ width: `${Math.max(goodPct, 4)}%` }}
+                      className="h-full rounded-full bg-good"
+                      style={{ width: `${goodPct}%` }}
                     />
                   </div>
                   <div className="text-micro text-muted mt-2">
-                    {r.good} of {r.total} on track
+                    {r.good} of {r.total} in a healthy range
                   </div>
                 </div>
               </motion.button>

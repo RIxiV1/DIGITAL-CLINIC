@@ -70,6 +70,18 @@ export default function DashboardHeadline({
       ? Math.round((summary.good / summary.total) * 100)
       : null;
 
+  // Two-tone ring: the un-filled remainder is tinted by the worst status,
+  // not neutral grey — so a 72% green ring can't be misread as a passing
+  // grade while markers still need attention. Green = in range, the rest
+  // = the share that needs a look.
+  const ringTrack = !summary
+    ? 'stroke-line/50'
+    : summary.concern > 0 || summary.critical > 0
+      ? 'stroke-concern/40'
+      : summary.attention > 0
+        ? 'stroke-attention/40'
+        : 'stroke-line/50';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -125,7 +137,12 @@ export default function DashboardHeadline({
             on desktop it anchors the right. */}
         {onTrackPct !== null && (
           <div className="order-1 md:order-2 shrink-0 flex flex-col items-start md:items-center gap-2 self-start md:self-center">
-            <ProgressRing pct={onTrackPct} size={120} stroke={10}>
+            <ProgressRing
+              pct={onTrackPct}
+              size={120}
+              stroke={10}
+              trackClass={ringTrack}
+            >
               <div className="text-center leading-none">
                 <span className="font-display text-display-md text-ink">
                   {onTrackPct}
@@ -134,7 +151,7 @@ export default function DashboardHeadline({
                   %
                 </span>
                 <div className="text-micro uppercase tracking-eyebrow font-bold text-muted mt-1.5">
-                  on track
+                  in range
                 </div>
               </div>
             </ProgressRing>
@@ -143,7 +160,7 @@ export default function DashboardHeadline({
                 <span className="font-semibold text-ink-soft">
                   {summary.good}
                 </span>{' '}
-                of {summary.total} markers
+                of {summary.total} in a healthy range
               </div>
             )}
           </div>
