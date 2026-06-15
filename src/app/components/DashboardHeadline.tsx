@@ -1,4 +1,4 @@
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProgressRing from './ProgressRing';
 import {
@@ -87,8 +87,7 @@ export default function DashboardHeadline({
       <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
         {/* Text column — the narrative. */}
         <div className="order-2 md:order-1 flex-1 min-w-0">
-          <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-eyebrow font-bold text-indigo-600">
-            <Sparkles size={11} />
+          <div className="text-micro uppercase tracking-eyebrow font-bold text-indigo-600">
             {eyebrow}
           </div>
           <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.12] text-balance text-ink">

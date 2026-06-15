@@ -5,7 +5,6 @@ import {
   CalendarClock,
   ChevronRight,
   FileText,
-  Map as MapIcon,
   Plus,
   Search,
   Trash2,
@@ -24,7 +23,6 @@ import Illustration from '../components/Illustration';
 import MarkerAttentionCard from '../components/MarkerAttentionCard';
 import TrendRow from '../components/TrendRow';
 import LearnMoreModal from '../components/LearnMoreModal';
-import Emoji from '../components/Emoji';
 import { useNavigation, useReports } from '../AppContext';
 import { useModalA11y } from '../utils/useModalA11y';
 import {
@@ -518,29 +516,20 @@ export default function HomePage() {
           <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
             {[
               {
-                icon: '🎯',
-                label: 'Target',
                 title: 'Markers to act on first',
                 copy: 'Anything outside the healthy range is pulled up top — concern, then attention.',
               },
               {
-                icon: '📈',
-                label: 'Trend',
                 title: 'Trends over time',
                 copy: 'Each marker gets a sparkline once you have two or more reports.',
               },
               {
-                icon: '🧭',
-                label: 'Plan',
                 title: 'A plan, not a panel',
                 copy: 'Lab numbers translated into plain English — and what to do about them.',
               },
             ].map((s) => (
               <Card key={s.title}>
-                <Emoji label={s.label} className="text-display-md leading-none">
-                  {s.icon}
-                </Emoji>
-                <div className="font-display text-body leading-tight mt-3">
+                <div className="font-display text-body leading-tight">
                   {s.title}
                 </div>
                 <p className="mt-1.5 text-caption text-ink-soft leading-relaxed">
@@ -669,13 +658,7 @@ export default function HomePage() {
                   key={p.id}
                   className={`bg-surface rounded-[14px] border border-line/70 border-l-4 ${borderCls} shadow-soft p-3 sm:p-3.5`}
                 >
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Emoji
-                      label={`${p.name} pathway`}
-                      className="text-body-sm leading-none"
-                    >
-                      {p.icon}
-                    </Emoji>
+                  <div className="min-w-0">
                     <span className="text-micro uppercase tracking-eyebrow font-bold text-muted truncate">
                       {p.name}
                     </span>
@@ -698,9 +681,6 @@ export default function HomePage() {
             onClick={() => navigate({ type: 'healthMap' })}
             className="group mt-2.5 w-full flex items-center gap-2.5 rounded-[14px] border border-line/70 bg-surface/60 hover:bg-surface px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
           >
-            <span className="grid place-items-center w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 shrink-0">
-              <MapIcon size={16} />
-            </span>
             <span className="min-w-0 flex-1">
               <span className="block text-caption font-semibold text-ink">
                 See your full Health Map
@@ -1029,7 +1009,6 @@ function TrendsPane({
   trendsByPathway: Array<{
     id: string;
     name: string;
-    icon: string;
     categories: BiomarkerCategoryId[];
     markers: Biomarker[];
   }>;
@@ -1052,13 +1031,7 @@ function TrendsPane({
             key={group.id}
             className={`rounded-[18px] bg-canvas/40 border border-line/70 ${borderClass} overflow-hidden`}
           >
-            <div className="px-4 pt-4 pb-1 flex items-center gap-2">
-              <Emoji
-                label={`${group.name} pathway`}
-                className="text-body-lg leading-none"
-              >
-                {group.icon}
-              </Emoji>
+            <div className="px-4 pt-4 pb-1">
               <div className="text-micro uppercase tracking-eyebrow font-bold text-indigo-700">
                 {group.name}
               </div>
@@ -1379,7 +1352,6 @@ function DeleteReportConfirm({
 type Pathway = {
   id: string;
   name: string;
-  icon: string;
   categories: BiomarkerCategoryId[];
 };
 
@@ -1389,20 +1361,10 @@ type Pathway = {
 // adjacent: hormonal/metabolic/thyroid are the "system" reads;
 // nutritional comes last because it's a lifestyle-adjacent fix.
 const PATHWAYS: Pathway[] = [
-  { id: 'hormonal', name: 'Hormonal', icon: '🔥', categories: ['hormones'] },
-  {
-    id: 'metabolic',
-    name: 'Metabolic',
-    icon: '⚡',
-    categories: ['metabolic', 'heart'],
-  },
-  { id: 'thyroid', name: 'Thyroid', icon: '🦋', categories: ['thyroid'] },
-  {
-    id: 'nutritional',
-    name: 'Nutritional',
-    icon: '☀️',
-    categories: ['vitamins'],
-  },
+  { id: 'hormonal', name: 'Hormonal', categories: ['hormones'] },
+  { id: 'metabolic', name: 'Metabolic', categories: ['metabolic', 'heart'] },
+  { id: 'thyroid', name: 'Thyroid', categories: ['thyroid'] },
+  { id: 'nutritional', name: 'Nutritional', categories: ['vitamins'] },
 ];
 
 function SectionHeading({

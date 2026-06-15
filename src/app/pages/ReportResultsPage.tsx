@@ -1,12 +1,6 @@
 import { useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import {
-  ChevronDown,
-  ChevronRight,
-  Download,
-  Info,
-  Sparkles,
-} from 'lucide-react';
+import { ChevronDown, ChevronRight, Download, Info } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
@@ -14,7 +8,6 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
-import Emoji from '../components/Emoji';
 import { Reveal } from './landing/shared';
 import { useIsMdUp } from '../utils/useMediaQuery';
 import { useNavigation, useReports } from '../AppContext';
@@ -194,7 +187,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             <div className="relative">
               <div className="flex items-center gap-2">
                 <Pill tone="indigo" size="sm">
-                  <Sparkles size={10} /> The Bottom Line
+                  The Bottom Line
                 </Pill>
                 <span className="text-micro uppercase tracking-label font-bold text-muted">
                   {report.uploadedOn}
@@ -298,9 +291,6 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   }
                 >
                   <div className="flex items-center gap-3">
-                    <div className="grid place-items-center w-10 h-10 rounded-2xl bg-gold-100 text-gold-700 shrink-0">
-                      <Sparkles size={18} />
-                    </div>
                     <div className="flex-1">
                       <div className="text-micro uppercase tracking-label font-bold text-muted">
                         {m.name}
@@ -441,12 +431,6 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                                 : 'hover:bg-canvas/40'
                             }`}
                           >
-                            <Emoji
-                              label={category.name}
-                              className="text-display-md leading-none"
-                            >
-                              {category.icon}
-                            </Emoji>
                             <div className="flex-1 min-w-0">
                               <div className="font-display text-body-lg leading-tight">
                                 {category.name}
@@ -630,7 +614,6 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                       .map((c) => (
                         <CategoryChip
                           key={c.id}
-                          emoji={c.icon}
                           label={c.name}
                           active={activeCategory === c.id}
                           onClick={() => setActiveCategory(c.id)}
@@ -663,9 +646,6 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                             }
                             className="w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-canvas/60 transition-colors"
                           >
-                            <div className="grid place-items-center w-9 h-9 rounded-xl bg-gold-100 text-gold-700 shrink-0">
-                              <Sparkles size={16} />
-                            </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-micro uppercase tracking-label font-bold text-muted truncate">
                                 {m.name}
@@ -703,14 +683,10 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 }
 
 function CategoryChip({
-  emoji,
   label,
   active,
   onClick,
 }: {
-  /** Optional emoji glyph rendered inside an accessible <Emoji /> wrapper.
-   *  Omit for chips like "All" / "All categories" that have no glyph. */
-  emoji?: string;
   label: string;
   active: boolean;
   onClick: () => void;
@@ -720,17 +696,12 @@ function CategoryChip({
       onClick={onClick}
       // min-h-12 (48px) hit target — the visible chip stays compact but
       // taps don't miss on touch.
-      className={`inline-flex items-center gap-1 px-3 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
+      className={`inline-flex items-center px-3 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
         active
           ? 'bg-gold-500 text-indigo-900 border border-gold-500'
           : 'bg-surface border border-line text-ink-soft'
       }`}
     >
-      {emoji && (
-        <Emoji label={label} className="text-caption leading-none">
-          {emoji}
-        </Emoji>
-      )}
       {label}
     </button>
   );

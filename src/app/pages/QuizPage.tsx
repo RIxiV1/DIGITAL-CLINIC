@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
-import Emoji from '../components/Emoji';
 import Logo from '../components/Logo';
 import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useQuiz, type QuizAnswers } from '../AppContext';
@@ -899,17 +898,6 @@ function CardOptions({
             }`}
           >
             <div className="flex items-center gap-3">
-              {opt.emoji && (
-                <div
-                  className={`w-10 h-10 rounded-xl grid place-items-center ${
-                    selected ? 'bg-indigo-500/40' : 'bg-canvas'
-                  }`}
-                >
-                  <Emoji label={opt.label} className="text-lg leading-none">
-                    {opt.emoji}
-                  </Emoji>
-                </div>
-              )}
               <div className="flex-1">
                 <div className="font-semibold">{opt.label}</div>
                 {opt.hint && (

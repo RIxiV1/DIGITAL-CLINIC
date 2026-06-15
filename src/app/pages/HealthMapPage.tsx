@@ -1,23 +1,6 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import {
-  ChevronRight,
-  Dna,
-  Droplet,
-  Droplets,
-  FlaskConical,
-  Flame,
-  Gauge,
-  Heart,
-  Scale,
-  ShieldAlert,
-  Sun,
-  TrendingDown,
-  TrendingUp,
-  Upload,
-  Zap,
-  type LucideIcon,
-} from 'lucide-react';
+import { ChevronRight, TrendingDown, TrendingUp, Upload } from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
 import Header from '../components/Header';
@@ -32,7 +15,6 @@ import {
   statusColor,
   summarizeStatuses,
   type Biomarker,
-  type BiomarkerCategoryId,
 } from '../data/biomarkers';
 import {
   getPrimaryReport,
@@ -70,21 +52,6 @@ import {
  * dashboard's 4-pathway Vitals Strip, which intentionally shows only the
  * four headline pathways.
  */
-
-/** A clean line icon per body system — the Apple Health "Browse" idiom. */
-const SYSTEM_ICON: Record<BiomarkerCategoryId, LucideIcon> = {
-  hormones: Zap,
-  metabolic: Flame,
-  heart: Heart,
-  thyroid: Gauge,
-  vitamins: Sun,
-  liver: FlaskConical,
-  kidney: Droplet,
-  blood: Droplets,
-  fertility: Dna,
-  electrolytes: Scale,
-  inflammation: ShieldAlert,
-};
 
 type SystemRollup = {
   critical: number;
@@ -298,14 +265,6 @@ export default function HealthMapPage() {
           {groups.map((g, i) => {
             const r = g.r;
             const c = statusColor(r.worst);
-            const Icon = SYSTEM_ICON[g.category.id] ?? Gauge;
-            // Icon tile carries the status colour — one calm colour story
-            // per card. "good" stays neutral-brand so a healthy map reads
-            // quiet, not a wall of green.
-            const tileCls =
-              r.worst === 'good'
-                ? 'bg-indigo-50 text-indigo-700'
-                : `${c.bg} ${c.textOnSurface}`;
             const goodPct = r.total > 0 ? (r.good / r.total) * 100 : 0;
             return (
               <motion.button
@@ -321,13 +280,8 @@ export default function HealthMapPage() {
                 }}
                 className="group h-full text-left bg-surface rounded-3xl border border-line/70 shadow-soft p-4 sm:p-5 transition-all hover:shadow-pop hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
               >
-                {/* Header row — icon tile · name + status · chevron. */}
+                {/* Header row — name + status · chevron. */}
                 <div className="flex items-center gap-3">
-                  <span
-                    className={`grid place-items-center w-11 h-11 rounded-2xl shrink-0 ${tileCls}`}
-                  >
-                    <Icon size={20} strokeWidth={2.2} />
-                  </span>
                   <div className="min-w-0 flex-1">
                     <div className="font-display text-body text-ink leading-tight truncate">
                       {g.category.name}
