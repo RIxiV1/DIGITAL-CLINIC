@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getLatestReadyReport,
+  getPrimaryReport,
   getRetestReminder,
   mergeHistoryFromPriorReports,
   RETEST_REMINDER_DAYS,
@@ -259,6 +260,48 @@ describe('getLatestReadyReport', () => {
     const s1 = sample('rep-001', '2026-04-12');
     const s2 = sample('rep-002', '2026-03-04');
     expect(getLatestReadyReport([s1, s2])?.id).toBe('rep-001');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* getPrimaryReport — most comprehensive panel, not just the newest     */
+/* ------------------------------------------------------------------ */
+
+describe('getPrimaryReport', () => {
+  it('returns undefined when no ready reports exist', () => {
+    expect(getPrimaryReport([])).toBeUndefined();
+  });
+
+  it('prefers the panel with the most markers over a newer smaller one', () => {
+    // The motivating bug: an 8-marker semen analysis uploaded AFTER a
+    // 47-marker blood panel must not become the dashboard's "everything's
+    // in range" source. The fuller (older) panel wins.
+    const bigOlder = readyReport('2026-06-09', [hb(15), ldl(90), hb(15)]);
+    const smallNewer = readyReport('2026-06-15', [hb(15)]);
+    expect(getPrimaryReport([smallNewer, bigOlder])?.id).toBe('r-2026-06-09');
+    expect(getPrimaryReport([bigOlder, smallNewer])?.id).toBe('r-2026-06-09');
+  });
+
+  it('breaks marker-count ties toward the most recent upload', () => {
+    const older = readyReport('2026-01-15', [hb(13.8), ldl(90)]);
+    const newer = readyReport('2026-03-10', [hb(14.0), ldl(95)]);
+    expect(getPrimaryReport([older, newer])?.id).toBe('r-2026-03-10');
+  });
+
+  it('prefers a real report over a sample even if the sample is bigger', () => {
+    const real = readyReport('2026-03-15', [hb(13.9)]);
+    const sampleBig: Report = {
+      id: 'rep-001',
+      name: 'Sample',
+      lab: 'Sample lab',
+      uploadedOn: '2026-04-12',
+      uploadedAt: '2026-04-12',
+      status: 'ready',
+      badge: 'analyzed',
+      isSample: true,
+      biomarkers: [hb(15), ldl(90), hb(15)],
+    };
+    expect(getPrimaryReport([real, sampleBig])?.id).toBe('r-2026-03-15');
   });
 });
 

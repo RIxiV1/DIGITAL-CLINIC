@@ -37,7 +37,7 @@ import {
 } from '../data/biomarkers';
 import {
   badgeFor,
-  getLatestReadyReport,
+  getPrimaryReport,
   getRetestReminder,
   getSampleReportForDashboard,
   type Report,
@@ -144,7 +144,9 @@ export default function HomePage() {
     navigate({ type: 'results', reportId: getSampleReportForDashboard().id });
   };
 
-  const ready = useMemo(() => getLatestReadyReport(reports), [reports]);
+  // Primary = the most comprehensive panel, not literally the newest
+  // upload — so a small add-on test doesn't override a full blood panel.
+  const ready = useMemo(() => getPrimaryReport(reports), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
 
   /* ---- Re-test nudge. Surfaced when the user's latest real report is
@@ -489,6 +491,9 @@ export default function HomePage() {
         <DashboardHeadline
           markers={ready ? biomarkers : null}
           hasReport={!!ready}
+          source={
+            ready ? { name: ready.name, uploadedOn: ready.uploadedOn } : undefined
+          }
           onPrimaryCTA={primaryCTA}
         />
       </Container>

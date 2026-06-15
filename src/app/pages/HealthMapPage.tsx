@@ -35,7 +35,7 @@ import {
   type BiomarkerCategoryId,
 } from '../data/biomarkers';
 import {
-  getLatestReadyReport,
+  getPrimaryReport,
   getSampleReportForDashboard,
 } from '../data/reports';
 
@@ -143,7 +143,7 @@ export default function HealthMapPage() {
   const { reports } = useReports();
   const { navigate } = useNavigation();
 
-  const ready = useMemo(() => getLatestReadyReport(reports), [reports]);
+  const ready = useMemo(() => getPrimaryReport(reports), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
   const summary = useMemo(() => summarizeStatuses(biomarkers), [biomarkers]);
   const bottomLine = useMemo(() => bottomLineFor(biomarkers), [biomarkers]);

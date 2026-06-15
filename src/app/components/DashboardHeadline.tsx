@@ -11,10 +11,15 @@ import {
 } from '../data/biomarkers';
 
 type Props = {
-  /** Markers from the latest analyzed report, or null/[] if none. */
+  /** Markers from the report this hero summarizes, or null/[] if none. */
   markers: Biomarker[] | null;
   /** Whether the user has ANY analyzed report. */
   hasReport: boolean;
+  /** The report these markers came from — labelled so it's never
+   *  ambiguous WHICH report the headline + score reflect (the dashboard
+   *  shows your most comprehensive panel, which may not be your newest
+   *  upload). Omitted in the no-report state. */
+  source?: { name: string; uploadedOn: string };
   onPrimaryCTA: () => void;
 };
 
@@ -38,6 +43,7 @@ type Props = {
 export default function DashboardHeadline({
   markers,
   hasReport,
+  source,
   onPrimaryCTA,
 }: Props) {
   const { eyebrow, headline, qualifier, sub, ctaLabel } = pickCopy(
@@ -96,6 +102,13 @@ export default function DashboardHeadline({
           {sub && (
             <p className="mt-1 text-caption lg:text-body-sm text-muted leading-relaxed max-w-[60ch]">
               {sub}
+            </p>
+          )}
+          {source && (
+            <p className="mt-2.5 text-micro text-muted truncate max-w-full">
+              Based on{' '}
+              <span className="font-semibold text-ink-soft">{source.name}</span>{' '}
+              · {source.uploadedOn}
             </p>
           )}
           <button

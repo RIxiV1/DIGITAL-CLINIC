@@ -119,6 +119,37 @@ export function getLatestReadyReport(reports: Report[]): Report | undefined {
   return pool[0];
 }
 
+/**
+ * The report the dashboard / Health Map / problem pages summarize as
+ * "your health picture".
+ *
+ * Unlike getLatestReadyReport (newest by date — correct for the re-test
+ * nudge), this prefers the most COMPREHENSIVE panel. The motivating bug:
+ * a user with a 47-marker blood panel uploads an 8-marker semen analysis
+ * afterwards, and "latest wins" made the dashboard declare "100% — every-
+ * thing's in range" off those 8 markers while the fuller panel (with
+ * flagged values) sat hidden a tab away. A narrow add-on test shouldn't
+ * speak for the whole body.
+ *
+ * Heuristic: most markers wins; ties break to the most recent upload.
+ * Real reports always outrank samples (samples only when nothing else).
+ * Tradeoff: an older big panel outranks a newer slightly-smaller one —
+ * acceptable, since re-tests of the same panel tie on count and recency
+ * then decides.
+ */
+export function getPrimaryReport(reports: Report[]): Report | undefined {
+  const ready = reports.filter((r) => r.status === 'ready');
+  if (ready.length === 0) return undefined;
+  const real = ready.filter((r) => !r.isSample);
+  const pool = real.length > 0 ? real : ready;
+  return pool.reduce((best, r) => {
+    if (r.biomarkers.length !== best.biomarkers.length) {
+      return r.biomarkers.length > best.biomarkers.length ? r : best;
+    }
+    return (r.uploadedAt ?? '') > (best.uploadedAt ?? '') ? r : best;
+  });
+}
+
 /** Days after which we gently nudge the user to re-test. ~4 months —
  *  long enough not to nag someone who just uploaded, short enough to
  *  land inside the 3–6 month cadence most hormone and metabolic panels
