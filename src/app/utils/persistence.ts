@@ -176,6 +176,10 @@ const QuizAnswersSchema = z.object({
   activity: z.string().max(40).optional(),
   priorities: z.array(z.string().max(80)).max(40).catch([]),
   symptoms: z.array(z.string().max(80)).max(40).catch([]),
+  // Same tolerant treatment as the other arrays: absent on quizzes
+  // persisted before this field existed, so default to [] rather than
+  // failing validation and wiping the whole record.
+  comorbidities: z.array(z.string().max(80)).max(40).catch([]),
 });
 
 const QuizCompleteSchema = z.boolean();

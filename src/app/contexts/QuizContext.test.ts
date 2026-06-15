@@ -14,7 +14,35 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { calculateRisk, SYMPTOM_WEIGHTS } from './QuizContext';
+import {
+  calculateRisk,
+  CARDIOMETABOLIC_RED_FLAGS,
+  hasCardiometabolicRedFlag,
+  SYMPTOM_WEIGHTS,
+} from './QuizContext';
+
+describe('hasCardiometabolicRedFlag', () => {
+  it('is false for an empty selection or the explicit "none" opt-out', () => {
+    expect(hasCardiometabolicRedFlag([])).toBe(false);
+    expect(hasCardiometabolicRedFlag(['none'])).toBe(false);
+  });
+
+  it('is true when any cardiometabolic comorbidity is disclosed', () => {
+    for (const flag of CARDIOMETABOLIC_RED_FLAGS) {
+      expect(hasCardiometabolicRedFlag([flag])).toBe(true);
+    }
+  });
+
+  it('errs toward true when "none" is mixed with a real flag', () => {
+    // No mutual-exclusion logic on the chips, so this combo is possible;
+    // the safety banner should still fire (the real flag wins).
+    expect(hasCardiometabolicRedFlag(['none', 'diabetes'])).toBe(true);
+  });
+
+  it('ignores unknown ids', () => {
+    expect(hasCardiometabolicRedFlag(['not-a-flag'])).toBe(false);
+  });
+});
 
 describe('calculateRisk', () => {
   it('returns all-zero scores and low tiers for an empty symptom set', () => {

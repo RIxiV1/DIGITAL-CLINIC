@@ -17,7 +17,7 @@ import { useNavigation, useQuiz, type QuizAnswers } from '../AppContext';
 import { quizSteps, totalQuizSteps, type QuizStep } from '../data/quiz';
 import { useModalA11y } from '../utils/useModalA11y';
 
-type Field = 'age' | 'activity' | 'priorities' | 'symptoms';
+type Field = 'age' | 'activity' | 'priorities' | 'symptoms' | 'comorbidities';
 
 /** Pixels of horizontal travel before we treat a touch drag as a swipe.
  *  60px lines up with iOS Safari's own swipe-back gesture so we don't
@@ -116,7 +116,8 @@ export default function QuizPage() {
     !!quiz.age ||
     !!quiz.activity ||
     quiz.priorities.length > 0 ||
-    quiz.symptoms.length > 0;
+    quiz.symptoms.length > 0 ||
+    quiz.comorbidities.length > 0;
 
   /** Try to run `action`. If the user has touched anything, the
    *  unsaved-work confirm dialog opens first; otherwise the action
@@ -261,6 +262,7 @@ export default function QuizPage() {
     'symptoms',
     'priorities',
     'basics',
+    'health',
   ];
 
   return (

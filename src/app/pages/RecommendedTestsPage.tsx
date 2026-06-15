@@ -22,6 +22,7 @@ import BottomNav from '../components/BottomNav';
 import LearnMoreModal from '../components/LearnMoreModal';
 import { useNavigation, useQuiz } from '../AppContext';
 import {
+  hasCardiometabolicRedFlag,
   SYSTEM_MAX_SCORES,
   type RiskAssessment,
   type RiskSystemResult,
@@ -39,6 +40,16 @@ export default function RecommendedTestsPage() {
   // symptoms question — empty symptoms means there's nothing to
   // interpret and a "your symptoms suggest..." card would feel dishonest.
   const showRiskCard = quiz.symptoms.length > 0;
+
+  // Cardiometabolic red flag disclosed in the health screen (heart
+  // condition, high BP, diabetes, or nitrate meds). When present, the
+  // page must lead with a "see a doctor first" intercept regardless of
+  // the symptom-cluster tier: sexual/energy symptoms alongside these
+  // conditions can be an early CV-disease marker (Montorsi artery-size
+  // hypothesis; Princeton III), and some treatments are unsafe with them
+  // (PDE5i + nitrates is an absolute contraindication). We screen + point
+  // to labs/clinicians; we never dispense, so this is a nudge, not a gate.
+  const hasRedFlag = hasCardiometabolicRedFlag(quiz.comorbidities);
   // Default to collapsed. Was: open the first test on mount, which
   // dumped 6+ marker rows on the user's first paint without them
   // asking for it. The page's job is to show *what we'd test*; the
@@ -132,27 +143,37 @@ export default function RecommendedTestsPage() {
           </div>
         </div>
 
-        {/* High-tier intercept — when the symptom cluster is strong, the
-            user shouldn't move to "let me self-test and decide" without
-            seeing the recommendation to talk to a clinician first. Not a
-            blocking modal (paternalistic), but the first content card
-            below the headline so it can't be missed. */}
-        {showRiskCard && riskAssessment.highestTier === 'high' && (
+        {/* Clinical-evaluation-first intercept. Fires in two cases:
+              1. A cardiometabolic red flag (heart condition, high BP,
+                 diabetes, nitrate meds) — the priority. Sexual/energy
+                 symptoms alongside these can be an early CV-disease
+                 marker, and some treatments are unsafe with them, so the
+                 "see a doctor first" message must show regardless of the
+                 symptom-cluster tier.
+              2. A strong symptom cluster (highest tier 'high') even with
+                 no disclosed comorbidity.
+            Not a blocking modal (paternalistic, and we dispense nothing
+            to block) — the first content card below the headline so it
+            can't be missed. Calm amber/charcoal treatment per clinical-UX
+            guidance, not an alarmist bright red. */}
+        {(hasRedFlag ||
+          (showRiskCard && riskAssessment.highestTier === 'high')) && (
           <div className="mt-6 lg:max-w-3xl">
-            <Card className="!bg-concern-soft border-concern/30">
+            <Card className="!bg-attention-soft border-attention/40">
               <div className="flex items-start gap-3">
-                <div className="grid place-items-center w-10 h-10 rounded-2xl bg-concern text-on-status shrink-0">
-                  <AlertCircle size={18} />
+                <div className="grid place-items-center w-10 h-10 rounded-2xl bg-attention text-on-status shrink-0">
+                  <AlertTriangle size={18} />
                 </div>
                 <div className="min-w-0">
                   <div className="font-display text-body lg:text-body-lg text-ink leading-tight">
-                    Talk to a doctor before acting on this.
+                    {hasRedFlag
+                      ? 'See a doctor before starting any treatment.'
+                      : 'Talk to a doctor before acting on this.'}
                   </div>
                   <p className="mt-1.5 text-caption text-ink-soft leading-relaxed">
-                    Your answers cluster strongly toward at least one system.
-                    The tests below help confirm or rule it out — but the
-                    interpretation belongs in a consultation, not a
-                    self-diagnosis from a screener.
+                    {hasRedFlag
+                      ? 'You told us about a heart condition, high blood pressure, or diabetes. Symptoms like low energy or trouble in bed can be an early warning sign of cardiovascular problems — and some performance treatments are unsafe taken with heart, blood-pressure, or nitrate medicines. Get a proper clinical evaluation first, and bring the tests below to that appointment.'
+                      : 'Your answers cluster strongly toward at least one system. The tests below help confirm or rule it out — but the interpretation belongs in a consultation, not a self-diagnosis from a screener.'}
                   </p>
                 </div>
               </div>

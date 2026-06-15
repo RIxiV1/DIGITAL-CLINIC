@@ -247,7 +247,37 @@ const QuizContext = createContext<QuizValue | null>(null);
 const emptyQuiz: QuizAnswers = {
   priorities: [],
   symptoms: [],
+  comorbidities: [],
 };
+
+/**
+ * Cardiometabolic red-flag comorbidity ids — everything except the
+ * explicit "none" opt-out. When any of these is disclosed, the
+ * recommendations screen leads with a "see a doctor first" banner:
+ * sexual/energy symptoms alongside heart disease, high blood pressure,
+ * or diabetes can be an early marker of cardiovascular disease
+ * (Montorsi's artery-size hypothesis; Princeton III), and some
+ * treatments are unsafe with these conditions (PDE5i + nitrates is an
+ * absolute contraindication). This app only screens + recommends tests —
+ * it never dispenses anything — so the "block" is a clinical-evaluation
+ * nudge, not a checkout gate.
+ */
+export const CARDIOMETABOLIC_RED_FLAGS = [
+  'heart-condition',
+  'high-bp',
+  'diabetes',
+  'nitrates',
+] as const;
+
+/** True when the user disclosed any cardiometabolic red-flag comorbidity
+ *  (i.e. anything other than the "none" opt-out / an empty answer). */
+export function hasCardiometabolicRedFlag(
+  comorbidities: readonly string[] = [],
+): boolean {
+  return comorbidities.some((c) =>
+    (CARDIOMETABOLIC_RED_FLAGS as readonly string[]).includes(c),
+  );
+}
 
 export function QuizProvider({ children }: { children: ReactNode }) {
   // Hydrate from localStorage on first mount so a returning user sees
@@ -264,6 +294,9 @@ export function QuizProvider({ children }: { children: ReactNode }) {
           ? persisted.priorities
           : [],
         symptoms: Array.isArray(persisted.symptoms) ? persisted.symptoms : [],
+        comorbidities: Array.isArray(persisted.comorbidities)
+          ? persisted.comorbidities
+          : [],
       };
     }
     return emptyQuiz;
@@ -339,6 +372,9 @@ export function QuizProvider({ children }: { children: ReactNode }) {
                 ? fresh.priorities
                 : [],
               symptoms: Array.isArray(fresh.symptoms) ? fresh.symptoms : [],
+              comorbidities: Array.isArray(fresh.comorbidities)
+                ? fresh.comorbidities
+                : [],
             }
           : emptyQuiz;
         skipNextQuizPersistRef.current = true;

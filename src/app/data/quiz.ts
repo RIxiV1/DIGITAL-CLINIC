@@ -48,13 +48,13 @@ type QuizSubStep = {
 
 export type QuizStep = {
   id: string;
-  sectionId: 'symptoms' | 'priorities' | 'basics';
+  sectionId: 'symptoms' | 'priorities' | 'basics' | 'health';
   sectionLabel: string;
   title: string;
   subtitle: string;
 
   /* --- Simple step fields --- */
-  field?: 'age' | 'activity' | 'priorities' | 'symptoms';
+  field?: 'age' | 'activity' | 'priorities' | 'symptoms' | 'comorbidities';
   multi?: boolean;
   layout?: 'cards' | 'pills';
   /** Flat option list. Mutually exclusive with `optionGroups`. */
@@ -213,6 +213,35 @@ export const quizSteps: QuizStep[] = [
       },
     ],
   },
+
+  /* --------------- SCREEN 4 · Health background (safety) ----------- */
+  // A deliberate safety screen, not a survey nicety. Sexual/energy
+  // symptoms alongside a heart condition, high blood pressure, or
+  // diabetes can be an early marker of cardiovascular disease, and some
+  // performance treatments are unsafe with these (PDE5 inhibitors are an
+  // absolute contraindication with nitrates). This app only screens and
+  // recommends tests — it dispenses nothing — so the payoff is a
+  // "see a doctor first" banner on the results screen plus the right
+  // labs to bring, never an automated purchase. The "None of these"
+  // opt-out keeps it to a single tap for users with no red flags.
+  {
+    id: 'comorbidities',
+    sectionId: 'health',
+    sectionLabel: 'Section 4 · Your health',
+    title: 'Do any of these apply to you?',
+    subtitle:
+      'This matters for your safety — it changes what we flag and how. Pick all that apply, or “None of these.”',
+    field: 'comorbidities',
+    multi: true,
+    layout: 'pills',
+    options: [
+      { id: 'heart-condition', label: 'Heart condition or chest pain' },
+      { id: 'high-bp', label: 'High blood pressure' },
+      { id: 'diabetes', label: 'Diabetes' },
+      { id: 'nitrates', label: 'Nitrate / angina medication' },
+      { id: 'none', label: 'None of these' },
+    ],
+  },
 ];
 
 export const totalQuizSteps = quizSteps.length;
@@ -224,7 +253,7 @@ export const totalQuizSteps = quizSteps.length;
  * is structured internally.
  */
 export function findOptionLabel(
-  field: 'age' | 'activity' | 'priorities' | 'symptoms',
+  field: 'age' | 'activity' | 'priorities' | 'symptoms' | 'comorbidities',
   id: string,
 ): string | undefined {
   for (const step of quizSteps) {
