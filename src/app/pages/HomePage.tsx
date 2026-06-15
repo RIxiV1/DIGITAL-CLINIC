@@ -1237,7 +1237,7 @@ function LockerPane({
       ) : (
         <div className="grid sm:grid-cols-2 gap-3">
           {displayedReports.map((r) => (
-            <div key={r.id} className="group">
+            <div key={r.id} className="group min-w-0">
               <Card
                 interactive
                 onClick={() => onOpenReport(r)}
