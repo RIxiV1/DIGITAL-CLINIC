@@ -720,36 +720,17 @@ export default function HomePage() {
           Collapsed by default to preserve the concise first paint. */}
       {ready &&
         (() => {
-          const trendCount = trendsByPathway.reduce(
-            (sum, p) => sum + p.markers.length,
-            0,
-          );
-          const tabs: { id: ExploreTab; label: string; hint: string }[] = [];
-          if (hasAnyMarkers)
-            tabs.push({
-              id: 'markers',
-              label: 'All markers',
-              hint: `${biomarkers.length} tracked · search & filter`,
-            });
-          if (hasTrends)
-            tabs.push({
-              id: 'trends',
-              label: 'Trends',
-              hint: `${trendCount} markers with history`,
-            });
+          const tabs: { id: ExploreTab; label: string }[] = [];
+          if (hasAnyMarkers) tabs.push({ id: 'markers', label: 'All markers' });
+          if (hasTrends) tabs.push({ id: 'trends', label: 'Trends' });
           if (reports.length > 0)
-            tabs.push({
-              id: 'reports',
-              label: 'Reports',
-              hint: `${reports.length} ${reports.length === 1 ? 'report' : 'reports'} · upload, search, delete`,
-            });
+            tabs.push({ id: 'reports', label: 'Reports' });
           if (tabs.length === 0) return null;
 
           const active =
             activeTab && tabs.some((t) => t.id === activeTab)
               ? activeTab
               : null;
-          const activeHint = tabs.find((t) => t.id === active)?.hint;
 
           return (
             <Container size="wide" className="mt-6 md:mt-8">
@@ -788,11 +769,6 @@ export default function HomePage() {
 
               {active && (
                 <div className="mt-3 rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden">
-                  {activeHint && (
-                    <div className="px-5 pt-4 text-caption text-muted">
-                      {activeHint}
-                    </div>
-                  )}
                   <div className="p-4 sm:p-5">
                     {active === 'markers' && (
                       <AllMarkersPane
