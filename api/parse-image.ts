@@ -132,6 +132,56 @@ function isSameOriginRequest(
 
 const allowNoOrigin = process.env.ALLOW_NO_ORIGIN === '1';
 
+/* ------------------------------------------------------------------ */
+/* Rate limiting                                                        */
+/*                                                                      */
+/* The Origin gate stops casual browser abuse, but a non-browser client */
+/* can spoof the Origin header (curl -H "Origin: …") and use this as a  */
+/* free Gemini relay — exhausting the free-tier quota or running up     */
+/* cost. This is a per-instance sliding-window limiter: on serverless   */
+/* it can't see across instances, but it still throttles a sustained    */
+/* attack hitting a warm instance and bounds quota burn, with zero      */
+/* infra. For globally-accurate limiting, set UPSTASH_REDIS_REST_URL +  */
+/* UPSTASH_REDIS_REST_TOKEN and swap this for @upstash/ratelimit        */
+/* (sliding window, same key) — the call site below stays identical.    */
+/* ------------------------------------------------------------------ */
+const RATE_LIMIT_WINDOW_MS = 60_000;
+// A human parsing their own reports does a handful of calls; 15/min/IP
+// leaves generous room for retries while throttling automated abuse.
+const RATE_LIMIT_MAX = 15;
+// Bound memory: cap tracked IPs and evict oldest-inserted when full so a
+// spray of distinct source IPs can't grow the map unboundedly.
+const MAX_TRACKED_IPS = 5000;
+const rateHits = new Map<string, number[]>();
+
+function clientIp(req: VercelRequest): string {
+  const xff = req.headers['x-forwarded-for'];
+  const raw = Array.isArray(xff) ? xff[0] : (xff ?? '');
+  // Vercel's edge sets x-forwarded-for; the left-most entry is the
+  // client. Clients can't strip it (the platform populates it), so it's
+  // a reliable-enough key for abuse throttling.
+  const first = raw.split(',')[0]?.trim();
+  return first && first.length > 0 ? first : 'unknown';
+}
+
+/** Records a hit for `ip` at `now` and returns true if it exceeds the
+ *  window budget. Pure aside from the module-level Map. */
+function isRateLimited(ip: string, now: number): boolean {
+  let arr = rateHits.get(ip);
+  if (!arr) {
+    if (rateHits.size >= MAX_TRACKED_IPS) {
+      const oldest = rateHits.keys().next().value;
+      if (oldest !== undefined) rateHits.delete(oldest);
+    }
+    arr = [];
+  }
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const recent = arr.filter((t) => t > cutoff);
+  recent.push(now);
+  rateHits.set(ip, recent);
+  return recent.length > RATE_LIMIT_MAX;
+}
+
 /** MIME types Gemini can ingest as inline image data and that match
  *  our client-side allowlist. Anything else gets rejected before it
  *  reaches the model — the client downscales to JPEG so this is
@@ -227,6 +277,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
   } else if (!allowNoOrigin) {
     return res.status(403).json({ error: 'Forbidden' });
+  }
+
+  // Rate limit per client IP — the Origin gate doesn't stop a spoofed-
+  // Origin curl client, so this bounds how fast the endpoint can be
+  // driven as a Gemini relay. Checked before any model work so abuse is
+  // rejected cheaply.
+  if (isRateLimited(clientIp(req), Date.now())) {
+    res.setHeader('Retry-After', String(Math.ceil(RATE_LIMIT_WINDOW_MS / 1000)));
+    return res
+      .status(429)
+      .json({ error: 'Too many requests. Please wait a minute and retry.' });
   }
 
   if (!apiKey) {
@@ -386,10 +447,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .trim()
       .slice(0, 120);
     console.error('parse-image: unhandled error', name, rawMessage);
+    // The sanitiser already strips URLs/keys/base64, but a message
+    // fragment is still attacker-visible surface in prod. Return the
+    // hint only off-production (preview/dev) where it aids debugging;
+    // prod gets the error class name (`kind`) only, which is safe.
+    const isProd = process.env.VERCEL_ENV === 'production';
     return res.status(500).json({
       error: 'Internal error while parsing the image. Please try again.',
       kind: name,
-      hint: sanitised || undefined,
+      hint: isProd ? undefined : sanitised || undefined,
     });
   }
 }
