@@ -7,6 +7,7 @@ import {
   Image as ImageIcon,
   Info,
   Pencil,
+  ShieldCheck,
   UploadCloud,
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -266,23 +267,36 @@ export default function UploadPage() {
             zero matches, the next screen shows a clear error rather
             than silently substituting sample data (the previous
             behaviour hallucinated values that weren't in the file). */}
+        {/* Privacy promise — leads, because "am I about to send my blood
+            test to a stranger's server?" is the loudest unspoken question
+            at the moment of upload. The technical parsing note follows as
+            secondary detail. */}
         <div
           role="note"
-          className="mb-4 flex items-start gap-2.5 rounded-[14px] border border-indigo-200 bg-indigo-50/70 px-4 py-3"
+          className="mb-3 flex items-start gap-2.5 rounded-[14px] border border-indigo-200 bg-indigo-50/70 px-4 py-3"
         >
-          <Info size={16} className="text-indigo-700 shrink-0 mt-0.5" />
+          <ShieldCheck size={18} className="text-indigo-700 shrink-0 mt-0.5" />
           <p className="text-caption leading-relaxed text-indigo-900">
             <span className="font-semibold">
-              Everything is parsed in your browser.
+              Your report never leaves your device.
             </span>{' '}
+            It’s read right here in your browser — nothing is uploaded to a
+            server, and there’s no account. The file stays on your phone.
+          </p>
+        </div>
+        <div
+          role="note"
+          className="mb-4 flex items-start gap-2.5 rounded-[14px] border border-line bg-surface px-4 py-3"
+        >
+          <Info size={16} className="text-muted shrink-0 mt-0.5" />
+          <p className="text-caption leading-relaxed text-ink-soft">
             A{' '}
-            <span className="font-semibold">
+            <span className="font-semibold text-ink">
               PDF with selectable text is near-instant
             </span>
             ; photos and scans run OCR (10–30 seconds on a phone), so upload the
             PDF when you have it. If we can’t recognise anything, you’ll see a
-            clear error — we don’t make up values to fill in. Your file never
-            leaves your device.
+            clear error — we don’t make up values to fill in.
           </p>
         </div>
 
