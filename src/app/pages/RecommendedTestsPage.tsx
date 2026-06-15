@@ -23,6 +23,7 @@ import LearnMoreModal from '../components/LearnMoreModal';
 import { useNavigation, useQuiz } from '../AppContext';
 import {
   hasCardiometabolicRedFlag,
+  hasPde5InteractionMed,
   SYSTEM_MAX_SCORES,
   type RiskAssessment,
   type RiskSystemResult,
@@ -50,6 +51,10 @@ export default function RecommendedTestsPage() {
   // (PDE5i + nitrates is an absolute contraindication). We screen + point
   // to labs/clinicians; we never dispense, so this is a nudge, not a gate.
   const hasRedFlag = hasCardiometabolicRedFlag(quiz.comorbidities);
+  // Named drug-interaction danger (nitrates / alpha-blockers + PDE5i).
+  // Adds a specific, actionable line to the intercept — valuable even
+  // though we dispense nothing, since a user could buy these elsewhere.
+  const hasMedInteraction = hasPde5InteractionMed(quiz.comorbidities);
   // Default to collapsed. Was: open the first test on mount, which
   // dumped 6+ marker rows on the user's first paint without them
   // asking for it. The page's job is to show *what we'd test*; the
@@ -175,6 +180,14 @@ export default function RecommendedTestsPage() {
                       ? 'You told us about a heart condition, high blood pressure, or diabetes. Symptoms like low energy or trouble in bed can be an early warning sign of cardiovascular problems — and some performance treatments are unsafe taken with heart, blood-pressure, or nitrate medicines. Get a proper clinical evaluation first, and bring the tests below to that appointment.'
                       : 'Your answers cluster strongly toward at least one system. The tests below help confirm or rule it out — but the interpretation belongs in a consultation, not a self-diagnosis from a screener.'}
                   </p>
+                  {hasMedInteraction && (
+                    <p className="mt-2 text-caption text-ink leading-relaxed font-semibold">
+                      Because you take nitrate or alpha-blocker medication,
+                      never take an erection or “performance” pill (like
+                      sildenafil or tadalafil) without a doctor’s OK — together
+                      they can drop your blood pressure dangerously low.
+                    </p>
+                  )}
                 </div>
               </div>
             </Card>

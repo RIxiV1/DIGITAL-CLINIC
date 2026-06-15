@@ -239,6 +239,7 @@ export const quizSteps: QuizStep[] = [
       { id: 'high-bp', label: 'High blood pressure' },
       { id: 'diabetes', label: 'Diabetes' },
       { id: 'nitrates', label: 'Nitrate / angina medication' },
+      { id: 'alpha-blockers', label: 'Prostate / BP meds (alpha-blockers)' },
       { id: 'none', label: 'None of these' },
     ],
   },

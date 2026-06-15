@@ -9,6 +9,7 @@ import {
   FileText,
   Pencil,
   RotateCcw,
+  ShieldCheck,
   Sparkles,
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -766,6 +767,18 @@ export default function ProcessingPage() {
         <p className="mt-7 text-caption uppercase tracking-label font-bold text-muted">
           Usually under 60 seconds
         </p>
+
+        {/* On-device privacy reassurance during the CPU-heavy local parse.
+            This view IS the local (pdf.js + Tesseract) path — nothing
+            leaves the browser here. The optional AI reader is a separate,
+            consent-gated view, so "stays on your device" is accurate for
+            this screen without overclaiming. */}
+        <div className="mt-4 inline-flex items-center gap-2 text-caption text-muted max-w-[26rem] text-pretty">
+          <ShieldCheck size={14} className="text-good shrink-0" aria-hidden />
+          <span>
+            Running entirely on your device — your report stays in your browser.
+          </span>
+        </div>
       </Container>
     </div>
   );

@@ -267,7 +267,29 @@ export const CARDIOMETABOLIC_RED_FLAGS = [
   'high-bp',
   'diabetes',
   'nitrates',
+  'alpha-blockers',
 ] as const;
+
+/**
+ * Comorbidity ids that carry a specific drug-interaction danger with
+ * vasoactive performance/ED medication (PDE5 inhibitors). Nitrates are an
+ * absolute contraindication (life-threatening hypotension); alpha-blockers
+ * are a major one (orthostatic hypotension). When present, the
+ * recommendations screen adds a named, actionable warning on top of the
+ * general "see a doctor first" intercept — useful even though this app
+ * dispenses nothing, because a user could buy these drugs elsewhere.
+ */
+export const PDE5_INTERACTION_FLAGS = ['nitrates', 'alpha-blockers'] as const;
+
+/** True when the user takes a medication that's dangerous combined with
+ *  PDE5-inhibitor ED drugs (nitrates / alpha-blockers). */
+export function hasPde5InteractionMed(
+  comorbidities: readonly string[] = [],
+): boolean {
+  return comorbidities.some((c) =>
+    (PDE5_INTERACTION_FLAGS as readonly string[]).includes(c),
+  );
+}
 
 /** True when the user disclosed any cardiometabolic red-flag comorbidity
  *  (i.e. anything other than the "none" opt-out / an empty answer). */

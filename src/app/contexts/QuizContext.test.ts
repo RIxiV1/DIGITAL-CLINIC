@@ -18,6 +18,7 @@ import {
   calculateRisk,
   CARDIOMETABOLIC_RED_FLAGS,
   hasCardiometabolicRedFlag,
+  hasPde5InteractionMed,
   SYMPTOM_WEIGHTS,
 } from './QuizContext';
 
@@ -41,6 +42,19 @@ describe('hasCardiometabolicRedFlag', () => {
 
   it('ignores unknown ids', () => {
     expect(hasCardiometabolicRedFlag(['not-a-flag'])).toBe(false);
+  });
+});
+
+describe('hasPde5InteractionMed', () => {
+  it('is true for nitrates and alpha-blockers (the contraindication meds)', () => {
+    expect(hasPde5InteractionMed(['nitrates'])).toBe(true);
+    expect(hasPde5InteractionMed(['alpha-blockers'])).toBe(true);
+  });
+
+  it('is false for comorbidities without a PDE5i interaction', () => {
+    expect(hasPde5InteractionMed([])).toBe(false);
+    expect(hasPde5InteractionMed(['diabetes', 'high-bp'])).toBe(false);
+    expect(hasPde5InteractionMed(['none'])).toBe(false);
   });
 });
 
