@@ -21,6 +21,7 @@ import {
   MAX_PROJECTION_MONTHS,
   pickHeadlineMarker,
   statusForValue,
+  summarizeStatuses,
   type Biomarker,
   type BiomarkerCategoryId,
 } from './biomarkers';
@@ -201,6 +202,44 @@ describe('markerFromTemplate', () => {
   it('omits problemId when the template doesn’t set one', () => {
     const m = markerFromTemplate(HB, 14);
     expect(m.problemId).toBeUndefined();
+  });
+
+  it('propagates clinical-critical bounds so the bar can scale against them', () => {
+    // HbA1c has an explicit 10% critical cliff; a 7.2% reading is
+    // diabetic (concern) but well below it, so the bar must place the
+    // dot against the real 10% ceiling — not peg it to the track wall.
+    const m = markerFromTemplate(HBA1C, 7.2);
+    expect(m.criticalHigh).toBe(HBA1C.criticalHigh);
+    expect(m.criticalHigh).toBe(10);
+    expect(m.criticalLow).toBe(HBA1C.criticalLow); // undefined here
+    expect(m.status).toBe('concern');
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* summarizeStatuses — single-source counts                             */
+/* ------------------------------------------------------------------ */
+
+describe('summarizeStatuses', () => {
+  it('folds critical into needCare so every surface reconciles', () => {
+    const mk = (status: Biomarker['status']): Biomarker => ({
+      ...markerFromTemplate(HBA1C, 5),
+      status,
+    });
+    const s = summarizeStatuses([
+      mk('good'),
+      mk('attention'),
+      mk('concern'),
+      mk('critical'),
+      mk('critical'),
+    ]);
+    expect(s.good).toBe(1);
+    expect(s.attention).toBe(1);
+    expect(s.concern).toBe(1); // concern-only, unchanged
+    expect(s.critical).toBe(2);
+    // needCare = concern + critical — the count shown app-wide.
+    expect(s.needCare).toBe(3);
+    expect(s.total).toBe(5);
   });
 });
 

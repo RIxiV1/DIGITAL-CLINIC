@@ -109,6 +109,17 @@ export type Biomarker = {
    *  display-only field that anchors the user back to the document. */
   labRefMin?: number;
   labRefMax?: number;
+  /** Clinical-critical cliff bounds, propagated from the catalog
+   *  template. Distinct from [min,max] (healthy) — these are the
+   *  same-day-care thresholds (e.g. glucose >250, HbA1c >10). The bar
+   *  uses them to scale its high/low zones so a value lands at the
+   *  spot reflecting how far it is from the *emergency* line, not from
+   *  the healthy edge — preventing a moderately-out-of-range value from
+   *  pegging to the very end of the track. Undefined for markers with no
+   *  documented panic value (those top out at 'concern'); the bar then
+   *  falls back to a 2×-span visual heuristic. */
+  criticalLow?: number;
+  criticalHigh?: number;
 };
 
 export type BiomarkerCategoryId =
@@ -647,7 +658,17 @@ export function summarizeStatuses(markers: Biomarker[] = sampleBiomarkers) {
     else if (m.status === 'critical') critical++;
     else concern++;
   }
-  return { good, attention, concern, critical, total: markers.length };
+  // `needCare` is the single source of truth for the "needs care" count
+  // shown across every surface (dashboard hero, report Bottom Line,
+  // Vitals Strip, category accordions). It folds `critical` into
+  // `concern` deliberately: a critical marker still "needs care" — its
+  // extra same-day urgency is carried by per-marker copy/CTA, not by a
+  // separate aggregate bucket. Surfaces previously diverged (some showed
+  // concern-only, some concern+critical), which made the counts fail to
+  // reconcile whenever a critical marker existed. Always display
+  // `needCare`, never bare `concern`, for the flagged count.
+  const needCare = concern + critical;
+  return { good, attention, concern, critical, needCare, total: markers.length };
 }
 
 export function bottomLineFor(markers: Biomarker[] = sampleBiomarkers) {
@@ -1093,6 +1114,13 @@ export function markerFromTemplate(
     catalogVersion: CATALOG_VERSION,
     labRefMin: labRef?.min,
     labRefMax: labRef?.max,
+    // Propagate the clinical-critical cliff bounds so the BiomarkerBar can
+    // scale its zones against the real emergency thresholds (e.g. glucose
+    // 250, HbA1c 10) instead of a span heuristic — otherwise a value like
+    // 150 mg/dL pegs to the end of the track even though it's nowhere near
+    // the DKA line. Display-only; grading already consumed them above.
+    criticalLow: template.criticalLow,
+    criticalHigh: template.criticalHigh,
   };
 }
 

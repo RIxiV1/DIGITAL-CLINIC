@@ -138,6 +138,14 @@ const BiomarkerSchema = z.object({
    *  for display alongside the catalog's healthy band. Optional. */
   labRefMin: z.number().finite().optional(),
   labRefMax: z.number().finite().optional(),
+  /** Clinical-critical cliff bounds, propagated from the catalog so the
+   *  BiomarkerBar can scale its zones against the real same-day-care
+   *  thresholds after a reload (otherwise the bar reverts to a span
+   *  heuristic and a moderately-out-of-range value re-pegs to the end of
+   *  the track). Optional — markers with no documented panic value omit
+   *  them. */
+  criticalLow: z.number().finite().optional(),
+  criticalHigh: z.number().finite().optional(),
 });
 
 const ReportSchema = z.object({

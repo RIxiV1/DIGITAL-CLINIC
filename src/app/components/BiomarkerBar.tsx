@@ -102,8 +102,11 @@ function tierFor(marker: Biomarker): Tier {
 /* ------------------------------------------------------------------- */
 
 /** Exact one-third of the track. Used both for segment widths and for
- *  the position-mapping math; keeping it in one constant avoids drift. */
-const SEGMENT_PCT = 100 / 3;
+ *  the position-mapping math; keeping it in one constant avoids drift.
+ *  Exported so the dashboard's MarkerAttentionCard mini-bar places its
+ *  value dot with the SAME piecewise math — one source of truth means
+ *  the two bars can't disagree about where a value sits. */
+export const SEGMENT_PCT = 100 / 3;
 
 /**
  * Defensive buffer to stop the pin element from visually clipping past
@@ -118,21 +121,31 @@ type CriticalBounds = {
 };
 
 /**
- * Critical bounds heuristic — extends the healthy range by one full span
- * on each side, with a guard against the lower bound going negative for
- * markers that can't be negative (mass concentrations, counts, etc).
+ * Critical bounds for the bar's high/low zones.
  *
- * Long-term, the correct fix is to add explicit `criticalLow` and
- * `criticalHigh` fields to the Biomarker schema in
- * src/app/data/biomarkers.ts — the heuristic here is deliberately
- * conservative so it works without that change.
+ * Prefers the marker's EXPLICIT `criticalLow`/`criticalHigh` (propagated
+ * from the catalog template via markerFromTemplate) — these are the real
+ * same-day-care thresholds (glucose 250, HbA1c 10, etc.), so the value
+ * pin lands at the spot that reflects how far it is from the *emergency*
+ * line, not the healthy edge. Without that, a diabetic-but-not-acute
+ * glucose of 150 used to peg to the very end of the track.
+ *
+ * Fallback (markers with no documented panic value): extend the healthy
+ * range by TWO full spans on each side. Two, not one — a single span put
+ * an only-mildly-out-of-range value deep in the terminal zone, reading as
+ * "maxed out" when it wasn't. The lower bound is floored at 0 (no marker
+ * we track can be negative).
  */
 function getCriticalBounds(marker: Biomarker): CriticalBounds {
   const span = marker.max - marker.min || 1;
-  const rawCriticalLow = marker.min - span;
-  // No biomarker we track can be negative. Floor at 0.
-  const criticalLow = Math.max(0, rawCriticalLow);
-  const criticalHigh = marker.max + span;
+  const criticalLow =
+    typeof marker.criticalLow === 'number'
+      ? marker.criticalLow
+      : Math.max(0, marker.min - 2 * span);
+  const criticalHigh =
+    typeof marker.criticalHigh === 'number'
+      ? marker.criticalHigh
+      : marker.max + 2 * span;
   return { criticalLow, criticalHigh };
 }
 
@@ -145,7 +158,7 @@ function getCriticalBounds(marker: Biomarker): CriticalBounds {
  * small safe range so the pin element never visually clips off the
  * rounded edges of the bar.
  */
-function piecewisePosition(value: number, marker: Biomarker): number {
+export function piecewisePosition(value: number, marker: Biomarker): number {
   const { criticalLow, criticalHigh } = getCriticalBounds(marker);
   const lo = marker.min;
   const hi = marker.max;
@@ -306,15 +319,17 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
               {marker.unit}
             </span>
           </div>
-          {/* Tri-tier tag — Optimal / Borderline / Critical. */}
+          {/* Single status badge. Previously this rendered TWO pills — a
+              tier tag ("Out of range") AND the status label ("NEEDS
+              CARE") — two words for the same axis stacked on top of each
+              other. Collapsed to one pill in the app-wide status
+              vocabulary (statusColor.label); the position nuance the tier
+              carried (optimal vs borderline, how far out of range) now
+              lives in the zone bar + the caption below, not a competing
+              second pill. */}
           <div
-            className={`mt-1.5 inline-flex items-center gap-1 px-2 h-5 rounded-full text-micro font-bold uppercase tracking-widest ${tier.className}`}
-            aria-label={`${tier.label}: ${tier.caption}`}
-          >
-            {tier.label}
-          </div>
-          <div
-            className={`mt-1 text-micro uppercase tracking-widest font-bold ${colors.textOnSurface}`}
+            className={`mt-1.5 inline-flex items-center gap-1 px-2 h-5 rounded-full text-micro font-bold uppercase tracking-widest ${colors.bg} ${colors.text}`}
+            aria-label={`${colors.label}: ${tier.caption}`}
           >
             {colors.label}
           </div>
@@ -416,12 +431,11 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
         </span>
       </div>
 
-      {/* Tier caption — explicit clinical-ish gloss for users who don't
-          read the pill colour as meaning. */}
-      <div className="mt-2 text-caption text-ink-soft">
-        <span className="font-semibold text-ink">{tier.label}.</span>{' '}
-        {tier.caption}.
-      </div>
+      {/* Position gloss — plain-English "where this sits" line. Used to
+          lead with the tier label ("Out of range."), but that restated
+          the status pill in a second vocabulary; now it's just the
+          descriptive caption so there's one status word per card. */}
+      <div className="mt-2 text-caption text-ink-soft">{tier.caption}.</div>
 
       {/* What this means */}
       {!compact && (

@@ -15,6 +15,7 @@ import {
   type Biomarker,
 } from '../data/biomarkers';
 import { useCountUp } from '../utils/useCountUp';
+import { piecewisePosition, SEGMENT_PCT } from './BiomarkerBar';
 
 type Props = {
   marker: Biomarker;
@@ -49,19 +50,23 @@ export default function MarkerAttentionCard({
   const prev = getPreviousValue(marker);
   const delta = formatDelta(marker);
 
-  // Range position — where this value sits relative to the healthy band,
-  // on a domain padded 60% beyond [min,max] so an out-of-range value
-  // still lands on the track instead of pinning to the very edge. Gives
-  // the card the "here's where you are" read a bare number can't.
+  // Range position — where this value sits relative to the healthy band.
+  // Uses the SAME piecewise mapping as the full BiomarkerBar (healthy
+  // range = centre third; the low/high thirds scale against the marker's
+  // clinical-critical bounds when known, else a 2×-span fallback). That
+  // keeps the healthy band visually fixed across wildly different scales
+  // AND stops a moderately-out-of-range value from pinning to the very
+  // edge — the old 60%-padded linear domain pegged a glucose of 150 to
+  // 100% even though it's nowhere near the DKA line.
   const span = marker.max - marker.min;
   const hasRange = Number.isFinite(span) && span > 0;
-  const domainMin = marker.min - span * 0.6;
-  const domainMax = marker.max + span * 0.6;
-  const pctOf = (v: number) =>
-    Math.max(0, Math.min(100, ((v - domainMin) / (domainMax - domainMin)) * 100));
-  const valuePos = hasRange ? pctOf(marker.value) : 0;
-  const bandLeft = hasRange ? pctOf(marker.min) : 0;
-  const bandRight = hasRange ? pctOf(marker.max) : 100;
+  const valuePos = hasRange ? piecewisePosition(marker.value, marker) : 0;
+  // Healthy band is always the centre third — the point of the piecewise
+  // mapping. Labels below are positioned to these same edges so "min" and
+  // "max" sit under where the green band actually starts and ends, not at
+  // the bar's extremes (which read as the wrong thresholds).
+  const bandLeft = SEGMENT_PCT;
+  const bandRight = SEGMENT_PCT * 2;
 
   // Whole numbers count up as ints; decimal markers (e.g. 8.4 free T)
   // animate at one decimal.
@@ -229,12 +234,28 @@ export default function MarkerAttentionCard({
                 aria-hidden
               />
             </div>
-            <div className="mt-1.5 flex justify-between text-micro text-muted tabular-nums">
-              <span>{marker.min}</span>
-              <span className="text-good-ink font-medium normal-case tracking-normal">
+            {/* Labels pinned to the band edges (33% / 66%), not the bar
+                extremes — so each number sits directly under the healthy
+                boundary it names. "healthy" centres between them. */}
+            <div className="relative mt-1.5 h-3.5 text-micro text-muted tabular-nums">
+              <span
+                className="absolute -translate-x-1/2"
+                style={{ left: `${bandLeft}%` }}
+              >
+                {marker.min}
+              </span>
+              <span
+                className="absolute -translate-x-1/2 text-good-ink font-medium normal-case tracking-normal"
+                style={{ left: `${(bandLeft + bandRight) / 2}%` }}
+              >
                 healthy
               </span>
-              <span>{marker.max}</span>
+              <span
+                className="absolute -translate-x-1/2"
+                style={{ left: `${bandRight}%` }}
+              >
+                {marker.max}
+              </span>
             </div>
           </div>
         )}

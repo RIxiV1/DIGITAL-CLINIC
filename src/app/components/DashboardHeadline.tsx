@@ -234,7 +234,7 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
       // ago. Clinical misrepresentation, not just a copy nit.
       const priorReadingDate =
         newsworthy.history?.[newsworthy.history.length - 1]?.date;
-      const countLine = `${summary.concern} marker${summary.concern === 1 ? '' : 's'} still need${summary.concern === 1 ? 's' : ''} attention.`;
+      const countLine = `${summary.needCare} marker${summary.needCare === 1 ? '' : 's'} still need${summary.needCare === 1 ? 's' : ''} care.`;
       return {
         eyebrow: `Since your last test`,
         headline: `Your ${newsworthy.name} dropped ${formatAbsDelta(newsworthy)} since ${formatRoughDate(priorReadingDate)}.`,
@@ -251,7 +251,7 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
       return {
         eyebrow: 'Trending up',
         headline: `Your ${newsworthy.name} is up ${stripSign(delta)} ${newsworthy.unit} — that's working.`,
-        sub: `${summary.concern} marker${summary.concern === 1 ? '' : 's'} still need${summary.concern === 1 ? 's' : ''} attention.`,
+        sub: `${summary.needCare} marker${summary.needCare === 1 ? '' : 's'} still need${summary.needCare === 1 ? 's' : ''} care.`,
         ctaLabel: 'See what needs attention',
       };
     }
@@ -259,14 +259,14 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
 
   // State B — single report (no history we can compare against), but some
   // red markers exist. Count them, lead with the count.
-  const flagged = summary.concern + summary.attention;
+  const flagged = summary.needCare + summary.attention;
   return {
     eyebrow: 'Your latest report',
     headline:
-      summary.concern > 0
-        ? `${summary.concern} marker${summary.concern === 1 ? '' : 's'} need${summary.concern === 1 ? 's' : ''} attention — here's where to start.`
+      summary.needCare > 0
+        ? `${summary.needCare} marker${summary.needCare === 1 ? '' : 's'} need${summary.needCare === 1 ? 's' : ''} care — here's where to start.`
         : `${flagged} markers worth a closer look.`,
-    sub: `${summary.good} of ${summary.total} markers healthy. ${summary.attention > 0 ? `${summary.attention} to watch · ` : ''}${summary.concern > 0 ? `${summary.concern} need${summary.concern === 1 ? 's' : ''} care.` : ''}`,
+    sub: `${summary.good} of ${summary.total} markers healthy. ${summary.attention > 0 ? `${summary.attention} to watch · ` : ''}${summary.needCare > 0 ? `${summary.needCare} need${summary.needCare === 1 ? 's' : ''} care.` : ''}`,
     ctaLabel: 'See all markers',
   };
 }
