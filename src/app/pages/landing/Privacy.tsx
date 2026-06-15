@@ -1,6 +1,7 @@
 import { type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Cpu, Lock, ShieldCheck, UserX } from 'lucide-react';
+import Illustration from '../../components/Illustration';
 import { Reveal, SectionHeader } from './shared';
 
 /**
@@ -19,18 +20,26 @@ export default function Privacy() {
       className="py-16 sm:py-20 md:py-28 bg-canvas border-t border-line/60"
     >
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
-        <Reveal>
-          <SectionHeader
-            eyebrow="Your privacy"
-            title={
-              <>
-                Your report never{' '}
-                <span className="text-blue-700">leaves your device.</span>
-              </>
-            }
-            subtitle="No account to create, no file to upload to us. The whole thing runs in your browser — because a lab report is nobody else's business."
-          />
-        </Reveal>
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          <Reveal>
+            <SectionHeader
+              eyebrow="Your privacy"
+              title={
+                <>
+                  Your report never{' '}
+                  <span className="text-blue-700">leaves your device.</span>
+                </>
+              }
+              subtitle="No account to create, no file to upload to us. The whole thing runs in your browser — because a lab report is nobody else's business."
+            />
+          </Reveal>
+          <Reveal delay={0.1}>
+            <Illustration
+              src="/illustrations/private-data.svg"
+              className="w-full max-w-sm mx-auto md:ml-auto h-auto"
+            />
+          </Reveal>
+        </div>
 
         <div className="mt-12 md:mt-16 grid md:grid-cols-3 gap-5">
           <Reveal>
