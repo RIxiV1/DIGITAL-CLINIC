@@ -8,6 +8,7 @@ import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
+import StatusKey from '../components/StatusKey';
 import { Reveal } from './landing/shared';
 import { useIsMdUp } from '../utils/useMediaQuery';
 import { useNavigation, useReports } from '../AppContext';
@@ -319,6 +320,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
       {/* Body: 2-col on md — left biomarkers, right sticky filters + deep dives */}
       <Container size="wide" className="mt-6 md:mt-10">
+        {/* Colour key — this page is the most status-dense surface, so the
+            green/amber/red language is defined right where the markers are. */}
+        <StatusKey className="mb-4" />
         <div className="grid md:grid-cols-12 gap-6 md:gap-8">
           {/* LEFT — Biomarker groups.
               min-w-0: a grid item defaults to min-width:auto, so the
