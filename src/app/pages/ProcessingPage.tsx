@@ -28,10 +28,9 @@ import {
 } from '../services/api';
 import {
   categories as biomarkerCategories,
-  getTemplateById,
-  statusForValue,
   type Biomarker,
 } from '../data/biomarkers';
+import { editStateOf, regradeMarker } from '../utils/confirmEdits';
 import { makeReport, sampleReports } from '../data/reports';
 import {
   clearPendingConfirm,
@@ -1203,47 +1202,12 @@ function ConfirmExtractedValuesView({
    * marker id; empty until the user actually edits something. */
   const [edits, setEdits] = useState<Record<string, string>>({});
 
-  /** Validity of an edited input. 'unedited' when the user hasn't touched
-   *  it. The 5×-span bound mirrors ManualEntryPage + pdfParser so a typo
-   *  can't commit a wildly impossible value. */
-  const editStateOf = (
-    m: Biomarker,
-    raw: string | undefined,
-  ): 'unedited' | 'empty' | 'out-of-range' | 'ok' => {
-    if (raw === undefined) return 'unedited';
-    const trimmed = raw.trim();
-    if (!trimmed) return 'empty';
-    const num = parseFloat(trimmed);
-    if (Number.isNaN(num)) return 'empty';
-    const span = m.max - m.min || 1;
-    if (num < m.min - 5 * span || num > m.max + 5 * span) return 'out-of-range';
-    return 'ok';
-  };
-
-  /** Re-grade a marker against its edited value, preserving every other
-   *  field (history, lab-printed range, critical bounds). Only a valid,
-   *  in-bounds edit takes effect; anything else falls back to the parsed
-   *  value so an incomplete keystroke never commits a broken number. */
-  const regrade = (m: Biomarker): Biomarker => {
-    const raw = edits[m.id];
-    if (editStateOf(m, raw) !== 'ok') return m;
-    const num = parseFloat((raw as string).trim());
-    const template = getTemplateById(m.id);
-    const labRef =
-      typeof m.labRefMin === 'number' && typeof m.labRefMax === 'number'
-        ? { min: m.labRefMin, max: m.labRefMax }
-        : undefined;
-    const status = template
-      ? statusForValue(template, num, labRef)
-      : m.status;
-    return { ...m, value: num, status };
-  };
-
   // The set we'd commit, and a lookup for live per-row display. Computed
   // each render (cheap) so edits reflect immediately; row ORDER stays
   // pinned to the original grouping below so a value never jumps out from
-  // under the cursor mid-edit.
-  const confirmedBiomarkers = biomarkers.map(regrade);
+  // under the cursor mid-edit. editStateOf / regradeMarker live in
+  // utils/confirmEdits.ts so the re-grade behaviour is unit-tested.
+  const confirmedBiomarkers = biomarkers.map((m) => regradeMarker(m, edits[m.id]));
   const confirmedById = new Map(
     confirmedBiomarkers.map((m) => [m.id, m] as const),
   );
