@@ -7,12 +7,12 @@ import {
 } from 'framer-motion';
 import {
   ArrowRight,
+  Brain,
   ChevronRight,
   CircleDot,
   Droplet,
   FlaskConical,
   Lock,
-  Sparkles,
 } from 'lucide-react';
 import Button from '../../components/Button';
 import { fadeUp, stagger } from './shared';
@@ -210,7 +210,7 @@ function HeroVisual() {
 
           <div className="relative grid gap-1">
             <MapRow
-              icon={<Sparkles size={10} className="text-blue-700" />}
+              icon={<Brain size={10} className="text-blue-700" />}
               organ="Hypothalamus"
               hormone="GnRH"
             />

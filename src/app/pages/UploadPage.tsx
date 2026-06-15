@@ -7,6 +7,7 @@ import {
   Image as ImageIcon,
   Info,
   Pencil,
+  ShieldCheck,
   UploadCloud,
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -250,14 +251,17 @@ export default function UploadPage() {
   const showLargeFileWarning = fileSize > 5 * 1024 * 1024;
 
   return (
-    <div className="min-h-dvh pb-32 bg-canvas">
+    <div className="min-h-dvh pb-32 lg:pb-16 bg-canvas">
       <Header
         variant="page"
         title="Upload a report"
         subtitle="PDF, photo, or screenshot"
       />
 
-      <Container size="narrow" className="pt-5">
+      <Container size="wide" className="pt-5 md:pt-8">
+        <div className="mx-auto max-w-5xl grid lg:grid-cols-2 gap-6 lg:gap-10 lg:items-start">
+          {/* Trust + context column (sits left on desktop, first on mobile) */}
+          <div className="min-w-0">
         {/* Honest disclaimer about what the parser actually does. All
             work happens locally — pdfjs extracts text from PDFs,
             tesseract.js runs OCR on images (and PDFs with no text
@@ -266,23 +270,36 @@ export default function UploadPage() {
             zero matches, the next screen shows a clear error rather
             than silently substituting sample data (the previous
             behaviour hallucinated values that weren't in the file). */}
+        {/* Privacy promise — leads, because "am I about to send my blood
+            test to a stranger's server?" is the loudest unspoken question
+            at the moment of upload. The technical parsing note follows as
+            secondary detail. */}
         <div
           role="note"
-          className="mb-4 flex items-start gap-2.5 rounded-[14px] border border-indigo-200 bg-indigo-50/70 px-4 py-3"
+          className="mb-3 flex items-start gap-2.5 rounded-[14px] border border-indigo-200 bg-indigo-50/70 px-4 py-3"
         >
-          <Info size={16} className="text-indigo-700 shrink-0 mt-0.5" />
+          <ShieldCheck size={18} className="text-indigo-700 shrink-0 mt-0.5" />
           <p className="text-caption leading-relaxed text-indigo-900">
             <span className="font-semibold">
-              Everything is parsed in your browser.
+              Your report never leaves your device.
             </span>{' '}
+            It’s read right here in your browser — nothing is uploaded to a
+            server, and there’s no account. The file stays on your phone.
+          </p>
+        </div>
+        <div
+          role="note"
+          className="mb-4 flex items-start gap-2.5 rounded-[14px] border border-line bg-surface px-4 py-3"
+        >
+          <Info size={16} className="text-muted shrink-0 mt-0.5" />
+          <p className="text-caption leading-relaxed text-ink-soft">
             A{' '}
-            <span className="font-semibold">
+            <span className="font-semibold text-ink">
               PDF with selectable text is near-instant
             </span>
             ; photos and scans run OCR (10–30 seconds on a phone), so upload the
             PDF when you have it. If we can’t recognise anything, you’ll see a
-            clear error — we don’t make up values to fill in. Your file never
-            leaves your device.
+            clear error — we don’t make up values to fill in.
           </p>
         </div>
 
@@ -315,6 +332,10 @@ export default function UploadPage() {
             ))}
           </div>
         </div>
+          </div>
+
+          {/* Action column (dropzone + entry points + CTA) */}
+          <div className="min-w-0">
 
         {/* Dropzone — dashed border affordance, real drag-state visual,
             and distinct PDF/Photo entry points with their own filters.
@@ -548,9 +569,24 @@ export default function UploadPage() {
             Manual entry is the third action-rail tile (peer of PDF
             and Photo). This whole post-action block was visual mass
             that competed with the sticky "Start analysing" CTA. */}
+            {/* Inline CTA on desktop — the sticky bar below is mobile-only,
+                so a full-width fixed bar never overlaps a short page. */}
+            <div className="hidden lg:block mt-6">
+              <Button
+                size="lg"
+                fullWidth
+                disabled={!fileName}
+                onClick={startProcessing}
+                trailing={<ArrowRight size={18} />}
+              >
+                Start analysing
+              </Button>
+            </div>
+          </div>
+        </div>
       </Container>
 
-      <StickyBottomBar>
+      <StickyBottomBar className="lg:hidden">
         <Container size="narrow">
           <Button
             size="lg"

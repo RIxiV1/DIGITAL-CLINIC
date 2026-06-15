@@ -1,25 +1,34 @@
 import { motion } from 'framer-motion';
 import { ClipboardList, Microscope, TrendingUp } from 'lucide-react';
+import Illustration from '../../components/Illustration';
 import { Reveal, SectionHeader } from './shared';
 
 export default function HowItWorks() {
   return (
     <section id="how" className="py-16 sm:py-20 md:py-28 bg-canvas">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
-        <Reveal>
-          <SectionHeader
-            eyebrow="How it works"
-            title={
-              <>
-                Find out what’s actually going on —{' '}
-                <span className="text-blue-700 italic font-serif">
-                  in 2 minutes.
-                </span>
-              </>
-            }
-            subtitle="Three honest steps, about two minutes. You leave knowing which tests, which specialist, and what your symptoms might mean."
-          />
-        </Reveal>
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          <Reveal>
+            <SectionHeader
+              eyebrow="How it works"
+              title={
+                <>
+                  Find out what’s actually going on —{' '}
+                  <span className="text-blue-700 italic font-serif">
+                    in 2 minutes.
+                  </span>
+                </>
+              }
+              subtitle="Three honest steps, about two minutes. You leave knowing which tests, which specialist, and what your symptoms might mean."
+            />
+          </Reveal>
+          <Reveal delay={0.1}>
+            <Illustration
+              src="/illustrations/health-signals.svg"
+              className="w-full max-w-sm mx-auto md:ml-auto h-auto"
+            />
+          </Reveal>
+        </div>
 
         <div className="mt-12 md:mt-16 grid md:grid-cols-3 gap-5">
           <Reveal>
