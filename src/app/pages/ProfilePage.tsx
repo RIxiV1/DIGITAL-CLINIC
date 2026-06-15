@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   Bell,
+  Bot,
   EyeOff,
   FileLock2,
   Home,
@@ -11,7 +12,6 @@ import {
   Moon,
   Pencil,
   ShieldCheck,
-  Sparkles,
 } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -138,14 +138,6 @@ export default function ProfilePage() {
 
                 <div className="relative">
                   <div className="flex items-center gap-4">
-                    <div className="relative shrink-0">
-                      <div
-                        className="w-16 h-16 rounded-2xl grid place-items-center bg-gold-500 text-indigo-900 shadow-soft"
-                        aria-hidden
-                      >
-                        <Sparkles size={26} strokeWidth={2.2} />
-                      </div>
-                    </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-display text-display-md leading-tight">
                         Your account
@@ -192,7 +184,7 @@ export default function ProfilePage() {
                 </div>
                 <button
                   onClick={() => navigate({ type: 'quiz' })}
-                  className="text-caption font-bold uppercase tracking-label text-indigo-700 hover:text-indigo-800"
+                  className="inline-flex items-center min-h-11 px-2 -mr-2 text-caption font-bold uppercase tracking-label text-indigo-700 hover:text-indigo-800 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
                 >
                   Edit
                 </button>
@@ -386,7 +378,7 @@ export default function ProfilePage() {
                   className="w-full px-5 py-4 flex items-center gap-3 text-left hover:bg-canvas/60 transition-colors cursor-pointer border-b border-line/70"
                 >
                   <div className="grid place-items-center w-9 h-9 rounded-xl bg-indigo-50 text-indigo-700 shrink-0">
-                    <Sparkles size={16} />
+                    <Bot size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-semibold text-body-sm">

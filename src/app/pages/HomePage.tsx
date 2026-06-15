@@ -5,7 +5,6 @@ import {
   CalendarClock,
   ChevronRight,
   FileText,
-  Map as MapIcon,
   Plus,
   Search,
   Trash2,
@@ -24,7 +23,7 @@ import Illustration from '../components/Illustration';
 import MarkerAttentionCard from '../components/MarkerAttentionCard';
 import TrendRow from '../components/TrendRow';
 import LearnMoreModal from '../components/LearnMoreModal';
-import Emoji from '../components/Emoji';
+import StatusKey from '../components/StatusKey';
 import { useNavigation, useReports } from '../AppContext';
 import { useModalA11y } from '../utils/useModalA11y';
 import {
@@ -37,7 +36,7 @@ import {
 } from '../data/biomarkers';
 import {
   badgeFor,
-  getLatestReadyReport,
+  getPrimaryReport,
   getRetestReminder,
   getSampleReportForDashboard,
   type Report,
@@ -144,7 +143,9 @@ export default function HomePage() {
     navigate({ type: 'results', reportId: getSampleReportForDashboard().id });
   };
 
-  const ready = useMemo(() => getLatestReadyReport(reports), [reports]);
+  // Primary = the most comprehensive panel, not literally the newest
+  // upload — so a small add-on test doesn't override a full blood panel.
+  const ready = useMemo(() => getPrimaryReport(reports), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
 
   /* ---- Re-test nudge. Surfaced when the user's latest real report is
@@ -397,7 +398,7 @@ export default function HomePage() {
               type="button"
               onClick={dismissCatalogNotice}
               aria-label="Dismiss"
-              className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-indigo-700 hover:bg-indigo-100"
+              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-indigo-700 hover:bg-indigo-100"
             >
               <X size={14} />
             </button>
@@ -430,7 +431,7 @@ export default function HomePage() {
               type="button"
               onClick={dismissSaveError}
               aria-label="Dismiss warning"
-              className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-concern hover:bg-concern/10"
+              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-concern hover:bg-concern/10"
             >
               <X size={14} />
             </button>
@@ -476,7 +477,7 @@ export default function HomePage() {
               type="button"
               onClick={dismissRetestReminder}
               aria-label="Dismiss re-test reminder"
-              className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-indigo-700 hover:bg-indigo-100"
+              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-indigo-700 hover:bg-indigo-100"
             >
               <X size={14} />
             </button>
@@ -489,8 +490,12 @@ export default function HomePage() {
         <DashboardHeadline
           markers={ready ? biomarkers : null}
           hasReport={!!ready}
+          source={
+            ready ? { name: ready.name, uploadedOn: ready.uploadedOn } : undefined
+          }
           onPrimaryCTA={primaryCTA}
         />
+        {ready && <StatusKey className="mt-3 px-1" />}
       </Container>
 
       {/* ZONE 2a · Empty-state preview. Replaces the entire top-concern
@@ -513,29 +518,20 @@ export default function HomePage() {
           <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
             {[
               {
-                icon: '🎯',
-                label: 'Target',
                 title: 'Markers to act on first',
                 copy: 'Anything outside the healthy range is pulled up top — concern, then attention.',
               },
               {
-                icon: '📈',
-                label: 'Trend',
                 title: 'Trends over time',
                 copy: 'Each marker gets a sparkline once you have two or more reports.',
               },
               {
-                icon: '🧭',
-                label: 'Plan',
                 title: 'A plan, not a panel',
                 copy: 'Lab numbers translated into plain English — and what to do about them.',
               },
             ].map((s) => (
               <Card key={s.title}>
-                <Emoji label={s.label} className="text-display-md leading-none">
-                  {s.icon}
-                </Emoji>
-                <div className="font-display text-body leading-tight mt-3">
+                <div className="font-display text-body leading-tight">
                   {s.title}
                 </div>
                 <p className="mt-1.5 text-caption text-ink-soft leading-relaxed">
@@ -651,8 +647,8 @@ export default function HomePage() {
                 p.concern > 0
                   ? `${p.concern} ${p.concern === 1 ? 'needs' : 'need'} care`
                   : p.attention > 0
-                    ? `${p.attention} borderline`
-                    : 'On track';
+                    ? `${p.attention} to watch`
+                    : 'Healthy';
               const statusToneCls =
                 p.concern > 0
                   ? 'text-concern'
@@ -664,13 +660,7 @@ export default function HomePage() {
                   key={p.id}
                   className={`bg-surface rounded-[14px] border border-line/70 border-l-4 ${borderCls} shadow-soft p-3 sm:p-3.5`}
                 >
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Emoji
-                      label={`${p.name} pathway`}
-                      className="text-body-sm leading-none"
-                    >
-                      {p.icon}
-                    </Emoji>
+                  <div className="min-w-0">
                     <span className="text-micro uppercase tracking-eyebrow font-bold text-muted truncate">
                       {p.name}
                     </span>
@@ -693,9 +683,6 @@ export default function HomePage() {
             onClick={() => navigate({ type: 'healthMap' })}
             className="group mt-2.5 w-full flex items-center gap-2.5 rounded-[14px] border border-line/70 bg-surface/60 hover:bg-surface px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
           >
-            <span className="grid place-items-center w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 shrink-0">
-              <MapIcon size={16} />
-            </span>
             <span className="min-w-0 flex-1">
               <span className="block text-caption font-semibold text-ink">
                 See your full Health Map
@@ -720,36 +707,17 @@ export default function HomePage() {
           Collapsed by default to preserve the concise first paint. */}
       {ready &&
         (() => {
-          const trendCount = trendsByPathway.reduce(
-            (sum, p) => sum + p.markers.length,
-            0,
-          );
-          const tabs: { id: ExploreTab; label: string; hint: string }[] = [];
-          if (hasAnyMarkers)
-            tabs.push({
-              id: 'markers',
-              label: 'All markers',
-              hint: `${biomarkers.length} tracked · search & filter`,
-            });
-          if (hasTrends)
-            tabs.push({
-              id: 'trends',
-              label: 'Trends',
-              hint: `${trendCount} markers with history`,
-            });
+          const tabs: { id: ExploreTab; label: string }[] = [];
+          if (hasAnyMarkers) tabs.push({ id: 'markers', label: 'All markers' });
+          if (hasTrends) tabs.push({ id: 'trends', label: 'Trends' });
           if (reports.length > 0)
-            tabs.push({
-              id: 'reports',
-              label: 'Reports',
-              hint: `${reports.length} ${reports.length === 1 ? 'report' : 'reports'} · upload, search, delete`,
-            });
+            tabs.push({ id: 'reports', label: 'Reports' });
           if (tabs.length === 0) return null;
 
           const active =
             activeTab && tabs.some((t) => t.id === activeTab)
               ? activeTab
               : null;
-          const activeHint = tabs.find((t) => t.id === active)?.hint;
 
           return (
             <Container size="wide" className="mt-6 md:mt-8">
@@ -788,11 +756,6 @@ export default function HomePage() {
 
               {active && (
                 <div className="mt-3 rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden">
-                  {activeHint && (
-                    <div className="px-5 pt-4 text-caption text-muted">
-                      {activeHint}
-                    </div>
-                  )}
                   <div className="p-4 sm:p-5">
                     {active === 'markers' && (
                       <AllMarkersPane
@@ -1025,8 +988,8 @@ function AllMarkersPane({
       ) : (
         <Card className="mt-4 text-center !py-8">
           <div className="text-caption text-ink-soft leading-relaxed">
-            Everything is on track. Switch the filter to "All markers" to browse
-            everything in this report.
+            Everything looks healthy. Switch the filter to "All markers" to
+            browse everything in this report.
           </div>
         </Card>
       )}
@@ -1048,7 +1011,6 @@ function TrendsPane({
   trendsByPathway: Array<{
     id: string;
     name: string;
-    icon: string;
     categories: BiomarkerCategoryId[];
     markers: Biomarker[];
   }>;
@@ -1071,13 +1033,7 @@ function TrendsPane({
             key={group.id}
             className={`rounded-[18px] bg-canvas/40 border border-line/70 ${borderClass} overflow-hidden`}
           >
-            <div className="px-4 pt-4 pb-1 flex items-center gap-2">
-              <Emoji
-                label={`${group.name} pathway`}
-                className="text-body-lg leading-none"
-              >
-                {group.icon}
-              </Emoji>
+            <div className="px-4 pt-4 pb-1">
               <div className="text-micro uppercase tracking-eyebrow font-bold text-indigo-700">
                 {group.name}
               </div>
@@ -1398,7 +1354,6 @@ function DeleteReportConfirm({
 type Pathway = {
   id: string;
   name: string;
-  icon: string;
   categories: BiomarkerCategoryId[];
 };
 
@@ -1408,20 +1363,10 @@ type Pathway = {
 // adjacent: hormonal/metabolic/thyroid are the "system" reads;
 // nutritional comes last because it's a lifestyle-adjacent fix.
 const PATHWAYS: Pathway[] = [
-  { id: 'hormonal', name: 'Hormonal', icon: '🔥', categories: ['hormones'] },
-  {
-    id: 'metabolic',
-    name: 'Metabolic',
-    icon: '⚡',
-    categories: ['metabolic', 'heart'],
-  },
-  { id: 'thyroid', name: 'Thyroid', icon: '🦋', categories: ['thyroid'] },
-  {
-    id: 'nutritional',
-    name: 'Nutritional',
-    icon: '☀️',
-    categories: ['vitamins'],
-  },
+  { id: 'hormonal', name: 'Hormonal', categories: ['hormones'] },
+  { id: 'metabolic', name: 'Metabolic', categories: ['metabolic', 'heart'] },
+  { id: 'thyroid', name: 'Thyroid', categories: ['thyroid'] },
+  { id: 'nutritional', name: 'Nutritional', categories: ['vitamins'] },
 ];
 
 function SectionHeading({

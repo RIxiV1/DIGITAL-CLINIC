@@ -14,7 +14,6 @@ import {
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
-import Emoji from '../components/Emoji';
 import Illustration from '../components/Illustration';
 import Logo from '../components/Logo';
 import Pill from '../components/Pill';
@@ -1299,11 +1298,11 @@ function ConfirmExtractedValuesView({
                 <SummaryChip
                   tone="attention"
                   count={counts.attention}
-                  label="borderline"
+                  label="to watch"
                 />
               )}
               {counts.good > 0 && (
-                <SummaryChip tone="good" count={counts.good} label="on track" />
+                <SummaryChip tone="good" count={counts.good} label="healthy" />
               )}
             </div>
           )}
@@ -1485,14 +1484,6 @@ function ConfirmExtractedValuesView({
                     open ? 'border-b border-line/60' : ''
                   }`}
                 >
-                  <div className="grid place-items-center w-10 h-10 rounded-2xl bg-surface border border-line/60 shadow-soft shrink-0">
-                    <Emoji
-                      label={category.name}
-                      className="text-body-lg leading-none"
-                    >
-                      {category.icon}
-                    </Emoji>
-                  </div>
                   <div className="flex-1 min-w-0">
                     <div className="font-display text-body leading-tight text-ink">
                       {category.name}

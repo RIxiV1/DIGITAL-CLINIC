@@ -64,7 +64,7 @@ function HomeLogoButton({ onNavigate }: { onNavigate: () => void }) {
     <button
       type="button"
       onClick={onNavigate}
-      aria-label="ForMen homepage"
+      aria-label="Go to your dashboard"
       className="flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
     >
       <Logo size="md" />
@@ -159,7 +159,12 @@ export default function Header({
   const handleBack = onBack ?? back;
   const active = activeNavId(page);
   const isMdUp = useIsMdUp();
-  const goLanding = () => navigate({ type: 'landing' });
+  // Logo on app screens goes HOME (the dashboard) — not the marketing
+  // landing. Once you're inside the app, the logo is "take me to my home
+  // base", and bouncing an engaged user to the sales page reads like a
+  // logout. (The landing has its own TopNav; this Header never renders
+  // there.)
+  const goHome = () => navigate({ type: 'home' });
 
   // Container max-width ramp pulled one tier earlier — same shift
   // applied to components/Container.tsx so layout stays coherent
@@ -184,7 +189,7 @@ export default function Header({
           /* ---------- Mobile shell ---------- */
           <>
             {variant === 'home' ? (
-              <HomeLogoButton onNavigate={goLanding} />
+              <HomeLogoButton onNavigate={goHome} />
             ) : (
               <>
                 <BackArrow onBack={handleBack} size="lg" />
@@ -210,7 +215,7 @@ export default function Header({
         ) : (
           /* ---------- Desktop shell ---------- */
           <>
-            <HomeLogoButton onNavigate={goLanding} />
+            <HomeLogoButton onNavigate={goHome} />
             <DesktopNav active={active} onNavigate={navigate} />
             {variant === 'page' && title && (
               <div className="flex items-center gap-2 pl-6 ml-auto border-l border-line/70 min-w-0">

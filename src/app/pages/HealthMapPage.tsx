@@ -1,29 +1,13 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import {
-  ChevronRight,
-  Dna,
-  Droplet,
-  Droplets,
-  FlaskConical,
-  Flame,
-  Gauge,
-  Heart,
-  Scale,
-  ShieldAlert,
-  Sun,
-  TrendingDown,
-  TrendingUp,
-  Upload,
-  Zap,
-  type LucideIcon,
-} from 'lucide-react';
+import { ChevronRight, TrendingDown, TrendingUp, Upload } from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import Illustration from '../components/Illustration';
 import ProgressRing from '../components/ProgressRing';
+import StatusKey from '../components/StatusKey';
 import { useNavigation, useReports } from '../AppContext';
 import {
   biomarkersByCategory,
@@ -32,10 +16,9 @@ import {
   statusColor,
   summarizeStatuses,
   type Biomarker,
-  type BiomarkerCategoryId,
 } from '../data/biomarkers';
 import {
-  getLatestReadyReport,
+  getPrimaryReport,
   getSampleReportForDashboard,
 } from '../data/reports';
 
@@ -70,21 +53,6 @@ import {
  * dashboard's 4-pathway Vitals Strip, which intentionally shows only the
  * four headline pathways.
  */
-
-/** A clean line icon per body system — the Apple Health "Browse" idiom. */
-const SYSTEM_ICON: Record<BiomarkerCategoryId, LucideIcon> = {
-  hormones: Zap,
-  metabolic: Flame,
-  heart: Heart,
-  thyroid: Gauge,
-  vitamins: Sun,
-  liver: FlaskConical,
-  kidney: Droplet,
-  blood: Droplets,
-  fertility: Dna,
-  electrolytes: Scale,
-  inflammation: ShieldAlert,
-};
 
 type SystemRollup = {
   critical: number;
@@ -123,8 +91,8 @@ export function summaryText(r: SystemRollup): string {
   if (r.critical > 0) return 'See a doctor';
   if (r.concern > 0)
     return `${r.concern} ${r.concern === 1 ? 'needs' : 'need'} care`;
-  if (r.attention > 0) return `${r.attention} borderline`;
-  return 'On track';
+  if (r.attention > 0) return `${r.attention} to watch`;
+  return 'Healthy';
 }
 
 /** Worst-first ordering so the eye lands on what matters. */
@@ -143,7 +111,7 @@ export default function HealthMapPage() {
   const { reports } = useReports();
   const { navigate } = useNavigation();
 
-  const ready = useMemo(() => getLatestReadyReport(reports), [reports]);
+  const ready = useMemo(() => getPrimaryReport(reports), [reports]);
   const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
   const summary = useMemo(() => summarizeStatuses(biomarkers), [biomarkers]);
   const bottomLine = useMemo(() => bottomLineFor(biomarkers), [biomarkers]);
@@ -158,6 +126,15 @@ export default function HealthMapPage() {
   // The number that grows: share of markers on track.
   const onTrackPct =
     summary.total > 0 ? Math.round((summary.good / summary.total) * 100) : 0;
+
+  // Two-tone ring: the remainder is tinted by the worst status, not grey,
+  // so the green share can't be misread as a passing grade.
+  const ringTrack =
+    summary.concern > 0 || summary.critical > 0
+      ? 'stroke-concern/40'
+      : summary.attention > 0
+        ? 'stroke-attention/40'
+        : 'stroke-line/50';
 
   // Movement since the last test — the come-back-and-check hook. Only
   // meaningful when markers carry history (a prior report was merged in).
@@ -180,7 +157,7 @@ export default function HealthMapPage() {
         ? 'A handful of things to work on'
         : summary.attention > 0
           ? 'Looking good — a few to keep an eye on'
-          : 'Everything’s on track';
+          : 'Everything’s healthy';
 
   /* ---- Empty state: no parsed report yet. ---- */
   if (!ready || biomarkers.length === 0) {
@@ -200,7 +177,7 @@ export default function HealthMapPage() {
               <p className="text-body-sm text-ink-soft max-w-sm">
                 Upload a blood test and we’ll lay out every system — hormones,
                 heart, thyroid, and the rest — on one calm screen, scored by
-                what’s on track and tracking how it moves over time.
+                what’s healthy and tracking how it moves over time.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
@@ -240,13 +217,25 @@ export default function HealthMapPage() {
       <Container size="wide" className="pt-7 md:pt-9">
         <div className="rounded-3xl border border-line/70 bg-surface shadow-soft p-5 sm:p-6">
           <div className="flex items-center gap-5">
-            <ProgressRing pct={onTrackPct} />
+            <ProgressRing pct={onTrackPct} trackClass={ringTrack}>
+              <div className="text-center leading-none">
+                <span className="font-display text-display-sm text-ink">
+                  {onTrackPct}
+                </span>
+                <span className="font-display text-caption text-muted align-top">
+                  %
+                </span>
+                <div className="text-micro uppercase tracking-eyebrow font-bold text-muted mt-1">
+                  in range
+                </div>
+              </div>
+            </ProgressRing>
             <div className="min-w-0">
               <h1 className="font-display text-display-md sm:text-display-lg leading-tight tracking-tight">
                 {headline}
               </h1>
               <p className="text-caption text-muted mt-1">
-                {summary.good} of {summary.total} markers on track
+                {summary.good} of {summary.total} in a healthy range
               </p>
               {movement.any && (
                 <div className="flex flex-wrap items-center gap-2 mt-3">
@@ -282,6 +271,7 @@ export default function HealthMapPage() {
           {groups.length === 1 ? 'system' : 'systems'} · {ready.name} ·{' '}
           {ready.uploadedOn}
         </p>
+        <StatusKey className="mt-3" />
       </Container>
 
       {/* Section label — grouped-list header, the iOS table idiom. */}
@@ -298,14 +288,6 @@ export default function HealthMapPage() {
           {groups.map((g, i) => {
             const r = g.r;
             const c = statusColor(r.worst);
-            const Icon = SYSTEM_ICON[g.category.id] ?? Gauge;
-            // Icon tile carries the status colour — one calm colour story
-            // per card. "good" stays neutral-brand so a healthy map reads
-            // quiet, not a wall of green.
-            const tileCls =
-              r.worst === 'good'
-                ? 'bg-indigo-50 text-indigo-700'
-                : `${c.bg} ${c.textOnSurface}`;
             const goodPct = r.total > 0 ? (r.good / r.total) * 100 : 0;
             return (
               <motion.button
@@ -321,13 +303,8 @@ export default function HealthMapPage() {
                 }}
                 className="group h-full text-left bg-surface rounded-3xl border border-line/70 shadow-soft p-4 sm:p-5 transition-all hover:shadow-pop hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
               >
-                {/* Header row — icon tile · name + status · chevron. */}
+                {/* Header row — name + status · chevron. */}
                 <div className="flex items-center gap-3">
-                  <span
-                    className={`grid place-items-center w-11 h-11 rounded-2xl shrink-0 ${tileCls}`}
-                  >
-                    <Icon size={20} strokeWidth={2.2} />
-                  </span>
                   <div className="min-w-0 flex-1">
                     <div className="font-display text-body text-ink leading-tight truncate">
                       {g.category.name}
@@ -348,17 +325,23 @@ export default function HealthMapPage() {
                 {/* Slim on-track bar + count — a per-system mini-score that
                     keeps every card the same height and gives a number to
                     nudge upward. */}
+                {/* Two-tone bar: green = the in-range share, the tinted
+                    track = the share that needs a look. So "0 of 2" reads
+                    as a full red bar, "8 of 8" as a full green one — no
+                    ambiguous part-filled red. */}
                 <div className="mt-4">
-                  <div className="h-1.5 rounded-full bg-line/60 overflow-hidden">
+                  <div
+                    className={`h-1.5 rounded-full overflow-hidden ${
+                      r.worst === 'good' ? 'bg-line/60' : c.bg
+                    }`}
+                  >
                     <div
-                      className={`h-full rounded-full ${
-                        r.worst === 'good' ? 'bg-good' : c.dot
-                      }`}
-                      style={{ width: `${Math.max(goodPct, 4)}%` }}
+                      className="h-full rounded-full bg-good"
+                      style={{ width: `${goodPct}%` }}
                     />
                   </div>
                   <div className="text-micro text-muted mt-2">
-                    {r.good} of {r.total} on track
+                    {r.good} of {r.total} in a healthy range
                   </div>
                 </div>
               </motion.button>

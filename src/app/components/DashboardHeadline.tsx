@@ -1,4 +1,4 @@
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import ProgressRing from './ProgressRing';
 import {
@@ -11,10 +11,15 @@ import {
 } from '../data/biomarkers';
 
 type Props = {
-  /** Markers from the latest analyzed report, or null/[] if none. */
+  /** Markers from the report this hero summarizes, or null/[] if none. */
   markers: Biomarker[] | null;
   /** Whether the user has ANY analyzed report. */
   hasReport: boolean;
+  /** The report these markers came from — labelled so it's never
+   *  ambiguous WHICH report the headline + score reflect (the dashboard
+   *  shows your most comprehensive panel, which may not be your newest
+   *  upload). Omitted in the no-report state. */
+  source?: { name: string; uploadedOn: string };
   onPrimaryCTA: () => void;
 };
 
@@ -38,6 +43,7 @@ type Props = {
 export default function DashboardHeadline({
   markers,
   hasReport,
+  source,
   onPrimaryCTA,
 }: Props) {
   const { eyebrow, headline, qualifier, sub, ctaLabel } = pickCopy(
@@ -64,6 +70,18 @@ export default function DashboardHeadline({
       ? Math.round((summary.good / summary.total) * 100)
       : null;
 
+  // Two-tone ring: the un-filled remainder is tinted by the worst status,
+  // not neutral grey — so a 72% green ring can't be misread as a passing
+  // grade while markers still need attention. Green = in range, the rest
+  // = the share that needs a look.
+  const ringTrack = !summary
+    ? 'stroke-line/50'
+    : summary.concern > 0 || summary.critical > 0
+      ? 'stroke-concern/40'
+      : summary.attention > 0
+        ? 'stroke-attention/40'
+        : 'stroke-line/50';
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -81,8 +99,7 @@ export default function DashboardHeadline({
       <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
         {/* Text column — the narrative. */}
         <div className="order-2 md:order-1 flex-1 min-w-0">
-          <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-eyebrow font-bold text-indigo-600">
-            <Sparkles size={11} />
+          <div className="text-micro uppercase tracking-eyebrow font-bold text-indigo-600">
             {eyebrow}
           </div>
           <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.12] text-balance text-ink">
@@ -96,6 +113,13 @@ export default function DashboardHeadline({
           {sub && (
             <p className="mt-1 text-caption lg:text-body-sm text-muted leading-relaxed max-w-[60ch]">
               {sub}
+            </p>
+          )}
+          {source && (
+            <p className="mt-2.5 text-micro text-muted truncate max-w-full">
+              Based on{' '}
+              <span className="font-semibold text-ink-soft">{source.name}</span>{' '}
+              · {source.uploadedOn}
             </p>
           )}
           <button
@@ -113,7 +137,12 @@ export default function DashboardHeadline({
             on desktop it anchors the right. */}
         {onTrackPct !== null && (
           <div className="order-1 md:order-2 shrink-0 flex flex-col items-start md:items-center gap-2 self-start md:self-center">
-            <ProgressRing pct={onTrackPct} size={120} stroke={10}>
+            <ProgressRing
+              pct={onTrackPct}
+              size={120}
+              stroke={10}
+              trackClass={ringTrack}
+            >
               <div className="text-center leading-none">
                 <span className="font-display text-display-md text-ink">
                   {onTrackPct}
@@ -122,7 +151,7 @@ export default function DashboardHeadline({
                   %
                 </span>
                 <div className="text-micro uppercase tracking-eyebrow font-bold text-muted mt-1.5">
-                  on track
+                  in range
                 </div>
               </div>
             </ProgressRing>
@@ -131,7 +160,7 @@ export default function DashboardHeadline({
                 <span className="font-semibold text-ink-soft">
                   {summary.good}
                 </span>{' '}
-                of {summary.total} markers
+                of {summary.total} in a healthy range
               </div>
             )}
           </div>
@@ -172,7 +201,7 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
   // like a smug fitness app.
   if (summary.concern === 0 && summary.attention === 0) {
     return {
-      eyebrow: 'On track',
+      eyebrow: 'All healthy',
       headline: 'Everything’s in range. Whatever you’re doing — keep going.',
       sub: 'Re-test in 6 months to confirm the trend holds.',
       ctaLabel: 'See all markers',
@@ -237,7 +266,7 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
       summary.concern > 0
         ? `${summary.concern} marker${summary.concern === 1 ? '' : 's'} need${summary.concern === 1 ? 's' : ''} attention — here's where to start.`
         : `${flagged} markers worth a closer look.`,
-    sub: `${summary.good} of ${summary.total} markers on track. ${summary.attention > 0 ? `${summary.attention} borderline · ` : ''}${summary.concern > 0 ? `${summary.concern} need${summary.concern === 1 ? 's' : ''} care.` : ''}`,
+    sub: `${summary.good} of ${summary.total} markers healthy. ${summary.attention > 0 ? `${summary.attention} to watch · ` : ''}${summary.concern > 0 ? `${summary.concern} need${summary.concern === 1 ? 's' : ''} care.` : ''}`,
     ctaLabel: 'See all markers',
   };
 }

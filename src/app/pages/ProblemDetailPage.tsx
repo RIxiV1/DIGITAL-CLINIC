@@ -16,7 +16,7 @@ import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
 import { useNavigation, useReports } from '../AppContext';
 import { sampleBiomarkers, type BiomarkerStatus } from '../data/biomarkers';
-import { getLatestReadyReport } from '../data/reports';
+import { getPrimaryReport } from '../data/reports';
 import { getProblem } from '../data/problems';
 
 export default function ProblemDetailPage({
@@ -36,7 +36,7 @@ export default function ProblemDetailPage({
    * fall back to sample only when there isn't one (e.g., a user who
    * came straight from the landing CTA without uploading anything).
    */
-  const latestReport = useMemo(() => getLatestReadyReport(reports), [reports]);
+  const latestReport = useMemo(() => getPrimaryReport(reports), [reports]);
   const sourceMarkers = useMemo(
     () => latestReport?.biomarkers ?? sampleBiomarkers,
     [latestReport],

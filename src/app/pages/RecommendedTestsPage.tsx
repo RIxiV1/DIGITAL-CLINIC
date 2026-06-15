@@ -11,7 +11,6 @@ import {
   Coffee,
   Info,
   Printer,
-  Sparkles,
   Upload,
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -107,7 +106,6 @@ export default function RecommendedTestsPage() {
             offered. */}
         <div className="lg:max-w-3xl">
           <Pill tone="gold" size="md">
-            <Sparkles size={11} />
             Personalised for you
           </Pill>
 
@@ -545,7 +543,7 @@ function RiskDisclosure({
       >
         <div className="flex-1 min-w-0">
           <Pill tone="indigo" size="sm">
-            <Sparkles size={10} /> Why these tests
+            Why these tests
           </Pill>
           <p className="mt-2.5 text-body-sm leading-relaxed text-ink-soft">
             {lead}

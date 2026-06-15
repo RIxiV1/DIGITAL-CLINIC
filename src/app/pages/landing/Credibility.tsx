@@ -1,23 +1,31 @@
 import { motion } from 'framer-motion';
-import { Sparkles } from 'lucide-react';
+import Illustration from '../../components/Illustration';
 import { Reveal, SectionHeader } from './shared';
 
 export default function Credibility() {
   return (
     <section id="science" className="py-16 sm:py-20 md:py-28 bg-canvas">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
-        <Reveal>
-          <SectionHeader
-            eyebrow="The science"
-            title={
-              <>
-                Built on research,{' '}
-                <span className="text-blue-700">backed by data.</span>
-              </>
-            }
-            subtitle="Indian male hormonal health is barely talked about — and barely tested. The data is sobering."
-          />
-        </Reveal>
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+          <Reveal>
+            <SectionHeader
+              eyebrow="The science"
+              title={
+                <>
+                  Built on research,{' '}
+                  <span className="text-blue-700">backed by data.</span>
+                </>
+              }
+              subtitle="Indian male hormonal health is barely talked about — and barely tested. The data is sobering."
+            />
+          </Reveal>
+          <Reveal delay={0.1}>
+            <Illustration
+              src="/illustrations/research.svg"
+              className="w-full max-w-sm mx-auto md:ml-auto h-auto"
+            />
+          </Reveal>
+        </div>
 
         <div className="mt-12 md:mt-16 grid md:grid-cols-3 gap-5">
           <Reveal>
@@ -46,7 +54,6 @@ export default function Credibility() {
 
         <Reveal>
           <div className="mt-10 flex items-center justify-center gap-2 text-caption text-muted text-center max-w-2xl mx-auto">
-            <Sparkles size={14} className="text-blue-600 shrink-0" />
             <span>
               No testimonials, no fake user counts. Credibility comes from
               science and methodology — not staged quotes.

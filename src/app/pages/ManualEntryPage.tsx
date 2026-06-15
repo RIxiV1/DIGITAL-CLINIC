@@ -313,13 +313,6 @@ export default function ManualEntryPage() {
                       header visually to the rows it labels. */}
                   <div className="sticky top-[6.5rem] lg:top-[7.5rem] z-10 bg-canvas pt-1 pb-2">
                     <div className="flex items-center gap-3 border-b border-line/70 pb-2.5">
-                      <span
-                        aria-label={category.name}
-                        role="img"
-                        className="text-body-lg leading-none shrink-0"
-                      >
-                        {category.icon}
-                      </span>
                       <div className="flex-1 min-w-0">
                         <div className="font-display text-body leading-tight">
                           {category.name}
