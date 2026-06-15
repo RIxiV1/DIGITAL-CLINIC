@@ -28,6 +28,8 @@ import {
 } from '../services/api';
 import {
   categories as biomarkerCategories,
+  getTemplateById,
+  statusForValue,
   type Biomarker,
 } from '../data/biomarkers';
 import { makeReport, sampleReports } from '../data/reports';
@@ -487,10 +489,13 @@ export default function ProcessingPage() {
 
   /* ---- Confirm-step actions ---- */
 
-  const confirmExtractedValues = () => {
+  // Commits the markers the user confirmed. `markers` carries any inline
+  // corrections the user made on the confirm screen (re-graded already by
+  // the view); falls back to the parsed set when nothing was edited.
+  const confirmExtractedValues = (markers: Biomarker[]) => {
     if (!processingId || !pendingConfirm) return;
     markReportReady(processingId, {
-      biomarkers: pendingConfirm.biomarkers,
+      biomarkers: markers,
       lab: 'Parsed from upload',
     });
     clearPendingConfirm();
@@ -1182,28 +1187,82 @@ function ConfirmExtractedValuesView({
   ocrPagesSkipped?: number;
   ocrConfidence?: number;
   semenStandardMismatch?: boolean;
-  onConfirm: () => void;
+  /** Receives the confirmed markers — carrying any inline corrections the
+   *  user made to fix an OCR misread. */
+  onConfirm: (markers: Biomarker[]) => void;
   onReject: () => void;
 }) {
   const [showRaw, setShowRaw] = useState(false);
 
-  // Status summary — four counts the user can scan at a glance before
-  // committing to the report. Putting them next to the headline turns
-  // "we found N values" from a count into a verdict: "and X of them
-  // need your attention right now."
-  const counts = useMemo(() => {
+  /* ---- Inline corrections ----
+   * Client-side OCR can misread a decimal (0.8 → 8) or grab a reference-
+   * range limit instead of the result. Rather than force a full re-upload
+   * or hand-entry, each value is editable here: a corrected number is
+   * re-graded in place (status, mini-range, and the verdict counts all
+   * update live) and the corrected set is what gets committed. Keyed by
+   * marker id; empty until the user actually edits something. */
+  const [edits, setEdits] = useState<Record<string, string>>({});
+
+  /** Validity of an edited input. 'unedited' when the user hasn't touched
+   *  it. The 5×-span bound mirrors ManualEntryPage + pdfParser so a typo
+   *  can't commit a wildly impossible value. */
+  const editStateOf = (
+    m: Biomarker,
+    raw: string | undefined,
+  ): 'unedited' | 'empty' | 'out-of-range' | 'ok' => {
+    if (raw === undefined) return 'unedited';
+    const trimmed = raw.trim();
+    if (!trimmed) return 'empty';
+    const num = parseFloat(trimmed);
+    if (Number.isNaN(num)) return 'empty';
+    const span = m.max - m.min || 1;
+    if (num < m.min - 5 * span || num > m.max + 5 * span) return 'out-of-range';
+    return 'ok';
+  };
+
+  /** Re-grade a marker against its edited value, preserving every other
+   *  field (history, lab-printed range, critical bounds). Only a valid,
+   *  in-bounds edit takes effect; anything else falls back to the parsed
+   *  value so an incomplete keystroke never commits a broken number. */
+  const regrade = (m: Biomarker): Biomarker => {
+    const raw = edits[m.id];
+    if (editStateOf(m, raw) !== 'ok') return m;
+    const num = parseFloat((raw as string).trim());
+    const template = getTemplateById(m.id);
+    const labRef =
+      typeof m.labRefMin === 'number' && typeof m.labRefMax === 'number'
+        ? { min: m.labRefMin, max: m.labRefMax }
+        : undefined;
+    const status = template
+      ? statusForValue(template, num, labRef)
+      : m.status;
+    return { ...m, value: num, status };
+  };
+
+  // The set we'd commit, and a lookup for live per-row display. Computed
+  // each render (cheap) so edits reflect immediately; row ORDER stays
+  // pinned to the original grouping below so a value never jumps out from
+  // under the cursor mid-edit.
+  const confirmedBiomarkers = biomarkers.map(regrade);
+  const confirmedById = new Map(
+    confirmedBiomarkers.map((m) => [m.id, m] as const),
+  );
+
+  // Status summary — four counts, recomputed off the corrected set so the
+  // verdict tracks the user's edits in real time.
+  const counts = (() => {
     let critical = 0;
     let concern = 0;
     let attention = 0;
     let good = 0;
-    for (const m of biomarkers) {
+    for (const m of confirmedBiomarkers) {
       if (m.status === 'critical') critical += 1;
       else if (m.status === 'concern') concern += 1;
       else if (m.status === 'attention') attention += 1;
       else good += 1;
     }
     return { critical, concern, attention, good };
-  }, [biomarkers]);
+  })();
 
   /** Per-category expansion mirrors the ReportResults pattern. Default-
    *  open: any category with a `critical` or `concern` marker.
@@ -1275,10 +1334,10 @@ function ConfirmExtractedValuesView({
             {biomarkers.length === 1 ? 'value' : 'values'} in your report.
           </h1>
           <p className="mt-3 text-body-sm lg:text-body text-ink-soft text-pretty max-w-xl">
-            Check each number against your report before continuing. We
-            deliberately only show what we could pull out — if a marker you
-            expected isn’t listed, it wasn’t in our catalog or our parser
-            couldn’t find a match.
+            Check each number against your report — and tap any value to fix it
+            if we misread it. We deliberately only show what we could pull out;
+            if a marker you expected isn’t listed, it wasn’t in our catalog or
+            our parser couldn’t find a match.
           </p>
 
           {/* Status summary chips. Rendered ONLY when the category-card
@@ -1518,9 +1577,31 @@ function ConfirmExtractedValuesView({
                 </button>
                 {open && (
                   <ul id={`confirm-category-${category.id}`}>
-                    {markers.map((m, i) => (
-                      <MarkerRow key={m.id} marker={m} showTopBorder={i > 0} />
-                    ))}
+                    {markers.map((m, i) => {
+                      const state = editStateOf(m, edits[m.id]);
+                      return (
+                        <MarkerRow
+                          key={m.id}
+                          // Re-graded marker drives the tint, status, and
+                          // mini-range so they update live as the value is
+                          // corrected; row order stays pinned to `markers`.
+                          marker={confirmedById.get(m.id) ?? m}
+                          inputValue={edits[m.id] ?? String(m.value)}
+                          onValueChange={(v) =>
+                            setEdits((prev) => ({ ...prev, [m.id]: v }))
+                          }
+                          invalid={state === 'empty' || state === 'out-of-range'}
+                          hint={
+                            state === 'out-of-range'
+                              ? `Outside the plausible range (${m.min}–${m.max}${m.unit ? ` ${m.unit}` : ''}). Check for a typo or wrong unit.`
+                              : state === 'empty'
+                                ? 'Enter a number, or re-upload to start over.'
+                                : undefined
+                          }
+                          showTopBorder={i > 0}
+                        />
+                      );
+                    })}
                   </ul>
                 )}
               </Card>
@@ -1664,7 +1745,7 @@ function ConfirmExtractedValuesView({
               size="lg"
               variant="primary"
               trailing={<ArrowRight size={18} />}
-              onClick={onConfirm}
+              onClick={() => onConfirm(confirmedBiomarkers)}
               fullWidth
             >
               Looks right — see my report
@@ -1753,9 +1834,21 @@ function SummaryChip({
 
 function MarkerRow({
   marker,
+  inputValue,
+  onValueChange,
+  invalid,
+  hint,
   showTopBorder,
 }: {
+  /** The (possibly re-graded) marker — drives status tint + mini-range. */
   marker: Biomarker;
+  /** Current string in the editable value field. */
+  inputValue: string;
+  onValueChange: (next: string) => void;
+  /** True when the edited value is empty or wildly out of bounds. */
+  invalid: boolean;
+  /** Inline correction hint shown under the field when invalid. */
+  hint?: string;
   showTopBorder: boolean;
 }) {
   const isCritical = marker.status === 'critical';
@@ -1827,12 +1920,37 @@ function MarkerRow({
             <MiniRange marker={marker} />
           </div>
         </div>
-        <div className="text-right shrink-0 font-display text-body-lg sm:text-display-md leading-none text-ink tabular-nums">
-          {marker.value}
-          {marker.unit && (
-            <span className="text-caption ml-1 text-muted font-sans font-medium">
-              {marker.unit}
-            </span>
+        {/* Editable value. The confirm gate's whole job is "does this
+            number match your report?" — so the number is a field, not
+            static text. A misread (0.8 → 8, or a captured reference-range
+            limit) gets fixed right here; the row re-grades live and the
+            corrected value is what commits. */}
+        <div className="shrink-0 text-right">
+          <div className="inline-flex items-center gap-1.5">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="any"
+              value={inputValue}
+              onChange={(e) => onValueChange(e.target.value)}
+              aria-label={`${marker.name} value${marker.unit ? ' in ' + marker.unit : ''}`}
+              aria-invalid={invalid || undefined}
+              className={`w-[5.5rem] h-11 px-2.5 text-right text-body-sm sm:text-body-lg font-display tabular-nums rounded-[12px] focus:outline-none focus:ring-2 transition-colors ${
+                invalid
+                  ? 'bg-concern-soft border border-concern/60 text-concern focus:ring-concern/40 focus:border-concern'
+                  : 'bg-surface border border-line text-ink focus:ring-indigo-400/60 focus:border-indigo-400'
+              }`}
+            />
+            {marker.unit && (
+              <span className="text-caption text-muted font-medium w-12 text-left shrink-0">
+                {marker.unit}
+              </span>
+            )}
+          </div>
+          {hint && (
+            <div className="mt-1 text-caption text-concern font-medium leading-snug max-w-[12rem] ml-auto">
+              {hint}
+            </div>
           )}
         </div>
       </div>
