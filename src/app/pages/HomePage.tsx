@@ -397,7 +397,7 @@ export default function HomePage() {
               type="button"
               onClick={dismissCatalogNotice}
               aria-label="Dismiss"
-              className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-indigo-700 hover:bg-indigo-100"
+              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-indigo-700 hover:bg-indigo-100"
             >
               <X size={14} />
             </button>
@@ -430,7 +430,7 @@ export default function HomePage() {
               type="button"
               onClick={dismissSaveError}
               aria-label="Dismiss warning"
-              className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-concern hover:bg-concern/10"
+              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-concern hover:bg-concern/10"
             >
               <X size={14} />
             </button>
@@ -476,7 +476,7 @@ export default function HomePage() {
               type="button"
               onClick={dismissRetestReminder}
               aria-label="Dismiss re-test reminder"
-              className="shrink-0 grid place-items-center w-8 h-8 rounded-full text-indigo-700 hover:bg-indigo-100"
+              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-indigo-700 hover:bg-indigo-100"
             >
               <X size={14} />
             </button>

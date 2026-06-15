@@ -184,7 +184,7 @@ export default function ProfilePage() {
                 </div>
                 <button
                   onClick={() => navigate({ type: 'quiz' })}
-                  className="text-caption font-bold uppercase tracking-label text-indigo-700 hover:text-indigo-800"
+                  className="inline-flex items-center min-h-11 px-2 -mr-2 text-caption font-bold uppercase tracking-label text-indigo-700 hover:text-indigo-800 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
                 >
                   Edit
                 </button>

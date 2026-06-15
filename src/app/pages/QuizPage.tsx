@@ -284,7 +284,7 @@ export default function QuizPage() {
             onClick={requestExit}
             aria-label="Exit quiz, go home"
             title="Go home"
-            className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+            className="inline-flex items-center min-h-11 rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
           >
             <Logo size="sm" />
           </button>
