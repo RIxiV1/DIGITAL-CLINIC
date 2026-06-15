@@ -251,14 +251,17 @@ export default function UploadPage() {
   const showLargeFileWarning = fileSize > 5 * 1024 * 1024;
 
   return (
-    <div className="min-h-dvh pb-32 bg-canvas">
+    <div className="min-h-dvh pb-32 lg:pb-16 bg-canvas">
       <Header
         variant="page"
         title="Upload a report"
         subtitle="PDF, photo, or screenshot"
       />
 
-      <Container size="narrow" className="pt-5">
+      <Container size="wide" className="pt-5 md:pt-8">
+        <div className="mx-auto max-w-5xl grid lg:grid-cols-2 gap-6 lg:gap-10 lg:items-start">
+          {/* Trust + context column (sits left on desktop, first on mobile) */}
+          <div className="min-w-0">
         {/* Honest disclaimer about what the parser actually does. All
             work happens locally — pdfjs extracts text from PDFs,
             tesseract.js runs OCR on images (and PDFs with no text
@@ -329,6 +332,10 @@ export default function UploadPage() {
             ))}
           </div>
         </div>
+          </div>
+
+          {/* Action column (dropzone + entry points + CTA) */}
+          <div className="min-w-0">
 
         {/* Dropzone — dashed border affordance, real drag-state visual,
             and distinct PDF/Photo entry points with their own filters.
@@ -562,9 +569,24 @@ export default function UploadPage() {
             Manual entry is the third action-rail tile (peer of PDF
             and Photo). This whole post-action block was visual mass
             that competed with the sticky "Start analysing" CTA. */}
+            {/* Inline CTA on desktop — the sticky bar below is mobile-only,
+                so a full-width fixed bar never overlaps a short page. */}
+            <div className="hidden lg:block mt-6">
+              <Button
+                size="lg"
+                fullWidth
+                disabled={!fileName}
+                onClick={startProcessing}
+                trailing={<ArrowRight size={18} />}
+              >
+                Start analysing
+              </Button>
+            </div>
+          </div>
+        </div>
       </Container>
 
-      <StickyBottomBar>
+      <StickyBottomBar className="lg:hidden">
         <Container size="narrow">
           <Button
             size="lg"
