@@ -272,6 +272,12 @@ export default function HealthMapPage() {
           {ready.uploadedOn}
         </p>
         <StatusKey className="mt-3" />
+        {/* Screening-indicator caveat — matches the dashboard + report
+            page so the whole-body score isn't mistaken for a verdict. */}
+        <p className="mt-2.5 text-micro text-muted leading-relaxed max-w-[68ch]">
+          A screening summary of your lab values — not a diagnosis. Always
+          confirm with a doctor before acting on it.
+        </p>
       </Container>
 
       {/* Section label — grouped-list header, the iOS table idiom. */}

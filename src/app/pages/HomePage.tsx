@@ -496,6 +496,17 @@ export default function HomePage() {
           onPrimaryCTA={primaryCTA}
         />
         {ready && <StatusKey className="mt-3 px-1" />}
+        {/* Screening-indicator caveat. The hero shows a prominent score
+            ("100% on track" / "12 need care") a layperson could read as a
+            verdict — so the score surfaces (here + the Health Map) carry
+            the same "not a diagnosis" framing the report page does, kept
+            to one quiet line. */}
+        {ready && (
+          <p className="mt-2.5 px-1 text-micro text-muted leading-relaxed max-w-[68ch]">
+            A screening summary of your lab values — not a diagnosis. Always
+            confirm with a doctor before acting on it.
+          </p>
+        )}
       </Container>
 
       {/* ZONE 2a · Empty-state preview. Replaces the entire top-concern
