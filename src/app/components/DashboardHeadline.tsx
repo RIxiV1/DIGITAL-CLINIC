@@ -1,6 +1,6 @@
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useEffect, useMemo, useState } from 'react';
+import ProgressRing from './ProgressRing';
 import {
   formatDelta,
   getPreviousValue,
@@ -18,69 +18,19 @@ type Props = {
   onPrimaryCTA: () => void;
 };
 
-function gradientForHour(h: number): string {
-  if (h < 12) {
-    // Morning — warm sunrise edge
-    return 'linear-gradient(135deg, var(--color-indigo-700) 0%, var(--color-indigo-600) 45%, var(--color-gold-700) 100%)';
-  }
-  if (h < 18) {
-    // Afternoon — confident brand indigo
-    return 'linear-gradient(135deg, var(--color-indigo-700) 0%, var(--color-indigo-600) 60%, var(--color-blue-700) 100%)';
-  }
-  // Evening — cool, deep
-  return 'linear-gradient(135deg, var(--color-indigo-900) 0%, var(--color-indigo-700) 55%, var(--color-blue-800) 100%)';
-}
-
-/** ms remaining until the next time the gradient bucket actually
- *  changes. There are exactly three transitions per day — 12:00,
- *  18:00, 00:00 (midnight). Other hour boundaries are no-ops for the
- *  gradient, so we don't bother waking up to handle them. */
-function msUntilNextGradientBoundary(now: Date = new Date()): number {
-  const h = now.getHours();
-  // Pick the next bucket-changing hour: morning ends at 12, afternoon
-  // ends at 18, evening rolls over to morning at 24 (midnight).
-  const nextHour = h < 12 ? 12 : h < 18 ? 18 : 24;
-  const next = new Date(now);
-  next.setHours(nextHour, 0, 0, 0);
-  return next.getTime() - now.getTime();
-}
-
-/** Time-of-day-aware gradient. Morning warms toward gold; afternoon is
- *  pure brand indigo; evening cools toward deep blue.
- *
- *  Previously polled every 60s (≈60 wake-ups per hour, 1440 per day,
- *  for what is at most 3 actual gradient changes). Now schedules a
- *  single setTimeout to the next bucket boundary; on fire, updates
- *  state and reschedules. Three wake-ups per day max, exact
- *  transitions on the boundary. */
-function useGradientForTimeOfDay() {
-  const [hour, setHour] = useState(() => new Date().getHours());
-  useEffect(() => {
-    let timeoutId: number | undefined;
-    const scheduleNext = () => {
-      timeoutId = window.setTimeout(() => {
-        setHour(new Date().getHours());
-        // Recalculate against the wall clock on each tick so sleep-
-        // wake and DST shifts re-converge automatically — the new
-        // timeout is always anchored to the current `now`, not to
-        // the previously-fired one.
-        scheduleNext();
-      }, msUntilNextGradientBoundary());
-    };
-    scheduleNext();
-    return () => {
-      if (timeoutId !== undefined) window.clearTimeout(timeoutId);
-    };
-  }, []);
-  return useMemo(() => gradientForHour(hour), [hour]);
-}
-
 /**
  * Top-of-page headline per the dashboard brief.
  *
- * Four data-driven states:
+ * Visual treatment: a premium, dark-native elevated card — NOT the old
+ * time-of-day gradient, which rebound to a washed-out pastel banner in
+ * dark theme and read like generic SaaS chrome against the dark cards
+ * below it. The card now sits on `bg-surface` like the rest of the page,
+ * lifted by a soft status-tinted glow (the only colour, and it MEANS
+ * something — warm when markers need care, calm indigo when on track)
+ * and a slim on-track bar that echoes the Health Map's score language.
+ *
+ * Four data-driven copy states (logic unchanged):
  *   A. 2+ readings on at least one marker  → call out the biggest change
- *      (and add a positive trend if one exists)
  *   B. 1 report, some red markers          → "[N] markers need attention"
  *   C. 0 reports                           → "Upload your first report"
  *   D. all green                           → celebrate, recommend retest
@@ -94,57 +44,98 @@ export default function DashboardHeadline({
     markers,
     hasReport,
   );
-  const gradient = useGradientForTimeOfDay();
 
-  // Single-column layout. Earlier versions ran the text content beside
-  // a 160px HealthRing in `md:grid-cols-[1fr_auto]` — the ring was a
-  // visual restatement of the same status counts already in `sub`
-  // (e.g. "4 markers need attention"). Two focal candidates on one
-  // card meant neither dominated; dropping the ring gives the
-  // headline a single read axis and a cleaner figure-to-ground.
-  // Counts still appear, now as a small status-dot strip below the
-  // headline rather than a separate visual element.
+  const summary =
+    markers && markers.length > 0 ? summarizeStatuses(markers) : null;
+
+  // Glow tint follows the worst status present — the card's one colour
+  // carries meaning instead of decoration. No report yet → calm indigo.
+  const glow =
+    !summary || summary.concern > 0 || summary.critical > 0
+      ? summary && (summary.concern > 0 || summary.critical > 0)
+        ? 'bg-concern/15'
+        : 'bg-indigo-500/15'
+      : summary.attention > 0
+        ? 'bg-attention/15'
+        : 'bg-good/15';
+
+  const onTrackPct =
+    summary && summary.total > 0
+      ? Math.round((summary.good / summary.total) * 100)
+      : null;
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-[24px] text-white p-6 md:p-8 shadow-pop"
-      style={{ background: gradient }}
+      className="relative overflow-hidden rounded-[28px] bg-surface border border-line/70 p-6 md:p-8 shadow-pop"
     >
-      <div className="relative">
-        <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-eyebrow font-bold text-indigo-100">
-          <Sparkles size={11} />
-          {eyebrow}
+      {/* Soft status-tinted glow — the card's only colour, and it means
+          something. Sits behind the content, never intercepts taps. */}
+      <div
+        aria-hidden
+        className={`pointer-events-none absolute -top-28 -right-20 w-80 h-80 rounded-full blur-3xl ${glow}`}
+      />
+
+      <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
+        {/* Text column — the narrative. */}
+        <div className="order-2 md:order-1 flex-1 min-w-0">
+          <div className="inline-flex items-center gap-1.5 text-micro uppercase tracking-eyebrow font-bold text-indigo-600">
+            <Sparkles size={11} />
+            {eyebrow}
+          </div>
+          <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.12] text-balance text-ink">
+            {headline}
+          </h1>
+          {qualifier && (
+            <p className="mt-2 text-caption lg:text-body-sm text-ink-soft leading-relaxed max-w-[60ch]">
+              {qualifier}
+            </p>
+          )}
+          {sub && (
+            <p className="mt-1 text-caption lg:text-body-sm text-muted leading-relaxed max-w-[60ch]">
+              {sub}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={onPrimaryCTA}
+            className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-caption font-semibold shadow-soft transition-colors whitespace-nowrap"
+          >
+            {ctaLabel}
+            <ArrowRight size={14} />
+          </button>
         </div>
-        <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.15] text-balance">
-          {headline}
-        </h1>
-        {/* qualifier + sub stack as two short lines instead of one
-            paragraph. The previous single `sub` combined the positive
-            qualifier ("Vitamin D is up — that's working.") with the
-            count clause ("4 markers still need attention.") in one
-            string, producing a 40-word two-clause sub that competed
-            with the headline. Splitting puts each clause on its own
-            visual row — both small (caption-sized), both subordinate. */}
-        {qualifier && (
-          <p className="mt-2 text-caption lg:text-body-sm text-indigo-100 leading-relaxed max-w-[60ch]">
-            {qualifier}
-          </p>
+
+        {/* Score ring — the visual anchor. Same "on-track" language as the
+            Health Map. On mobile it leads (order-1) as the hero element;
+            on desktop it anchors the right. */}
+        {onTrackPct !== null && (
+          <div className="order-1 md:order-2 shrink-0 flex flex-col items-start md:items-center gap-2 self-start md:self-center">
+            <ProgressRing pct={onTrackPct} size={120} stroke={10}>
+              <div className="text-center leading-none">
+                <span className="font-display text-display-md text-ink">
+                  {onTrackPct}
+                </span>
+                <span className="font-display text-body-sm text-muted align-top">
+                  %
+                </span>
+                <div className="text-micro uppercase tracking-eyebrow font-bold text-muted mt-1.5">
+                  on track
+                </div>
+              </div>
+            </ProgressRing>
+            {summary && (
+              <div className="text-caption text-muted">
+                <span className="font-semibold text-ink-soft">
+                  {summary.good}
+                </span>{' '}
+                of {summary.total} markers
+              </div>
+            )}
+          </div>
         )}
-        {sub && (
-          <p className="mt-1 text-caption lg:text-body-sm text-indigo-100/80 leading-relaxed max-w-[60ch]">
-            {sub}
-          </p>
-        )}
-        <button
-          type="button"
-          onClick={onPrimaryCTA}
-          className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-caption font-semibold shadow-soft transition-colors whitespace-nowrap"
-        >
-          {ctaLabel}
-          <ArrowRight size={14} />
-        </button>
       </div>
     </motion.div>
   );
@@ -152,9 +143,7 @@ export default function DashboardHeadline({
 
 /** Two short lines beat one long sentence under a glance-pace
  *  headline. `qualifier` carries the optional positive-trend clause
- *  (state A only); `sub` carries the count or tagline. Both render at
- *  caption size below the display-md headline, so neither competes
- *  with the headline for focal weight. */
+ *  (state A only); `sub` carries the count or tagline. */
 type Copy = {
   eyebrow: string;
   headline: string;
@@ -220,9 +209,6 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
       return {
         eyebrow: `Since your last test`,
         headline: `Your ${newsworthy.name} dropped ${formatAbsDelta(newsworthy)} since ${formatRoughDate(priorReadingDate)}.`,
-        // Optional positive-trend qualifier on its own line. When
-        // there's no improving marker to call out, this stays
-        // undefined and the count line carries the sub on its own.
         qualifier:
           positive && positiveDelta
             ? `${positive.name} is ${positiveDelta.startsWith('-') ? 'down' : 'up'} ${stripSign(positiveDelta)} ${positive.unit} — that's working.`

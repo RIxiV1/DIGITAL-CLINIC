@@ -23,6 +23,7 @@ const items: Item[] = [
 function navIdFor(page: Page): ItemId {
   switch (page.type) {
     case 'home':
+    case 'healthMap':
     case 'upload':
     case 'processing':
     case 'manualEntry':

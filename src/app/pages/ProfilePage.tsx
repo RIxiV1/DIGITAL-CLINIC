@@ -131,9 +131,9 @@ export default function ProfilePage() {
             >
               <Card
                 raised
-                className="!bg-indigo-600 border-indigo-600 text-on-primary !p-6 relative overflow-hidden"
+                className="bg-surface border border-line/70 text-ink !p-6 relative overflow-hidden"
               >
-                <div className="absolute -top-14 -right-14 w-44 h-44 rounded-full bg-indigo-400/25 blur-3xl pointer-events-none" />
+                <div className="absolute -top-14 -right-14 w-44 h-44 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
                 <div className="absolute -bottom-20 -left-10 w-44 h-44 rounded-full bg-gold-500/10 blur-3xl pointer-events-none" />
 
                 <div className="relative">
@@ -150,7 +150,7 @@ export default function ProfilePage() {
                       <div className="font-display text-display-md leading-tight">
                         Your account
                       </div>
-                      <div className="text-caption text-indigo-100 mt-0.5">
+                      <div className="text-caption text-muted mt-0.5">
                         Anonymous · stored in this browser
                       </div>
                     </div>
@@ -158,7 +158,7 @@ export default function ProfilePage() {
                       onClick={() => navigate({ type: 'quiz' })}
                       aria-label="Edit profile via quiz"
                       title="Re-do the quiz to update"
-                      className="grid place-items-center w-12 h-12 rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors shrink-0"
+                      className="grid place-items-center w-12 h-12 rounded-full bg-canvas/60 hover:bg-canvas text-ink-soft hover:text-ink transition-colors shrink-0"
                     >
                       <Pencil size={16} />
                     </button>
@@ -521,11 +521,11 @@ export default function ProfilePage() {
 
 function ProfileStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-[14px] bg-indigo-700/50 p-3 text-center">
-      <div className="font-display text-body leading-tight text-white truncate">
+    <div className="rounded-[14px] bg-canvas/60 border border-line/60 p-3 text-center">
+      <div className="font-display text-body leading-tight text-ink truncate">
         {value}
       </div>
-      <div className="text-micro uppercase tracking-label font-bold text-indigo-100 mt-1.5">
+      <div className="text-micro uppercase tracking-label font-bold text-muted mt-1.5">
         {label}
       </div>
     </div>

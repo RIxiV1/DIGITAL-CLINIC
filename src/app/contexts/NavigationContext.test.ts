@@ -13,6 +13,7 @@ const ALL_PAGES: Page[] = [
   { type: 'quiz' },
   { type: 'recommendedTests' },
   { type: 'home' },
+  { type: 'healthMap' },
   { type: 'upload' },
   { type: 'processing' },
   { type: 'manualEntry' },
@@ -25,6 +26,7 @@ describe('pageToPath', () => {
   it('maps each page to its clean path', () => {
     expect(pageToPath({ type: 'landing' })).toBe('/');
     expect(pageToPath({ type: 'home' })).toBe('/dashboard');
+    expect(pageToPath({ type: 'healthMap' })).toBe('/health-map');
     expect(pageToPath({ type: 'quiz' })).toBe('/quiz');
     expect(pageToPath({ type: 'recommendedTests' })).toBe('/tests');
     expect(pageToPath({ type: 'upload' })).toBe('/upload');
@@ -50,6 +52,7 @@ describe('pathToPage', () => {
   it('parses each known path', () => {
     expect(pathToPage('/')).toEqual({ type: 'landing' });
     expect(pathToPage('/dashboard')).toEqual({ type: 'home' });
+    expect(pathToPage('/health-map')).toEqual({ type: 'healthMap' });
     expect(pathToPage('/quiz')).toEqual({ type: 'quiz' });
     expect(pathToPage('/tests')).toEqual({ type: 'recommendedTests' });
     expect(pathToPage('/upload')).toEqual({ type: 'upload' });

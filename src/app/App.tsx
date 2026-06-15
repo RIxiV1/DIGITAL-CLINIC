@@ -25,6 +25,7 @@ const RecommendedTestsPage = lazyWithReload(
   () => import('./pages/RecommendedTestsPage'),
 );
 const HomePage = lazyWithReload(() => import('./pages/HomePage'));
+const HealthMapPage = lazyWithReload(() => import('./pages/HealthMapPage'));
 const UploadPage = lazyWithReload(() => import('./pages/UploadPage'));
 const ProcessingPage = lazyWithReload(() => import('./pages/ProcessingPage'));
 const ManualEntryPage = lazyWithReload(() => import('./pages/ManualEntryPage'));
@@ -46,6 +47,7 @@ function pageKey(p: Page): string {
     case 'quiz':
     case 'recommendedTests':
     case 'home':
+    case 'healthMap':
     case 'upload':
     case 'processing':
     case 'manualEntry':
@@ -88,6 +90,9 @@ function PageHost() {
       break;
     case 'home':
       node = <HomePage />;
+      break;
+    case 'healthMap':
+      node = <HealthMapPage />;
       break;
     case 'upload':
       node = <UploadPage />;

@@ -59,6 +59,8 @@ export function pageToPath(page: Page): string {
       return '/tests';
     case 'home':
       return '/dashboard';
+    case 'healthMap':
+      return '/health-map';
     case 'upload':
       return '/upload';
     case 'processing':
@@ -105,6 +107,8 @@ export function pathToPage(pathname: string): Page {
       return { type: 'recommendedTests' };
     case '/dashboard':
       return { type: 'home' };
+    case '/health-map':
+      return { type: 'healthMap' };
     case '/upload':
       return { type: 'upload' };
     case '/processing':

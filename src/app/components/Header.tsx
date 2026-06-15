@@ -29,6 +29,7 @@ const NAV_SLOTS: NavSlot[] = [
 function activeNavId(page: Page): NavSlot['id'] {
   switch (page.type) {
     case 'home':
+    case 'healthMap':
     case 'upload':
     case 'processing':
     case 'manualEntry':

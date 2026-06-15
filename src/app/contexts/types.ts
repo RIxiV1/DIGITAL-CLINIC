@@ -9,6 +9,7 @@ export type Page =
   | { type: 'quiz' }
   | { type: 'recommendedTests' }
   | { type: 'home' }
+  | { type: 'healthMap' }
   | { type: 'upload' }
   | { type: 'processing' }
   | { type: 'manualEntry' }
