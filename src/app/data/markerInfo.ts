@@ -26,7 +26,7 @@ const markerInfo: Record<string, LearnMore> = {
     importance:
       'Drives energy, mood, libido, muscle, bone density, fat distribution, and sharp thinking. When it’s low, you usually feel it across all of these at once — and most men don’t connect the dots until they see a number.',
     hormonalImpact:
-      'This is the end product of your entire HPG axis: brain (GnRH) → pituitary (LH) → testes (testosterone). A single low Total T number can mean the testes are underperforming, the pituitary signal is weak, or something downstream — sleep, stress, obesity, alcohol — is suppressing the whole loop.',
+      'This is the end product of your entire HPG axis: brain (GnRH) → pituitary (LH) → testes (testosterone). A single low Total T number can mean the testes are underperforming, the pituitary signal is weak, or something downstream — sleep, stress, obesity, alcohol — is suppressing the whole loop. One reading is never a diagnosis on its own: clinical guidelines (AUA/EAU) call for a repeat morning draw plus matching symptoms before low testosterone is confirmed.',
     improve: [
       'Sleep 7–8 hours — most testosterone is produced during deep sleep',
       'Lift heavy 2–3× a week — compound lifts (squat, deadlift, press) move T the most',
