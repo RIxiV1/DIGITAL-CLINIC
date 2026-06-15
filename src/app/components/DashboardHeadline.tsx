@@ -112,7 +112,7 @@ export default function DashboardHeadline({
             Health Map. On mobile it leads (order-1) as the hero element;
             on desktop it anchors the right. */}
         {onTrackPct !== null && (
-          <div className="order-1 md:order-2 shrink-0 flex flex-col items-center gap-2 self-center">
+          <div className="order-1 md:order-2 shrink-0 flex flex-col items-start md:items-center gap-2 self-start md:self-center">
             <ProgressRing pct={onTrackPct} size={120} stroke={10}>
               <div className="text-center leading-none">
                 <span className="font-display text-display-md text-ink">
