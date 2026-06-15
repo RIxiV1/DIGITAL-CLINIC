@@ -91,8 +91,8 @@ export function summaryText(r: SystemRollup): string {
   if (r.critical > 0) return 'See a doctor';
   if (r.concern > 0)
     return `${r.concern} ${r.concern === 1 ? 'needs' : 'need'} care`;
-  if (r.attention > 0) return `${r.attention} borderline`;
-  return 'On track';
+  if (r.attention > 0) return `${r.attention} to watch`;
+  return 'Healthy';
 }
 
 /** Worst-first ordering so the eye lands on what matters. */
@@ -157,7 +157,7 @@ export default function HealthMapPage() {
         ? 'A handful of things to work on'
         : summary.attention > 0
           ? 'Looking good — a few to keep an eye on'
-          : 'Everything’s on track';
+          : 'Everything’s healthy';
 
   /* ---- Empty state: no parsed report yet. ---- */
   if (!ready || biomarkers.length === 0) {
@@ -177,7 +177,7 @@ export default function HealthMapPage() {
               <p className="text-body-sm text-ink-soft max-w-sm">
                 Upload a blood test and we’ll lay out every system — hormones,
                 heart, thyroid, and the rest — on one calm screen, scored by
-                what’s on track and tracking how it moves over time.
+                what’s healthy and tracking how it moves over time.
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">

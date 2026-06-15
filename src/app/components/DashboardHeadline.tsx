@@ -201,7 +201,7 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
   // like a smug fitness app.
   if (summary.concern === 0 && summary.attention === 0) {
     return {
-      eyebrow: 'On track',
+      eyebrow: 'All healthy',
       headline: 'Everything’s in range. Whatever you’re doing — keep going.',
       sub: 'Re-test in 6 months to confirm the trend holds.',
       ctaLabel: 'See all markers',
@@ -266,7 +266,7 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
       summary.concern > 0
         ? `${summary.concern} marker${summary.concern === 1 ? '' : 's'} need${summary.concern === 1 ? 's' : ''} attention — here's where to start.`
         : `${flagged} markers worth a closer look.`,
-    sub: `${summary.good} of ${summary.total} markers on track. ${summary.attention > 0 ? `${summary.attention} borderline · ` : ''}${summary.concern > 0 ? `${summary.concern} need${summary.concern === 1 ? 's' : ''} care.` : ''}`,
+    sub: `${summary.good} of ${summary.total} markers healthy. ${summary.attention > 0 ? `${summary.attention} to watch · ` : ''}${summary.concern > 0 ? `${summary.concern} need${summary.concern === 1 ? 's' : ''} care.` : ''}`,
     ctaLabel: 'See all markers',
   };
 }

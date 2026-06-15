@@ -64,8 +64,8 @@ describe('summaryText', () => {
     );
   });
 
-  it('falls back to borderline, then on track', () => {
-    expect(summaryText(rollup([marker('attention')]))).toBe('1 borderline');
-    expect(summaryText(rollup([marker('good')]))).toBe('On track');
+  it('falls back to "to watch", then "Healthy"', () => {
+    expect(summaryText(rollup([marker('attention')]))).toBe('1 to watch');
+    expect(summaryText(rollup([marker('good')]))).toBe('Healthy');
   });
 });

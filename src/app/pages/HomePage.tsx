@@ -647,8 +647,8 @@ export default function HomePage() {
                 p.concern > 0
                   ? `${p.concern} ${p.concern === 1 ? 'needs' : 'need'} care`
                   : p.attention > 0
-                    ? `${p.attention} borderline`
-                    : 'On track';
+                    ? `${p.attention} to watch`
+                    : 'Healthy';
               const statusToneCls =
                 p.concern > 0
                   ? 'text-concern'
@@ -988,8 +988,8 @@ function AllMarkersPane({
       ) : (
         <Card className="mt-4 text-center !py-8">
           <div className="text-caption text-ink-soft leading-relaxed">
-            Everything is on track. Switch the filter to "All markers" to browse
-            everything in this report.
+            Everything looks healthy. Switch the filter to "All markers" to
+            browse everything in this report.
           </div>
         </Card>
       )}

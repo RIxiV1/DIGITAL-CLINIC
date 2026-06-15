@@ -546,7 +546,7 @@ export function statusColor(s: BiomarkerStatus) {
         textOnSurface: 'text-good-ink',
         bg: 'bg-good-soft',
         dot: 'bg-good',
-        label: 'ON TRACK',
+        label: 'HEALTHY',
       };
     case 'attention':
       return {
@@ -561,7 +561,7 @@ export function statusColor(s: BiomarkerStatus) {
         // position relative to the range instead of issuing a triage
         // verb. The filter-pill label uses the same "Borderline" in
         // title case (see STATUS_FILTER_OPTIONS).
-        label: 'BORDERLINE',
+        label: 'KEEP AN EYE',
       };
     case 'concern':
       return {
@@ -610,22 +610,21 @@ export type StatusFilterId = 'all' | BiomarkerStatus;
  *  sites that used to maintain three identical inline arrays, with
  *  predictable drift when one was updated and the others weren't.
  *
- *  Vocabulary is deliberately softer than the badge labels above. A
- *  filter pill is a chooser, not a diagnostic — "Worth a check-in" /
- *  "Borderline" frame the same statuses as action categories instead
- *  of triage tags, which read better to anxious users browsing their
- *  own data. The badge labels (`statusColor().label`) keep their
- *  clinical caps treatment because that's where the brain expects a
- *  compact status signal. */
+ *  Vocabulary is unified with the status badges (`statusColor().label`)
+ *  and the StatusKey legend — one set of words per status across the
+ *  whole app (Healthy / Keep an eye / Needs care / See a doctor), so a
+ *  reader never has to map two phrases ("On track" vs "In a healthy
+ *  range") onto the same colour. Pills are sentence-case; badges are the
+ *  same words in compact caps. */
 export const STATUS_FILTER_OPTIONS: ReadonlyArray<{
   id: StatusFilterId;
   label: string;
 }> = [
   { id: 'all', label: 'All markers' },
   { id: 'critical', label: 'See a doctor' },
-  { id: 'concern', label: 'Worth a check-in' },
-  { id: 'attention', label: 'Borderline' },
-  { id: 'good', label: 'On track' },
+  { id: 'concern', label: 'Needs care' },
+  { id: 'attention', label: 'Keep an eye' },
+  { id: 'good', label: 'Healthy' },
 ];
 
 export function biomarkersByCategory(markers: Biomarker[] = sampleBiomarkers) {

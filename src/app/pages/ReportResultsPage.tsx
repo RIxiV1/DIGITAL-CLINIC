@@ -235,7 +235,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                         aria-hidden
                       />
                       <span className="tabular-nums">{summary.attention}</span>
-                      <span>borderline</span>
+                      <span>to watch</span>
                     </span>
                   )}
                 </div>
@@ -464,10 +464,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                                       aria-hidden
                                     />
                                     {counts.attention}
-                                    <span className="sr-only">
-                                      {' '}
-                                      need attention
-                                    </span>
+                                    <span className="sr-only"> to watch</span>
                                   </span>
                                 )}
                                 {counts.good > 0 && (
@@ -477,7 +474,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                                       aria-hidden
                                     />
                                     {counts.good}
-                                    <span className="sr-only"> on track</span>
+                                    <span className="sr-only"> healthy</span>
                                   </span>
                                 )}
                               </div>

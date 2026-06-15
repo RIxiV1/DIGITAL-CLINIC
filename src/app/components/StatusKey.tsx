@@ -7,9 +7,9 @@
  */
 export default function StatusKey({ className = '' }: { className?: string }) {
   const items = [
-    { dot: 'bg-good', label: 'In a healthy range' },
-    { dot: 'bg-attention', label: 'Keep an eye on it' },
-    { dot: 'bg-concern', label: 'Worth a doctor’s look' },
+    { dot: 'bg-good', label: 'Healthy' },
+    { dot: 'bg-attention', label: 'Keep an eye' },
+    { dot: 'bg-concern', label: 'Needs care' },
   ];
   return (
     <div

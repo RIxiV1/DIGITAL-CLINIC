@@ -1298,11 +1298,11 @@ function ConfirmExtractedValuesView({
                 <SummaryChip
                   tone="attention"
                   count={counts.attention}
-                  label="borderline"
+                  label="to watch"
                 />
               )}
               {counts.good > 0 && (
-                <SummaryChip tone="good" count={counts.good} label="on track" />
+                <SummaryChip tone="good" count={counts.good} label="healthy" />
               )}
             </div>
           )}
