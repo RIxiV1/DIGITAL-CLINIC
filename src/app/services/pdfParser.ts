@@ -812,7 +812,7 @@ function unitMultiplier(unit: string | null | undefined): number {
   // typesettings — plain `10^6`, the superscript `10⁶`, the `E`
   // notation `10E6`, and `x10^6` / `x 10^6` with optional space.
   if (
-    /(^|[^a-z])(million|mill|mio)([^a-z]|$)/.test(u) ||
+    /(^|[^a-z])(millions|million|mill|mio)([^a-z]|$)/.test(u) ||
     /\b10\s*\^?\s*6\b/.test(u) ||
     /x\s*10\s*\^?\s*6/.test(u) ||
     /10\s*e\s*6\b/.test(u) ||
@@ -823,7 +823,7 @@ function unitMultiplier(unit: string | null | undefined): number {
   // Thousand = 1e3. Variants: thou, thousand, 10^3 / 10³ / 10E3 /
   // x10^3 with optional spacing.
   if (
-    /(^|[^a-z])(thou|thousand)([^a-z]|$)/.test(u) ||
+    /(^|[^a-z])(thousands|thousand|thou)([^a-z]|$)/.test(u) ||
     /\b10\s*\^?\s*3\b/.test(u) ||
     /x\s*10\s*\^?\s*3/.test(u) ||
     /10\s*e\s*3\b/.test(u) ||

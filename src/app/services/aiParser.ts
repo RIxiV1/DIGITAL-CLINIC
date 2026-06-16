@@ -188,7 +188,7 @@ export function unitMultiplier(unit: string | null | undefined): number {
   const u = unit.toLowerCase().trim();
   if (/(^|[^a-z])(lakh|lac|lakhs)([^a-z]|$)/.test(u)) return 1e5;
   if (
-    /(^|[^a-z])(million|mill)([^a-z]|$)/.test(u) ||
+    /(^|[^a-z])(millions|million|mill)([^a-z]|$)/.test(u) ||
     /\b10\^?6\b/.test(u) ||
     /x10\^?6/.test(u) ||
     /10⁶/.test(u)
@@ -196,7 +196,7 @@ export function unitMultiplier(unit: string | null | undefined): number {
     return 1e6;
   }
   if (
-    /(^|[^a-z])(thou|thousand)([^a-z]|$)/.test(u) ||
+    /(^|[^a-z])(thousands|thousand|thou)([^a-z]|$)/.test(u) ||
     /\b10\^?3\b/.test(u) ||
     /x10\^?3/.test(u) ||
     /10³/.test(u)
