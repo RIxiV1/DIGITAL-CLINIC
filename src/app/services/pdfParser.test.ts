@@ -564,6 +564,34 @@ describe('extractBiomarkersFromText — calculated free-T auto-derivation', () =
   });
 });
 
+describe('extractBiomarkersFromText — full lipid panel (real report)', () => {
+  // Regression for a real Indian lipid profile (Labsmart sample) that
+  // surfaced VLDL was missing from the catalog — a full panel silently
+  // dropped that row. Rows mirror the report's "TEST VALUE UNIT
+  // REFERENCE" layout. (Ratios + a unit-less Non-HDL row are out of
+  // scope here; this guards that the five core lipids all extract.)
+  const lipidPanel = [
+    'TOTAL CHOLESTEROL 180 mg/dl 125 - 200',
+    'TRIGLYCERIDES 172 mg/dl 25 - 200',
+    'HDL CHOLESTEROL 55 mg/dl 35 - 80',
+    'LDL CHOLESTEROL 90.60 mg/dl 85 - 130',
+    'VLDL CHOLESTEROL 34.40 mg/dl 5 - 40',
+  ].join('\n');
+
+  it('extracts all five core lipids including VLDL', () => {
+    const ids = new Set(extractBiomarkersFromText(lipidPanel).map((m) => m.id));
+    for (const id of ['total-chol', 'ldl', 'hdl', 'tg', 'vldl']) {
+      expect(ids.has(id)).toBe(true);
+    }
+  });
+
+  it("captures VLDL's value and does not mis-bind it to the LDL row", () => {
+    const result = extractBiomarkersFromText(lipidPanel);
+    expect(result.find((m) => m.id === 'vldl')?.value).toBe(34.4);
+    expect(result.find((m) => m.id === 'ldl')?.value).toBe(90.6);
+  });
+});
+
 describe('statusForValue — critical tier', () => {
   it('flags platelets <50,000 as critical (bleeding-risk threshold)', () => {
     const text = 'Platelet Count 30000 /cumm';
