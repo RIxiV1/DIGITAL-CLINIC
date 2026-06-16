@@ -1244,6 +1244,75 @@ export const FREE_T_CALC_TEMPLATE: BiomarkerTemplate = {
 };
 
 /**
+ * Append computed markers derived from extracted ones, when the inputs
+ * are present and the derived marker wasn't directly reported:
+ *
+ *   - HOMA-IR = (fasting glucose mg/dL × fasting insulin µIU/mL) / 405.
+ *     Many Indian Wellness panels print both glucose + insulin but stop
+ *     short of computing HOMA-IR.
+ *   - Free Testosterone (calculated) via the Vermeulen equation from
+ *     Total T + SHBG (+ albumin, defaulted when absent) — the Endocrine
+ *     Society's preferred free-T estimate.
+ *
+ * Each derivation is independent and best-effort: a missing input or a
+ * non-physical result skips that one marker, never the other and never
+ * the input set. Pure — doesn't mutate the input; returns it with any
+ * derived markers appended.
+ *
+ * Single source of truth for derivation: ALL ingestion paths (PDF text,
+ * Tesseract OCR, Gemini vision, and manual entry) run their final marker
+ * list through this, so the dashboard is consistent regardless of how the
+ * values arrived.
+ */
+export function deriveComputedMarkers(extracted: Biomarker[]): Biomarker[] {
+  const derived: Biomarker[] = [];
+
+  // HOMA-IR — only when the lab didn't already print it.
+  if (!extracted.some((m) => m.id === 'homa-ir')) {
+    const glucose = extracted.find((m) => m.id === 'glucose');
+    const insulin = extracted.find((m) => m.id === 'insulin');
+    const homaTemplate = biomarkerCatalog.find((t) => t.id === 'homa-ir');
+    // Defensive zero-guard: a 0 value (mis-extraction) yields 0/NaN —
+    // skip rather than surface a spurious "perfect insulin sensitivity".
+    if (
+      glucose &&
+      insulin &&
+      homaTemplate &&
+      glucose.value > 0 &&
+      insulin.value > 0
+    ) {
+      const homaIr = parseFloat(
+        ((glucose.value * insulin.value) / 405).toPrecision(4),
+      );
+      if (Number.isFinite(homaIr)) {
+        derived.push(markerFromTemplate(homaTemplate, homaIr));
+      }
+    }
+  }
+
+  // Free Testosterone (calculated) — Vermeulen, from Total T + SHBG.
+  // Albumin is optional: vermeulenFreeTestosterone() falls back to the
+  // 4.3 g/dL reference when the report doesn't include it.
+  if (!extracted.some((m) => m.id === FREE_T_CALC_TEMPLATE.id)) {
+    const totalT = extracted.find((m) => m.id === 'testosterone');
+    const shbg = extracted.find((m) => m.id === 'shbg');
+    if (totalT && shbg) {
+      const albumin = extracted.find((m) => m.id === 'albumin');
+      const freeT = vermeulenFreeTestosterone(
+        totalT.value,
+        shbg.value,
+        albumin && albumin.value > 0 ? albumin.value : undefined,
+      );
+      if (freeT !== null) {
+        derived.push(markerFromTemplate(FREE_T_CALC_TEMPLATE, freeT));
+      }
+    }
+  }
+
+  return derived.length ? [...extracted, ...derived] : extracted;
+}
+
+/**
  * The catalog itself. Order matters only for tie-breaking: when a PDF
  * line could match multiple templates (e.g. "Testosterone" matches both
  * Total T and Free T), the parser picks the first hit.

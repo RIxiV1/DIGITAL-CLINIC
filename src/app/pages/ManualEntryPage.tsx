@@ -10,6 +10,7 @@ import { useNavigation, useReports } from '../AppContext';
 import {
   biomarkerCatalog,
   categories as biomarkerCategories,
+  deriveComputedMarkers,
   markerFromTemplate,
   type Biomarker,
   type BiomarkerCategoryId,
@@ -186,7 +187,12 @@ export default function ManualEntryPage() {
       uploadedAt: now.toISOString().slice(0, 10),
       status: 'ready',
       badge: 'analyzed',
-      biomarkers: validBiomarkers,
+      // Run through the shared derivation step so a manually-entered
+      // Total T + SHBG (or glucose + insulin) yields calculated free-T /
+      // HOMA-IR, exactly like the PDF and AI paths. Derived markers are
+      // appended here (not in validBiomarkers) so the entry-count UI keeps
+      // reflecting what the user actually typed.
+      biomarkers: deriveComputedMarkers(validBiomarkers),
     };
     addReport(report);
     replace({ type: 'results', reportId: report.id });
