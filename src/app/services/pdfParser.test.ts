@@ -521,6 +521,49 @@ describe('extractBiomarkersFromText — HOMA-IR auto-derivation', () => {
   });
 });
 
+describe('extractBiomarkersFromText — calculated free-T auto-derivation', () => {
+  // Most Indian panels print Total T + SHBG but never the calculated
+  // free fraction (the Endocrine Society's preferred free-T estimate).
+  // The parser derives it via the Vermeulen equation, as a SEPARATE
+  // marker from the direct-immunoassay free-t (different method + scale).
+
+  it('derives calculated free T from Total T + SHBG (albumin defaulted)', () => {
+    const text = 'Total Testosterone 600 ng/dL\nSHBG 30 nmol/L';
+    const result = extractBiomarkersFromText(text);
+    const freeT = result.find((m) => m.id === 'free-t-calc');
+    expect(freeT).toBeDefined();
+    expect(freeT?.value).toBeCloseTo(13.41, 1); // ~2.2% free
+    expect(freeT?.unit).toBe('ng/dL');
+    expect(freeT?.status).toBe('good'); // inside 6.4–25
+  });
+
+  it('grades a low calculated free T as concern at the total-T threshold', () => {
+    const text = 'Total Testosterone 300 ng/dL\nSHBG 30 nmol/L';
+    const result = extractBiomarkersFromText(text);
+    const freeT = result.find((m) => m.id === 'free-t-calc');
+    expect(freeT?.value).toBeCloseTo(6.12, 1);
+    expect(freeT?.status).toBe('concern'); // below 6.4 low cutoff
+  });
+
+  it('uses the report’s albumin when present (lower albumin ≠ default)', () => {
+    const withAlb = extractBiomarkersFromText(
+      'Total Testosterone 600 ng/dL\nSHBG 30 nmol/L\nAlbumin 5.0 g/dL',
+    ).find((m) => m.id === 'free-t-calc');
+    const defaulted = extractBiomarkersFromText(
+      'Total Testosterone 600 ng/dL\nSHBG 30 nmol/L',
+    ).find((m) => m.id === 'free-t-calc');
+    expect(withAlb?.value).toBeDefined();
+    // Higher albumin binds more T → lower free T than the 4.3 default.
+    expect(withAlb!.value).toBeLessThan(defaulted!.value);
+  });
+
+  it('does NOT derive calculated free T when SHBG is missing', () => {
+    const text = 'Total Testosterone 600 ng/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'free-t-calc')).toBeUndefined();
+  });
+});
+
 describe('statusForValue — critical tier', () => {
   it('flags platelets <50,000 as critical (bleeding-risk threshold)', () => {
     const text = 'Platelet Count 30000 /cumm';

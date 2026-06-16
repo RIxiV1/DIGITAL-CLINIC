@@ -22,6 +22,8 @@ import {
   pickHeadlineMarker,
   statusForValue,
   summarizeStatuses,
+  vermeulenFreeTestosterone,
+  FREE_T_CALC_TEMPLATE,
   type Biomarker,
   type BiomarkerCategoryId,
 } from './biomarkers';
@@ -591,5 +593,55 @@ describe('getTrajectory', () => {
     expect(t?.movement).toBe('toward');
     expect(t?.monthsToTarget).toBeNull();
     expect(MAX_PROJECTION_MONTHS).toBe(24);
+  });
+});
+
+describe('vermeulenFreeTestosterone — calculated free T', () => {
+  // Reference vectors cross-checked against the Vermeulen equilibrium
+  // equation (JCEM 1999) and the published ISSAM free-T calculator.
+  // Albumin defaults to Vermeulen's 4.3 g/dL reference.
+
+  it('matches the reference vector for a eugonadal man', () => {
+    // Total T 600 ng/dL, SHBG 30 nmol/L → ~13.4 ng/dL free
+    // (free fraction ~2.2%, textbook for a healthy man).
+    const ft = vermeulenFreeTestosterone(600, 30);
+    expect(ft).not.toBeNull();
+    expect(ft!).toBeCloseTo(13.41, 1);
+    // Free fraction is the implementation-independent sanity check:
+    // healthy men sit ~1.5–3%.
+    expect(ft! / 600).toBeGreaterThan(0.015);
+    expect(ft! / 600).toBeLessThan(0.03);
+  });
+
+  it('lands near the Endocrine Society free-T low cutoff at the total-T threshold', () => {
+    // A man at the Total-T hypogonadism cutoff (300 ng/dL) computes to a
+    // calculated free T (~6.1 ng/dL) right at the free-T low limit
+    // (~6.4 ng/dL) — the two thresholds are *designed* to correspond, so
+    // this is a strong real-world cross-check, not a coincidence.
+    const ft = vermeulenFreeTestosterone(300, 30);
+    expect(ft!).toBeCloseTo(6.12, 1);
+    expect(ft!).toBeLessThan(FREE_T_CALC_TEMPLATE.min); // grades 'concern'
+  });
+
+  it('falls monotonically as SHBG rises (more binding → less free T)', () => {
+    const low = vermeulenFreeTestosterone(600, 15)!;
+    const mid = vermeulenFreeTestosterone(600, 30)!;
+    const high = vermeulenFreeTestosterone(600, 60)!;
+    expect(low).toBeGreaterThan(mid);
+    expect(mid).toBeGreaterThan(high);
+  });
+
+  it('defaults albumin to 4.3 g/dL when omitted', () => {
+    expect(vermeulenFreeTestosterone(600, 30)).toBe(
+      vermeulenFreeTestosterone(600, 30, 4.3),
+    );
+  });
+
+  it('returns null for non-physical inputs rather than a misleading number', () => {
+    expect(vermeulenFreeTestosterone(0, 30)).toBeNull();
+    expect(vermeulenFreeTestosterone(600, 0)).toBeNull();
+    expect(vermeulenFreeTestosterone(-5, 30)).toBeNull();
+    expect(vermeulenFreeTestosterone(600, 30, 0)).toBeNull();
+    expect(vermeulenFreeTestosterone(NaN, 30)).toBeNull();
   });
 });

@@ -32,6 +32,8 @@
 import {
   biomarkerCatalog,
   markerFromTemplate,
+  vermeulenFreeTestosterone,
+  FREE_T_CALC_TEMPLATE,
   type Biomarker,
   type BiomarkerTemplate,
 } from '../data/biomarkers';
@@ -1104,42 +1106,73 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
 }
 
 /**
- * Compute derived markers from extracted ones when both inputs are
+ * Compute derived markers from extracted ones when the inputs are
  * present and the derived marker wasn't directly reported.
  *
  * Currently:
  *   - HOMA-IR = (fasting glucose mg/dL × fasting insulin µIU/mL) / 405.
- *     Many Indian Wellness panels print both glucose + insulin but
- *     stop short of computing HOMA-IR. We add it here so the user
- *     sees the insulin-resistance number on the dashboard without
- *     needing the lab to print it.
+ *     Many Indian Wellness panels print both glucose + insulin but stop
+ *     short of computing HOMA-IR.
+ *   - Free Testosterone (calculated) via the Vermeulen equation from
+ *     Total T + SHBG (+ albumin, defaulted when absent). The Endocrine
+ *     Society's preferred free-T estimate; most Indian panels print
+ *     Total T + SHBG but never the calculated free fraction.
  *
- * Pure function — doesn't mutate the input array. Returns the input
- * with derived markers appended at the end. Skips derivation if the
- * source markers' status is 'critical' (the computed number would
- * compound the alarm; the user should focus on the underlying value).
+ * Each derivation is independent and best-effort: a missing input or a
+ * non-physical result simply skips that one marker, never the other and
+ * never the extracted set. Pure function — doesn't mutate the input;
+ * returns the input with any derived markers appended.
+ *
+ * Note: this runs only on the text-extraction path (the AI-vision path
+ * maps + returns directly), matching the existing HOMA-IR behavior. A
+ * future unification would route both paths through one derive call.
  */
 function deriveComputedMarkers(extracted: Biomarker[]): Biomarker[] {
-  const hasHomaIr = extracted.some((m) => m.id === 'homa-ir');
-  if (hasHomaIr) return extracted;
+  const derived: Biomarker[] = [];
 
-  const glucose = extracted.find((m) => m.id === 'glucose');
-  const insulin = extracted.find((m) => m.id === 'insulin');
-  if (!glucose || !insulin) return extracted;
+  // HOMA-IR — only when the lab didn't already print it.
+  if (!extracted.some((m) => m.id === 'homa-ir')) {
+    const glucose = extracted.find((m) => m.id === 'glucose');
+    const insulin = extracted.find((m) => m.id === 'insulin');
+    const homaTemplate = biomarkerCatalog.find((t) => t.id === 'homa-ir');
+    // Defensive zero-guard: a 0 value (mis-extraction) yields 0/NaN —
+    // skip rather than surface a spurious "perfect insulin sensitivity".
+    if (
+      glucose &&
+      insulin &&
+      homaTemplate &&
+      glucose.value > 0 &&
+      insulin.value > 0
+    ) {
+      const homaIr = parseFloat(
+        ((glucose.value * insulin.value) / 405).toPrecision(4),
+      );
+      if (Number.isFinite(homaIr)) {
+        derived.push(markerFromTemplate(homaTemplate, homaIr));
+      }
+    }
+  }
 
-  const homaTemplate = biomarkerCatalog.find((t) => t.id === 'homa-ir');
-  if (!homaTemplate) return extracted;
+  // Free Testosterone (calculated) — Vermeulen, from Total T + SHBG.
+  // Albumin is optional: vermeulenFreeTestosterone() falls back to the
+  // 4.3 g/dL reference when the report doesn't include it.
+  if (!extracted.some((m) => m.id === FREE_T_CALC_TEMPLATE.id)) {
+    const totalT = extracted.find((m) => m.id === 'testosterone');
+    const shbg = extracted.find((m) => m.id === 'shbg');
+    if (totalT && shbg) {
+      const albumin = extracted.find((m) => m.id === 'albumin');
+      const freeT = vermeulenFreeTestosterone(
+        totalT.value,
+        shbg.value,
+        albumin && albumin.value > 0 ? albumin.value : undefined,
+      );
+      if (freeT !== null) {
+        derived.push(markerFromTemplate(FREE_T_CALC_TEMPLATE, freeT));
+      }
+    }
+  }
 
-  // Standard formula. Defensive zero-guard: if either value is 0
-  // (mis-extraction), the computed result is 0 or NaN — skip rather
-  // than surface a spurious "perfect insulin sensitivity" reading.
-  if (glucose.value <= 0 || insulin.value <= 0) return extracted;
-  const homaIr = parseFloat(
-    ((glucose.value * insulin.value) / 405).toPrecision(4),
-  );
-  if (!Number.isFinite(homaIr)) return extracted;
-
-  return [...extracted, markerFromTemplate(homaTemplate, homaIr)];
+  return derived.length ? [...extracted, ...derived] : extracted;
 }
 
 /**
