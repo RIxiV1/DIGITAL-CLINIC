@@ -1849,6 +1849,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'g %',
       'gm%',
       'gm %',
+      // "Gms%" is the spelling Dr N.M. Kazi and similar small-lab
+      // templates print — same unit (grams per 100 mL), another glyph.
+      'Gms%',
+      'Gms %',
+      'gms%',
+      'gms %',
       'grams%',
       'grams %',
     ],
@@ -1939,7 +1945,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'sperm-total-count',
     name: 'Total sperm count',
-    aliases: ['Total count (million)', 'Total sperm count', 'Total count'],
+    // Bare 'Total count' is intentionally EXCLUDED: it substring-matches
+    // "W.B.C Total Count" / "WBC Total Count" on every CBC, surfacing a
+    // phantom semen "sperm count" on a blood report (a real trust-killer
+    // seen on the Dr N.M. Kazi CBC). The remaining aliases name sperm or
+    // the million unit explicitly, so they can't collide with a CBC row.
+    aliases: ['Total sperm count', 'Total count (million)', 'Total Sperm Count'],
     unit: 'million',
     unitAliases: ['M', '10^6'],
     min: 39,
@@ -2527,8 +2538,14 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'White Blood Cells',
       'White Blood Cell Count',
       'Total WBC Count',
+      // Dotted "W.B.C" is common on small-lab templates (Dr N.M. Kazi
+      // etc.) — 'WBC' can't match it because the dots break the token.
+      'W.B.C Total Count',
+      'WBC Total Count',
+      'W.B.C Count',
       'WBC Count',
       'TLC',
+      'W.B.C',
       'WBC',
     ],
     // Canonical /cumm with every glyph/punctuation variant seen across
