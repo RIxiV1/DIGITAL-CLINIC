@@ -22,6 +22,23 @@ The orchestrator is [`services/api.ts`](../src/app/services/api.ts) — `parseUp
 
 ---
 
+## Configuring the AI fallback (pipeline 3)
+
+Pipelines 1 and 2 are 100% client-side and need **zero config**. Pipeline 3 (Gemini vision) is the only one that needs a key, and it's optional — without it the "Try AI parser" button reports `GEMINI_API_KEY not configured on the server` and the app falls back to manual entry.
+
+Env vars are documented in [`.env.example`](../.env.example). To enable the fallback:
+
+1. **Get a key** (free tier) at https://aistudio.google.com/apikey.
+2. **Local dev:** copy `.env.example` → `.env.local` (gitignored) and set `GEMINI_API_KEY=...`.
+3. **Production:** set the same key in **Vercel → Project → Settings → Environment Variables**, scope it to Production (and Preview if you want it on preview deploys), then **redeploy** — env changes only apply to a new deployment, not the running one.
+
+Notes:
+- `GEMINI_API_KEY` is a **server-side secret**, read only by [`api/parse-image.ts`](../api/parse-image.ts). It never reaches the browser. Don't commit a real key and don't prefix it with `VITE_` (that would bundle it into the client).
+- **Privacy:** this is the one path where an image leaves the device (sent to Google, which may retain it). It's opt-in by design — the user taps "Try AI parser" — so keep it opt-in, never automatic.
+- `ALLOWED_ORIGINS` / `ALLOW_NO_ORIGIN` gate who may call the endpoint; see `.env.example`.
+
+---
+
 ## The flow
 
 ```
