@@ -592,6 +592,48 @@ describe('extractBiomarkersFromText — full lipid panel (real report)', () => {
   });
 });
 
+describe('extractBiomarkersFromText — SI-unit reports (mmol/L, µmol/L)', () => {
+  // Regression for a real Malaysian (Innoquest) report in SI units, which
+  // silently dropped every conventional-unit marker. The matcher now
+  // accepts the SI spelling and converts to the catalog's canonical unit
+  // (factors live on each template's `altUnits`).
+
+  it('converts creatinine µmol/L → mg/dL', () => {
+    const r = extractBiomarkersFromText('Creatinine 88 umol/L (44-110)');
+    // 88 / 88.42 ≈ 0.995 mg/dL
+    expect(r.find((m) => m.id === 'creatinine')?.value).toBeCloseTo(0.995, 2);
+  });
+
+  it('converts urea mmol/L → mg/dL (urea scale)', () => {
+    const r = extractBiomarkersFromText('Urea 7.1 mmol/L (3.0-10.0)');
+    // 7.1 * 6.006 ≈ 42.6 mg/dL
+    expect(r.find((m) => m.id === 'bun')?.value).toBeCloseTo(42.6, 1);
+  });
+
+  it('converts uric acid mmol/L → mg/dL', () => {
+    const r = extractBiomarkersFromText('Uric Acid 0.21 mmol/L (0.15-0.45)');
+    // 0.21 * 16.81 ≈ 3.53 mg/dL
+    expect(r.find((m) => m.id === 'uric-acid')?.value).toBeCloseTo(3.53, 1);
+  });
+
+  it('converts fasting glucose mmol/L → mg/dL', () => {
+    const r = extractBiomarkersFromText('Fasting Glucose 5.6 mmol/L (3.9-6.0)');
+    // 5.6 * 18.0156 ≈ 100.9 mg/dL
+    expect(r.find((m) => m.id === 'glucose')?.value).toBeCloseTo(100.9, 0);
+  });
+
+  it('extracts chloride (newly added electrolyte, mmol/L native)', () => {
+    const r = extractBiomarkersFromText('Chloride 99 mmol/L (95-110)');
+    expect(r.find((m) => m.id === 'chloride')?.value).toBe(99);
+  });
+
+  it('does NOT alter conventional mg/dL values (no false conversion)', () => {
+    const r = extractBiomarkersFromText('Creatinine 1.0 mg/dL\nUric Acid 5.0 mg/dL');
+    expect(r.find((m) => m.id === 'creatinine')?.value).toBe(1.0);
+    expect(r.find((m) => m.id === 'uric-acid')?.value).toBe(5.0);
+  });
+});
+
 describe('statusForValue — critical tier', () => {
   it('flags platelets <50,000 as critical (bleeding-risk threshold)', () => {
     const text = 'Platelet Count 30000 /cumm';
