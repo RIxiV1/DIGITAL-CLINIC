@@ -634,6 +634,36 @@ describe('extractBiomarkersFromText — SI-unit reports (mmol/L, µmol/L)', () =
   });
 });
 
+describe('extractBiomarkersFromText — CBC small-lab template (real report)', () => {
+  // Regression for a real Dr N.M. Kazi CBC that exposed three bugs:
+  // WBC dropped (dotted "W.B.C"), Haemoglobin dropped ("Gms%" unit), and
+  // a phantom "Total sperm count" matched off "W.B.C Total Count".
+  const cbc = [
+    'W.B.C Total Count 10900 4000 - 11000 /Cumm',
+    'RBC COUNT 5.53 4.2-5.8 Mill/cumm',
+    'Haemoglobin % 14.8 12 - 17 Gms%',
+    'PCV 43.6 36 - 48 %',
+    'Platelet Count 2.63 150000 - 450000 Lakh/cumm',
+  ].join('\n');
+
+  it('parses dotted "W.B.C Total Count" as WBC', () => {
+    expect(
+      extractBiomarkersFromText(cbc).find((m) => m.id === 'wbc')?.value,
+    ).toBe(10900);
+  });
+
+  it('parses "Haemoglobin %" with the Gms% unit', () => {
+    expect(
+      extractBiomarkersFromText(cbc).find((m) => m.id === 'hb')?.value,
+    ).toBe(14.8);
+  });
+
+  it('does NOT surface a phantom sperm count from "Total Count" on a CBC', () => {
+    const ids = extractBiomarkersFromText(cbc).map((m) => m.id);
+    expect(ids).not.toContain('sperm-total-count');
+  });
+});
+
 describe('statusForValue — critical tier', () => {
   it('flags platelets <50,000 as critical (bleeding-risk threshold)', () => {
     const text = 'Platelet Count 30000 /cumm';
