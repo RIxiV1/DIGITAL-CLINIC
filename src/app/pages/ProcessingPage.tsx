@@ -159,9 +159,9 @@ export default function ProcessingPage() {
     null,
   );
   /** When set, ProcessingPage is in the auto-cascade state: the local
-   *  pipeline failed on an image and we're invoking the Vision-LLM
-   *  fallback automatically (without requiring the user to tap the
-   *  manual "Try AI parser" button on the failure card). The render
+   *  pipeline couldn't produce a trustworthy read on an image, so we're
+   *  invoking the Vision-LLM fallback automatically (without requiring
+   *  the user to tap the manual "Try AI parser" button). The render
    *  branch for this state shows a "Trying AI parser..." view with the
    *  privacy disclosure inline and a prominent Cancel button.
    *
@@ -171,9 +171,12 @@ export default function ProcessingPage() {
    *      file than a parser miss)
    *    - User has `dc_aiAutoFallback` enabled (default true; togglable
    *      in Profile)
-   *    - Local pipeline failed with a parser-miss reason (`no-matches`
-   *      / `extraction-error` / `ocr-failed`) — corruption / missing
-   *      file shouldn't burn a quota tick. */
+   *    - EITHER the local pipeline failed with a parser-miss reason
+   *      (`no-matches` / `extraction-error` / `ocr-failed`), OR it
+   *      "succeeded" but at LOW OCR confidence — a low-quality image
+   *      scrape (e.g. Hematocrit "3%" from a garbled photo) is worse
+   *      than no read, so we prefer the AI parser over presenting shaky
+   *      numbers. Corruption / missing file shouldn't burn a quota tick. */
   const [aiCascadeFile, setAiCascadeFile] = useState<File | null>(null);
   /** AbortController for the in-flight AI cascade call. Held in a ref
    *  so the Cancel button (and unmount cleanup) can `.abort()` without
@@ -290,6 +293,33 @@ export default function ProcessingPage() {
         // The placeholder report stays in 'processing' state during
         // the confirm step (so the locker doesn't show a half-baked
         // entry); it's only marked ready when the user confirms.
+
+        // Auto-use AI for LOW-CONFIDENCE image reads. We scraped some
+        // values, but a low OCR confidence means they're unreliable —
+        // the same signal behind the "double-check these" banner. Real
+        // example: a Pakistani CBC photo where Tesseract turned 12.5 into
+        // "12s" and 38 into "3", surfacing a Hematocrit of 3% (impossible)
+        // plus a panel of OCR garbage. Rather than present shaky numbers,
+        // hand the image straight to the Vision-LLM, which reads layout +
+        // digits far better. This mirrors the failure-branch cascade and
+        // is gated identically: images only (the AI endpoint rejects PDFs,
+        // and PDFs have a real text layer anyway), and only when the user
+        // hasn't opted out (dc_aiAutoFallback, default on). A HIGH-
+        // confidence image read (clean scan) and every PDF text-layer read
+        // skip this and go straight to confirm — so we don't burn a Gemini
+        // call when local extraction was trustworthy.
+        const isImage = !!file && /^image\//.test(file.type || '');
+        const lowConfidenceImage =
+          isImage &&
+          result.ocrConfidence !== undefined &&
+          result.ocrConfidence <= OCR_LOW_CONFIDENCE_THRESHOLD;
+        if (lowConfidenceImage && file && loadAiAutoFallbackSetting()) {
+          clearPendingConfirm();
+          removeReport(processingId);
+          setAiCascadeFile(file);
+          return;
+        }
+
         // Detect WHO 2010 / 5th-edition references in the raw text;
         // only relevant when a semen-axis (fertility) marker was
         // matched, otherwise the standard-mismatch banner is noise.
