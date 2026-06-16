@@ -810,6 +810,46 @@ describe('extractBiomarkersFromText — count-prefix unit reconciliation', () =>
   });
 });
 
+describe('extractBiomarkersFromText — proactive probe findings', () => {
+  // Found by round-tripping every template's own canonical row through the
+  // matcher (a self-consistency probe), not by a user upload.
+
+  it('scales RBC in M/μL and mil/cu mm without collapsing to ~0', () => {
+    // 'M' / 'mil' are million abbreviations the catalog lists as RBC unit
+    // aliases, but unitMultiplier didn't recognise them → 5.2 → 0.0000052.
+    expect(
+      extractBiomarkersFromText('RBC (Total Count) 5.2 M/μL').find(
+        (m) => m.id === 'rbc',
+      )?.value,
+    ).toBeCloseTo(5.2, 1);
+    expect(
+      extractBiomarkersFromText('RBC (Total Count) 5.2 mil/cu mm').find(
+        (m) => m.id === 'rbc',
+      )?.value,
+    ).toBeCloseTo(5.2, 1);
+  });
+
+  it('scales sperm density in M/ml without collapsing to ~0', () => {
+    expect(
+      extractBiomarkersFromText('Sperm density 108 M/ml').find(
+        (m) => m.id === 'sperm-density',
+      )?.value,
+    ).toBeCloseTo(108, 0);
+  });
+
+  it('does NOT mislabel "Free T3" as Free Testosterone', () => {
+    const ids = extractBiomarkersFromText('Free T3 3.25 pg/mL').map((m) => m.id);
+    expect(ids).not.toContain('free-t');
+  });
+
+  it('does NOT mislabel "Progressive motility" as Total motility', () => {
+    const ids = extractBiomarkersFromText('Progressive motility 65 %').map(
+      (m) => m.id,
+    );
+    expect(ids).not.toContain('sperm-motility-total');
+  });
+});
+
 describe('extractBiomarkersFromText — physical bounds', () => {
   // Glucose template has explicit physicalMin=30, physicalMax=800
   // (reflecting "30 mg/dL is incompatible with consciousness, 800 is
