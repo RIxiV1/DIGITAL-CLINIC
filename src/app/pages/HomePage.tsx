@@ -165,6 +165,22 @@ export default function HomePage() {
     setRetestDismissedId(retestReminder.report.id);
   };
 
+  // Banner priority queue. All three top-of-page banners could fire at
+  // once for a returning user (storage failed + catalog bumped + report
+  // aged out), stacking into a wall of admin notices that pushes the Top
+  // Concern below the fold. Show only the highest-severity one; dismissing
+  // it reveals the next on the following render (each still has its own
+  // dismiss). Order: quota (data at risk now) > catalog (trendlines may be
+  // missing readings) > retest (a gentle nudge).
+  const activeBanner: 'quota' | 'catalog' | 'retest' | null =
+    saveError === 'quota'
+      ? 'quota'
+      : showCatalogMigrationNotice
+        ? 'catalog'
+        : showRetestReminder && retestReminder
+          ? 'retest'
+          : null;
+
   /* ---- Locker controls — surfaced only when expanded AND 3+ reports.
    *      Showing a search box + sort group while only one card is
    *      visible would be controls louder than the content they control. */
@@ -369,7 +385,7 @@ export default function HomePage() {
           older version AND carry history — those trendlines would
           otherwise drop a reading silently after the bump without
           explanation. Dismissible; ack persists across reloads. */}
-      {showCatalogMigrationNotice && (
+      {activeBanner === 'catalog' && (
         <Container size="wide" className="pt-4">
           <div
             role="status"
@@ -406,7 +422,7 @@ export default function HomePage() {
         </Container>
       )}
 
-      {saveError === 'quota' && (
+      {activeBanner === 'quota' && (
         <Container size="wide" className="pt-4">
           <div
             role="alert"
@@ -443,7 +459,7 @@ export default function HomePage() {
           latest real report has aged past the re-check window. Sits with
           the other top-of-page banners; dismissal is sticky per report
           id so it won't nag every load. */}
-      {showRetestReminder && retestReminder && (
+      {activeBanner === 'retest' && retestReminder && (
         <Container size="wide" className="pt-4">
           <div
             role="status"
