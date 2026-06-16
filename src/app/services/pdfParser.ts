@@ -941,8 +941,13 @@ function extractMarkerValue(
   // normalizeMu on the catalog side mirrors the call inside normalize()
   // for the input text — without both sides agreeing on µ vs μ, units
   // that differ only in code point silently fail to match.
+  // Alt-unit spellings (SI mmol/L, µmol/L, …) are admitted into the gate
+  // too, so a report printed in those units still matches. The captured
+  // token is reconciled to the canonical unit below via the template's
+  // per-marker conversion factor.
+  const altUnitTokens = (template.altUnits ?? []).flatMap((a) => a.units);
   const unitTokens = template.unit
-    ? [template.unit, ...(template.unitAliases ?? [])]
+    ? [template.unit, ...(template.unitAliases ?? []), ...altUnitTokens]
         .filter((u) => u.length > 0)
         .map((u) => escapeRegex(normalizeMu(u)))
     : [];
@@ -1021,7 +1026,17 @@ function extractMarkerValue(
     // million/ml) and turn 103 into 0.000103.
     let scale = 1;
     if (!skipUnit && printedUnit) {
-      scale = unitMultiplier(printedUnit) / unitMultiplier(template.unit);
+      // SI / alternative-unit conversion takes priority: when the printed
+      // unit is one of the marker's altUnits, apply its exact per-marker
+      // factor (e.g. glucose mmol/L → mg/dL ×18.0156). Otherwise fall back
+      // to the count-prefix reconciliation (lakh / thou / million).
+      const normPrinted = normalizeMu(printedUnit).toLowerCase();
+      const alt = template.altUnits?.find((a) =>
+        a.units.some((u) => normPrinted.includes(normalizeMu(u).toLowerCase())),
+      );
+      scale = alt
+        ? alt.toCanonical
+        : unitMultiplier(printedUnit) / unitMultiplier(template.unit);
     }
     // Clean up float-precision noise introduced by scaling — 2.45 * 1e5
     // yields 245000.00000000003 in IEEE-754, which is silly to surface

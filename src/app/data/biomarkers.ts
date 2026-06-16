@@ -944,6 +944,17 @@ export type BiomarkerTemplate = {
    *  Useful for confirming a numeric match isn't from an unrelated
    *  line — the parser cross-checks the unit token near the value. */
   unitAliases?: readonly string[];
+  /** Alternative units this marker is reported in outside the
+   *  conventional-unit world — chiefly SI (mmol/L, µmol/L), standard in
+   *  Malaysia, the UK, Europe, Australia and Canada. Each entry pairs the
+   *  unit spelling(s) with the multiplier that converts a value in that
+   *  unit to the template's canonical `unit`. The matcher accepts these
+   *  units AND scales the captured value (and any captured lab range) to
+   *  canonical before grading, so a Malaysian glucose printed in mmol/L
+   *  grades against the same mg/dL band as an Indian one. The factor is
+   *  marker-specific (it depends on molar mass) so it can't be derived
+   *  from the unit strings alone. */
+  altUnits?: readonly { units: readonly string[]; toCanonical: number }[];
   min: number;
   max: number;
   optimalMin?: number;
@@ -1431,6 +1442,9 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     ],
     unit: 'mg/dL',
     unitAliases: ['mg/dl'],
+    // SI: glucose 1 mmol/L = 18.0156 mg/dL (MW 180.16). Malaysian/UK/EU
+    // reports print mmol/L; converting lets them grade on the mg/dL band.
+    altUnits: [{ units: ['mmol/L', 'mmol/l'], toCanonical: 18.0156 }],
     min: 70,
     max: 99,
     optimalMin: 75,
@@ -1798,6 +1812,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Creatinine', 'Serum Creatinine'],
     unit: 'mg/dL',
     unitAliases: ['mg/dl'],
+    // SI: creatinine 1 µmol/L = 1/88.42 mg/dL (MW 113.12). Standard in
+    // Malaysia/UK/EU. 'umol/L' (Latin u) is the common OCR/keyboard form;
+    // 'µmol/L' (micro sign) and 'μmol/L' (Greek mu) also occur.
+    altUnits: [
+      { units: ['µmol/L', 'umol/L', 'μmol/L'], toCanonical: 1 / 88.42 },
+    ],
     min: 0.7,
     max: 1.3,
     // Critical ceiling: ≥3.0 mg/dL suggests acute kidney injury or
@@ -2383,6 +2403,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     ],
     unit: 'mg/dL',
     unitAliases: ['mg/dl'],
+    // SI: urea 1 mmol/L = 6.006 mg/dL (MW 60.06) — converts onto the same
+    // urea-scale mg/dL band this template grades on. (Distinct from the
+    // BUN-nitrogen scale; see the id comment above.)
+    altUnits: [{ units: ['mmol/L', 'mmol/l'], toCanonical: 6.006 }],
     min: 15,
     max: 40,
     // Critical: Urea ≥100 mg/dL (≈ BUN ≥47) is dialysis-consideration
@@ -2460,6 +2484,9 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Uric Acid', 'Serum Uric Acid', 'UA'],
     unit: 'mg/dL',
     unitAliases: ['mg/dl'],
+    // SI: uric acid 1 mmol/L = 16.81 mg/dL (MW 168.11). Standard in
+    // Malaysia/UK/EU reports.
+    altUnits: [{ units: ['mmol/L', 'mmol/l'], toCanonical: 16.81 }],
     min: 3.5,
     max: 7.2,
     // Critical: ≥10 = severe hyperuricemia, acute-gout-flare and
@@ -2778,6 +2805,26 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     simpleName: 'Heart-rhythm electrolyte',
     plain:
       'Potassium runs your nerves and heart rhythm. Out-of-range values need immediate medical attention.',
+  },
+  {
+    // Chloride completes the basic electrolyte panel alongside sodium +
+    // potassium — it was missing, so a standard panel (very common on
+    // Malaysian/Indian/US reports) dropped this row. mmol/L and mEq/L are
+    // numerically identical for chloride, so no SI conversion is needed.
+    id: 'chloride',
+    name: 'Chloride',
+    aliases: ['Chloride', 'Serum Chloride'],
+    unit: 'mmol/L',
+    unitAliases: ['mEq/L', 'mmol/l'],
+    min: 98,
+    max: 107,
+    physicalMin: 70,
+    physicalMax: 130,
+    category: 'electrolytes',
+    direction: 'band',
+    simpleName: 'Salt partner to sodium',
+    plain:
+      'Moves with sodium to balance fluids and blood acidity. Usually only meaningful read alongside sodium and bicarbonate.',
   },
   {
     id: 'calcium',
