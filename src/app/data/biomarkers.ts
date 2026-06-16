@@ -1592,6 +1592,30 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     plain:
       'Usually tied to sugar, refined carbs, or alcohol — very responsive to small changes.',
   },
+  {
+    // VLDL appears on essentially every Indian lipid panel (Thyrocare,
+    // Lal, SRL, Metropolis) but was missing from the catalog, so a full
+    // lipid profile silently dropped this row. 'VLDL' can't be captured
+    // by the 'LDL' alias — the matcher's letter-boundary guard
+    // ((?<![A-Za-z])) rejects the 'LDL' inside 'VLDL' — so no collision.
+    // Reference 5–40 mg/dL is the standard adult range labs print; VLDL
+    // ≈ triglycerides ÷ 5, so it tracks TG and rarely drives a decision
+    // on its own — no optimal sub-band (mirrors total-chol's restraint).
+    id: 'vldl',
+    name: 'VLDL Cholesterol',
+    aliases: ['VLDL Cholesterol', 'VLDL-C', 'VLDL', 'Cholesterol VLDL'],
+    unit: 'mg/dL',
+    unitAliases: ['mg/dl'],
+    min: 0,
+    max: 40,
+    physicalMin: 0,
+    physicalMax: 200,
+    category: 'heart',
+    direction: 'down',
+    simpleName: 'A triglyceride-carrying cholesterol',
+    plain:
+      'Mostly carries triglycerides. It rises and falls with them, so the fix is the same: less sugar, refined carbs, and alcohol.',
+  },
 
   /* ---- Thyroid ------------------------------------------------- */
   {
