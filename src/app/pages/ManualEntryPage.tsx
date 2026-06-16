@@ -72,6 +72,13 @@ export default function ManualEntryPage() {
   const [values, setValues] = useState<Record<string, string>>({});
   const [reportName, setReportName] = useState('My lab report');
   const [searchQuery, setSearchQuery] = useState('');
+  /** Category filter. The fallback's biggest friction is landing on ~80
+   *  markers across 11 categories when you only need one panel's worth
+   *  (e.g. a CBC = ~13). Tapping a category chip collapses the form to
+   *  just that category; 'all' shows everything. Composes with search. */
+  const [activeCategory, setActiveCategory] = useState<
+    BiomarkerCategoryId | 'all'
+  >('all');
   /** Defer the query so typing stays snappy on phones — the filtered
    *  list re-renders against a slightly stale value while the user is
    *  mid-keystroke. */
@@ -96,26 +103,31 @@ export default function ManualEntryPage() {
       .map((c) => ({ category: c, templates: byCategory.get(c.id) ?? [] }));
   }, []);
 
-  /** Search-filtered view. Empty query → return all groups untouched.
-   *  Non-empty query → keep templates whose name OR any alias contains
-   *  the query (case-insensitive), then drop categories whose templates
-   *  all filtered out. */
+  /** Filtered view, by category chip THEN search query. Category filter
+   *  narrows to a single panel; the query then matches templates whose
+   *  name OR any alias contains it (case-insensitive). Categories whose
+   *  templates all filter out are dropped. */
   const filteredGrouped = useMemo(() => {
     const q = deferredQuery.trim().toLowerCase();
-    if (!q) return grouped;
     return grouped
+      .filter(
+        ({ category }) =>
+          activeCategory === 'all' || category.id === activeCategory,
+      )
       .map(({ category, templates }) => ({
         category,
-        templates: templates.filter((t) => {
-          if (t.name.toLowerCase().includes(q)) return true;
-          for (const alias of t.aliases) {
-            if (alias.toLowerCase().includes(q)) return true;
-          }
-          return false;
-        }),
+        templates: q
+          ? templates.filter((t) => {
+              if (t.name.toLowerCase().includes(q)) return true;
+              for (const alias of t.aliases) {
+                if (alias.toLowerCase().includes(q)) return true;
+              }
+              return false;
+            })
+          : templates,
       }))
       .filter(({ templates }) => templates.length > 0);
-  }, [grouped, deferredQuery]);
+  }, [grouped, deferredQuery, activeCategory]);
 
   const hasSearchTerm = deferredQuery.trim().length > 0;
   const noMatches = hasSearchTerm && filteredGrouped.length === 0;
@@ -276,6 +288,34 @@ export default function ManualEntryPage() {
         </Container>
       </div>
 
+      {/* Category filter chips. The fallback's biggest friction is
+          hunting through ~80 markers for the ~13 on your report; tapping
+          a category collapses the form to just that panel. Horizontally
+          scrollable; composes with the search above. Non-sticky on
+          purpose — once a category is picked the list is short, so the
+          chips stay within easy reach near the top. */}
+      <Container size="wide" className="pt-1 pb-1">
+        <div
+          className="lg:max-w-3xl lg:mx-auto flex gap-2 overflow-x-auto pb-1"
+          role="group"
+          aria-label="Filter markers by category"
+        >
+          <CategoryChip
+            label="All"
+            active={activeCategory === 'all'}
+            onClick={() => setActiveCategory('all')}
+          />
+          {grouped.map(({ category }) => (
+            <CategoryChip
+              key={category.id}
+              label={category.name}
+              active={activeCategory === category.id}
+              onClick={() => setActiveCategory(category.id)}
+            />
+          ))}
+        </div>
+      </Container>
+
       <Container size="wide" className="pb-6">
         {noMatches ? (
           <div className="lg:max-w-3xl lg:mx-auto mt-4">
@@ -426,6 +466,35 @@ export default function ManualEntryPage() {
         </Container>
       </StickyBottomBar>
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Category filter chip                                                 */
+/* ------------------------------------------------------------------ */
+
+function CategoryChip({
+  label,
+  active,
+  onClick,
+}: {
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`shrink-0 h-9 px-3.5 rounded-full text-caption font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ${
+        active
+          ? 'bg-indigo-600 text-white'
+          : 'bg-surface border border-line text-ink-soft hover:text-ink'
+      }`}
+    >
+      {label}
+    </button>
   );
 }
 
