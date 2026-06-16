@@ -25,6 +25,7 @@ describe('unitMultiplier — Indian count-prefix reconciliation', () => {
     for (const u of [
       'thou/cumm',
       'thousand/cumm',
+      'thousands/cumm', // plural
       '10^3/uL',
       '10³/µL',
       'x10^3',
@@ -42,6 +43,8 @@ describe('unitMultiplier — Indian count-prefix reconciliation', () => {
   it('resolves million-family prefixes to 1e6', () => {
     for (const u of [
       'million/cumm',
+      'millions/cumm', // plural — real Hindlabs "Millions/Cumm" RBC unit
+      'Millions/Cumm', // exact casing from the report
       'mill/cumm',
       '10^6/uL',
       '10⁶/µL',
@@ -66,6 +69,21 @@ describe('mapGeminiResultsToCatalog — match, scale, bound, dedupe, route', () 
     expect(out.biomarkers).toHaveLength(1);
     expect(out.biomarkers[0].value).toBeCloseTo(14.8, 5);
     expect(out.unmapped).toHaveLength(0);
+  });
+
+  it('maps RBC in the plural "Millions/Cumm" unit without collapsing to zero', () => {
+    // Real Hindlabs CBC bug: Gemini returned RBC 5.05 "Millions/Cumm".
+    // The plural "Millions" missed the million-prefix regex, so the
+    // printed unit got multiplier 1 while the catalog's million/cumm got
+    // 1e6 — the value was scaled by 1/1e6 and rendered as an impossible
+    // RBC of 0.000 (5.05 → 0.00000505).
+    const out = mapGeminiResultsToCatalog([
+      { name: 'Total RBC Count', value: 5.05, unit: 'Millions/Cumm' },
+    ]);
+    expect(out.biomarkers.find((m) => m.id === 'rbc')?.value).toBeCloseTo(
+      5.05,
+      2,
+    );
   });
 
   it('routes an unrecognised marker name to unmapped, not the dashboard', () => {
