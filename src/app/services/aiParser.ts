@@ -30,6 +30,7 @@
 import {
   biomarkerCatalog,
   markerFromTemplate,
+  deriveComputedMarkers,
   type Biomarker,
 } from '../data/biomarkers';
 
@@ -459,7 +460,11 @@ export async function parseWithAi(
 
   const mapResult = mapGeminiResultsToCatalog(body.biomarkers);
   return {
-    biomarkers: mapResult.biomarkers,
+    // Run the AI-parsed markers through the same derivation step as the
+    // text path, so an AI-read Total T + SHBG (or glucose + insulin)
+    // produces calculated free-T / HOMA-IR too. Derivation is idempotent
+    // (it skips a marker the lab already reported), so this is safe.
+    biomarkers: deriveComputedMarkers(mapResult.biomarkers),
     unmapped: mapResult.unmapped,
     rawCount: body.biomarkers.length,
   };

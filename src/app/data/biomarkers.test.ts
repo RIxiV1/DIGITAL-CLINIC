@@ -24,6 +24,7 @@ import {
   summarizeStatuses,
   vermeulenFreeTestosterone,
   FREE_T_CALC_TEMPLATE,
+  deriveComputedMarkers,
   type Biomarker,
   type BiomarkerCategoryId,
 } from './biomarkers';
@@ -643,5 +644,41 @@ describe('vermeulenFreeTestosterone — calculated free T', () => {
     expect(vermeulenFreeTestosterone(-5, 30)).toBeNull();
     expect(vermeulenFreeTestosterone(600, 30, 0)).toBeNull();
     expect(vermeulenFreeTestosterone(NaN, 30)).toBeNull();
+  });
+});
+
+describe('deriveComputedMarkers — shared derivation across all paths', () => {
+  // Single source of truth now used by PDF text, OCR, AI vision, and
+  // manual entry — so the dashboard is consistent regardless of how the
+  // values were ingested.
+  const mk = (id: string, value: number): Biomarker =>
+    markerFromTemplate(getTemplateById(id)!, value);
+
+  it('appends calculated free-T from Total T + SHBG', () => {
+    const out = deriveComputedMarkers([mk('testosterone', 600), mk('shbg', 30)]);
+    const ft = out.find((m) => m.id === 'free-t-calc');
+    expect(ft).toBeDefined();
+    expect(ft!.value).toBeCloseTo(13.41, 1);
+  });
+
+  it('appends HOMA-IR from glucose + insulin', () => {
+    const out = deriveComputedMarkers([mk('glucose', 95), mk('insulin', 12)]);
+    expect(out.find((m) => m.id === 'homa-ir')?.value).toBeCloseTo(2.81, 1);
+  });
+
+  it('derives nothing when inputs are incomplete', () => {
+    const out = deriveComputedMarkers([mk('testosterone', 600)]);
+    expect(out.find((m) => m.id === 'free-t-calc')).toBeUndefined();
+    expect(out).toHaveLength(1);
+  });
+
+  it('is idempotent — re-running does not duplicate derived markers', () => {
+    const once = deriveComputedMarkers([
+      mk('testosterone', 600),
+      mk('shbg', 30),
+    ]);
+    const twice = deriveComputedMarkers(once);
+    expect(twice.filter((m) => m.id === 'free-t-calc')).toHaveLength(1);
+    expect(twice).toHaveLength(once.length);
   });
 });
