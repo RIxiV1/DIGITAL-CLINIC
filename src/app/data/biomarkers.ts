@@ -1396,7 +1396,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'free-t',
     name: 'Free Testosterone',
-    aliases: ['Free Testosterone', 'Testosterone Free', 'Free T'],
+    // Bare 'Free T' is intentionally EXCLUDED: its right-boundary allows
+    // a trailing digit, so it matched "Free T3" / "Free T4" on every
+    // thyroid panel and surfaced the thyroid value as a (low) free
+    // testosterone — a cross-axis clinical mislabel. Reports spell it out
+    // as "Free Testosterone" / "Testosterone Free".
+    aliases: ['Free Testosterone', 'Testosterone Free'],
     unit: 'pg/mL',
     unitAliases: ['pg/ml'],
     // Method-dependent marker. This 8.7–25.1 pg/mL band is the DIRECT
@@ -2035,14 +2040,15 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     name: 'Total motility',
     // "Total motile (a+b+c)" is the WHO grading wording many Indian labs
     // print (Dr Lal PathLabs etc.) — the same quantity as total motility.
-    // Listed before the bare "Motility" alias so the real data row wins
-    // over the section header.
+    // Bare 'Motility' is intentionally EXCLUDED: it substring-matched
+    // "Progressive motility" / "Forward motility" / "Non-progressive
+    // motility" and mislabeled those grades as TOTAL motility. The
+    // remaining aliases all name the total explicitly.
     aliases: [
       'Total motility %',
       'Total motility',
       'Total motile (a+b+c)',
       'Total motile',
-      'Motility',
     ],
     unit: '%',
     min: 42,
