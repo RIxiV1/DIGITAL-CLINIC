@@ -1124,6 +1124,114 @@ export function markerFromTemplate(
   };
 }
 
+/* ================================================================== */
+/* Vermeulen calculated free testosterone (derived marker)            */
+/* ================================================================== */
+
+/**
+ * Calculated free testosterone via the Vermeulen (1999) equilibrium
+ * equation — the Endocrine Society's preferred free-T estimate when
+ * direct equilibrium dialysis isn't available, and substantially more
+ * reliable than the analog "direct free T" immunoassay many Indian labs
+ * run (Vermeulen et al., JCEM 1999; Bhasin et al., Endocrine Society
+ * 2018).
+ *
+ * Solves the law-of-mass-action equilibrium between testosterone, SHBG,
+ * and albumin for the free fraction:
+ *
+ *     N·Kt·[FT]² + (N + Kt·(SHBG − T))·[FT] − T = 0,   N = 1 + Ka·[Alb]
+ *
+ * taking the positive root. Constants are Vermeulen's originals:
+ *   Kt (SHBG–T assoc.)     = 1.0×10⁹ L/mol
+ *   Ka (albumin–T assoc.)  = 3.6×10⁴ L/mol
+ *   MW testosterone        = 288.4 g/mol
+ *   MW albumin             = 66 500 g/mol
+ *
+ * Inputs use the exact units our catalog extracts:
+ *   totalTng    Total testosterone, ng/dL  (catalog id 'testosterone')
+ *   shbgNmol    SHBG, nmol/L               (catalog id 'shbg')
+ *   albuminGdl  Albumin, g/dL              (catalog id 'albumin');
+ *               defaults to Vermeulen's reference 4.3 g/dL when the
+ *               report omits it — albumin varies little in healthy men
+ *               and the result is only weakly sensitive to it.
+ *
+ * Returns calculated free T in ng/dL (4 sig figs), or null for
+ * non-physical inputs. Validated against published reference vectors and
+ * the Endocrine Society free-T low cutoff — see biomarkers.test.ts.
+ */
+export function vermeulenFreeTestosterone(
+  totalTng: number,
+  shbgNmol: number,
+  albuminGdl = 4.3,
+): number | null {
+  if (!(totalTng > 0) || !(shbgNmol > 0) || !(albuminGdl > 0)) return null;
+
+  const KT = 1.0e9; // SHBG–testosterone association constant (L/mol)
+  const KA = 3.6e4; // albumin–testosterone association constant (L/mol)
+  const MW_T = 288.4; // testosterone molar mass (g/mol)
+  const MW_ALB = 66_500; // albumin molar mass (g/mol)
+
+  // Everything to mol/L before applying the equilibrium constants:
+  //   ng/dL → mol/L: 1 ng/dL = 1e-9 g / 1e-1 L = 1e-8 g/L; ÷ MW.
+  //   nmol/L → mol/L: × 1e-9.
+  //   g/dL → mol/L: × 10 (→ g/L) ÷ MW.
+  const totalMol = (totalTng * 1e-8) / MW_T;
+  const shbgMol = shbgNmol * 1e-9;
+  const albMol = (albuminGdl * 10) / MW_ALB;
+
+  const N = 1 + KA * albMol;
+  const a = N * KT;
+  const b = N + KT * (shbgMol - totalMol);
+  const c = -totalMol;
+
+  const discriminant = b * b - 4 * a * c;
+  if (discriminant < 0) return null;
+  const freeMol = (-b + Math.sqrt(discriminant)) / (2 * a);
+  if (!(freeMol > 0)) return null;
+
+  // mol/L → ng/dL: × MW (→ g/L) × 1e8.
+  const freeNgDl = freeMol * MW_T * 1e8;
+  return parseFloat(freeNgDl.toPrecision(4));
+}
+
+/**
+ * Derived-only template for the calculated free-T marker. Deliberately
+ * NOT a member of `biomarkerCatalog`: it carries no aliases because no
+ * lab prints "calculated free T", so the text matcher must never try to
+ * extract it. It is computed in the parser's derive step from Total T +
+ * SHBG (+ albumin) — see deriveComputedMarkers in pdfParser.ts.
+ *
+ * Why a SEPARATE marker from the direct `free-t` template: the two are
+ * different methods reported on different numeric scales (direct analog
+ * immunoassay ~8.7–25.1 pg/mL vs. calculated ~65–300 pg/mL), and the
+ * direct template's own comment warns that grading one against the
+ * other's band gives false assurance. Keeping them distinct (and in
+ * different units — ng/dL here) is what keeps that honest.
+ *
+ * Band rationale (no invented optimal sub-band — same restraint as the
+ * SHBG entry): 6.4 ng/dL is the Endocrine Society / Vermeulen lower
+ * limit of normal (≈64 pg/mL by dialysis); 25 ng/dL is a conservative
+ * upper-normal across published calculated-free-T ranges. No critical
+ * cliff — a *derived* estimate shouldn't trip the same-day-care tier;
+ * the underlying Total T carries its own critical bounds.
+ */
+export const FREE_T_CALC_TEMPLATE: BiomarkerTemplate = {
+  id: 'free-t-calc',
+  name: 'Free Testosterone (calculated)',
+  aliases: [],
+  unit: 'ng/dL',
+  min: 6.4,
+  max: 25,
+  physicalMin: 0,
+  physicalMax: 60,
+  category: 'hormones',
+  direction: 'up',
+  simpleName: 'Usable testosterone, estimated',
+  plain:
+    'Estimated from your Total Testosterone and SHBG using the Vermeulen formula — the active testosterone your body can actually use. This is a calculation, not a direct measurement: if your report prints a measured free testosterone, trust that, and discuss any concern with a clinician.',
+  problemId: 'low-testosterone',
+};
+
 /**
  * The catalog itself. Order matters only for tie-breaking: when a PDF
  * line could match multiple templates (e.g. "Testosterone" matches both
