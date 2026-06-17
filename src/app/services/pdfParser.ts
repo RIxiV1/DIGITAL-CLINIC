@@ -578,20 +578,99 @@ async function withTimeout<T>(
   ]);
 }
 
+/** Fallback binarization cutoff (0–255). Used when Otsu's per-image
+ *  threshold can't be trusted (see OTSU_MIN_SEPARABILITY). Tuned for the
+ *  typical Indian lab template's light background + black text. */
+const FIXED_OCR_THRESHOLD = 160;
+
+/** Minimum Otsu separability η = σ_between²/σ_total² ∈ [0,1] required to
+ *  trust the per-image threshold. A real lab-report photo — even mostly
+ *  white paper with only a thin minority of dark text — is cleanly
+ *  bimodal (a paper mode + an ink mode), so η lands high and Otsu is
+ *  used. η only collapses when there's no genuine foreground/background
+ *  split to find: a near-blank crop, a solid-tint frame, or a washed-out
+ *  very-low-contrast shot, where varTotal ≈ 0 and Otsu's chosen cut is
+ *  meaningless. Below this η we fall back to the tuned fixed cutoff
+ *  rather than risk a destructive threshold. 0.25 is conservative —
+ *  genuine text-on-paper (tinted or not) sits well above it. */
+const OTSU_MIN_SEPARABILITY = 0.25;
+
+/**
+ * Otsu's method — pick the grayscale threshold that maximises between-
+ * class variance over a 256-bin luma histogram. Returns the chosen
+ * threshold AND a separability score η (between-class / total variance)
+ * so the caller can reject a weakly-bimodal histogram where Otsu is
+ * unreliable. Pure function — exported for unit testing.
+ *
+ * Single O(256) pass after the histogram is built; the running-sum form
+ * avoids recomputing class means per candidate threshold.
+ */
+export function otsuThreshold(histogram: ArrayLike<number>): {
+  threshold: number;
+  separability: number;
+} {
+  let total = 0;
+  let sumAll = 0;
+  for (let i = 0; i < 256; i++) {
+    total += histogram[i];
+    sumAll += i * histogram[i];
+  }
+  if (total === 0) return { threshold: FIXED_OCR_THRESHOLD, separability: 0 };
+
+  const mean = sumAll / total;
+  let wB = 0; // background weight (≤ t)
+  let sumB = 0; // background intensity sum
+  let maxBetween = -1;
+  let threshold = 0;
+  for (let t = 0; t < 256; t++) {
+    wB += histogram[t];
+    if (wB === 0) continue;
+    const wF = total - wB;
+    if (wF === 0) break;
+    sumB += t * histogram[t];
+    const mB = sumB / wB;
+    const mF = (sumAll - sumB) / wF;
+    // Between-class variance, weighted by class probabilities.
+    const between = (wB / total) * (wF / total) * (mB - mF) * (mB - mF);
+    if (between > maxBetween) {
+      maxBetween = between;
+      threshold = t;
+    }
+  }
+
+  // Total variance for the separability metric.
+  let varTotal = 0;
+  for (let i = 0; i < 256; i++) {
+    const d = i - mean;
+    varTotal += histogram[i] * d * d;
+  }
+  varTotal /= total;
+  const separability = varTotal > 0 ? maxBetween / varTotal : 0;
+  return { threshold, separability };
+}
+
 /**
  * Preprocess a photo/screenshot of a lab report before handing it to
  * Tesseract. Two passes:
- *   1. Grayscale conversion (Rec. 601 luma).
- *   2. Fixed-threshold binarization at 160 → pure B&W.
+ *   1. Grayscale conversion (Rec. 601 luma) + 256-bin histogram.
+ *   2. Otsu-adaptive binarization → pure B&W (fixed-160 fallback).
  *
- * Why: many Indian lab templates (Dr Lal PathLabs, Crystal Data Inc.,
- * Thyrocare) use a yellow or pale-blue tint behind the table. Tesseract
- * reads colored-on-colored text poorly — value cells like "12.00" come
- * back as "Taw", "37.70" as "sre". Reducing to pure black-on-white
- * eliminates the tint as a confounder. The threshold (160/255) is
- * tuned for the typical Indian lab template's light background +
- * black text contrast; aggressive enough to remove most tints, gentle
- * enough not to erode thin digit strokes.
+ * Why binarize at all: many Indian lab templates (Dr Lal PathLabs,
+ * Crystal Data Inc., Thyrocare) use a yellow or pale-blue tint behind
+ * the table. Tesseract reads colored-on-colored text poorly — value
+ * cells like "12.00" come back as "Taw", "37.70" as "sre". Reducing to
+ * pure black-on-white eliminates the tint as a confounder.
+ *
+ * Why Otsu over a fixed cutoff: a phone photo's exposure varies wildly
+ * (shadow, flash glare, dim indoor light), and a single hardcoded
+ * threshold blows out under- or over-exposed shots — the exact failure
+ * mode behind the real CBC-photo misreads. Otsu derives the cutoff per
+ * image from its own histogram, so a darker or brighter shot still
+ * splits text from background correctly. The guard (OTSU_MIN_
+ * SEPARABILITY) falls back to the tuned fixed value only on near-blank /
+ * solid-tint / washed-out frames where there's no real split to find —
+ * so this never regresses the clean-template case the fixed cutoff was
+ * tuned for.
  *
  * Falls back to the original blob on any failure — preprocessing
  * helping is gravy, not contractual.
@@ -609,9 +688,27 @@ async function preprocessImageForOcr(file: Blob): Promise<Blob> {
     bmp.close?.();
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const px = imageData.data;
+
+    // Pass 1: luma → store back into the R channel (reused as a gray
+    // scratch buffer so we don't allocate a second full-frame array on
+    // memory-tight Android) and tally the histogram.
+    const histogram = new Uint32Array(256);
     for (let i = 0; i < px.length; i += 4) {
-      const gray = 0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2];
-      const v = gray > 160 ? 255 : 0;
+      const gray =
+        (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) | 0;
+      px[i] = gray;
+      histogram[gray]++;
+    }
+
+    // Pick the cutoff: Otsu when its split is trustworthy, else the
+    // tuned fixed value.
+    const { threshold, separability } = otsuThreshold(histogram);
+    const cut =
+      separability >= OTSU_MIN_SEPARABILITY ? threshold : FIXED_OCR_THRESHOLD;
+
+    // Pass 2: binarize from the stored gray in the R channel.
+    for (let i = 0; i < px.length; i += 4) {
+      const v = px[i] > cut ? 255 : 0;
       px[i] = v;
       px[i + 1] = v;
       px[i + 2] = v;
