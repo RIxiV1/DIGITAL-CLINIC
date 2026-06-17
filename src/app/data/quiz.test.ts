@@ -5,7 +5,46 @@ import {
   findOptionLabel,
   buildLabelMap,
   totalQuizSteps,
+  exclusiveOptionIds,
+  toggleMultiSelect,
 } from './quiz';
+
+describe('exclusive opt-out handling', () => {
+  it('flags the symptoms "Nothing specific" and safety "None of these" opts as exclusive', () => {
+    expect(exclusiveOptionIds('symptoms')).toEqual(new Set(['proactive']));
+    expect(exclusiveOptionIds('comorbidities')).toEqual(new Set(['none']));
+    // Fields without an opt-out have none.
+    expect(exclusiveOptionIds('priorities').size).toBe(0);
+  });
+
+  it('selecting an exclusive option clears every other selection', () => {
+    const ex = exclusiveOptionIds('comorbidities');
+    expect(toggleMultiSelect(['nitrates', 'high-bp'], 'none', ex)).toEqual([
+      'none',
+    ]);
+  });
+
+  it('selecting a normal option clears a previously-set exclusive option', () => {
+    const ex = exclusiveOptionIds('comorbidities');
+    expect(toggleMultiSelect(['none'], 'nitrates', ex)).toEqual(['nitrates']);
+  });
+
+  it('toggles normally among non-exclusive options', () => {
+    const ex = exclusiveOptionIds('comorbidities');
+    expect(toggleMultiSelect(['nitrates'], 'high-bp', ex).sort()).toEqual([
+      'high-bp',
+      'nitrates',
+    ]);
+    expect(toggleMultiSelect(['nitrates', 'high-bp'], 'nitrates', ex)).toEqual([
+      'high-bp',
+    ]);
+  });
+
+  it('deselecting the exclusive option just removes it', () => {
+    const ex = exclusiveOptionIds('comorbidities');
+    expect(toggleMultiSelect(['none'], 'none', ex)).toEqual([]);
+  });
+});
 
 describe('getStepOptions', () => {
   it('returns the flat options for a simple step', () => {
