@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rollup, summaryText } from './HealthMapPage';
+import { healthMapHeadline, rollup, summaryText } from './HealthMapPage';
 import type { Biomarker } from '../data/biomarkers';
 
 /**
@@ -67,5 +67,37 @@ describe('summaryText', () => {
   it('falls back to "to watch", then "Healthy"', () => {
     expect(summaryText(rollup([marker('attention')]))).toBe('1 to watch');
     expect(summaryText(rollup([marker('good')]))).toBe('Healthy');
+  });
+});
+
+describe('healthMapHeadline', () => {
+  it('does not say "a handful" for a single concern (the reported bug)', () => {
+    expect(healthMapHeadline({ critical: 0, concern: 1, attention: 0 })).toBe(
+      'Just one thing to work on',
+    );
+  });
+
+  it('uses the plural framing only for 2+ concerns', () => {
+    expect(healthMapHeadline({ critical: 0, concern: 3, attention: 0 })).toBe(
+      'A handful of things to work on',
+    );
+  });
+
+  it('is count-aware for the critical (see-a-doctor) tier', () => {
+    expect(healthMapHeadline({ critical: 1, concern: 2, attention: 0 })).toBe(
+      'One thing needs a doctor',
+    );
+    expect(healthMapHeadline({ critical: 2, concern: 0, attention: 0 })).toBe(
+      'A few things need a doctor',
+    );
+  });
+
+  it('is count-aware for the keep-an-eye tier, and celebrates all-clear', () => {
+    expect(healthMapHeadline({ critical: 0, concern: 0, attention: 1 })).toBe(
+      'Looking good — one to keep an eye on',
+    );
+    expect(healthMapHeadline({ critical: 0, concern: 0, attention: 0 })).toBe(
+      'Everything’s healthy',
+    );
   });
 });
