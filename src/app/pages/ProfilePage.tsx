@@ -16,6 +16,7 @@ import {
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
+import DataLockSetting from '../components/DataLockSetting';
 import Header from '../components/Header';
 import Pill from '../components/Pill';
 import BottomNav from '../components/BottomNav';
@@ -402,6 +403,11 @@ export default function ProfilePage() {
                     />
                   </span>
                 </button>
+
+                {/* At-rest data lock (opt-in PIN). Encrypts saved reports
+                    on this device; unlock prompt appears on every cold
+                    open once enabled. */}
+                <DataLockSetting />
 
                 {/* Discreet Mode. Hides the screen the instant the app
                     loses focus or is backgrounded (app switcher, glance

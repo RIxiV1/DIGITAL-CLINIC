@@ -18,9 +18,20 @@ import {
   cleanupExpiredReports,
   cleanupOrphanProcessing,
   loadReports,
+  loadReportsMaybeEncrypted,
+  reportsAreEncrypted,
   requestStoragePersistence,
-  saveReports,
+  saveReportsMaybeEncrypted,
+  wipeAllData,
 } from '../utils/persistence';
+import {
+  clearLockMeta,
+  enableLock as dataEnableLock,
+  getSessionKey,
+  isLockEnabled,
+  isUnlocked,
+  unlock as dataUnlock,
+} from '../utils/dataLock';
 
 type ReportsValue = {
   reports: Report[];
@@ -43,6 +54,25 @@ type ReportsValue = {
   /** Manually dismisses the saveError banner. The user may want to
    *  acknowledge the warning without freeing space immediately. */
   dismissSaveError: () => void;
+
+  /* ---- At-rest data lock (opt-in) ---- */
+  /** True when a lock is set up but this session hasn't unlocked yet —
+   *  the app shows the unlock gate instead of content while true. */
+  locked: boolean;
+  /** True when a PIN lock is configured at all (independent of whether
+   *  this session has unlocked). Drives the Profile toggle state. */
+  lockEnabled: boolean;
+  /** Try to unlock with a PIN; on success decrypts + loads reports and
+   *  clears `locked`. Returns false on wrong PIN (state untouched). */
+  unlock: (pin: string) => Promise<boolean>;
+  /** Turn the lock on: derive a key from the PIN and re-encrypt the
+   *  current reports at rest. The session stays usable; the gate only
+   *  appears on the next cold load. */
+  enableLock: (pin: string) => Promise<void>;
+  /** Turn the lock off: rewrite reports as plaintext and drop the lock. */
+  disableLock: () => Promise<void>;
+  /** Forgot-PIN escape hatch: wipe all local data + the lock, start fresh. */
+  wipeAndReset: () => void;
 };
 
 const ReportsContext = createContext<ReportsValue | null>(null);
@@ -58,11 +88,17 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
   // rather than only after the user's next write. Previously the
   // cleanup writes failed silently and the saveError flag only set on
   // the NEXT save attempt, which could be hours later.
+  // Is the data lock armed at boot? When it is, the reports on disk are
+  // ENCRYPTED — we must NOT run the synchronous cleanups or loadReports
+  // against them (readValidated would treat the ciphertext envelope as
+  // corrupt and wipe it). Instead we start gated: reports stay empty and
+  // `locked` is true until the user enters their PIN (see `unlock`).
+  const lockedAtBoot = typeof window !== 'undefined' && isLockEnabled();
   const [{ reports: initialBootstrapReports, initialSaveError }] = useState(
     () => {
-      if (typeof window === 'undefined') {
+      if (typeof window === 'undefined' || lockedAtBoot) {
         return {
-          reports: initialReports,
+          reports: [] as Report[],
           initialSaveError: null as 'quota' | null,
         };
       }
@@ -81,6 +117,17 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     },
   );
   const [reports, setReports] = useState<Report[]>(initialBootstrapReports);
+  // Gated until unlock when a lock is armed. `lockEnabled` tracks whether
+  // a lock exists at all (for the Profile toggle) and is kept in React
+  // state so enable/disable re-render consumers.
+  const [locked, setLocked] = useState<boolean>(lockedAtBoot);
+  const [lockEnabled, setLockEnabled] = useState<boolean>(
+    typeof window !== 'undefined' && isLockEnabled(),
+  );
+  // Always-current reports, so the lock actions can read the latest list
+  // without being re-created on every change.
+  const reportsRef = useRef(reports);
+  reportsRef.current = reports;
 
   const [saveError, setSaveError] = useState<'quota' | null>(initialSaveError);
   const dismissSaveError = useCallback(() => setSaveError(null), []);
@@ -105,19 +152,27 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
       skipNextPersistRef.current = false;
       return;
     }
-    const ok = saveReports(reports);
-    if (!ok) {
-      // Quota exceeded / storage disabled / private mode. The reports
-      // list is intact in memory, but the next tab close wipes it
-      // unless the user frees space. Surface this via the saveError
-      // flag — a banner in HomePage reads it and warns the user.
-      setSaveError('quota');
-    } else if (saveError) {
-      // Storage came back (user deleted some old reports / closed
-      // private mode). Clear the banner.
-      setSaveError(null);
-    }
-  }, [reports, saveError]);
+    // While gated (lock armed, not yet unlocked) reports[] is empty and
+    // does NOT reflect the user's data — writing now would clobber the
+    // ciphertext at rest with an empty set. Never persist until unlocked.
+    if (locked) return;
+    // Encrypt at rest when the lock is on (a session key is present);
+    // otherwise write plaintext. Async, so the quota check runs in .then.
+    const key = isLockEnabled() ? getSessionKey() : null;
+    void saveReportsMaybeEncrypted(reports, key).then((ok) => {
+      if (!ok) {
+        // Quota exceeded / storage disabled / private mode. The reports
+        // list is intact in memory, but the next tab close wipes it
+        // unless the user frees space. Surface this via the saveError
+        // flag — a banner in HomePage reads it and warns the user.
+        setSaveError('quota');
+      } else if (saveError) {
+        // Storage came back (user deleted some old reports / closed
+        // private mode). Clear the banner.
+        setSaveError(null);
+      }
+    });
+  }, [reports, saveError, locked]);
 
   /* Cross-tab sync.
    *
@@ -133,6 +188,21 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     if (typeof window === 'undefined') return;
     const onStorage = (e: StorageEvent) => {
       if (e.key !== REPORTS_KEY) return;
+      if (reportsAreEncrypted()) {
+        // Encrypted blob changed in another tab. If this tab is gated,
+        // ignore it (we're showing the unlock screen anyway). If unlocked,
+        // decrypt with our session key. Never fall through to the
+        // plaintext loader — it returns [] for ciphertext and would blank
+        // our in-memory reports.
+        if (!isUnlocked()) return;
+        void loadReportsMaybeEncrypted<Report>(getSessionKey()).then(
+          (fresh) => {
+            skipNextPersistRef.current = true;
+            setReports(fresh);
+          },
+        );
+        return;
+      }
       // newValue is null when the key was removed (e.g. wipeAllData
       // from another tab) — treat that as "load empty".
       const fresh = loadReports<Report>();
@@ -174,6 +244,48 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
     setReports((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
+  /* ---- Lock actions ---- */
+
+  const unlock = useCallback(async (pin: string): Promise<boolean> => {
+    const ok = await dataUnlock(pin);
+    if (!ok) return false;
+    const loaded = await loadReportsMaybeEncrypted<Report>(getSessionKey());
+    // We just read these from disk — don't let the resulting setReports
+    // bounce straight back into a re-save.
+    skipNextPersistRef.current = true;
+    setReports(loaded);
+    setLocked(false);
+    return true;
+  }, []);
+
+  const enableLock = useCallback(async (pin: string): Promise<void> => {
+    const key = await dataEnableLock(pin);
+    // Re-encrypt the current reports immediately with the new key so the
+    // at-rest copy matches the lock. The session stays unlocked.
+    await saveReportsMaybeEncrypted(reportsRef.current, key);
+    setLockEnabled(true);
+  }, []);
+
+  const disableLock = useCallback(async (): Promise<void> => {
+    // Rewrite reports as plaintext, THEN drop the lock metadata + key.
+    await saveReportsMaybeEncrypted(reportsRef.current, null);
+    clearLockMeta();
+    setLockEnabled(false);
+    setLocked(false);
+  }, []);
+
+  const wipeAndReset = useCallback((): void => {
+    // Forgot-PIN escape hatch. Clear all local data + the lock and start
+    // from a clean, unlocked slate. Data is local-only and re-uploadable,
+    // so this is the honest alternative to a permanent lockout.
+    wipeAllData();
+    clearLockMeta();
+    skipNextPersistRef.current = true;
+    setReports([]);
+    setLockEnabled(false);
+    setLocked(false);
+  }, []);
+
   const value = useMemo<ReportsValue>(
     () => ({
       reports,
@@ -182,6 +294,12 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
       removeReport,
       saveError,
       dismissSaveError,
+      locked,
+      lockEnabled,
+      unlock,
+      enableLock,
+      disableLock,
+      wipeAndReset,
     }),
     [
       reports,
@@ -190,6 +308,12 @@ export function ReportsProvider({ children }: { children: ReactNode }) {
       removeReport,
       saveError,
       dismissSaveError,
+      locked,
+      lockEnabled,
+      unlock,
+      enableLock,
+      disableLock,
+      wipeAndReset,
     ],
   );
 

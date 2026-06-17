@@ -1,8 +1,9 @@
 import { Suspense } from 'react';
 import { MotionConfig, motion } from 'framer-motion';
-import { AppProvider, useNavigation, type Page } from './AppContext';
+import { AppProvider, useNavigation, useReports, type Page } from './AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import PrivacyScreen from './components/PrivacyScreen';
+import UnlockGate from './components/UnlockGate';
 import { PageSkeleton } from './components/Skeleton';
 import LandingPage from './pages/LandingPage';
 import { assertNever } from './utils/assertNever';
@@ -175,6 +176,15 @@ function PageHost() {
   );
 }
 
+/** Boot gate for the opt-in data lock. When a lock is armed and this
+ *  session hasn't unlocked, show the PIN screen instead of the app — the
+ *  reports stay encrypted and unread until the PIN is entered. */
+function LockGate({ children }: { children: React.ReactNode }) {
+  const { locked } = useReports();
+  if (locked) return <UnlockGate />;
+  return <>{children}</>;
+}
+
 export default function App() {
   return (
     <ErrorBoundary>
@@ -194,8 +204,10 @@ export default function App() {
        *  explicitly (event listener is the bigger cost there). */}
       <MotionConfig reducedMotion="user">
         <AppProvider>
-          <PageHost />
-          <PrivacyScreen />
+          <LockGate>
+            <PageHost />
+            <PrivacyScreen />
+          </LockGate>
         </AppProvider>
       </MotionConfig>
     </ErrorBoundary>
