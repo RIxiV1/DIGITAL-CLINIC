@@ -96,6 +96,37 @@ export function summaryText(r: SystemRollup): string {
   return 'Healthy';
 }
 
+/**
+ * Encouraging-but-honest hero headline, keyed off BOTH the worst status
+ * present AND its count — so a single flagged marker doesn't read as "a
+ * handful of things to work on" while the body line says "one thing to
+ * act on". bottomLineFor (the body) is already count-aware; this keeps
+ * the headline consistent with it. Pure + exported so the count logic is
+ * unit-tested (this is the second count-mismatch copy bug of this class).
+ */
+export function healthMapHeadline(s: {
+  critical: number;
+  concern: number;
+  attention: number;
+}): string {
+  if (s.critical > 0) {
+    return s.critical === 1
+      ? 'One thing needs a doctor'
+      : 'A few things need a doctor';
+  }
+  if (s.concern > 0) {
+    return s.concern === 1
+      ? 'Just one thing to work on'
+      : 'A handful of things to work on';
+  }
+  if (s.attention > 0) {
+    return s.attention === 1
+      ? 'Looking good — one to keep an eye on'
+      : 'Looking good — a few to keep an eye on';
+  }
+  return 'Everything’s healthy';
+}
+
 /** Worst-first ordering so the eye lands on what matters. */
 const SEVERITY: Record<Biomarker['status'], number> = {
   critical: 0,
@@ -155,15 +186,8 @@ export default function HealthMapPage() {
     return { improved, declined, any: improved + declined > 0 };
   }, [biomarkers]);
 
-  // Encouraging-but-honest headline keyed off the worst status present.
-  const headline =
-    summary.critical > 0
-      ? 'A few things need a doctor'
-      : summary.concern > 0
-        ? 'A handful of things to work on'
-        : summary.attention > 0
-          ? 'Looking good — a few to keep an eye on'
-          : 'Everything’s healthy';
+  // Encouraging-but-honest headline keyed off the worst status AND count.
+  const headline = healthMapHeadline(summary);
 
   /* ---- Empty state: no parsed report yet. ---- */
   if (!ready || biomarkers.length === 0) {
