@@ -225,7 +225,7 @@ export const sampleBiomarkers: Biomarker[] = [
     optimalMax: 900,
     optimalSource: {
       label:
-        'Endocrine Society 2018 hypogonadism guideline + Travison 2017 quartile data; the Indian male-hypogonadism consensus (Kalra et al., 2023) uses the same <300 ng/dL low cutoff',
+        '<300 ng/dL low cutoff per AUA 2018 and the Indian male-hypogonadism consensus (Kalra et al., 2023); the Endocrine Society 2018 harmonized limit is slightly lower at 264 ng/dL. Optimal band from Travison 2017 quartile data',
       url: 'https://academic.oup.com/jcem/article/103/5/1715/4939465',
       audience: 'adult men 18–65 · India-consistent',
     },
@@ -1372,7 +1372,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     optimalMax: 900,
     optimalSource: {
       label:
-        'Endocrine Society 2018 hypogonadism guideline + Travison 2017 quartile data; the Indian male-hypogonadism consensus (Kalra et al., 2023) uses the same <300 ng/dL low cutoff',
+        '<300 ng/dL low cutoff per AUA 2018 and the Indian male-hypogonadism consensus (Kalra et al., 2023); the Endocrine Society 2018 harmonized limit is slightly lower at 264 ng/dL. Optimal band from Travison 2017 quartile data',
       url: 'https://academic.oup.com/jcem/article/103/5/1715/4939465',
       audience: 'adult men 18–65 · India-consistent',
     },
