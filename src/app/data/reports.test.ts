@@ -7,6 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  getCombinedSnapshot,
   getLatestReadyReport,
   getPrimaryReport,
   getRetestReminder,
@@ -58,6 +59,67 @@ function readyReport(uploadedAt: string, biomarkers: Biomarker[]): Report {
     biomarkers,
   };
 }
+
+/** A fertility-category marker, to simulate a complementary panel (e.g.
+ *  a semen analysis) that covers a different system than a CBC. */
+function sperm(value: number): Biomarker {
+  return {
+    id: 'sperm-concentration',
+    name: 'Sperm Concentration',
+    value,
+    unit: 'million/mL',
+    min: 15,
+    max: 200,
+    status: value >= 15 ? 'good' : 'concern',
+    category: 'fertility',
+    plain: 'Sperm concentration.',
+  };
+}
+
+describe('getCombinedSnapshot', () => {
+  it('returns a single report unchanged (no behavior change for the common case)', () => {
+    const r = readyReport('2026-06-16', [hb(14), ldl(95)]);
+    const snap = getCombinedSnapshot([r]);
+    expect(snap.reportCount).toBe(1);
+    expect(snap.biomarkers.map((m) => m.id).sort()).toEqual(['hb', 'ldl']);
+    expect(snap.biomarkers.every((m) => m.history === undefined)).toBe(true);
+    expect(snap.latestUploadedOn).toBe('2026-06-16');
+  });
+
+  it('UNIONS complementary panels so every system appears (the reported bug)', () => {
+    const cbc = readyReport('2026-06-16', [hb(14)]); // Blood
+    const semen = readyReport('2026-06-17', [sperm(40)]); // Fertility
+    const snap = getCombinedSnapshot([cbc, semen]);
+    expect(snap.reportCount).toBe(2);
+    expect(snap.biomarkers.map((m) => m.id).sort()).toEqual([
+      'hb',
+      'sperm-concentration',
+    ]);
+    // Each marker routes back to the report it came from.
+    expect(snap.sourceReportId['hb']).toBe(cbc.id);
+    expect(snap.sourceReportId['sperm-concentration']).toBe(semen.id);
+    // Label reflects the most recent contributing report.
+    expect(snap.latestUploadedOn).toBe('2026-06-17');
+  });
+
+  it('takes the latest value per marker and folds the older reading into history', () => {
+    const older = readyReport('2026-01-15', [hb(13.5)]);
+    const newer = readyReport('2026-06-16', [hb(14.2)]);
+    const snap = getCombinedSnapshot([older, newer]);
+    const merged = snap.biomarkers.find((m) => m.id === 'hb')!;
+    expect(merged.value).toBe(14.2); // latest wins
+    expect(merged.history).toEqual([{ date: '2026-01-15', value: 13.5 }]);
+    expect(snap.sourceReportId['hb']).toBe(newer.id);
+  });
+
+  it('ignores samples when the user has real reports', () => {
+    const real = readyReport('2026-06-16', [hb(14)]);
+    const sample: Report = { ...readyReport('2026-06-10', [ldl(80)]), isSample: true };
+    const snap = getCombinedSnapshot([real, sample]);
+    expect(snap.reportCount).toBe(1);
+    expect(snap.biomarkers.map((m) => m.id)).toEqual(['hb']);
+  });
+});
 
 describe('mergeHistoryFromPriorReports', () => {
   it('returns input unchanged when there are no prior reports', () => {

@@ -18,6 +18,7 @@ import {
   type Biomarker,
 } from '../data/biomarkers';
 import {
+  getCombinedSnapshot,
   getPrimaryReport,
   getSampleReportForDashboard,
 } from '../data/reports';
@@ -112,7 +113,12 @@ export default function HealthMapPage() {
   const { navigate } = useNavigation();
 
   const ready = useMemo(() => getPrimaryReport(reports), [reports]);
-  const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
+  // Whole-body view: union markers across ALL the user's reports (latest
+  // value per marker), not just the single most-comprehensive panel — so
+  // a CBC and a separate fertility/hormone panel each contribute their
+  // systems here, matching the "every system on one screen" promise.
+  const snap = useMemo(() => getCombinedSnapshot(reports), [reports]);
+  const biomarkers = snap.biomarkers;
   const summary = useMemo(() => summarizeStatuses(biomarkers), [biomarkers]);
   const bottomLine = useMemo(() => bottomLineFor(biomarkers), [biomarkers]);
 
@@ -268,8 +274,11 @@ export default function HealthMapPage() {
 
         <p className="text-caption text-muted mt-3">
           {summary.total} markers · {groups.length}{' '}
-          {groups.length === 1 ? 'system' : 'systems'} · {ready.name} ·{' '}
-          {ready.uploadedOn}
+          {groups.length === 1 ? 'system' : 'systems'} ·{' '}
+          {snap.reportCount > 1
+            ? `across ${snap.reportCount} reports`
+            : ready.name}{' '}
+          · {snap.latestUploadedOn ?? ready.uploadedOn}
         </p>
         <StatusKey className="mt-3" />
         {/* Screening-indicator caveat — matches the dashboard + report
@@ -299,7 +308,16 @@ export default function HealthMapPage() {
               <motion.button
                 key={g.category.id}
                 type="button"
-                onClick={() => navigate({ type: 'results', reportId: ready.id })}
+                onClick={() =>
+                  navigate({
+                    type: 'results',
+                    // Route to the report that owns this system's markers
+                    // (their latest reading's source), not always the
+                    // primary — so tapping "Fertility" opens the panel it
+                    // actually came from.
+                    reportId: snap.sourceReportId[g.markers[0]?.id] ?? ready.id,
+                  })
+                }
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{

@@ -43,6 +43,7 @@ import {
 } from '../data/biomarkers';
 import {
   badgeFor,
+  getCombinedSnapshot,
   getPrimaryReport,
   getRetestReminder,
   getSampleReportForDashboard,
@@ -160,9 +161,15 @@ export default function HomePage() {
   };
 
   // Primary = the most comprehensive panel, not literally the newest
-  // upload — so a small add-on test doesn't override a full blood panel.
+  // upload — kept for the empty-state gate, the "See all markers" CTA
+  // target, and trend dating.
   const ready = useMemo(() => getPrimaryReport(reports), [reports]);
-  const biomarkers = useMemo(() => ready?.biomarkers ?? [], [ready]);
+  // Score + markers are UNIONED across all reports (latest value per
+  // marker), so a CBC + a separate hormone/fertility panel both count
+  // toward the dashboard — matching the Health Map. Single-report users
+  // get exactly their one report's markers (no change).
+  const snap = useMemo(() => getCombinedSnapshot(reports), [reports]);
+  const biomarkers = snap.biomarkers;
 
   /* ---- Re-test nudge. Surfaced when the user's latest real report is
    *      older than RETEST_REMINDER_DAYS — the retention loop that turns
@@ -574,7 +581,14 @@ export default function HomePage() {
           markers={ready ? biomarkers : null}
           hasReport={!!ready}
           source={
-            ready ? { name: ready.name, uploadedOn: ready.uploadedOn } : undefined
+            ready
+              ? snap.reportCount > 1
+                ? {
+                    name: `your ${snap.reportCount} reports`,
+                    uploadedOn: `latest ${snap.latestUploadedOn ?? ready.uploadedOn}`,
+                  }
+                : { name: ready.name, uploadedOn: ready.uploadedOn }
+              : undefined
           }
           onPrimaryCTA={primaryCTA}
         />

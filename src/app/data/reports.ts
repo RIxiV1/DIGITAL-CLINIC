@@ -294,3 +294,89 @@ export function mergeHistoryFromPriorReports(
     return history.length > 0 ? { ...m, history } : m;
   });
 }
+
+export type CombinedSnapshot = {
+  biomarkers: Biomarker[];
+  /** marker id → id of the report its current (latest) reading came from,
+   *  so a Health Map system card can open the report that owns it. */
+  sourceReportId: Record<string, string>;
+  /** Distinct real, ready, dated reports that contributed ≥1 marker. */
+  reportCount: number;
+  /** Display date (uploadedOn) of the most recent contributing report. */
+  latestUploadedOn?: string;
+};
+
+/**
+ * Whole-body snapshot UNIONED across all the user's real reports — for
+ * the surfaces that promise "every system" (the Health Map and the
+ * dashboard score), not "your one biggest panel".
+ *
+ * getPrimaryReport picks a single most-comprehensive report; that's right
+ * for re-tests of the same panel but wrong for COMPLEMENTARY ones (a CBC
+ * plus a separate hormone / semen-analysis panel) — the user uploaded
+ * both yet only one system showed. This unions them: for each marker id
+ * the most recent reading across all reports wins, and that id's earlier
+ * readings become its `history` (same unit/version guards as
+ * mergeHistoryFromPriorReports, so a unit migration can't fuse the wrong
+ * scale). Samples are used only when there are no real reports (keeps the
+ * "Load sample data" demo working).
+ *
+ * For a single-report user the output equals that report's markers — no
+ * behavior change for the common case. Pure; doesn't mutate inputs.
+ */
+export function getCombinedSnapshot(reports: Report[]): CombinedSnapshot {
+  const ready = reports.filter((r) => r.status === 'ready');
+  const real = ready.filter((r) => !r.isSample);
+  const pool = real.length > 0 ? real : ready;
+  // Oldest → newest, so the LAST write per marker id is the most recent
+  // reading. Undated reports sort first (treated as oldest).
+  const chrono = pool
+    .slice()
+    .sort((a, b) => (a.uploadedAt ?? '').localeCompare(b.uploadedAt ?? ''));
+
+  const latest = new Map<string, { marker: Biomarker; report: Report }>();
+  for (const r of chrono) {
+    for (const m of r.biomarkers) latest.set(m.id, { marker: m, report: r });
+  }
+
+  const contributing = new Set<string>();
+  const sourceReportId: Record<string, string> = {};
+  const biomarkers: Biomarker[] = [];
+  for (const { marker, report } of latest.values()) {
+    sourceReportId[marker.id] = report.id;
+    contributing.add(report.id);
+    // history = this id's readings in every OTHER contributing report,
+    // unit/version-matched, oldest → newest. The current reading itself
+    // stays as marker.value (consistent with mergeHistoryFromPriorReports).
+    const history: BiomarkerReading[] = [];
+    for (const r of chrono) {
+      if (r.id === report.id || !r.uploadedAt) continue;
+      const prior = r.biomarkers.find((b) => b.id === marker.id);
+      if (!prior) continue;
+      if ((prior.unit || '') !== (marker.unit || '')) continue;
+      const priorVersion = prior.catalogVersion;
+      const currentVersion = marker.catalogVersion ?? CATALOG_VERSION;
+      if (priorVersion !== undefined && priorVersion !== currentVersion) {
+        continue;
+      }
+      history.push({ date: r.uploadedAt, value: prior.value });
+    }
+    history.sort((a, b) => a.date.localeCompare(b.date));
+    biomarkers.push(history.length > 0 ? { ...marker, history } : marker);
+  }
+
+  const latestReport = chrono
+    .filter((r) => contributing.has(r.id))
+    .reduce<Report | undefined>(
+      (best, r) =>
+        !best || (r.uploadedAt ?? '') >= (best.uploadedAt ?? '') ? r : best,
+      undefined,
+    );
+
+  return {
+    biomarkers,
+    sourceReportId,
+    reportCount: contributing.size,
+    latestUploadedOn: latestReport?.uploadedOn,
+  };
+}
