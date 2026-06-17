@@ -1,4 +1,11 @@
-import { useDeferredValue, useId, useMemo, useRef, useState } from 'react';
+import {
+  useDeferredValue,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
@@ -299,8 +306,17 @@ export default function HomePage() {
     // That removes the duplication with the hero cards AND makes the
     // "See N more flagged →" link land on exactly those N — not the same
     // ones over again.
-    return flaggedMarkersAll.slice(HERO_FLAG_COUNT, HERO_FLAG_COUNT + 12);
-  }, [isFiltering, visibleMarkers, flaggedMarkersAll]);
+    const overflowFlagged = flaggedMarkersAll.slice(
+      HERO_FLAG_COUNT,
+      HERO_FLAG_COUNT + 12,
+    );
+    if (overflowFlagged.length > 0) return overflowFlagged;
+    // No flagged markers beyond the hero (≤HERO_FLAG_COUNT flagged): don't
+    // dead-end on an empty pane that tells the user to click "All markers"
+    // again. Lead with the on-track markers — the rest of the report they
+    // haven't seen yet — so opening "All markers" actually shows markers.
+    return biomarkers.filter((m) => m.status === 'good').slice(0, 12);
+  }, [isFiltering, visibleMarkers, flaggedMarkersAll, biomarkers]);
 
   /** Trends grouped by pathway — body of the "Compare to your last
    *  report" disclosure. */
@@ -343,6 +359,26 @@ export default function HomePage() {
    *  collapsed (the concise emotional-anchor first paint is preserved);
    *  tapping a chip opens its pane, tapping the open chip collapses. */
   const [activeTab, setActiveTab] = useState<ExploreTab | null>(null);
+
+  /* Tapping a Vitals Strip tile opens the markers pane further down the
+   * page; on a phone that expansion can land off-screen, reading as "the
+   * tap did nothing". Set this flag on a tile tap and, once the pane has
+   * rendered, glide it into view. Reduced-motion users get an instant
+   * jump. Only fires for tile-driven opens, not every chip toggle. */
+  const scrollExploreRef = useRef(false);
+  useEffect(() => {
+    if (!scrollExploreRef.current || !activeTab) return;
+    scrollExploreRef.current = false;
+    const el = document.getElementById(`${exploreBaseId}-panel`);
+    if (!el) return;
+    const reduce =
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({
+      behavior: reduce ? 'auto' : 'smooth',
+      block: 'nearest',
+    });
+  }, [activeTab, exploreBaseId]);
 
   /* Learn More modal — shared across the top concern card, the
    * disclosure body's grid, and the trend rows. */
@@ -723,6 +759,7 @@ export default function HomePage() {
                   onClick={() => {
                     setPathwayScope(p.id);
                     setActiveTab('markers');
+                    scrollExploreRef.current = true;
                   }}
                   aria-label={`${p.name}: ${statusText} — view markers`}
                   className={`text-left bg-surface rounded-[14px] border border-line/70 border-l-4 ${borderCls} shadow-soft p-3 sm:p-3.5 transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60`}
