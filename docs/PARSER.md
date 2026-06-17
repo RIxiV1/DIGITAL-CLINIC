@@ -53,7 +53,7 @@ parseUploadedReport(name, file, onProgress)
 │   └─ classifyOutOfScope(text) → "this is a CT scan / dental, not a lab panel"
 │
 ├─ if image:
-│   ├─ preprocess (grayscale + binarisation)
+│   ├─ preprocess (grayscale + Otsu-adaptive binarisation, fixed-160 fallback)
 │   ├─ run Tesseract with PSM 6
 │   └─ extractBiomarkersFromText(text) → same matcher
 │
