@@ -27,7 +27,7 @@ Upload a PDF or photo of your blood work. The app parses it client-side (no serv
 
 Most lab reports in India are 4–10 page PDFs with subset fonts, dense tables, and zero accessibility. Patients get the file, glance at the "out of range" highlights, and panic — or ignore it. Digital Clinic re-presents the same data the way a friend who happens to be a doctor would: a single dashboard score, marker-by-marker plain-English explanations, and a "what to do next" rather than a wall of numbers.
 
-The whole thing runs in the browser. No file is ever uploaded to a server.
+The whole thing runs in the browser — no uploads, no account, no tracking. The one exception is an **optional, consent-gated** "Try AI parser" fallback: when on-device OCR can't read a photo, the user can choose to send that single image to Google Gemini, with a clear "the image leaves your device" disclosure shown at the point of use.
 
 ## Highlights (the parts worth reading the code for)
 
@@ -37,7 +37,7 @@ PDF text extraction is notoriously fragile. This pipeline runs three reconstruct
 - X-gap–aware token joining (so `43` doesn't get split into `4 3` by the renderer and parse as `4` — a real bug seen on Thyrocare/SRL/Metropolis output)
 - CID-keyed font handling via `cMapUrl` + `cMapPacked` for subset fonts
 
-**OCR fallback for scanned reports** — Tesseract.js renders each PDF page at 2.5× and re-extracts when the text layer is empty or yields no catalog hits. Per-page timeout, page cap, and OCR-artefact normalisation (`5 .` → `5.`) keep it from stalling on pathological inputs. Same path handles JPEG / PNG uploads.
+**OCR fallback for scanned reports** — Tesseract.js renders each PDF page at a device-adaptive 2.0–2.5× and re-extracts when the text layer is empty or yields no catalog hits. Per-page timeout, page cap, Otsu-adaptive binarisation for photos, and OCR-artefact normalisation (`5 .` → `5.`) keep it from stalling on pathological inputs. Same path handles JPEG / PNG uploads.
 
 **Biomarker catalog with alias matching** — the catalog drives both parsing and rendering. Each marker knows its clinical aliases, reference ranges, optimal sub-ranges, and direction semantics (`band` / `up` / `down`) so a single component can correctly visualise "higher is better" (HDL) and "lower is better" (LDL) without per-marker branching.
 
@@ -57,7 +57,8 @@ PDF / image upload
 │  pdfjs text layer  ──► 3 reconstruction     │
 │                        strategies in parallel│
 │                                              │
-│  (fallback) ──────► Tesseract.js OCR        │
+│  (fallback)  ──────► Tesseract.js OCR       │
+│  (opt-in)    ──────► Gemini vision (api/)   │
 └─────────────────────────────────────────────┘
       │
       ▼
@@ -70,7 +71,7 @@ PDF / image upload
   Persist to localStorage  ──►  Dashboard / Results / Trends
 ```
 
-State lives in two React contexts (`QuizContext`, `ReportsContext`) with `localStorage` persistence. No network calls outside loading the PDF/OCR workers.
+State lives in two React contexts (`QuizContext`, `ReportsContext`) with `localStorage` persistence. The only network calls are loading the PDF/OCR workers — plus the **opt-in** Gemini fallback (`api/parse-image.ts`), which sends an image to Google only when the user explicitly taps "Try AI parser".
 
 ## Stack
 
@@ -82,7 +83,7 @@ State lives in two React contexts (`QuizContext`, `ReportsContext`) with `localS
 
 ## Local development
 
-Requires Node `>=20.11 <23`.
+Requires Node `>=20.19 <23`.
 
 ```bash
 npm install
