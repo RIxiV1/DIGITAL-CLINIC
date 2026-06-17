@@ -92,8 +92,17 @@ type StatusFilter = StatusFilterId;
 type LockerSort = 'newest' | 'oldest' | 'lab';
 type ExploreTab = 'markers' | 'trends' | 'reports';
 
+// How many flagged markers the Top Concern zone (2b) surfaces on first
+// paint. Shared so the "All markers" pane can lead with the REST when
+// idle — showing the same cards twice (hero + pane) read as a bug, and
+// the "See N more flagged →" link promised "more", not "all over again".
+const HERO_FLAG_COUNT = 3;
+
 export default function HomePage() {
   const { reports, removeReport, saveError, dismissSaveError } = useReports();
+  // Stable id base for associating the Explore toggle buttons with the
+  // region they reveal (aria-controls / aria-labelledby).
+  const exploreBaseId = useId();
 
   /** Catalog-migration notice. Shown when:
    *    - The user has acknowledged an older CATALOG_VERSION than the
@@ -221,9 +230,25 @@ export default function HomePage() {
    *      and closing the disclosure preserves typed queries. ---- */
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  // Pathway scope — set when the user taps a Vitals Strip tile, which
+  // opens the markers pane filtered to that pathway's categories. null =
+  // no scope. Composes with the search query + status filter; shown as a
+  // removable chip inside the pane so it's never a mystery filter.
+  const [pathwayScope, setPathwayScope] = useState<string | null>(null);
+  const scopeCategories = useMemo(
+    () =>
+      pathwayScope
+        ? (PATHWAYS.find((p) => p.id === pathwayScope)?.categories ?? null)
+        : null,
+    [pathwayScope],
+  );
+  const scopeLabel = pathwayScope
+    ? PATHWAYS.find((p) => p.id === pathwayScope)?.name
+    : undefined;
   const deferredQuery = useDeferredValue(query);
   const trimmedQuery = deferredQuery.trim().toLowerCase();
-  const isFiltering = trimmedQuery.length > 0 || statusFilter !== 'all';
+  const isFiltering =
+    trimmedQuery.length > 0 || statusFilter !== 'all' || pathwayScope !== null;
 
   const visibleMarkers = useMemo(() => {
     const tokens = trimmedQuery.split(/\s+/).filter(Boolean);
@@ -236,9 +261,10 @@ export default function HomePage() {
         queryHit = tokens.every((t) => haystack.includes(t));
       }
       const statusHit = statusFilter === 'all' || m.status === statusFilter;
-      return queryHit && statusHit;
+      const scopeHit = !scopeCategories || scopeCategories.includes(m.category);
+      return queryHit && statusHit && scopeHit;
     });
-  }, [biomarkers, trimmedQuery, statusFilter]);
+  }, [biomarkers, trimmedQuery, statusFilter, scopeCategories]);
 
   /** All flagged markers (critical + concern + attention), sorted
    *  critical → concern → attention. Drives the top-concern hero
@@ -268,7 +294,12 @@ export default function HomePage() {
    *    behind the "All markers" filter pill. */
   const disclosedMarkers = useMemo(() => {
     if (isFiltering) return visibleMarkers.slice(0, 12);
-    return flaggedMarkersAll.slice(0, 12);
+    // Idle: the Top Concern zone already surfaces the first
+    // HERO_FLAG_COUNT flagged markers, so the pane leads with the REST.
+    // That removes the duplication with the hero cards AND makes the
+    // "See N more flagged →" link land on exactly those N — not the same
+    // ones over again.
+    return flaggedMarkersAll.slice(HERO_FLAG_COUNT, HERO_FLAG_COUNT + 12);
   }, [isFiltering, visibleMarkers, flaggedMarkersAll]);
 
   /** Trends grouped by pathway — body of the "Compare to your last
@@ -350,7 +381,7 @@ export default function HomePage() {
   // Surface the worst few flags on first paint (boss card + up to two
   // more) instead of one card with everything else behind a drawer —
   // the dashboard should show what's off, not read empty when it isn't.
-  const topFlagged = flaggedMarkersAll.slice(0, 3);
+  const topFlagged = flaggedMarkersAll.slice(0, HERO_FLAG_COUNT);
   const moreFlaggedCount = Math.max(
     0,
     flaggedMarkersAll.length - topFlagged.length,
@@ -640,7 +671,10 @@ export default function HomePage() {
             <div className="mt-3">
               <button
                 type="button"
-                onClick={() => setActiveTab('markers')}
+                onClick={() => {
+                  setPathwayScope(null);
+                  setActiveTab('markers');
+                }}
                 className="inline-flex items-center gap-1 min-h-11 text-caption font-semibold text-indigo-700 hover:text-indigo-900 underline-offset-2 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
               >
                 See {moreFlaggedCount} more flagged{' '}
@@ -683,9 +717,15 @@ export default function HomePage() {
                     ? 'text-attention'
                     : 'text-good';
               return (
-                <div
+                <button
                   key={p.id}
-                  className={`bg-surface rounded-[14px] border border-line/70 border-l-4 ${borderCls} shadow-soft p-3 sm:p-3.5`}
+                  type="button"
+                  onClick={() => {
+                    setPathwayScope(p.id);
+                    setActiveTab('markers');
+                  }}
+                  aria-label={`${p.name}: ${statusText} — view markers`}
+                  className={`text-left bg-surface rounded-[14px] border border-line/70 border-l-4 ${borderCls} shadow-soft p-3 sm:p-3.5 transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60`}
                 >
                   <div className="min-w-0">
                     <span className="text-micro uppercase tracking-eyebrow font-bold text-muted truncate">
@@ -697,7 +737,7 @@ export default function HomePage() {
                   >
                     {statusText}
                   </div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -746,14 +786,27 @@ export default function HomePage() {
               ? activeTab
               : null;
 
+          // These chips are NOT an ARIA tab pattern: tapping the open
+          // chip collapses the region, so at rest no chip is "selected"
+          // — which would be invalid for role="tab" (a tablist must
+          // always have a selected tab) and promises arrow-key navigation
+          // the control doesn't implement. They're disclosure toggles, so
+          // they carry aria-expanded + aria-controls and the revealed
+          // panel is a labelled region pointing back at its opener.
+          const panelId = `${exploreBaseId}-panel`;
+          const chipId = (id: ExploreTab) => `${exploreBaseId}-${id}`;
+
           return (
             <Container size="wide" className="mt-6 md:mt-8">
-              <h2 className="text-micro uppercase tracking-eyebrow font-bold text-muted mb-3">
+              <h2
+                id={`${exploreBaseId}-heading`}
+                className="text-micro uppercase tracking-eyebrow font-bold text-muted mb-3"
+              >
                 Explore your data
               </h2>
               <div
-                role="tablist"
-                aria-label="Explore your data"
+                role="group"
+                aria-labelledby={`${exploreBaseId}-heading`}
                 className="inline-flex flex-wrap gap-1 p-1 rounded-full bg-surface border border-line/70"
               >
                 {tabs.map((t) => {
@@ -762,8 +815,9 @@ export default function HomePage() {
                     <button
                       key={t.id}
                       type="button"
-                      role="tab"
-                      aria-selected={isActive}
+                      id={chipId(t.id)}
+                      aria-expanded={isActive}
+                      aria-controls={isActive ? panelId : undefined}
                       // Tapping the open chip collapses it back to the
                       // concise view; tapping a closed one switches panes.
                       onClick={() =>
@@ -782,7 +836,12 @@ export default function HomePage() {
               </div>
 
               {active && (
-                <div className="mt-3 rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden">
+                <div
+                  id={panelId}
+                  role="region"
+                  aria-labelledby={chipId(active)}
+                  className="mt-3 rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden"
+                >
                   <div className="p-4 sm:p-5">
                     {active === 'markers' && (
                       <AllMarkersPane
@@ -796,6 +855,9 @@ export default function HomePage() {
                         disclosedMarkers={disclosedMarkers}
                         onMarkerAction={onMarkerAction}
                         openLearnMore={openLearnMore}
+                        scopeLabel={scopeLabel}
+                        onClearScope={() => setPathwayScope(null)}
+                        flaggedCount={flaggedMarkersAll.length}
                       />
                     )}
                     {active === 'trends' && (
@@ -878,6 +940,9 @@ function AllMarkersPane({
   disclosedMarkers,
   onMarkerAction,
   openLearnMore,
+  scopeLabel,
+  onClearScope,
+  flaggedCount,
 }: {
   query: string;
   setQuery: (v: string) => void;
@@ -889,6 +954,13 @@ function AllMarkersPane({
   disclosedMarkers: Biomarker[];
   onMarkerAction: (m: Biomarker) => (() => void) | undefined;
   openLearnMore: (name: string) => (e: React.MouseEvent) => void;
+  /** Pathway name when the pane was opened via a Vitals Strip tile —
+   *  shown as a removable chip so the implicit scope is visible. */
+  scopeLabel?: string;
+  onClearScope: () => void;
+  /** How many markers are flagged in this report — drives the idle
+   *  empty-state copy when the hero already shows them all. */
+  flaggedCount: number;
 }) {
   return (
     <div>
@@ -926,6 +998,26 @@ function AllMarkersPane({
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Pathway scope chip. Present when the pane was opened by tapping a
+          Vitals Strip tile — makes the otherwise-invisible category scope
+          explicit and removable, so the user isn't left wondering why only
+          some markers show. */}
+      {scopeLabel && (
+        <div className="mt-3 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 pl-3 pr-1.5 h-8 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-caption font-semibold">
+            {scopeLabel}
+            <button
+              type="button"
+              onClick={onClearScope}
+              aria-label={`Clear ${scopeLabel} filter`}
+              className="grid place-items-center w-6 h-6 rounded-full hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+            >
+              <X size={12} />
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Bleed pattern: -mx-5 expands the scroll viewport past the
        *  Container's px-5 gutters so the leftmost pill aligns to the
@@ -980,6 +1072,7 @@ function AllMarkersPane({
             onClick={() => {
               setQuery('');
               setStatusFilter('all');
+              onClearScope();
             }}
             className="ml-2 text-indigo-700 font-semibold hover:underline"
           >
@@ -1015,8 +1108,9 @@ function AllMarkersPane({
       ) : (
         <Card className="mt-4 text-center !py-8">
           <div className="text-caption text-ink-soft leading-relaxed">
-            Everything looks healthy. Switch the filter to "All markers" to
-            browse everything in this report.
+            {flaggedCount > 0
+              ? 'Every flagged marker is shown up top. Switch the filter to "All markers" to browse the rest of this report.'
+              : 'Everything looks healthy. Switch the filter to "All markers" to browse everything in this report.'}
           </div>
         </Card>
       )}
