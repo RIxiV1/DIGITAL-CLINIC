@@ -72,21 +72,22 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     [biomarkers],
   );
 
-  /** Per-category expansion. Default-expanded: ONLY the single most-
-   *  pressing category (one with a critical marker, else the first with
-   *  a concern). Everything else collapses so a 47-marker report opens
-   *  as a short, scannable list of category headers — each header still
-   *  shows its status + counts — instead of a wall of every flagged
-   *  section stacked open. The user expands the rest on intent. Local
-   *  state per visit; resets on navigation to another report (pageKey
-   *  remount). */
+  /** Per-category expansion. Default-expanded: every NEEDS-CARE category
+   *  (any critical or concern marker). Right after a scan the user wants
+   *  to see all the actionable values at once, not expand each flagged
+   *  section one by one — opening only the single most-pressing one (the
+   *  prior behavior) read as "why is everything still collapsed?". The
+   *  "attention" (keep-an-eye) and healthy categories stay collapsed so a
+   *  47-marker report still opens tidy — their headers show status +
+   *  counts and expand on intent. Local state per visit; resets on
+   *  navigation to another report (pageKey remount). */
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(
-    () => {
-      const lead =
-        biomarkers.find((m) => m.status === 'critical')?.category ??
-        biomarkers.find((m) => m.status === 'concern')?.category;
-      return new Set(lead ? [lead] : []);
-    },
+    () =>
+      new Set(
+        biomarkers
+          .filter((m) => m.status === 'critical' || m.status === 'concern')
+          .map((m) => m.category),
+      ),
   );
   const toggleCategory = (id: string) => {
     setExpandedCategoryIds((prev) => {
