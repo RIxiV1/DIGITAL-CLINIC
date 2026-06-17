@@ -19,6 +19,7 @@
  */
 
 import { z } from 'zod';
+import { encryptString, decryptString } from './crypto';
 
 const KEY_PREFIX = 'dc_';
 export const REPORTS_KEY = `${KEY_PREFIX}reports`;
@@ -290,16 +291,12 @@ const StoredReportsEnvelopeSchema = z.object({
  * accumulates reports, and we shouldn't punish 50 good reports for
  * one schema violation.
  */
-export function loadReports<T = z.infer<typeof ReportSchema>>(): T[] {
-  const envelope = readValidated(
-    REPORTS_KEY,
-    StoredReportsEnvelopeSchema,
-    null as z.infer<typeof StoredReportsEnvelopeSchema> | null,
-  );
-  if (!envelope) return [];
+/** Per-entry tolerant validation shared by the plaintext and encrypted
+ *  load paths — keep the good Reports, drop (and count) the bad. */
+function validateReportArray<T>(candidates: unknown[]): T[] {
   const kept: T[] = [];
   let dropped = 0;
-  for (const candidate of envelope.reports) {
+  for (const candidate of candidates) {
     const result = ReportSchema.safeParse(candidate);
     if (result.success) {
       kept.push(result.data as unknown as T);
@@ -314,6 +311,96 @@ export function loadReports<T = z.infer<typeof ReportSchema>>(): T[] {
     );
   }
   return kept;
+}
+
+export function loadReports<T = z.infer<typeof ReportSchema>>(): T[] {
+  // Safety: never run the plaintext path on ENCRYPTED data. readValidated
+  // would see the `{enc}` envelope as schema-invalid and CLEAR the key —
+  // silently destroying a locked user's reports. Any caller that hits
+  // this while the lock is on (e.g. the cross-tab storage handler) just
+  // gets [] and the ciphertext is left intact; the encrypted-aware
+  // loadReportsMaybeEncrypted is the correct path when a key is available.
+  if (reportsAreEncrypted()) return [];
+  const envelope = readValidated(
+    REPORTS_KEY,
+    StoredReportsEnvelopeSchema,
+    null as z.infer<typeof StoredReportsEnvelopeSchema> | null,
+  );
+  if (!envelope) return [];
+  return validateReportArray<T>(envelope.reports);
+}
+
+/** Schema for the encrypted reports envelope written when the data lock
+ *  is on: the reports ARRAY is JSON-encoded then AES-GCM sealed into
+ *  `enc`; `savedAt` stays in the clear for cross-tab freshness checks. */
+const EncryptedReportsEnvelopeSchema = z.object({
+  savedAt: z.string(),
+  enc: z.object({ iv: z.string(), data: z.string() }),
+});
+
+/** True when the stored reports blob is currently encrypted. Cheap sync
+ *  check; used when migrating in/out of the locked state. */
+export function reportsAreEncrypted(): boolean {
+  const raw = rawRead(REPORTS_KEY);
+  if (!raw) return false;
+  try {
+    return EncryptedReportsEnvelopeSchema.safeParse(JSON.parse(raw)).success;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Load reports, transparently decrypting when the stored envelope is
+ * encrypted. `key` (the dataLock session key) is required for the
+ * encrypted path — without it, or on a decryption failure (wrong key /
+ * corruption), returns []. Plaintext envelopes load exactly like
+ * loadReports(), so this is safe to use on both locked and unlocked data.
+ */
+export async function loadReportsMaybeEncrypted<
+  T = z.infer<typeof ReportSchema>,
+>(key: CryptoKey | null): Promise<T[]> {
+  const raw = rawRead(REPORTS_KEY);
+  if (!raw) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  const enc = EncryptedReportsEnvelopeSchema.safeParse(parsed);
+  if (enc.success) {
+    if (!key) return [];
+    const plaintext = await decryptString(key, enc.data.enc);
+    if (plaintext == null) return [];
+    let arr: unknown;
+    try {
+      arr = JSON.parse(plaintext);
+    } catch {
+      return [];
+    }
+    return Array.isArray(arr) ? validateReportArray<T>(arr) : [];
+  }
+  return loadReports<T>();
+}
+
+/**
+ * Persist reports, encrypting when a session `key` is present (lock on)
+ * and writing plaintext otherwise. Mirrors saveReports' MAX_REPORTS cap +
+ * boolean contract (false = write failed, only-in-memory).
+ */
+export async function saveReportsMaybeEncrypted<T>(
+  reports: T[],
+  key: CryptoKey | null,
+): Promise<boolean> {
+  const capped = reports.slice(0, MAX_REPORTS);
+  if (!key) return saveReports(capped);
+  try {
+    const enc = await encryptString(key, JSON.stringify(capped));
+    return writeJSON(REPORTS_KEY, { savedAt: new Date().toISOString(), enc });
+  } catch {
+    return false;
+  }
 }
 
 /**
