@@ -372,15 +372,24 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           )}
         </div>
 
-        {/* Healthy-range boundary tick marks at the fixed segment edges. */}
+        {/* Healthy-range boundary tick marks at the fixed segment edges.
+            Use a theme-adaptive ink divider, NOT white: the zone pastels
+            (concern-soft red vs good-soft green) sit at near-identical
+            luminance, so white/70 ticks washed out — invisibly so in light
+            theme (white on a light pastel), and hard to perceive for
+            protanopia/deuteranopia or under outdoor glare. An ink-based
+            tick contrasts against the pastels in BOTH themes, so the
+            healthy-zone boundaries read as structure regardless of colour
+            perception. The "Low/Healthy/High" labels below remain the
+            primary non-colour cue; this just makes the bar itself legible. */}
         <div
           aria-hidden
-          className="absolute -top-0.5 bottom-0 w-px bg-white/70"
+          className="absolute -top-0.5 bottom-0 w-px bg-ink/40"
           style={{ left: `${lowBoundaryPct}%` }}
         />
         <div
           aria-hidden
-          className="absolute -top-0.5 bottom-0 w-px bg-white/70"
+          className="absolute -top-0.5 bottom-0 w-px bg-ink/40"
           style={{ left: `${highBoundaryPct}%` }}
         />
 
