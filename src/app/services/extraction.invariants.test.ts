@@ -28,10 +28,11 @@ import { describe, it, expect } from 'vitest';
 import { biomarkerCatalog, type BiomarkerTemplate } from '../data/biomarkers';
 import { extractBiomarkersFromText } from './pdfParser';
 
-const KNOWN_COLLISIONS: Record<string, readonly string[]> = {
-  'non-hdl': ['hdl'], // 'HDL' ⊂ 'Non-HDL'
-  tibc: ['iron'], // 'Iron' ⊂ 'Total Iron Binding Capacity'
-};
+// Previously held 'non-hdl': ['hdl'] and 'tibc': ['iron'] — both fixed by
+// the matcher's specificity suppression (a shorter alias contained in a
+// longer marker's span is dropped). The allow-list is empty now; any
+// entry that needs adding is a real collision to investigate first.
+const KNOWN_COLLISIONS: Record<string, readonly string[]> = {};
 
 function midValue(t: BiomarkerTemplate): number {
   const m = (t.min + t.max) / 2;

@@ -857,6 +857,12 @@ type ExtractedMarker = {
    *  into the recognised shape. */
   labRefMin?: number;
   labRefMax?: number;
+  /** Character span of the full regex match in the normalized text.
+   *  Used by extractBiomarkersFromText to suppress a less-specific match
+   *  whose span is wholly contained in a more-specific one (e.g. 'HDL'
+   *  inside 'Non-HDL Cholesterol'). */
+  matchStart: number;
+  matchEnd: number;
 };
 
 function extractMarkerValue(
@@ -1088,7 +1094,13 @@ function extractMarkerValue(
                 : labRefMaxNum,
           }
         : undefined;
-    return { value: v, labRefMin: labRef?.min, labRefMax: labRef?.max };
+    return {
+      value: v,
+      labRefMin: labRef?.min,
+      labRefMax: labRef?.max,
+      matchStart: m.index ?? 0,
+      matchEnd: (m.index ?? 0) + m[0].length,
+    };
   }
   return null;
 }
@@ -1100,7 +1112,9 @@ function extractMarkerValue(
  */
 export function extractBiomarkersFromText(text: string): Biomarker[] {
   const normalized = normalize(text);
-  const found: Biomarker[] = [];
+  // Collect every template match WITH its text span, so we can suppress
+  // less-specific matches below.
+  const hits: { marker: Biomarker; start: number; end: number }[] = [];
   for (const template of biomarkerCatalog) {
     // biomarkerCatalog contains each template exactly once — the prior
     // `seen` Set/dedup was dead code that suggested an enforced
@@ -1114,8 +1128,32 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
       typeof extracted.labRefMax === 'number'
         ? { min: extracted.labRefMin, max: extracted.labRefMax }
         : undefined;
-    found.push(markerFromTemplate(template, extracted.value, labRef));
+    hits.push({
+      marker: markerFromTemplate(template, extracted.value, labRef),
+      start: extracted.matchStart,
+      end: extracted.matchEnd,
+    });
   }
+  // Specificity suppression. A short alias can match inside a longer
+  // marker's printed name on the same row — 'HDL' inside 'Non-HDL
+  // Cholesterol', 'Iron' inside 'Total Iron Binding Capacity' — so both
+  // templates extract the same value off one row. Drop a hit whose span
+  // is wholly contained in a strictly-longer hit's span: that's the
+  // substring match, and the longer one is the real (more specific)
+  // marker. Genuine distinct markers sit on separate rows with non-
+  // overlapping spans, so they're untouched. Catalog order preserved.
+  const found = hits
+    .filter(
+      (h) =>
+        !hits.some(
+          (g) =>
+            g !== h &&
+            g.end - g.start > h.end - h.start &&
+            h.start >= g.start &&
+            h.end <= g.end,
+        ),
+    )
+    .map((h) => h.marker);
   return deriveComputedMarkers(found);
 }
 

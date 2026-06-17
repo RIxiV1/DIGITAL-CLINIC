@@ -810,6 +810,39 @@ describe('extractBiomarkersFromText — count-prefix unit reconciliation', () =>
   });
 });
 
+describe('extractBiomarkersFromText — specificity suppression', () => {
+  // A short alias contained in a longer marker's name (HDL ⊂ Non-HDL,
+  // Iron ⊂ Total Iron Binding Capacity) used to extract a spurious second
+  // marker off one row. The matcher now drops the contained (less-
+  // specific) span.
+
+  it('does not surface HDL from a lone Non-HDL row', () => {
+    const ids = extractBiomarkersFromText('Non-HDL Cholesterol 130 mg/dL').map(
+      (m) => m.id,
+    );
+    expect(ids).toContain('non-hdl');
+    expect(ids).not.toContain('hdl');
+  });
+
+  it('does not surface Iron from a lone TIBC row', () => {
+    const ids = extractBiomarkersFromText(
+      'Total Iron Binding Capacity 350 µg/dL',
+    ).map((m) => m.id);
+    expect(ids).toContain('tibc');
+    expect(ids).not.toContain('iron');
+  });
+
+  it('STILL keeps both when HDL and Non-HDL are genuine separate rows', () => {
+    // The suppression must not over-drop: distinct rows have non-
+    // overlapping spans, so both survive with their own values.
+    const result = extractBiomarkersFromText(
+      'HDL Cholesterol 50 mg/dL\nNon-HDL Cholesterol 130 mg/dL',
+    );
+    expect(result.find((m) => m.id === 'hdl')?.value).toBe(50);
+    expect(result.find((m) => m.id === 'non-hdl')?.value).toBe(130);
+  });
+});
+
 describe('extractBiomarkersFromText — proactive probe findings', () => {
   // Found by round-tripping every template's own canonical row through the
   // matcher (a self-consistency probe), not by a user upload.
