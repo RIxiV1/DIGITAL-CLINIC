@@ -14,7 +14,13 @@ import Container from '../components/Container';
 import Logo from '../components/Logo';
 import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useQuiz, type QuizAnswers } from '../AppContext';
-import { quizSteps, totalQuizSteps, type QuizStep } from '../data/quiz';
+import {
+  exclusiveOptionIds,
+  quizSteps,
+  toggleMultiSelect,
+  totalQuizSteps,
+  type QuizStep,
+} from '../data/quiz';
 import { useModalA11y } from '../utils/useModalA11y';
 
 type Field = 'age' | 'activity' | 'priorities' | 'symptoms' | 'comorbidities';
@@ -60,10 +66,15 @@ export default function QuizPage() {
   const toggleFor = (id: string, field: Field, multi: boolean) => {
     if (multi) {
       const value = quiz[field as keyof QuizAnswers] as string[] | undefined;
-      const next = new Set(value ?? []);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      setQuiz({ [field]: Array.from(next) } as Partial<QuizAnswers>);
+      // Honour exclusive opt-outs ("Nothing specific" / "None of these"):
+      // selecting one clears the rest and vice versa, so the safety gate
+      // can't hold contradictory state like ['nitrates','none'].
+      const next = toggleMultiSelect(
+        value ?? [],
+        id,
+        exclusiveOptionIds(field),
+      );
+      setQuiz({ [field]: next } as Partial<QuizAnswers>);
     } else {
       setQuiz({ [field]: id } as Partial<QuizAnswers>);
     }

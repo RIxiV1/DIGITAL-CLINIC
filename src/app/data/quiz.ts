@@ -19,6 +19,13 @@ export type QuizOption = {
   label: string;
   hint?: string;
   emoji?: string;
+  /** Opt-out option that must be mutually exclusive with every other
+   *  option in the same multi-select field — "Nothing specific"
+   *  (symptoms) and "None of these" (the safety gate). Selecting it
+   *  clears the rest; selecting any other option clears it. Without this
+   *  the safety gate could hold contradictory state like
+   *  ['nitrates','none'], muddying the ED-med interaction flagging. */
+  exclusive?: boolean;
 };
 
 /**
@@ -133,7 +140,9 @@ export const quizSteps: QuizStep[] = [
       // Standalone opt-out — no group label so the chip floats below
       // the four thematic clusters and reads as "or, none of these."
       {
-        options: [{ id: 'proactive', label: 'Nothing specific' }],
+        options: [
+          { id: 'proactive', label: 'Nothing specific', exclusive: true },
+        ],
       },
     ],
   },
@@ -240,12 +249,52 @@ export const quizSteps: QuizStep[] = [
       { id: 'diabetes', label: 'Diabetes' },
       { id: 'nitrates', label: 'Nitrate / angina medication' },
       { id: 'alpha-blockers', label: 'Prostate / BP meds (alpha-blockers)' },
-      { id: 'none', label: 'None of these' },
+      { id: 'none', label: 'None of these', exclusive: true },
     ],
   },
 ];
 
 export const totalQuizSteps = quizSteps.length;
+
+/**
+ * Option ids in a multi-select field that are mutually exclusive with
+ * every other option — the "Nothing specific" (symptoms) and "None of
+ * these" (safety gate) opt-outs. Derived from the `exclusive` flag so
+ * the data is the single source of truth.
+ */
+export function exclusiveOptionIds(field: string): Set<string> {
+  const ids = new Set<string>();
+  for (const step of quizSteps) {
+    if (step.field !== field) continue;
+    for (const o of getStepOptions(step)) {
+      if (o.exclusive) ids.add(o.id);
+    }
+  }
+  return ids;
+}
+
+/**
+ * Pure multi-select toggle that honours exclusive opt-outs: selecting an
+ * exclusive option clears everything else; selecting any normal option
+ * clears the exclusive one. This is what keeps the safety gate from
+ * holding contradictory state like ['nitrates','none'] — a real risk on
+ * a screen whose whole job is to flag drug-interaction contraindications.
+ */
+export function toggleMultiSelect(
+  current: readonly string[],
+  id: string,
+  exclusiveIds: ReadonlySet<string>,
+): string[] {
+  const next = new Set(current);
+  if (next.has(id)) {
+    next.delete(id);
+    return Array.from(next);
+  }
+  if (exclusiveIds.has(id)) return [id];
+  next.add(id);
+  for (const ex of exclusiveIds) next.delete(ex);
+  return Array.from(next);
+}
 
 /**
  * Walks both top-level steps AND compound subSteps to find the human label

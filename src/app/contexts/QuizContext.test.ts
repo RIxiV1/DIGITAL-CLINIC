@@ -35,8 +35,10 @@ describe('hasCardiometabolicRedFlag', () => {
   });
 
   it('errs toward true when "none" is mixed with a real flag', () => {
-    // No mutual-exclusion logic on the chips, so this combo is possible;
-    // the safety banner should still fire (the real flag wins).
+    // The chips now enforce mutual exclusion (toggleMultiSelect), so this
+    // combo shouldn't arise from the UI — but the function stays
+    // defensive: if a stale persisted answer or future caller ever passes
+    // it, the safety banner must still fire (the real flag wins).
     expect(hasCardiometabolicRedFlag(['none', 'diabetes'])).toBe(true);
   });
 

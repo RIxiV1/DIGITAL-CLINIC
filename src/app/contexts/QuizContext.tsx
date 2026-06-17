@@ -332,11 +332,15 @@ export function QuizProvider({ children }: { children: ReactNode }) {
   }, []);
 
   // Derive completion off the next quiz state via effect so we never set
-  // state inside another updater (Strict-Mode-safe).
+  // state inside another updater (Strict-Mode-safe). Set it BOTH ways:
+  // the old version only ever flipped to true, so clearing age/activity/
+  // priorities after completing (back button + deselect) left the quiz
+  // stuck "completed" against an incomplete answer set. Mirroring the
+  // boolean keeps the flag honest with the data it's derived from.
   useEffect(() => {
-    if (quiz.age && quiz.activity && quiz.priorities.length > 0) {
-      setHasCompletedQuiz(true);
-    }
+    setHasCompletedQuiz(
+      !!(quiz.age && quiz.activity && quiz.priorities.length > 0),
+    );
   }, [quiz.age, quiz.activity, quiz.priorities.length]);
 
   // Persist on every change (skipping the first render so we don't
