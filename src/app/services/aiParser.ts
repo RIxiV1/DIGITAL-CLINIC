@@ -90,7 +90,15 @@ async function downscaleImage(file: File): Promise<Blob> {
     ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
     bmp.close?.();
     return await new Promise<Blob>((resolve) => {
-      canvas.toBlob((b) => resolve(b ?? file), 'image/jpeg', JPEG_QUALITY);
+      canvas.toBlob((b) => {
+        // Release the backing canvas buffer immediately — a multi-MP
+        // phone photo's canvas can hold tens of MB of GPU/heap memory,
+        // and on low-RAM Android repeated uploads otherwise accumulate
+        // until the tab OOMs. Mirrors renderPageToImage in pdfParser.
+        canvas.width = 0;
+        canvas.height = 0;
+        resolve(b ?? file);
+      }, 'image/jpeg', JPEG_QUALITY);
     });
   } catch {
     return file;
@@ -295,7 +303,12 @@ export function mapGeminiResultsToCatalog(
     // ratio 1 → store 4.09 unchanged. Mass/concentration units (mg/dL,
     // ng/mL) return ratio 1 and pass through.
     const scale = unitMultiplier(r.unit) / unitMultiplier(template.unit);
-    const value = raw * scale;
+    // Clean up IEEE-754 noise from scaling (2.45 * 1e5 → 245000.0000000003)
+    // so the dashboard never shows "245000.0000000003" / a stray
+    // "40.99999%". Mirrors pdfParser's extractMarkerValue; only kicks in
+    // when we actually scaled (ratio ≠ 1), so unscaled values pass through
+    // byte-identical.
+    const value = scale !== 1 ? parseFloat((raw * scale).toPrecision(12)) : raw;
     // Sanity bounds applied to the SCALED value:
     //   1. Non-negative — biomarkers are non-negative; a negative
     //      reading is hallucination or sign-flip.
