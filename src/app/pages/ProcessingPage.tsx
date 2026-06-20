@@ -1031,9 +1031,9 @@ function ParseFailedView({
                 <div className="text-micro font-bold uppercase tracking-eyebrow text-concern">
                   Parsing failed
                 </div>
-                <h2 className="font-display text-display-md leading-tight text-ink mt-1">
+                <h1 className="font-display text-display-md leading-tight text-ink mt-1">
                   {copy.title}
-                </h2>
+                </h1>
                 <p className="mt-2 text-caption leading-relaxed text-ink-soft">
                   {copy.detail}
                 </p>

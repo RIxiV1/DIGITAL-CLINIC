@@ -13,7 +13,10 @@ const config: Record<
 > = {
   analyzed: {
     label: 'ANALYZED',
-    classes: 'bg-good-soft text-good',
+    // text-good-ink (not text-good) on the soft ground — vivid status hues
+    // on *-soft measure ~3:1 (below AA); the -ink variants hit ~5.5:1.
+    // Mirrors the same fix already made in Pill.
+    classes: 'bg-good-soft text-good-ink',
     Icon: CheckCircle2,
   },
   ready: {
@@ -28,7 +31,7 @@ const config: Record<
   },
   attention: {
     label: 'NEEDS REVIEW',
-    classes: 'bg-concern-soft text-concern',
+    classes: 'bg-concern-soft text-concern-ink',
     Icon: AlertTriangle,
   },
 };

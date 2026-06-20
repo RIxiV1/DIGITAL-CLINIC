@@ -560,6 +560,25 @@ a,
   }
 }
 
+/* Reduced-motion: the canonical global damp-down. MotionConfig
+ * reducedMotion="user" only governs framer-motion; it does NOT touch
+ * CSS @keyframes (Tailwind's animate-spin / animate-pulse) or CSS
+ * transitions. Without this, a reduced-motion user still gets the
+ * *indefinite* processing spinner and the dashboard's pulse-shimmer —
+ * exactly the motion an anxious / vestibular-sensitive user opted out of.
+ * Near-zero (not 0) durations so animationend/transitionend listeners
+ * still fire. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* Focus ring on dark — the light-theme ring (3px rgba(0,102,204,0.18))
  * is below the just-noticeable-difference threshold against canvas in
  * dark. Bump alpha to 45% and add an inset 1px offset so the ring is
