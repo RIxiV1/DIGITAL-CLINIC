@@ -868,6 +868,26 @@ function escapeRegex(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+/**
+ * Compiled-regex cache for the per-alias matcher. Each alias pattern is a
+ * pure function of (alias, template unit/altUnits) — none change at
+ * runtime — yet `extractMarkerValue` recompiles every one (~300 aliases)
+ * for each of the 3 reconstruction candidates, on every upload. Caching
+ * by the pattern string skips that recompilation with ZERO behavioural
+ * change: same pattern → same RegExp, and the pattern is never used with
+ * the `g` flag, so a shared instance carries no `lastIndex` state. Bounded
+ * at ~300 distinct patterns for the lifetime of the catalog.
+ */
+const ALIAS_REGEX_CACHE = new Map<string, RegExp>();
+function aliasRegex(pattern: string): RegExp {
+  let re = ALIAS_REGEX_CACHE.get(pattern);
+  if (!re) {
+    re = new RegExp(pattern, 'i');
+    ALIAS_REGEX_CACHE.set(pattern, re);
+  }
+  return re;
+}
+
 function aliasContainsUnit(
   alias: string,
   template: BiomarkerTemplate,
@@ -1105,7 +1125,7 @@ function extractMarkerValue(
     const pattern = skipUnit
       ? `${lb}${aliasEsc}${rb}${between}${numPattern}(?!\\w)`
       : `${lb}${aliasEsc}${rb}${between}${numPattern}${tail}${unitGate}`;
-    const m = text.match(new RegExp(pattern, 'i'));
+    const m = text.match(aliasRegex(pattern));
     if (!m) continue;
     const raw = parseFloat(m[1]);
     if (Number.isNaN(raw)) continue;
