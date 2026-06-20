@@ -1390,7 +1390,7 @@ function LockerPane({
                         }}
                         aria-label={`Delete ${r.name}`}
                         title="Delete this report"
-                        className="shrink-0 grid place-items-center w-8 h-8 -mr-1 rounded-full text-muted hover:text-concern hover:bg-concern-soft opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-concern/60"
+                        className="shrink-0 grid place-items-center w-11 h-11 -mr-2 rounded-full text-muted hover:text-concern hover:bg-concern-soft opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-concern/60"
                       >
                         <Trash2 size={13} />
                       </button>
