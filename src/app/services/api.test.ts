@@ -16,7 +16,7 @@ vi.mock('./pdfParser', () => {
 
 describe('api — Pending-upload bridge', () => {
   it('sets and consumes pending upload file correctly', () => {
-    const file = new File([''], 'test.pdf', { type: 'application/pdf' });
+    const file = new File(['x'], 'test.pdf', { type: 'application/pdf' });
     setPendingUpload(file);
     expect(consumePendingUpload()).toBe(file);
     // Next consume should be null
@@ -33,8 +33,17 @@ describe('api — validateUpload', () => {
     }
   });
 
+  it('returns error for a 0-byte file', () => {
+    const file = new File([], 'empty.pdf', { type: 'application/pdf' });
+    const res = validateUpload(file);
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.error.kind).toBe('empty');
+    }
+  });
+
   it('returns error for HEIC extension', () => {
-    const file = new File([''], 'photo.heic', { type: '' });
+    const file = new File(['x'], 'photo.heic', { type: '' });
     const res = validateUpload(file);
     expect(res.ok).toBe(false);
     if (!res.ok) {
@@ -44,7 +53,7 @@ describe('api — validateUpload', () => {
   });
 
   it('returns error for HEIF type', () => {
-    const file = new File([''], 'photo.png', { type: 'image/heif' });
+    const file = new File(['x'], 'photo.png', { type: 'image/heif' });
     const res = validateUpload(file);
     expect(res.ok).toBe(false);
     if (!res.ok) {
@@ -53,7 +62,7 @@ describe('api — validateUpload', () => {
   });
 
   it('returns error for unsupported mime type', () => {
-    const file = new File([''], 'doc.docx', {
+    const file = new File(['x'], 'doc.docx', {
       type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     });
     const res = validateUpload(file);
@@ -65,7 +74,7 @@ describe('api — validateUpload', () => {
   });
 
   it('returns error for oversized file', () => {
-    const file = new File([''], 'large.pdf', { type: 'application/pdf' });
+    const file = new File(['x'], 'large.pdf', { type: 'application/pdf' });
     Object.defineProperty(file, 'size', { value: 21 * 1024 * 1024 }); // 21 MB
     const res = validateUpload(file);
     expect(res.ok).toBe(false);
@@ -76,7 +85,7 @@ describe('api — validateUpload', () => {
   });
 
   it('returns ok for valid PDF file and sanitizes its name', () => {
-    const file = new File([''], 'my\u0000report\u202E.pdf', {
+    const file = new File(['x'], 'my\u0000report\u202E.pdf', {
       type: 'application/pdf',
     });
     const res = validateUpload(file);
@@ -116,7 +125,7 @@ describe('api — parseUploadedReport', () => {
       unrecognizedRows: [],
     });
 
-    const file = new File([''], 'report.pdf', { type: 'application/pdf' });
+    const file = new File(['x'], 'report.pdf', { type: 'application/pdf' });
     const onProgress = vi.fn();
 
     const parsePromise = parseUploadedReport(
@@ -157,7 +166,7 @@ describe('api — parseUploadedReport', () => {
     });
     vi.mocked(classifyOutOfScope).mockReturnValue('imaging');
 
-    const file = new File([''], 'xray.pdf', { type: 'application/pdf' });
+    const file = new File(['x'], 'xray.pdf', { type: 'application/pdf' });
     const onProgress = vi.fn();
 
     const parsePromise = parseUploadedReport(
@@ -175,7 +184,7 @@ describe('api — parseUploadedReport', () => {
   it('handles parser exceptions gracefully', async () => {
     vi.mocked(parsePdfFile).mockRejectedValue(new Error('Password exception'));
 
-    const file = new File([''], 'locked.pdf', { type: 'application/pdf' });
+    const file = new File(['x'], 'locked.pdf', { type: 'application/pdf' });
     const onProgress = vi.fn();
 
     const parsePromise = parseUploadedReport(

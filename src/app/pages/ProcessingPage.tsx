@@ -137,7 +137,7 @@ function detectsWho2010Reference(rawText: string | undefined): boolean {
 
 export default function ProcessingPage() {
   const { reports, markReportReady, removeReport, addReport } = useReports();
-  const { replace, navigate } = useNavigation();
+  const { replace } = useNavigation();
 
   const latestProcessing =
     reports.find((r) => r.status === 'processing') ?? reports[0];
@@ -424,7 +424,11 @@ export default function ProcessingPage() {
     // dashboard treated as "the user's most recent report" into
     // sample data labelled as theirs.
     setFailure(null);
-    navigate({ type: 'results', reportId: sampleReports[0].id });
+    // replace (not navigate/push) so Back doesn't return to this dead
+    // /processing screen — the pending upload is already consumed, so a
+    // return here would re-run to a 'no-file' failure. Matches the other
+    // terminal handlers on this page (retry / manual / confirm).
+    replace({ type: 'results', reportId: sampleReports[0].id });
   };
 
   const enterManually = () => {

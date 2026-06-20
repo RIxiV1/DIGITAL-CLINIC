@@ -930,7 +930,13 @@ export default function HomePage() {
                         onOpenReport={(r) =>
                           r.status === 'ready'
                             ? navigate({ type: 'results', reportId: r.id })
-                            : navigate({ type: 'processing' })
+                            : // A 'processing' card visible in the locker is
+                              // always stale — reaching the locker means the
+                              // user left /processing, abandoning that parse
+                              // (its single-use File is gone). Routing to
+                              // /processing dead-ended on "nothing to parse";
+                              // send them to /upload to retry instead.
+                              navigate({ type: 'upload' })
                         }
                         onDeleteReport={(id) => setReportPendingDelete(id)}
                       />
