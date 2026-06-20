@@ -6,8 +6,8 @@
  * up the rest: photos of printouts, scanned PDFs with no text layer,
  * yellow-background Indian lab templates that Tesseract can't read.
  *
- * Why Gemini 2.0 Flash (over Claude / GPT-4o): no credit card to
- * provision a key (Google AI Studio), 1,500 requests/day free tier,
+ * Why Gemini 2.5 Flash (over Claude / GPT-4o): no credit card to
+ * provision a key (Google AI Studio), generous free tier,
  * native responseSchema for structured-JSON output (no prompt prayer
  * needed — the API forces the response to match the shape).
  *

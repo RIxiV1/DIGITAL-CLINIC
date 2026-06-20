@@ -8,7 +8,7 @@
  *                            keeps us under Vercel's 4.5MB serverless
  *                            body limit, and speeds up upload by ~10x.
  *
- *   2. POST /api/parse-image — Gemini 2.0 Flash extracts
+ *   2. POST /api/parse-image — Gemini 2.5 Flash extracts
  *                              { name, value, unit, refMin?, refMax? }
  *                              for each marker it sees.
  *

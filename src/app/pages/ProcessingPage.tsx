@@ -435,7 +435,7 @@ export default function ProcessingPage() {
   /**
    * Vision-LLM fallback (Pipeline 3). Called when the user opts in via
    * the "Try AI parser" button on the failure screen. Sends the original
-   * File to /api/parse-image, which proxies to Gemini 2.0 Flash and
+   * File to /api/parse-image, which proxies to Gemini 2.5 Flash and
    * returns biomarker JSON. We then create a fresh placeholder report
    * (the original was already removed when the rule-based parse failed)
    * and hand the user the same ConfirmExtractedValuesView they'd see
