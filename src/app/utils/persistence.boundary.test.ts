@@ -276,3 +276,33 @@ describe('wipeAllData / exportAllData / getStorageStats — namespace scoping', 
     expect(stats.oldestDate?.toISOString()).toBe('2026-04-12T00:00:00.000Z');
   });
 });
+
+describe('critical-status reports survive load (regression)', () => {
+  // The schema enum once omitted 'critical', so a report containing a
+  // panic value validated fine on save but was dropped WHOLE on the next
+  // load — silent data loss for the most urgent users. This pins the
+  // round-trip so the enum can't drift out of sync with BiomarkerStatus.
+  it('keeps a report whose biomarker status is "critical"', () => {
+    setReports([
+      makeReport({
+        id: 'rep-crit',
+        biomarkers: [
+          {
+            id: 'glucose',
+            name: 'Fasting Glucose',
+            value: 260,
+            unit: 'mg/dL',
+            min: 70,
+            max: 100,
+            status: 'critical',
+            category: 'metabolic',
+            plain: 'Blood sugar — a critical reading needs same-day care.',
+          },
+        ],
+      }),
+    ]);
+    const loaded = loadReports();
+    expect(loaded).toHaveLength(1);
+    expect(loaded[0].biomarkers[0].status).toBe('critical');
+  });
+});
