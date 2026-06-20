@@ -1,11 +1,11 @@
-import { House, ClipboardList, User } from 'lucide-react';
+import { House, ClipboardList, User, Map as MapIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage, useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
 import { useIsMdUp } from '../utils/useMediaQuery';
 import type { TranslationKey } from '../i18n/translations';
 
-type ItemId = 'home' | 'quiz' | 'profile';
+type ItemId = 'home' | 'healthMap' | 'quiz' | 'profile';
 
 type Item = {
   id: ItemId;
@@ -16,14 +16,16 @@ type Item = {
 
 const items: Item[] = [
   { id: 'home', label: 'Home', page: { type: 'home' }, Icon: House },
+  { id: 'healthMap', label: 'Map', page: { type: 'healthMap' }, Icon: MapIcon },
   { id: 'quiz', label: 'Quiz', page: { type: 'quiz' }, Icon: ClipboardList },
   { id: 'profile', label: 'Profile', page: { type: 'profile' }, Icon: User },
 ];
 
 function navIdFor(page: Page): ItemId {
   switch (page.type) {
-    case 'home':
     case 'healthMap':
+      return 'healthMap';
+    case 'home':
     case 'upload':
     case 'processing':
     case 'manualEntry':

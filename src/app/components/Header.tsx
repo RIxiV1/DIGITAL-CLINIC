@@ -15,21 +15,23 @@ type Props = {
 };
 
 type NavSlot = {
-  id: 'home' | 'quiz' | 'profile';
+  id: 'home' | 'healthMap' | 'quiz' | 'profile';
   label: string;
   target: Page;
 };
 
 const NAV_SLOTS: NavSlot[] = [
   { id: 'home', label: 'Home', target: { type: 'home' } },
+  { id: 'healthMap', label: 'Map', target: { type: 'healthMap' } },
   { id: 'quiz', label: 'Quiz', target: { type: 'quiz' } },
   { id: 'profile', label: 'Profile', target: { type: 'profile' } },
 ];
 
 function activeNavId(page: Page): NavSlot['id'] {
   switch (page.type) {
-    case 'home':
     case 'healthMap':
+      return 'healthMap';
+    case 'home':
     case 'upload':
     case 'processing':
     case 'manualEntry':
