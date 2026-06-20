@@ -14,7 +14,7 @@ Upload a PDF or photo of your blood work. The app parses it client-side (no serv
   <a href="https://vitest.dev/"><img src="https://img.shields.io/badge/Vitest-4.1-7E9B4E?style=flat-square&logo=vitest&logoColor=white" alt="Vitest 4.1" /></a>
 </p>
 
-<sub><a href="https://digital-clinic-omega.vercel.app">Live demo</a> · built for <a href="https://formen.co.in">ForMen</a></sub>
+<sub><a href="https://digital-clinic-formen.vercel.app">Live demo</a> · built for <a href="https://formen.co.in">ForMen</a></sub>
 
 </div>
 
@@ -27,7 +27,7 @@ Upload a PDF or photo of your blood work. The app parses it client-side (no serv
 
 Most lab reports in India are 4–10 page PDFs with subset fonts, dense tables, and zero accessibility. Patients get the file, glance at the "out of range" highlights, and panic — or ignore it. Digital Clinic re-presents the same data the way a friend who happens to be a doctor would: a single dashboard score, marker-by-marker plain-English explanations, and a "what to do next" rather than a wall of numbers.
 
-The whole thing runs in the browser — no uploads, no account, no tracking. The one exception is an **optional, consent-gated** "Try AI parser" fallback: when on-device OCR can't read a photo, the user can choose to send that single image to Google Gemini, with a clear "the image leaves your device" disclosure shown at the point of use.
+The whole thing runs in the browser — no uploads, no account, no tracking. For shared devices there's an **opt-in PIN lock** that encrypts reports + quiz answers at rest (AES-GCM-256, key derived via PBKDF2 and held in memory only), plus a **Discreet Mode** that veils the screen the moment the app is backgrounded. The one exception to "nothing leaves the device" is an **optional, consent-gated** "Try AI parser" fallback: when on-device OCR can't read a photo, the user can choose to send that single image to Google Gemini, with a clear "the image leaves your device" disclosure shown at the point of use. The full threat model is in [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Highlights (the parts worth reading the code for)
 
@@ -44,6 +44,8 @@ PDF text extraction is notoriously fragile. This pipeline runs three reconstruct
 **Clinical status logic that leans away from false assurance** — `statusForValue` grades each reading into optimal / borderline / out-of-range / critical. It trusts the lab's *own printed reference range* over our hardcoded band (no "your lab says normal, we say not" trust breaks), gates every "optimal" and harm-anchor line behind a **required citation** (cite-or-omit; no fabricated clinical lines), and localizes ranges to Indian guidelines (ICMR, Lipid Association of India, IAP). Ranges were audited against those guidelines and real Indian-lab references with adversarial verification — see [docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md).
 
 **No backend, no auth, type-safe navigation** — a custom `NavigationContext` exposes a discriminated-union `Page` type on top of react-router primitives, so route params (`reportId`, `problemId`) are typed end-to-end and impossible-state navigations are caught at compile time. Pages are route-split via `React.lazy` with a stale-deploy guard: if a chunk fetch fails (user had the app open across a deploy), it hard-reloads instead of dropping them on an error boundary.
+
+**Privacy by architecture** — there is no backend with user data: reports are parsed in-browser and stored in `localStorage`, namespaced (`dc_*`) and zod-validated on every read. An opt-in PIN lock encrypts reports + quiz answers at rest with **AES-GCM-256** keyed by **PBKDF2-SHA256 (200k iterations)** via Web Crypto — the key is non-extractable and never leaves memory, so a forgotten PIN is unrecoverable by design (no backdoor). Discreet Mode veils the screen on background. See [docs/SECURITY.md](docs/SECURITY.md).
 
 **Accessibility & motion** — `prefers-reduced-motion` cascaded through `MotionConfig` at the root so every framer-motion descendant collapses to 0ms without per-component checks. Skip-link to main content. Focus management on modals. Semantic landmarks throughout.
 
@@ -71,7 +73,7 @@ PDF / image upload
   Persist to localStorage  ──►  Dashboard / Results / Trends
 ```
 
-State lives in two React contexts (`QuizContext`, `ReportsContext`) with `localStorage` persistence. The only network calls are loading the PDF/OCR workers — plus the **opt-in** Gemini fallback (`api/parse-image.ts`), which sends an image to Google only when the user explicitly taps "Try AI parser".
+State lives in React contexts (`Reports`, `Quiz`, `Navigation`, `Language`, `Discreet`) with zod-validated `localStorage` persistence. The only network calls are loading the PDF/OCR workers — plus the **opt-in** Gemini fallback (`api/parse-image.ts`), which sends an image to Google only when the user explicitly taps "Try AI parser".
 
 ## Stack
 
@@ -116,6 +118,7 @@ For anyone (human or AI) digging into the code, start here:
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — 10-minute system map: state, routing, code-splitting, the upload flow.
 - **[docs/PARSER.md](docs/PARSER.md)** — the multi-strategy PDF / OCR / Gemini pipeline. The hardest part of the codebase.
 - **[docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md)** — how a value becomes optimal / borderline / out-of-range / critical, the "trust the pathologist" rule, range validation, and the false-alarm vs false-assurance trade-offs.
+- **[docs/SECURITY.md](docs/SECURITY.md)** — the privacy/security model: threat model, on-device storage, the opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the consent-gated AI caveat, and how to report a vulnerability.
 - **[docs/NAVIGATION.md](docs/NAVIGATION.md)** — the no-router `NavigationContext`, typed `Page` union, the `location.key` back() trick, and the StrictMode async-navigation gotcha.
 - **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, dark-default bootstrap, `[data-theme='light']` scope-local islands.
 - **[docs/I18N.md](docs/I18N.md)** — the UI-language system: dictionary, English-fallback chain, and why clinical copy is never auto-translated.

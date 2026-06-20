@@ -92,9 +92,15 @@ type Report = {
 
 Note the `status` field — a report exists in `processing` state from the moment the user hits "Start analysing" until either parsing succeeds (becomes `ready`) or fails (gets removed). That's why the dashboard can show a "your report is processing" placeholder.
 
+The dashboard and Health Map don't read a single report — they read a **combined snapshot** (`getCombinedSnapshot` in `data/reports.ts`) that unions every report, taking the most recent reading per marker and folding older readings into that marker's history. This is why a user with a CBC *and* a separate hormone panel sees both systems on one screen, instead of only their most-comprehensive single report.
+
 ### LanguageContext
 
 The selected UI language + a type-checked `t(key)` translator. English is the source of truth and the fallback; Hindi is populated; other Indian languages are scaffolded. **Scope is UI chrome only** — clinical interpretation copy is intentionally excluded (it needs clinician-reviewed translations). Persisted to `dc_lang`. Deep dive: [I18N.md](I18N.md).
+
+### DiscreetContext
+
+Holds the Discreet Mode on/off preference (persisted to `dc_discreet`), shared by the Profile toggle and the `<PrivacyScreen>` veil. When on, the veil obscures all content the instant the app loses focus or is backgrounded — a lightweight shoulder-surfing / hand-the-phone-over defence that complements the at-rest encryption. Full privacy model: [SECURITY.md](SECURITY.md).
 
 ---
 
@@ -162,10 +168,20 @@ Everything user-owned is in `localStorage`, namespaced with a `dc_` prefix and v
 | `dc_catalogAck` | `number` (catalog version seen) | dashboard migration notice |
 | `dc_retestAck` | report id the re-test banner was dismissed for | dashboard re-test nudge |
 | `dc_lang` | language code (`'en'` / `'hi'` / …) | LanguageContext — see [I18N.md](I18N.md) |
+| `dc_lock` | `{ salt, verifier }` lock metadata | dataLock — at-rest encryption |
+| `dc_discreet` | `boolean` | DiscreetContext (screen veil) |
 
 The `dc_theme` key is the only one that breaks the JSON-envelope convention because the pre-React bootstrap can't pull in zod and shouldn't depend on `JSON.parse`. That bootstrap is an **external** file (`public/theme-init.js`), not an inline script, because the production CSP blocks inline scripts — see [THEMING.md](THEMING.md).
 
 If a stored value fails its zod schema, the load helper returns the default and silently re-saves on the next write. This is deliberate — corruption from browser extensions, dev-tools tampering, or a past-buggy version of the app shouldn't crash everyone on every boot.
+
+**At-rest encryption (opt-in).** When the user sets a PIN, `dc_reports` and `dc_quiz`
+hold AES-GCM ciphertext envelopes instead of plaintext, keyed by a PBKDF2-SHA256
+(200k-iter) derivation of the PIN that lives in memory only. `dc_lock` stores the salt +
+a verifier blob (never the PIN or key). The plaintext loaders refuse to read ciphertext,
+so a half-migrated state can't silently wipe data. Full model — including the
+forgot-PIN-means-wipe trade-off and the cross-context lock-event bus — in
+[SECURITY.md](SECURITY.md).
 
 ---
 
