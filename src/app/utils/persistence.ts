@@ -91,7 +91,17 @@ const BiomarkerCategorySchema = z.enum([
   'inflammation',
 ]);
 
-const BiomarkerStatusSchema = z.enum(['good', 'attention', 'concern']);
+// MUST stay in sync with BiomarkerStatus in data/biomarkers.ts. Omitting
+// 'critical' here was a silent data-loss bug: a report containing a panic
+// value (glucose ≥250, HbA1c >10, …) saved fine, then failed validation
+// on the next load and the WHOLE report was dropped — hitting exactly the
+// users with the most urgent results.
+const BiomarkerStatusSchema = z.enum([
+  'good',
+  'attention',
+  'concern',
+  'critical',
+]);
 
 const OptimalSourceSchema = z.object({
   // Cap raised to 500 so editorial growth (a longer citation, a
