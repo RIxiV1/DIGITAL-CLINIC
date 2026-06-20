@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   AlertTriangle,
@@ -60,6 +60,19 @@ export default function RecommendedTestsPage() {
   // asking for it. The page's job is to show *what we'd test*; the
   // marker drill-down is intent-driven and belongs behind a tap.
   const [expanded, setExpanded] = useState<string | null>(null);
+  // "Print this list" force-expands every test body so the printout
+  // includes the actual markers — not just test names. Cards are
+  // collapsed by default and the bodies only mount when open, so without
+  // this the advertised "take it to a lab" sheet would be useless. We
+  // expand, print once the DOM has the bodies, then collapse back. Using
+  // an effect (not beforeprint) guarantees the render lands before the
+  // print dialog, reliably across browsers.
+  const [printExpand, setPrintExpand] = useState(false);
+  useEffect(() => {
+    if (!printExpand) return;
+    window.print();
+    setPrintExpand(false);
+  }, [printExpand]);
   // Risk-card disclosure. Default-collapsed so the test list (the
   // actual content the user came for) isn't gated by a ~120px-tall
   // metadata panel explaining *why* the tests were picked. The
@@ -313,7 +326,7 @@ export default function RecommendedTestsPage() {
               {/* === STARTER CHECK — HERO CARD === */}
               {starter &&
                 (() => {
-                  const open = expanded === starter.id;
+                  const open = expanded === starter.id || printExpand;
                   return (
                     <Card
                       padded={false}
@@ -399,7 +412,7 @@ export default function RecommendedTestsPage() {
               {others.length > 0 && (
                 <Card padded={false} className="overflow-hidden">
                   {others.map((t, i) => {
-                    const open = expanded === t.id;
+                    const open = expanded === t.id || printExpand;
                     return (
                       <div
                         key={t.id}
@@ -493,7 +506,7 @@ export default function RecommendedTestsPage() {
                   size="sm"
                   variant="secondary"
                   className="mt-3"
-                  onClick={() => window.print()}
+                  onClick={() => setPrintExpand(true)}
                 >
                   Print this list
                 </Button>

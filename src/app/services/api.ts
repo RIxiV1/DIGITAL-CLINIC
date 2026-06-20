@@ -502,6 +502,20 @@ export function validateUpload(file: File | null): FileValidationResult {
       error: { kind: 'empty', message: 'Pick a file to continue.' },
     };
   }
+  // A 0-byte file (a failed download/share, an empty export) otherwise
+  // slips through: a 0-byte PDF throws deep in pdfjs as a generic
+  // "corrupted" error, and a 0-byte image burns a Tesseract pass — and,
+  // with auto-fallback on, a wasted Gemini call — before failing. Catch it
+  // here with the actionable copy the 'empty' kind already renders.
+  if (file.size === 0) {
+    return {
+      ok: false,
+      error: {
+        kind: 'empty',
+        message: 'That file looks empty (0 bytes). Try a different file.',
+      },
+    };
+  }
   if (isHeic(file)) {
     return {
       ok: false,
