@@ -129,6 +129,10 @@
   --color-paper-line: rgb(28 25 23 / 0.12);
   --color-clay: #b5512f;
   --color-forest: #2f5d50;
+  /* Text that sits ON a filled terracotta accent panel (bg-clay). Light
+   * theme: clay is a deep rust → near-white text (AA). Dark theme (rebind
+   * below): clay lifts to a lighter tan → deep ink text. */
+  --color-on-clay: #fdfbf7;
 
   /* Status fills. The vivid stops here are tuned for BADGE FILLS
    * (white-on-color, e.g. `bg-good text-on-status`) — they hit AA
@@ -568,6 +572,7 @@ a,
   --color-paper-line: rgb(231 229 228 / 0.14);
   --color-clay: #d8845b;
   --color-forest: #74b59c;
+  --color-on-clay: #1c1917;
 
   /* ─── Status fills — DE-ESCALATED for AMOLED ───────────────────
    * Rose / warm-amber / emerald pastels instead of pure red/amber/

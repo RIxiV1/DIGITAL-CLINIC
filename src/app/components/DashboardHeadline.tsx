@@ -162,6 +162,11 @@ function SplitMeter({ good, total }: { good: number; total: number }) {
       className="mt-5 flex h-2.5 w-full overflow-hidden rounded-full border border-paper-line"
     >
       <div className="h-full bg-forest" style={{ width: `${pct}%` }} />
+      {/* A 2px paper-coloured notch — a NON-colour delimiter so the in-range
+          / to-review split reads even under red-green colour blindness (the
+          forest/clay hues alone collapse). Pairs with the labelled counts
+          below. */}
+      <div className="h-full w-[2px] shrink-0 bg-paper" aria-hidden />
       <div className="h-full flex-1 bg-clay" />
     </div>
   );

@@ -6,7 +6,7 @@ export default function FinalCta({ onStart }: { onStart: () => void }) {
     <section id="report" className="py-16 sm:py-20 md:py-28">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
         <Reveal>
-          <div className="relative mx-auto w-full max-w-5xl rounded-[32px] bg-blue-600 text-on-primary overflow-hidden shadow-blue">
+          <div className="relative mx-auto w-full max-w-5xl rounded-[32px] bg-clay text-on-clay overflow-hidden">
             <div
               className="absolute inset-0 opacity-30 pointer-events-none"
               style={{
@@ -22,7 +22,7 @@ export default function FinalCta({ onStart }: { onStart: () => void }) {
               <h2 className="font-sans font-bold text-display-md sm:text-display-lg md:text-display-xl leading-[1.05] tracking-tight mt-5 text-balance max-w-[22ch] mx-auto">
                 See what your hormones are telling you.
               </h2>
-              <p className="mt-5 text-body md:text-body-lg leading-relaxed text-blue-100 max-w-[42ch] mx-auto text-pretty">
+              <p className="mt-5 text-body md:text-body-lg leading-relaxed text-on-clay/85 max-w-[42ch] mx-auto text-pretty">
                 2 minutes. One clear picture.
               </p>
 
@@ -30,14 +30,14 @@ export default function FinalCta({ onStart }: { onStart: () => void }) {
                 <button
                   onClick={onStart}
                   style={{ height: 56 }}
-                  className="inline-flex items-center justify-center gap-2 px-7 rounded-full bg-surface text-blue-700 hover:bg-blue-50/10 text-body font-semibold shadow-clinical-lg transition-colors w-full sm:w-auto"
+                  className="inline-flex items-center justify-center gap-2 px-7 rounded-full bg-surface text-ink hover:bg-canvas text-body font-semibold shadow-clinical-lg transition-colors w-full sm:w-auto"
                 >
                   Start the assessment
                   <ArrowRight size={16} />
                 </button>
               </div>
 
-              <div className="mt-6 text-caption text-blue-100 inline-flex items-center gap-1.5">
+              <div className="mt-6 text-caption text-on-clay/85 inline-flex items-center gap-1.5">
                 <Lock size={12} />
                 Anonymous ID. No email or phone required. Your data stays yours.
               </div>

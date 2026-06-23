@@ -313,7 +313,7 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           </div>
         </div>
         <div className="text-right shrink-0 min-w-0">
-          <div className="font-display text-display-md leading-none text-ink">
+          <div className="font-sans font-semibold text-display-md leading-none text-ink tabular-nums">
             {marker.value}
             <span className="text-caption ml-1 text-muted font-sans font-medium">
               {marker.unit}

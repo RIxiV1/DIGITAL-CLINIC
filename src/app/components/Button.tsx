@@ -40,8 +40,10 @@ type Props = Omit<HTMLMotionProps<'button'>, 'children'> & {
  *      to a near-white in dark — pairing with `text-canvas` to keep
  *      the visual register ("ink on canvas") consistent across themes. */
 const variantClasses: Record<Variant, string> = {
-  primary:
-    'bg-primary-600 text-on-primary hover:bg-primary-700 active:bg-primary-800 shadow-indigo',
+  // Primary = the ONE terracotta accent (clay). Chrome (links, secondary,
+  // nav) stays neutral stone via the primary-* alias; the CTA is where the
+  // accent earns its keep. Flat — no glow (zero floating shadows).
+  primary: 'bg-clay text-on-clay hover:bg-clay/90 active:bg-clay/85',
   dark: 'bg-ink text-canvas hover:opacity-90 shadow-soft',
   secondary:
     'bg-surface text-primary-700 hover:bg-primary-50 active:bg-primary-100 border border-line shadow-soft',

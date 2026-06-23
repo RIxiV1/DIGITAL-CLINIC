@@ -175,7 +175,7 @@ export default function MarkerAttentionCard({
         </div>
 
         <div className="mt-2 flex items-baseline gap-2">
-          <span className="font-display text-display-md leading-none text-ink tabular-nums">
+          <span className="font-sans font-semibold text-display-md leading-none text-ink tabular-nums">
             {animatedValue}
           </span>
           <span className="text-caption text-muted font-medium">

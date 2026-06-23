@@ -26,7 +26,7 @@ export default function Privacy() {
               title={
                 <>
                   Your report never{' '}
-                  <span className="text-blue-700">leaves your device.</span>
+                  <span className="text-clay">leaves your device.</span>
                 </>
               }
               subtitle="No account to create, no file to upload to us. The whole thing runs in your browser — because a lab report is nobody else's business."

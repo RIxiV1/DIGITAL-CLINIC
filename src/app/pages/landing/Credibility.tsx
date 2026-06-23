@@ -12,7 +12,7 @@ export default function Credibility() {
               title={
                 <>
                   Built on research,{' '}
-                  <span className="text-blue-700">backed by data.</span>
+                  <span className="text-clay">backed by data.</span>
                 </>
               }
               subtitle="Indian male hormonal health is barely talked about — and barely tested. The data is sobering."
@@ -109,22 +109,25 @@ function StatCard({
     <motion.div
       whileHover={{ y: -3 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className={`h-full rounded-2xl p-7 md:p-8 border ${
+      className={`h-full rounded-lg p-7 md:p-8 border ${
         accent
-          ? 'bg-blue-600 border-blue-600 text-on-primary shadow-blue'
-          : 'bg-surface border-line shadow-clinical'
+          ? 'bg-clay border-clay text-on-clay'
+          : 'bg-surface border-line'
       }`}
     >
+      {/* The big overview number IS large enough for the editorial serif
+          (brief: massive overview numbers in Instrument Serif). Small data
+          values elsewhere stay in Inter tabular. */}
       <div
-        className={`font-sans font-bold text-display-xl leading-none tracking-tight ${
-          accent ? 'text-white' : 'text-blue-700'
+        className={`font-display text-display-xl leading-none tracking-tight ${
+          accent ? 'text-on-clay' : 'text-ink'
         }`}
       >
         {big}
       </div>
       <p
         className={`mt-4 text-body md:text-body-lg leading-snug text-balance ${
-          accent ? 'text-white' : 'text-ink'
+          accent ? 'text-on-clay' : 'text-ink'
         }`}
       >
         {line}
@@ -132,7 +135,7 @@ function StatCard({
       <p
         className={`mt-5 pt-4 text-caption border-t leading-relaxed ${
           accent
-            ? 'text-blue-100 border-blue-400/40'
+            ? 'text-on-clay/80 border-on-clay/25'
             : 'text-muted border-line/80'
         }`}
       >
