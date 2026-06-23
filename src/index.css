@@ -232,7 +232,7 @@
   --shadow-clinical: 0 4px 30px rgb(0 0 0 / 0.03);
   --shadow-clinical-lg:
     0 6px 40px rgb(0 0 0 / 0.05), 0 1px 1px rgb(0 0 0 / 0.02);
-  --shadow-blue: 0 10px 30px rgb(0 102 204 / 0.18);
+  --shadow-blue: 0 10px 30px rgb(181 81 47 / 0.2);
   --shadow-indigo: var(--shadow-blue);
 
   /* Radii */
@@ -440,7 +440,7 @@ a,
   --shadow-clinical: 0 4px 30px rgb(0 0 0 / 0.03);
   --shadow-clinical-lg:
     0 6px 40px rgb(0 0 0 / 0.05), 0 1px 1px rgb(0 0 0 / 0.02);
-  --shadow-blue: 0 10px 30px rgb(0 102 204 / 0.18);
+  --shadow-blue: 0 10px 30px rgb(181 81 47 / 0.2);
   --shadow-indigo: var(--shadow-blue);
 }
 
@@ -575,7 +575,7 @@ a,
   --shadow-clinical-lg:
     inset 0 1px 0 rgb(255 255 255 / 0.05), 0 8px 24px rgb(0 0 0 / 0.6);
   --shadow-blue:
-    0 0 0 1px rgb(82 136 212 / 0.35), 0 6px 24px rgb(82 136 212 / 0.18);
+    0 0 0 1px rgb(221 152 112 / 0.3), 0 6px 24px rgb(221 152 112 / 0.16);
   --shadow-indigo: var(--shadow-blue);
 
   /* Match the active theme on native UA chrome. */
