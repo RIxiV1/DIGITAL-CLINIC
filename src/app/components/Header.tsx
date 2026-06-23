@@ -1,7 +1,7 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, EyeOff } from 'lucide-react';
 import type { ReactNode } from 'react';
 import Logo from './Logo';
-import { useNavigation, type Page } from '../AppContext';
+import { useDiscreet, useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
 import { useIsMdUp } from '../utils/useMediaQuery';
 
@@ -70,6 +70,23 @@ function HomeLogoButton({ onNavigate }: { onNavigate: () => void }) {
       className="flex items-center rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
     >
       <Logo size="md" />
+    </button>
+  );
+}
+
+/** Instant-hide control. Raises the privacy veil on tap — for a quick
+ *  "someone's looking" moment on a shared phone. Plain label so anyone
+ *  gets it. Always present on app screens, both shells. */
+function HideButton({ onHide }: { onHide: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onHide}
+      aria-label="Hide the screen"
+      title="Hide the screen"
+      className="grid place-items-center w-10 h-10 rounded-full text-muted hover:text-ink hover:bg-canvas/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay/60"
+    >
+      <EyeOff size={18} />
     </button>
   );
 }
@@ -167,6 +184,9 @@ export default function Header({
   // logout. (The landing has its own TopNav; this Header never renders
   // there.)
   const goHome = () => navigate({ type: 'home' });
+  // "Hide" — raises the privacy veil instantly (works even if Discreet Mode
+  // is off). For the shared-phone / over-the-shoulder moment.
+  const { concealNow } = useDiscreet();
 
   // Container max-width ramp pulled one tier earlier — same shift
   // applied to components/Container.tsx so layout stays coherent
@@ -210,9 +230,10 @@ export default function Header({
               </>
             )}
             {variant === 'home' && <div className="flex-1" />}
-            {rightSlot && (
-              <div className="flex items-center gap-1.5">{rightSlot}</div>
-            )}
+            <div className="flex items-center gap-1.5 ml-auto">
+              <HideButton onHide={concealNow} />
+              {rightSlot}
+            </div>
           </>
         ) : (
           /* ---------- Desktop shell ---------- */
@@ -234,15 +255,14 @@ export default function Header({
                 </div>
               </div>
             )}
-            {rightSlot && (
-              <div
-                className={`flex items-center gap-2 ${
-                  variant === 'page' && title ? '' : 'ml-auto'
-                }`}
-              >
-                {rightSlot}
-              </div>
-            )}
+            <div
+              className={`flex items-center gap-2 ${
+                variant === 'page' && title ? '' : 'ml-auto'
+              }`}
+            >
+              <HideButton onHide={concealNow} />
+              {rightSlot}
+            </div>
           </>
         )}
       </div>

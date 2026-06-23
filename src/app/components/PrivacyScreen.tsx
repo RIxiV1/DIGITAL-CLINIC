@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Lock } from 'lucide-react';
 import Logo from './Logo';
 import { useDiscreet } from '../AppContext';
@@ -21,17 +21,39 @@ import { useDiscreet } from '../AppContext';
  * lift it. Listeners only attach while Discreet Mode is on.
  */
 export default function PrivacyScreen() {
-  const { discreet } = useDiscreet();
+  const { discreet, concealNonce } = useDiscreet();
   const [concealed, setConcealed] = useState(false);
+  // "Manual" = the user tapped Hide now (works even with Discreet Mode off).
+  // A manual veil does NOT auto-lift on focus — only an explicit tap/Esc
+  // dismisses it. The away-state (Discreet) veil keeps lifting on return.
+  const [manual, setManual] = useState(false);
+  const manualRef = useRef(false);
+  manualRef.current = manual;
 
+  const dismiss = useCallback(() => {
+    setManual(false);
+    setConcealed(false);
+  }, []);
+
+  // Manual "hide now" — raise the veil immediately on each concealNonce bump
+  // (skip the initial 0). Independent of the Discreet setting.
   useEffect(() => {
-    if (!discreet) {
-      setConcealed(false);
-      return;
-    }
+    if (concealNonce === 0) return;
+    setManual(true);
+    setConcealed(true);
+  }, [concealNonce]);
+
+  // Away-state veil — only while Discreet Mode is on.
+  useEffect(() => {
+    if (!discreet) return;
     const conceal = () => setConcealed(true);
     const reveal = () => {
-      if (document.visibilityState === 'visible' && document.hasFocus()) {
+      // Never auto-lift a manual veil; only the away-state one.
+      if (
+        !manualRef.current &&
+        document.visibilityState === 'visible' &&
+        document.hasFocus()
+      ) {
         setConcealed(false);
       }
     };
@@ -50,23 +72,50 @@ export default function PrivacyScreen() {
     };
   }, [discreet]);
 
-  if (!discreet || !concealed) return null;
+  // Esc dismisses a manual veil (desktop quick-exit).
+  useEffect(() => {
+    if (!concealed || !manual) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') dismiss();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [concealed, manual, dismiss]);
+
+  if (!concealed) return null;
+
+  const body = (
+    <div className="flex flex-col items-center gap-3 text-muted">
+      <Logo size="md" />
+      <div className="inline-flex items-center gap-1.5 text-caption font-medium">
+        <Lock size={13} />
+        Hidden for privacy
+      </div>
+      {manual && (
+        <div className="text-micro text-muted/80">Tap anywhere to return</div>
+      )}
+    </div>
+  );
 
   // z above everything (skip-link is z-[100], modals z-50) so no health
   // content can peek through. Opaque, theme-aware canvas — a calm,
-  // content-free screen, not an alarm.
-  return (
+  // content-free screen, not an alarm. A manual veil is a tappable button
+  // (tap to return); the away-state veil is passive + aria-hidden.
+  return manual ? (
+    <button
+      type="button"
+      onClick={dismiss}
+      aria-label="Hidden for privacy — tap to return"
+      className="fixed inset-0 z-[200] grid place-items-center bg-canvas no-print"
+    >
+      {body}
+    </button>
+  ) : (
     <div
       aria-hidden
       className="fixed inset-0 z-[200] grid place-items-center bg-canvas no-print"
     >
-      <div className="flex flex-col items-center gap-3 text-muted">
-        <Logo size="md" />
-        <div className="inline-flex items-center gap-1.5 text-caption font-medium">
-          <Lock size={13} />
-          Hidden for privacy
-        </div>
-      </div>
+      {body}
     </div>
   );
 }
