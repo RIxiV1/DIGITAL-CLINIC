@@ -166,15 +166,14 @@ type Copy = {
 };
 
 function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
-  // State C — no reports at all. Voice: warm, specific, matches the
-  // landing page's "your X, your Y, your Z" register rather than the
-  // flat-clinical "Upload your first report to get your health snapshot"
-  // it used to say.
+  // State C — no reports at all. Voice: direct and plain. Short sentences,
+  // no rhetorical em-dash, no rule-of-three list — the generic-AI cadence
+  // those produce is exactly what we're avoiding.
   if (!hasReport || !markers || markers.length === 0) {
     return {
-      eyebrow: 'Get started',
-      headline: 'Drop in a report — we’ll translate the numbers.',
-      sub: 'Plain English, what matters flagged, and we’ll track the trend the next time you test.',
+      eyebrow: 'Start here',
+      headline: 'Your blood test, in plain English.',
+      sub: 'Upload a report. We flag what needs attention and track it every time you re-test.',
       ctaLabel: 'Upload a report',
     };
   }
@@ -185,9 +184,9 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
   // like a smug fitness app.
   if (summary.concern === 0 && summary.attention === 0) {
     return {
-      eyebrow: 'All healthy',
-      headline: 'Everything’s in range. Whatever you’re doing — keep going.',
-      sub: 'Re-test in 6 months to confirm the trend holds.',
+      eyebrow: 'All clear',
+      headline: 'Everything’s in range.',
+      sub: 'Re-check in 6 months to be sure.',
       ctaLabel: 'See all markers',
     };
   }
@@ -224,7 +223,7 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
         headline: `Your ${newsworthy.name} dropped ${formatAbsDelta(newsworthy)} since ${formatRoughDate(priorReadingDate)}.`,
         qualifier:
           positive && positiveDelta
-            ? `${positive.name} is ${positiveDelta.startsWith('-') ? 'down' : 'up'} ${stripSign(positiveDelta)} ${positive.unit} — that's working.`
+            ? `${positive.name} is ${positiveDelta.startsWith('-') ? 'down' : 'up'} ${stripSign(positiveDelta)} ${positive.unit}. That's working.`
             : undefined,
         sub: countLine,
         ctaLabel: 'See what needs attention',
@@ -234,7 +233,7 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
     if (tone === 'improving' && delta) {
       return {
         eyebrow: 'Trending up',
-        headline: `Your ${newsworthy.name} is up ${stripSign(delta)} ${newsworthy.unit} — that's working.`,
+        headline: `Your ${newsworthy.name} is up ${stripSign(delta)} ${newsworthy.unit}. That's working.`,
         sub: `${summary.needCare} marker${summary.needCare === 1 ? '' : 's'} still need${summary.needCare === 1 ? 's' : ''} care.`,
         ctaLabel: 'See what needs attention',
       };
@@ -248,9 +247,9 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
     eyebrow: 'Your latest report',
     headline:
       summary.needCare > 0
-        ? `${summary.needCare} marker${summary.needCare === 1 ? '' : 's'} need${summary.needCare === 1 ? 's' : ''} care — here's where to start.`
-        : `${flagged} markers worth a closer look.`,
-    sub: `${summary.good} of ${summary.total} markers healthy. ${summary.attention > 0 ? `${summary.attention} to watch · ` : ''}${summary.needCare > 0 ? `${summary.needCare} need${summary.needCare === 1 ? 's' : ''} care.` : ''}`,
+        ? `${summary.needCare} marker${summary.needCare === 1 ? '' : 's'} need${summary.needCare === 1 ? 's' : ''} a closer look.`
+        : `${flagged} markers to keep an eye on.`,
+    sub: `${summary.good} of ${summary.total} markers in range.`,
     ctaLabel: 'See all markers',
   };
 }
