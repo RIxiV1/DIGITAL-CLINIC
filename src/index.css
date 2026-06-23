@@ -197,14 +197,14 @@
    * theme-invariance we want here. */
   --color-on-gold: #002852;
 
-  /* Type system */
+  /* Type system. Display face = Instrument Serif (self-hosted; @font-face
+   * at the top of this file). Playfair is GONE — no longer loaded. Both
+   * --font-display and --font-editorial point at Instrument Serif so the
+   * `.font-display` utility (which renders the app's headings) and any raw
+   * var() usage resolve to the same editorial serif. Body = Inter (self-
+   * hosted via @fontsource). */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
-  /* Editorial display face — Instrument Serif. A single-weight, high-
-   * character serif used LARGE and thin for the dashboard hero headline +
-   * score. Deliberately not Playfair (the over-indexed "SaaS serif") and
-   * not a system face: its job is to read as a designed, editorial choice.
-   * Currently consumed only by the hero demo via `font-editorial`. */
+  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
   --font-editorial: 'Instrument Serif', Georgia, 'Times New Roman', serif;
 
   /* Type scale — 8 semantic tokens, rem-based.

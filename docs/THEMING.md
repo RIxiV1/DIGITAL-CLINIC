@@ -6,6 +6,24 @@ This doc explains the five principles, the no-FOUC bootstrap, and how to add a n
 
 ---
 
+## Palette & type identity ("Ink & Clay")
+
+The visual identity is **warm editorial**, not cold-tech. Colour is organised into **three deliberate lanes** — keep them separate:
+
+| Lane | Tokens | Use |
+| --- | --- | --- |
+| **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — these now resolve to a **warm-stone ramp**, NOT blue | links, nav, secondary buttons, focus, most fills |
+| **Accent** (one per view) | `--color-clay` (terracotta) + `--color-on-clay` for text on it | the primary CTA, a section's accent phrase, the single highlighted card |
+| **Alarm** | `--color-concern` → **crimson `#ef4444`** (dark) | clinical warnings / flagged diagnostics only |
+
+Plus `--color-forest` (the "in-range" green accent) and the warm-charcoal **dark ladder**: canvas `#0b0a09` → card `--color-surface` `#161514` → hero `--color-paper` `#242220` (real lightness steps so layers read without leaning on borders).
+
+> **The class names lie, on purpose.** `bg-indigo-600` / `text-blue-700` render *terracotta-stone*, because the brand hue was retargeted in one place (`--color-blue-*`) rather than via 380+ per-component edits. Don't "fix" them back to blue. A future rename to `--color-primary-*` is the proper cleanup.
+
+**Type:** display = **Instrument Serif** (self-hosted `@font-face` in `index.css`, files in `public/fonts/`) — used LARGE for headlines + big overview numbers via the `.font-display` utility. Body = **Inter** (self-hosted via `@fontsource/inter`, latin subset, weights 400–700). **No Google Fonts `<link>` — zero third-party font requests.** Small/clinical data numbers use **Inter `tabular-nums`**, not the serif.
+
+---
+
 ## The five principles
 
 Every line of theme code in [`src/index.css`](../src/index.css) follows one of these. If you're tempted to break one, look hard for a different solution first.
@@ -24,17 +42,18 @@ Components that use those classes reskin themselves automatically when `data-the
 
 ### 3. "On-color" tokens for guaranteed contrast
 
-Every saturated surface has a paired "on-color" token:
+Every filled surface has a paired "on-color" token:
 
-- `--color-on-primary` — text on `bg-primary-600` (CTAs, links, accent fills)
-- `--color-on-status` — text on `bg-good` / `bg-attention` / `bg-concern` / `bg-critical`
+- `--color-on-primary` — text on `bg-primary-600` (the warm-stone chrome fill)
+- `--color-on-clay` — text on `bg-clay` (the terracotta accent: CTAs, accent panels)
+- `--color-on-status` — text on `bg-good` / `bg-attention` / `bg-concern`
 - `--color-on-gold` — text on the brand gold
 
-These are deliberate. Without them, `text-white` on a desaturated dark-mode "blue" button drops contrast to ~2.3:1 — illegible. With them, dark mode flips on-colors to deep navy when the surface itself becomes a pastel — contrast stays above WCAG AA.
+These are deliberate. Without them, `text-white` on a light dark-mode fill drops below AA — illegible. With them, the on-color flips per theme (e.g. on-primary and on-clay become **deep warm ink** in dark, where the fills are light stone/tan) so contrast stays above WCAG AA. **Never put `text-white` on a fill — always pair the on-color token.**
 
 ### 4. De-escalated status palette in dark mode
 
-Status fills (`good` / `attention` / `concern`) become pastel rose / amber / emerald in dark mode (`#5FCB95`, `#D9A765`, `#E27482`). The vivid Tailwind defaults are visual noise on a dark canvas; the de-escalated set reads as clinical rather than alarming.
+Status fills de-escalate in dark mode: `good` → emerald `#5FCB95`, `attention` → warm amber `#D9A765`. **`concern` is an authoritative crimson `#ef4444`** — it deliberately breaks out of the warm-stone/clay hue arc so an alarm never reads as chrome or accent. The vivid Tailwind defaults are visual noise on a dark canvas; this set reads as clinical.
 
 Status text *on soft backgrounds* uses dedicated `*-ink` tokens (`--color-good-ink`, `--color-attention-ink`, etc.) for AA contrast.
 
@@ -155,7 +174,7 @@ If you're building a new card, button, or page region:
 
 ## Adding a new color
 
-Don't, unless you really need to. The existing scale (blue, indigo aliased to blue, gold, mint, status colors, neutrals) covers most needs.
+Don't, unless you really need to. The existing scale covers most needs: the warm-stone chrome ramp (`blue`/`indigo`/`primary`, all aliased together), the `clay` terracotta accent (+ `on-clay`), `forest`, the warm `paper`/`paper-ink` hero tones, `gold`, `mint`, the status colours, and neutrals. Before adding a hue, check it doesn't collapse a lane — keep chrome (stone), accent (clay), and alarm (crimson) distinct.
 
 If you must:
 
