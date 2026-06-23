@@ -66,22 +66,16 @@
       fetchpriority="high"
     />
 
-    <!-- Instrument Serif (display) is self-hosted from /fonts — see the
-         @font-face in index.css. Preload the normal weight so the hero
-         masthead paints without a swap flash. Inter (body) is the one
-         remaining third-party font request. -->
+    <!-- Fonts are now FULLY self-hosted — zero third-party requests on load.
+         Instrument Serif (display) via @font-face in index.css; Inter (body)
+         via @fontsource/inter imported in index.css. Preload the masthead
+         weight so the hero paints without a swap flash. -->
     <link
       rel="preload"
       href="/fonts/instrument-serif-normal.ttf"
       as="font"
       type="font/ttf"
       crossorigin
-    />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
     />
 
     <!-- Theme bootstrap. Stamps `data-theme` onto <html> BEFORE the React

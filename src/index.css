@@ -1,5 +1,15 @@
 @import 'tailwindcss';
 
+/* Self-hosted Inter (body sans) via @fontsource — latin subset only, the
+ * exact weights the UI uses (400/500/600/700; no 800 — nothing renders
+ * font-extrabold). Replaces the Google Fonts <link>, so the app makes ZERO
+ * third-party font requests. Latin covers the English UI; Hindi is
+ * Devanagari and falls back regardless, so the heavier subsets are skipped. */
+@import '@fontsource/inter/latin-400.css';
+@import '@fontsource/inter/latin-500.css';
+@import '@fontsource/inter/latin-600.css';
+@import '@fontsource/inter/latin-700.css';
+
 /* Self-hosted Instrument Serif (the editorial display face). Served from
  * /public/fonts as same-origin assets — NOT from Google Fonts — so the
  * display face adds zero third-party request and satisfies the strict
