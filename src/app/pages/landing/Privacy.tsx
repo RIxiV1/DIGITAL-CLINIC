@@ -1,7 +1,6 @@
 import { type ReactNode } from 'react';
 import { motion } from 'framer-motion';
 import { Cpu, Lock, ShieldCheck, UserX } from 'lucide-react';
-import Illustration from '../../components/Illustration';
 import { Reveal, SectionHeader } from './shared';
 
 /**
@@ -34,10 +33,48 @@ export default function Privacy() {
             />
           </Reveal>
           <Reveal delay={0.1}>
-            <Illustration
-              src="/illustrations/private-data.svg"
-              className="w-full max-w-sm mx-auto md:ml-auto h-auto"
-            />
+            {/* Security Protocol Matrix — replaces the stock privacy
+                illustration with the actual architecture, written into the
+                layout. EVERY value here is verified against the source
+                (crypto.ts / persistence.ts), NOT marketing: the cipher is
+                AES-GCM-256, the KDF is PBKDF2-SHA256 @ 200k iterations (NOT
+                Argon2id), encryption is PIN-gated/opt-in, and data persists
+                to localStorage (so no "zero-storage" claim). No invented
+                compliance seals — authority comes from precision. */}
+            <div className="w-full max-w-sm mx-auto md:ml-auto font-mono">
+              <div className="rounded-md border-[0.5px] border-line bg-surface overflow-hidden">
+                <div className="flex items-center justify-between px-3.5 py-2 border-b-[0.5px] border-line">
+                  <span className="text-[10px] uppercase tracking-widest text-clay">
+                    security_protocol
+                  </span>
+                  <span className="text-[10px] uppercase tracking-widest text-muted">
+                    on_device
+                  </span>
+                </div>
+                <dl className="divide-y divide-line text-xs tracking-tight">
+                  {(
+                    [
+                      ['PROCESSING', 'ON_DEVICE'],
+                      ['SERVER_UPLOAD', 'NONE'],
+                      ['ACCOUNT', 'NONE'],
+                      ['STORAGE', 'BROWSER_LOCAL'],
+                      ['ENCRYPTION', 'AES-GCM-256 · OPT-IN'],
+                      ['KEY_DERIVATION', 'PBKDF2-SHA256 · 200K'],
+                    ] as const
+                  ).map(([k, v]) => (
+                    <div
+                      key={k}
+                      className="flex items-baseline justify-between gap-3 px-3.5 py-2.5"
+                    >
+                      <dt className="uppercase text-muted whitespace-nowrap">
+                        {k}
+                      </dt>
+                      <dd className="text-ink-soft text-right">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            </div>
           </Reveal>
         </div>
 
