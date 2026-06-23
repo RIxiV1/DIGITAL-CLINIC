@@ -91,7 +91,7 @@ export default function ProfilePage() {
     // blocks in index.css — kept hardcoded here (not read from CSS)
     // because the <meta> tag lives outside the document body and
     // CSS variables don't reach it.
-    const themeColor = next === 'light' ? '#F8F9FA' : '#0B0F1A';
+    const themeColor = next === 'light' ? '#F7F4EF' : '#100E0C';
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', themeColor);
     window.setTimeout(() => {

@@ -68,8 +68,8 @@
   --color-gold-800: #8a6500;
 
   /* Neutrals */
-  --color-canvas: #f8f9fa;
-  --color-surface: #ffffff;
+  --color-canvas: #f7f4ef;
+  --color-surface: #fffdf8;
   --color-ink: #0f1422;
   --color-ink-soft: #2c3344;
   --color-muted: #6b7280;
@@ -377,8 +377,8 @@ a,
   color-scheme: light;
 
   /* Canvas + surface */
-  --color-canvas: #f8f9fa;
-  --color-surface: #ffffff;
+  --color-canvas: #f7f4ef;
+  --color-surface: #fffdf8;
   --color-line: #e5e7eb;
   --color-line-strong: #d1d5db;
 
@@ -450,11 +450,12 @@ a,
 
   /* ─── Canvas + surface ladder ──────────────────────────────────
    * Two visible tones from page floor to card surface. NOT pure
-   * black — `#0B0F1A` keeps the gamma curve away from OLED black-
-   * smearing during scroll, and reads as "navy night" instead of
-   * "void", which fits the clinical-blue brand. */
-  --color-canvas: #0b0f1a;
-  --color-surface: #131826;
+   * black — `#100E0C` keeps the gamma curve away from OLED black-
+   * smearing during scroll, and is a warm ink-charcoal (neutral, not
+   * blue) so the warm bronze hero spotlight + paper tones read as one
+   * family rather than fighting a cold navy baseline. */
+  --color-canvas: #100e0c;
+  --color-surface: #1a1816;
 
   /* ─── Line / border ────────────────────────────────────────────
    * Low-alpha white so a border scales with whatever surface tone
@@ -517,8 +518,11 @@ a,
   /* ─── Warm "paper" identity — dark-tuned ───────────────────────
    * The hero stays warm in dark mode: a warm CHARCOAL (not navy) paper,
    * warm off-white ink, and lifted forest/terracotta so both read on the
-   * dark card. Keeps the owned palette intact across themes. */
-  --color-paper: #1a1613;
+   * dark card. The hero is the warm bronze SPOTLIGHT — deliberately
+   * lighter + warmer than both the ink-charcoal canvas and the slate
+   * card surface, so it reads as the focal panel rather than blending
+   * into the ladder. Keeps the owned palette intact across themes. */
+  --color-paper: #241c14;
   --color-paper-ink: #f3eee5;
   --color-paper-soft: #b8afa3;
   --color-paper-line: rgb(243 238 229 / 0.12);
@@ -553,8 +557,8 @@ a,
    * are now pastels. `text-on-primary` on `bg-primary-600` (pastel
    * blue): ~8:1. `text-on-status` on `bg-concern` (pastel rose):
    * ~5.5:1. Both meet AA; the first meets AAA. */
-  --color-on-primary: #0b0f1a;
-  --color-on-status: #0b0f1a;
+  --color-on-primary: #100e0c;
+  --color-on-status: #100e0c;
 
   /* ─── Shadow ladder — inset + deep ─────────────────────────────
    * External shadows are darker than the canvas they sit on, so
@@ -659,16 +663,23 @@ button:disabled,
 }
 
 @layer utilities {
+  /* The app's display face is now Instrument Serif (--font-editorial),
+   * not Playfair. Instrument Serif ships a single 400 weight by design —
+   * forcing 600 would trigger ugly faux-bold synthesis — so headings lean
+   * on SIZE + tight tracking for authority, not weight. This single repoint
+   * flips every `font-display` heading + numeric readout app-wide to the
+   * editorial identity. `--font-display` (Playfair) is kept defined for any
+   * future opt-in but is no longer the default display face. */
   .font-display {
-    font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.015em;
+    font-family: var(--font-editorial);
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
 
   .font-display-italic {
-    font-family: var(--font-display);
+    font-family: var(--font-editorial);
     font-style: italic;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   .shadow-soft {

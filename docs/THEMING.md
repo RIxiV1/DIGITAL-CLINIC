@@ -68,7 +68,7 @@ default) then flickers to dark when React reads `localStorage`.
   } catch (e) { /* private mode / disabled storage */ }
   document.documentElement.dataset.theme = theme;
 
-  var themeColor = theme === 'light' ? '#F8F9FA' : '#0B0F1A';
+  var themeColor = theme === 'light' ? '#F7F4EF' : '#100E0C';
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', themeColor);
 })();
@@ -106,7 +106,7 @@ const toggleTheme = () => {
   const root = document.documentElement;
   root.classList.add('theme-transitioning');    // 240ms color transition
   root.dataset.theme = next;                    // re-bind tokens
-  const themeColor = next === 'light' ? '#F8F9FA' : '#0B0F1A';
+  const themeColor = next === 'light' ? '#F7F4EF' : '#100E0C';
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
   setTimeout(() => root.classList.remove('theme-transitioning'), 240);
 };

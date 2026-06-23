@@ -30,7 +30,7 @@
   /* Keep the mobile-browser top-bar tint in sync with the canvas.
      Mirrors `--color-canvas` from the [data-theme] blocks in index.css;
      ProfilePage's toggle does the same flip on each runtime switch. */
-  var themeColor = theme === 'light' ? '#F8F9FA' : '#0B0F1A';
+  var themeColor = theme === 'light' ? '#F7F4EF' : '#100E0C';
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', themeColor);
 })();
