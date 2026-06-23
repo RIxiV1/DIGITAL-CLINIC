@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import {
   AlertTriangle,
   ArrowRight,
@@ -134,6 +134,32 @@ function detectsWho2010Reference(rawText: string | undefined): boolean {
   );
 }
 
+/**
+ * Types `text` out character-by-character for the live processing status
+ * line. When `enabled` is false (reduced-motion), it returns the full
+ * string immediately — no animation. Resets and re-types whenever the
+ * source text changes (e.g. the pipeline advances a stage). Capped speed so
+ * a long OCR-stall message still finishes typing well before it changes.
+ */
+function useTypewriter(text: string, enabled: boolean): string {
+  const [shown, setShown] = useState(text);
+  useEffect(() => {
+    if (!enabled) {
+      setShown(text);
+      return;
+    }
+    setShown('');
+    let i = 0;
+    const id = window.setInterval(() => {
+      i += 1;
+      setShown(text.slice(0, i));
+      if (i >= text.length) window.clearInterval(id);
+    }, 18);
+    return () => window.clearInterval(id);
+  }, [text, enabled]);
+  return shown;
+}
+
 export default function ProcessingPage() {
   const { reports, markReportReady, removeReport, addReport } = useReports();
   const { replace } = useNavigation();
@@ -150,6 +176,17 @@ export default function ProcessingPage() {
    *  on phones from assuming the tab froze during a long OCR. */
   const [detailOverride, setDetailOverride] = useState<string | null>(null);
   const [failure, setFailure] = useState<FailureState | null>(null);
+
+  // The live status line, typed out char-by-char for a "real-time scan"
+  // feel that justifies the wait. Pure text + caret — NO scanning-beam or
+  // glow (that's the generated-app look we avoid). Reduced-motion users get
+  // the full string instantly (no typing animation).
+  const prefersReduced = useReducedMotion();
+  const detailText =
+    detailOverride ??
+    parseSteps[stepIndex]?.detail ??
+    'Almost done — getting your insights ready.';
+  const typedDetail = useTypewriter(detailText, !prefersReduced);
   /** Holds the parsed result after a successful extraction. We DON'T
    *  navigate to /results until the user confirms — previously the
    *  app auto-routed and the user had no chance to verify what was
@@ -714,10 +751,16 @@ export default function ProcessingPage() {
         <h1 className="font-display text-display-md leading-tight mt-7 text-balance max-w-[22rem]">
           Reading your report carefully.
         </h1>
-        <p className="mt-2 text-body-sm text-ink-soft max-w-[22rem] text-pretty">
-          {detailOverride ??
-            parseSteps[stepIndex]?.detail ??
-            'Almost done — getting your insights ready.'}
+        <p
+          className="mt-2 text-body-sm text-ink-soft max-w-[22rem] text-pretty"
+          aria-live="polite"
+        >
+          {typedDetail}
+          {/* Blinking caret — only while actively typing, and never under
+              reduced-motion. */}
+          {!prefersReduced && typedDetail.length < detailText.length && (
+            <span className="inline-block w-[1px] h-[1em] -mb-[0.1em] ml-0.5 bg-clay motion-safe:animate-pulse" />
+          )}
         </p>
 
         {/* Overall progress strip */}
