@@ -1,5 +1,31 @@
 @import 'tailwindcss';
 
+/* Self-hosted Instrument Serif (the editorial display face). Served from
+ * /public/fonts as same-origin assets — NOT from Google Fonts — so the
+ * display face adds zero third-party request and satisfies the strict
+ * `default-src 'self'` CSP. Complete TTFs (not subsetted): Instrument
+ * Serif is only ever shown for Latin text + numerals here (Hindi headings
+ * fall back), so one file per style covers every glyph we render.
+ *
+ * NOTE: Inter (body) still loads from Google Fonts via index.html — the
+ * one remaining third-party font request. Self-hosting Inter's many
+ * unicode-range subsets is the final step before a clean "no third-party
+ * requests" claim. */
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-serif-normal.ttf') format('truetype');
+}
+@font-face {
+  font-family: 'Instrument Serif';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/instrument-serif-italic.ttf') format('truetype');
+}
+
 @theme {
   /* Terracotta — ForMen primary (warm, grounded, editorial). The brand
    * primary was retargeted off the old Clinical Blue to this warm clay
@@ -746,7 +772,7 @@ button:disabled,
    * tone — it just gives a faint dotted texture. */
   .bg-dot-grid {
     background-image: radial-gradient(
-      rgb(0 102 204 / 0.08) 1px,
+      rgb(181 81 47 / 0.08) 1px,
       transparent 1px
     );
     background-size: 18px 18px;
@@ -758,7 +784,7 @@ button:disabled,
    * subtle on either tone. */
   .bg-hero-grid {
     background-image:
-      radial-gradient(rgb(0 102 204 / 0.07) 1px, transparent 1px),
+      radial-gradient(rgb(181 81 47 / 0.07) 1px, transparent 1px),
       linear-gradient(180deg, var(--color-blue-50) 0%, var(--color-surface) 78%);
     background-size:
       22px 22px,
@@ -775,32 +801,32 @@ button:disabled,
     background:
       radial-gradient(
         120% 70% at 50% 0%,
-        rgb(0 102 204 / 0.06) 0%,
+        rgb(181 81 47 / 0.06) 0%,
         transparent 60%
       ),
       linear-gradient(180deg, var(--color-surface) 0%, var(--color-canvas) 100%);
   }
 
   /* `.bg-cta-gradient` — permanent dark hero callout used by FinalCta.
-   * Stops are hardcoded brand-blue values intentionally; this surface
-   * stays the same in BOTH themes (a dark blue gradient is a
-   * deliberate visual constant on the landing's closing CTA, not
-   * something that should flip with the user's theme). Modern
-   * `rgb(R G B / A)` syntax across the alpha stops for Tailwind v4
-   * color-mix compat. */
+   * Stops are hardcoded WARM values intentionally; this surface stays the
+   * same in BOTH themes (a deep bronze gradient is a deliberate visual
+   * constant on the landing's closing CTA, not something that should flip
+   * with the user's theme). A terracotta highlight + a forest-green accent
+   * sit over a deep-clay base — the owned palette, not the old brand blue.
+   * Modern `rgb(R G B / A)` syntax for Tailwind v4 color-mix compat. */
   .bg-cta-gradient {
     background:
       radial-gradient(
         60% 80% at 80% 20%,
-        rgb(61 149 255 / 0.3) 0%,
+        rgb(216 132 91 / 0.32) 0%,
         transparent 60%
       ),
       radial-gradient(
         80% 100% at 0% 100%,
-        rgb(21 185 124 / 0.15) 0%,
+        rgb(47 93 80 / 0.28) 0%,
         transparent 55%
       ),
-      linear-gradient(135deg, #003d7a 0%, #0052a3 45%, #0066cc 100%);
+      linear-gradient(135deg, #2a160d 0%, #5c2814 48%, #79351a 100%);
   }
 }
 
