@@ -76,6 +76,22 @@
   --color-line: #e5e7eb;
   --color-line-strong: #d1d5db;
 
+  /* ── Warm "paper" identity ─────────────────────────────────────────
+   * An owned, culturally-grounded palette that deliberately breaks BOTH
+   * AI defaults — the cold navy/indigo glow-SaaS look AND the safe
+   * greyscale/zinc "Linear clone" look. Warm off-white paper, warm
+   * charcoal ink, a deep forest "on-track" tone, and a terracotta
+   * accent used with restraint (CTA + the single "to review" count).
+   * Currently consumed ONLY by DashboardHeadline — the design-direction
+   * demo — so adding these tokens reskins nothing else. Theme-aware
+   * (dark rebind below) so a future rollout inherits dark mode for free. */
+  --color-paper: #fdfbf7;
+  --color-paper-ink: #1c1917;
+  --color-paper-soft: #57534e;
+  --color-paper-line: rgb(28 25 23 / 0.12);
+  --color-clay: #b5512f;
+  --color-forest: #2f5d50;
+
   /* Status fills. The vivid stops here are tuned for BADGE FILLS
    * (white-on-color, e.g. `bg-good text-on-status`) — they hit AA
    * comfortably when paired with the on-status token. The `*-soft`
@@ -142,6 +158,12 @@
   /* Type system */
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  /* Editorial display face — Instrument Serif. A single-weight, high-
+   * character serif used LARGE and thin for the dashboard hero headline +
+   * score. Deliberately not Playfair (the over-indexed "SaaS serif") and
+   * not a system face: its job is to read as a designed, editorial choice.
+   * Currently consumed only by the hero demo via `font-editorial`. */
+  --font-editorial: 'Instrument Serif', Georgia, 'Times New Roman', serif;
 
   /* Type scale — 8 semantic tokens, rem-based.
    *
@@ -491,6 +513,17 @@ a,
   --color-mint-50: #0e2418;
   --color-mint-100: #163422;
   --color-mint-500: #4dbe8c;
+
+  /* ─── Warm "paper" identity — dark-tuned ───────────────────────
+   * The hero stays warm in dark mode: a warm CHARCOAL (not navy) paper,
+   * warm off-white ink, and lifted forest/terracotta so both read on the
+   * dark card. Keeps the owned palette intact across themes. */
+  --color-paper: #1a1613;
+  --color-paper-ink: #f3eee5;
+  --color-paper-soft: #b8afa3;
+  --color-paper-line: rgb(243 238 229 / 0.12);
+  --color-clay: #d8845b;
+  --color-forest: #74b59c;
 
   /* ─── Status fills — DE-ESCALATED for AMOLED ───────────────────
    * Rose / warm-amber / emerald pastels instead of pure red/amber/
