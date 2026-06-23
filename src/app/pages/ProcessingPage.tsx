@@ -15,7 +15,6 @@ import {
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
-import Illustration from '../components/Illustration';
 import Logo from '../components/Logo';
 import Pill from '../components/Pill';
 import StickyBottomBar from '../components/StickyBottomBar';
@@ -685,29 +684,31 @@ export default function ProcessingPage() {
         size="narrow"
         className="flex-1 flex flex-col items-center justify-center text-center pb-16"
       >
+        {/* Pipeline manifest — replaces the floating stock illustration
+            (and its blur-glow, itself a generated-app tell). A dense mono
+            read-out of WHERE the parse runs; the live step list + progress
+            strip carry the motion below. */}
         <motion.div
-          initial={{ scale: 0.9, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
-          className="relative"
+          className="w-full max-w-sm"
         >
-          {/* Soft pulsing glow keeps the screen feeling alive while the
-              parse runs; the illustration itself floats gently above it. */}
-          <motion.div
-            aria-hidden
-            animate={{ opacity: [0.3, 0.55, 0.3], scale: [0.92, 1.06, 0.92] }}
-            transition={{ duration: 2.4, repeat: Infinity, ease: 'easeInOut' }}
-            className="absolute inset-0 -z-10 rounded-full bg-indigo-500/20 blur-2xl"
-          />
-          <motion.div
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <Illustration
-              src="/illustrations/report-analysis.svg"
-              className="mx-auto w-56 md:w-64 h-auto"
-            />
-          </motion.div>
+          <div className="text-micro uppercase tracking-widest font-bold text-muted mb-2 font-mono">
+            pipeline
+          </div>
+          <dl className="font-mono text-caption border border-line rounded-md divide-y divide-line text-left">
+            {[
+              ['engine', 'pdf.js · tesseract'],
+              ['location', 'on-device'],
+              ['network', 'none'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-3 px-3 py-1.5">
+                <dt className="text-muted lowercase tracking-wide">{k}</dt>
+                <dd className="text-ink-soft lowercase tracking-wide">{v}</dd>
+              </div>
+            ))}
+          </dl>
         </motion.div>
 
         <h1 className="font-display text-display-md leading-tight mt-7 text-balance max-w-[22rem]">
