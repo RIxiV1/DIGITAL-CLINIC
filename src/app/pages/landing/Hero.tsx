@@ -39,47 +39,32 @@ export default function Hero({
           {/* LEFT — Headline + CTAs */}
           <div className="md:col-span-6">
             <motion.div variants={fadeUp}>
-              <span className="inline-flex items-center gap-2 h-7 px-3 rounded-full bg-surface border border-blue-100 text-caption font-semibold uppercase tracking-label text-blue-700 shadow-clinical">
-                <span className="relative grid place-items-center w-3.5 h-3.5">
-                  <span className="absolute inset-0 rounded-full bg-blue-500/30 animate-ping" />
-                  <span className="relative w-1.5 h-1.5 rounded-full bg-blue-600" />
-                </span>
-                Men's Hormonal Health
+              {/* Micro-metric anchor — a hairline-bounded mono label card
+                  (clay accent) replacing the old rounded "live dot" pill,
+                  which read as generic SaaS chrome. Keeps the real product
+                  framing rather than a placeholder slug. */}
+              <span className="inline-flex items-center border-[0.5px] border-clay/40 rounded-sm px-2.5 py-1.5 text-[10px] font-mono uppercase tracking-widest text-clay">
+                [ MEN’S HORMONAL HEALTH // INDIA-FIRST ]
               </span>
             </motion.div>
 
             <motion.h1
               variants={fadeUp}
-              className="font-sans font-bold text-display-lg sm:text-display-xl leading-[1.06] tracking-tight mt-5 text-ink text-balance"
+              className="font-display font-normal text-5xl md:text-7xl leading-[0.9] tracking-tighter mt-5 text-ink text-balance"
             >
               Your hair loss, your fatigue, and your sex drive{' '}
-              {/* Single gradient accent — used exactly once, on the
-                  payoff phrase of the headline. Blue-700 → blue-500 →
-                  gold-600 mirrors the brand stack (clinical blue
-                  anchor + premium gold edge) and gives the headline a
-                  visual hierarchy boost without resorting to a second
-                  color or a heavier weight. Repeating this treatment
-                  on every heading is the slop the user warned about
-                  — keep it scarce. */}
-              <span
-                className="bg-clip-text text-transparent"
-                style={{
-                  backgroundImage:
-                    'linear-gradient(120deg, var(--color-blue-700) 0%, var(--color-blue-500) 55%, var(--color-gold-600) 100%)',
-                }}
-              >
-                might be the same problem.
-              </span>
+              {/* One solid accent on the payoff phrase — terracotta, not a
+                  gradient. A massive single-weight Instrument Serif carries
+                  the punch; the gradient-text trick read as tech-SaaS. */}
+              <span className="text-clay">might be the same problem.</span>
             </motion.h1>
 
             <motion.p
               variants={fadeUp}
-              className="mt-4 text-body md:text-body-lg leading-relaxed text-ink-soft max-w-[40ch] text-pretty"
+              className="mt-5 text-body-lg leading-snug text-ink-soft max-w-[42ch] text-pretty"
             >
-              You’re not alone, and you’re not broken. One hormonal system
-              quietly drives all three — answer a few private questions for a
-              clear, science-backed read on what’s going on. No account, no
-              judgment.
+              One hormonal system quietly drives all three — answer a few
+              private questions for a clear, science-backed read.
             </motion.p>
 
             <motion.div
