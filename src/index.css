@@ -37,24 +37,24 @@
 }
 
 @theme {
-  /* Terracotta — ForMen primary (warm, grounded, editorial). The brand
-   * primary was retargeted off the old Clinical Blue to this warm clay
-   * scale as part of the de-AI design rollout; the `blue-*`/`indigo-*`/
-   * `primary-*` CLASS NAMES are deliberately kept (single source of
-   * truth: re-pointing the hue is this one block), so every existing
-   * `bg-blue-*`/`text-indigo-*`/`bg-primary-*` usage app-wide now resolves
-   * to terracotta with no per-component edits. Distinct from the red
-   * `concern` status hue so "interactive" never reads as "alarm". */
-  --color-blue-50: #fbf0ea;
-  --color-blue-100: #f6ddd0;
-  --color-blue-200: #ecbfa9;
-  --color-blue-300: #e09b7b;
-  --color-blue-400: #d2774d;
-  --color-blue-500: #c25f33;
-  --color-blue-600: #b5512f;
-  --color-blue-700: #97421f;
-  --color-blue-800: #79351a;
-  --color-blue-900: #5c2814;
+  /* Neutral warm-stone CHROME (the "Ink & Clay" idiom). The primary/blue/
+   * indigo alias resolves to a neutral warm-stone ramp — links, buttons,
+   * focus, secondary labels — so chrome stays quiet. The ONE brand accent
+   * is terracotta, held separately in --color-clay and used with restraint
+   * (one accent per view); the alarm hue is a distinct crimson
+   * (--color-concern). Chrome / accent / alarm are three separate lanes by
+   * design, so "interactive" never competes with "accent" or reads as
+   * "alarm". (Class names kept as blue/indigo for single-source retarget.) */
+  --color-blue-50: #f5f3f0;
+  --color-blue-100: #e7e2dc;
+  --color-blue-200: #d6cfc7;
+  --color-blue-300: #b8aea3;
+  --color-blue-400: #8a8077;
+  --color-blue-500: #6b6259;
+  --color-blue-600: #57514a;
+  --color-blue-700: #44403c;
+  --color-blue-800: #332f2b;
+  --color-blue-900: #1c1917;
 
   /* Legacy alias — pre-rebrand brand was indigo. Now both class
    * families resolve to the same Clinical Blue stops, so a future
@@ -426,16 +426,16 @@ a,
   --color-muted: #6b7280;
 
   /* Brand blue scale (and indigo aliases inherit via var()) */
-  --color-blue-50: #fbf0ea;
-  --color-blue-100: #f6ddd0;
-  --color-blue-200: #ecbfa9;
-  --color-blue-300: #e09b7b;
-  --color-blue-400: #d2774d;
-  --color-blue-500: #c25f33;
-  --color-blue-600: #b5512f;
-  --color-blue-700: #97421f;
-  --color-blue-800: #79351a;
-  --color-blue-900: #5c2814;
+  --color-blue-50: #f5f3f0;
+  --color-blue-100: #e7e2dc;
+  --color-blue-200: #d6cfc7;
+  --color-blue-300: #b8aea3;
+  --color-blue-400: #8a8077;
+  --color-blue-500: #6b6259;
+  --color-blue-600: #57514a;
+  --color-blue-700: #44403c;
+  --color-blue-800: #332f2b;
+  --color-blue-900: #1c1917;
 
   /* Gold */
   --color-gold-50: #fff9e5;
@@ -491,24 +491,26 @@ a,
    * black — `#100E0C` keeps the gamma curve away from OLED black-
    * smearing during scroll, and is a warm ink-charcoal (neutral, not
    * blue) so the warm bronze hero spotlight + paper tones read as one
-   * family rather than fighting a cold navy baseline. */
-  --color-canvas: #100e0c;
-  --color-surface: #1a1816;
+   * family rather than fighting a cold navy baseline. "Ink & Clay" ladder:
+   * warm charcoal-ink floor → warm dark-stone card → mid-stone hero, each
+   * a real ~5-8% lightness step so depth reads without leaning on borders. */
+  --color-canvas: #0b0a09;
+  --color-surface: #161514;
 
   /* ─── Line / border ────────────────────────────────────────────
    * Low-alpha white so a border scales with whatever surface tone
    * sits beneath it (canvas vs. surface vs. raised). A fixed grey
    * line would stay one tone regardless of context. */
-  --color-line: rgb(255 255 255 / 0.08);
-  --color-line-strong: rgb(255 255 255 / 0.14);
+  --color-line: rgb(231 229 228 / 0.1);
+  --color-line-strong: rgb(231 229 228 / 0.2);
 
   /* ─── Text hierarchy ───────────────────────────────────────────
    * Opacity-based on white. 92/78/55 lands at APCA Lc 92/82/68 on
    * canvas — AAA / AAA / AA. Slightly less than pure white kills
    * the haloing effect that #FFFFFF gets on AMOLED. */
-  --color-ink: rgb(255 255 255 / 0.92);
-  --color-ink-soft: rgb(255 255 255 / 0.78);
-  --color-muted: rgb(255 255 255 / 0.55);
+  --color-ink: #e7e5e4;
+  --color-ink-soft: #c4bfb9;
+  --color-muted: #8c857e;
 
   /* ─── Primary / Clinical Blue, dark-tuned ──────────────────────
    * The blue scale inverts: 50 (lightest in light) becomes a deep
@@ -519,16 +521,16 @@ a,
    * crucial part for the contrast principle: `text-white` on
    * `bg-primary-600` would fail at ~2.3:1; `text-on-primary` (which
    * the dark theme re-binds to deep navy below) hits 8:1 instead. */
-  --color-blue-50: #2a160d;
-  --color-blue-100: #3a1e12;
-  --color-blue-200: #512a19;
-  --color-blue-300: #6f3a22;
-  --color-blue-400: #b06a45;
-  --color-blue-500: #cc8158;
-  --color-blue-600: #dd9870;
-  --color-blue-700: #e8b394;
-  --color-blue-800: #f0cdb5;
-  --color-blue-900: #f7e6d8;
+  --color-blue-50: #1c1a18;
+  --color-blue-100: #242220;
+  --color-blue-200: #34302c;
+  --color-blue-300: #4a443e;
+  --color-blue-400: #7c746c;
+  --color-blue-500: #9c938a;
+  --color-blue-600: #bdb4aa;
+  --color-blue-700: #d6cec5;
+  --color-blue-800: #e7e1d9;
+  --color-blue-900: #f2ede6;
 
   /* `--color-indigo-*` and `--color-primary-*` legacy/role aliases
    * inherit via `var(--color-blue-*)` from the @theme block — no
@@ -560,10 +562,10 @@ a,
    * lighter + warmer than both the ink-charcoal canvas and the slate
    * card surface, so it reads as the focal panel rather than blending
    * into the ladder. Keeps the owned palette intact across themes. */
-  --color-paper: #241c14;
-  --color-paper-ink: #f3eee5;
-  --color-paper-soft: #b8afa3;
-  --color-paper-line: rgb(243 238 229 / 0.12);
+  --color-paper: #242220;
+  --color-paper-ink: #ece9e4;
+  --color-paper-soft: #a8a29c;
+  --color-paper-line: rgb(231 229 228 / 0.14);
   --color-clay: #d8845b;
   --color-forest: #74b59c;
 
@@ -577,8 +579,8 @@ a,
   --color-good-soft: rgb(95 203 149 / 0.1);
   --color-attention: #d9a765;
   --color-attention-soft: rgb(217 167 101 / 0.1);
-  --color-concern: #e27482;
-  --color-concern-soft: rgb(226 116 130 / 0.1);
+  --color-concern: #ef4444;
+  --color-concern-soft: rgb(239 68 68 / 0.12);
 
   /* In dark mode, the *-ink tokens (used by Pill chips for the colored
    * text on a tinted `*-soft` background) flip from the AA-darker
@@ -588,15 +590,18 @@ a,
    * near-dark tints. The pastel hues hit ~7:1 on the dark soft grounds. */
   --color-good-ink: var(--color-good);
   --color-attention-ink: var(--color-attention);
-  --color-concern-ink: var(--color-concern);
+  /* Lighter crimson for TEXT on the dark concern-soft ground (the vivid
+   * #ef4444 fill is a touch low-contrast as small text); the fill itself
+   * stays #ef4444 for badges/edges. */
+  --color-concern-ink: #f87171;
 
   /* ─── ON-COLOR TOKENS — the principal contrast pair ────────────
    * Flipped to deep navy because the matching dynamic fills above
    * are now pastels. `text-on-primary` on `bg-primary-600` (pastel
    * blue): ~8:1. `text-on-status` on `bg-concern` (pastel rose):
    * ~5.5:1. Both meet AA; the first meets AAA. */
-  --color-on-primary: #100e0c;
-  --color-on-status: #100e0c;
+  --color-on-primary: #0b0a09;
+  --color-on-status: #0b0a09;
 
   /* ─── Shadow ladder — inset + deep ─────────────────────────────
    * External shadows are darker than the canvas they sit on, so
@@ -662,9 +667,11 @@ a,
 :root[data-theme='dark'] a:focus-visible,
 :root[data-theme='dark'] input:focus-visible {
   outline: none;
+  /* Solid terracotta ring on dark — high-contrast, not the old faint
+   * 0.5-alpha clay. Inner dark gap separates it from the focused fill. */
   box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.15),
-    0 0 0 3px rgb(221 152 112 / 0.5);
+    0 0 0 2px var(--color-canvas),
+    0 0 0 4px var(--color-clay);
 }
 
 /* Selection — the light-theme `gold-200` flips to a deep brown in
@@ -877,7 +884,12 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(181, 81, 47, 0.28);
+  /* Solid 2px terracotta ring (the brand accent doing real work) + a thin
+   * paper-coloured gap so it reads against any surface. Replaces the faint
+   * 0.28-alpha shadow that measured ~1.35:1 (failed SC 2.4.11). */
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-clay);
 }
 
 /* Print — Save as PDF flow */
