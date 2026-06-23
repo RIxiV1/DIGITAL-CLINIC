@@ -26,13 +26,15 @@ type Props = {
 /**
  * Top-of-page headline per the dashboard brief.
  *
- * Visual treatment: a premium, dark-native elevated card — NOT the old
- * time-of-day gradient, which rebound to a washed-out pastel banner in
- * dark theme and read like generic SaaS chrome against the dark cards
- * below it. The card now sits on `bg-surface` like the rest of the page,
- * lifted by a soft status-tinted glow (the only colour, and it MEANS
- * something — warm when markers need care, calm indigo when on track)
- * and a slim on-track bar that echoes the Health Map's score language.
+ * Visual treatment: the "engineering monolith" language — structure over
+ * decoration. A flat `bg-surface` panel bounded by a single hairline
+ * (`border-line`), tight 8px radius, NO drop shadow and NO status-tinted
+ * glow blob (both read as generated-SaaS chrome). Hierarchy is carried by
+ * type, not effects: a tight-tracked sans headline (NOT the old Playfair
+ * display face), an uppercase muted eyebrow, and the score set in
+ * tabular monospace so the digits read as precise instrument data. Colour
+ * is reserved for meaning — the score ring's track tints to the worst
+ * status present; everything else stays neutral ink.
  *
  * Four data-driven copy states (logic unchanged):
  *   A. 2+ readings on at least one marker  → call out the biggest change
@@ -53,17 +55,6 @@ export default function DashboardHeadline({
 
   const summary =
     markers && markers.length > 0 ? summarizeStatuses(markers) : null;
-
-  // Glow tint follows the worst status present — the card's one colour
-  // carries meaning instead of decoration. No report yet → calm indigo.
-  const glow =
-    !summary || summary.concern > 0 || summary.critical > 0
-      ? summary && (summary.concern > 0 || summary.critical > 0)
-        ? 'bg-concern/15'
-        : 'bg-indigo-500/15'
-      : summary.attention > 0
-        ? 'bg-attention/15'
-        : 'bg-good/15';
 
   const onTrackPct =
     summary && summary.total > 0
@@ -87,22 +78,15 @@ export default function DashboardHeadline({
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-[28px] bg-surface border border-line/70 p-6 md:p-8 shadow-pop"
+      className="rounded-lg bg-surface border border-line p-6 md:p-8"
     >
-      {/* Soft status-tinted glow — the card's only colour, and it means
-          something. Sits behind the content, never intercepts taps. */}
-      <div
-        aria-hidden
-        className={`pointer-events-none absolute -top-28 -right-20 w-80 h-80 rounded-full blur-3xl ${glow}`}
-      />
-
-      <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
+      <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
         {/* Text column — the narrative. */}
         <div className="order-2 md:order-1 flex-1 min-w-0">
-          <div className="text-micro uppercase tracking-eyebrow font-bold text-indigo-600">
+          <div className="text-micro uppercase tracking-eyebrow font-semibold text-muted">
             {eyebrow}
           </div>
-          <h1 className="mt-2.5 font-display text-display-md lg:text-display-lg leading-[1.12] text-balance text-ink">
+          <h1 className="mt-3 text-display-md lg:text-display-lg font-semibold tracking-tight leading-[1.1] text-balance text-ink">
             {headline}
           </h1>
           {qualifier && (
@@ -125,7 +109,7 @@ export default function DashboardHeadline({
           <button
             type="button"
             onClick={onPrimaryCTA}
-            className="mt-5 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-full bg-gold-500 hover:bg-gold-400 text-indigo-900 text-caption font-semibold shadow-soft transition-colors whitespace-nowrap"
+            className="mt-6 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-md bg-gold-500 hover:bg-gold-400 text-on-gold text-caption font-semibold transition-colors duration-150 ease-in-out whitespace-nowrap"
           >
             {ctaLabel}
             <ArrowRight size={14} />
@@ -144,20 +128,20 @@ export default function DashboardHeadline({
               trackClass={ringTrack}
             >
               <div className="text-center leading-none">
-                <span className="font-display text-display-md text-ink">
+                <span className="font-mono tabular-nums text-display-md font-semibold tracking-tight text-ink">
                   {onTrackPct}
                 </span>
-                <span className="font-display text-body-sm text-muted align-top">
+                <span className="font-mono text-body-sm text-muted align-top">
                   %
                 </span>
-                <div className="text-micro uppercase tracking-eyebrow font-bold text-muted mt-1.5">
+                <div className="text-micro uppercase tracking-eyebrow font-semibold text-muted mt-1.5">
                   in range
                 </div>
               </div>
             </ProgressRing>
             {summary && (
               <div className="text-caption text-muted">
-                <span className="font-semibold text-ink-soft">
+                <span className="font-mono tabular-nums font-semibold text-ink-soft">
                   {summary.good}
                 </span>{' '}
                 of {summary.total} in a healthy range
