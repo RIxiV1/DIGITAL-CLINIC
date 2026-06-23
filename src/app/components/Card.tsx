@@ -17,7 +17,11 @@ export default function Card({
   onClick,
   ...rest
 }: Props) {
-  const base = `bg-surface border border-line/70 rounded-[20px] ${raised ? 'shadow-pop' : 'shadow-soft'} ${padded ? 'p-5' : ''} ${className}`;
+  // Flat, editorial card framework: no drop shadow (the warm-identity
+  // rollout banishes diffuse blurs), a single hairline border, and a
+  // tight 8px radius. `raised` (modals / floats) earns a stronger
+  // hairline instead of a shadow so it still separates from the page.
+  const base = `bg-surface border ${raised ? 'border-line-strong' : 'border-line'} rounded-lg ${padded ? 'p-5' : ''} ${className}`;
 
   // Interactive + onClick → real <button>. The previous div-with-
   // role="button" + tabIndex={0} + hand-rolled keydown handler
@@ -33,10 +37,10 @@ export default function Card({
     return (
       <motion.button
         type="button"
-        whileHover={{ y: -2, boxShadow: 'var(--shadow-pop)' }}
+        whileHover={{ y: -2 }}
         whileTap={{ scale: 0.98 }}
         transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-        className={`${base} cursor-pointer text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60`}
+        className={`${base} cursor-pointer text-left w-full transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60`}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onClick={onClick as any}
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

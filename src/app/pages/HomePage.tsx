@@ -26,7 +26,6 @@ import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import StatusBadge from '../components/StatusBadge';
 import DashboardHeadline from '../components/DashboardHeadline';
-import Illustration from '../components/Illustration';
 import MarkerAttentionCard from '../components/MarkerAttentionCard';
 import TrendRow from '../components/TrendRow';
 import LearnMoreModal from '../components/LearnMoreModal';
@@ -613,15 +612,14 @@ export default function HomePage() {
           mirrors what the user sees in each state. */}
       {!ready && reports.every((r) => r.status !== 'ready') && (
         <Container size="wide" className="mt-6 md:mt-8">
-          <Illustration
-            src="/illustrations/empty-reports.svg"
-            className="mx-auto mb-6 w-36 md:w-44 h-auto"
-          />
-          <Pill tone="indigo" size="sm">
+          {/* Typographic empty state — no stock cartoon. The oversized
+              editorial serif carries the moment; structure + type do the
+              work an illustration used to. */}
+          <div className="text-micro uppercase tracking-[0.2em] font-semibold text-muted">
             What you’ll see
-          </Pill>
-          <h2 className="font-display text-display-md leading-tight mt-2">
-            Your dashboard, once you upload
+          </div>
+          <h2 className="font-display text-display-lg lg:text-display-xl leading-[1.05] tracking-tight mt-3 max-w-[20ch] text-balance">
+            Your dashboard, once you upload.
           </h2>
           <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
             {[
@@ -776,7 +774,7 @@ export default function HomePage() {
                     scrollExploreRef.current = true;
                   }}
                   aria-label={`${p.name}: ${statusText} — view markers`}
-                  className={`text-left bg-surface rounded-[14px] border border-line/70 border-l-4 ${borderCls} shadow-soft p-3 sm:p-3.5 transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60`}
+                  className={`text-left bg-surface rounded-md border border-line border-l-4 ${borderCls} p-3 sm:p-3.5 transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60`}
                 >
                   <div className="min-w-0">
                     <span className="text-micro uppercase tracking-eyebrow font-bold text-muted truncate">
@@ -799,7 +797,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => navigate({ type: 'healthMap' })}
-            className="group mt-2.5 w-full flex items-center gap-2.5 rounded-[14px] border border-line/70 bg-surface/60 hover:bg-surface px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+            className="group mt-2.5 w-full flex items-center gap-2.5 rounded-md border border-line bg-surface/60 hover:bg-surface px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
           >
             <span className="min-w-0 flex-1">
               <span className="block text-caption font-semibold text-ink">
@@ -858,7 +856,7 @@ export default function HomePage() {
               <div
                 role="group"
                 aria-labelledby={`${exploreBaseId}-heading`}
-                className="inline-flex flex-wrap gap-1 p-1 rounded-full bg-surface border border-line/70"
+                className="inline-flex flex-wrap gap-1 p-1 rounded-full bg-surface border border-line"
               >
                 {tabs.map((t) => {
                   const isActive = t.id === active;
@@ -876,7 +874,7 @@ export default function HomePage() {
                       }
                       className={`px-4 h-9 rounded-full text-caption font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ${
                         isActive
-                          ? 'bg-indigo-600 text-white shadow-soft'
+                          ? 'bg-indigo-600 text-on-primary shadow-soft'
                           : 'text-ink-soft hover:text-ink'
                       }`}
                     >
@@ -891,7 +889,7 @@ export default function HomePage() {
                   id={panelId}
                   role="region"
                   aria-labelledby={chipId(active)}
-                  className="mt-3 rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden"
+                  className="mt-3 rounded-lg bg-surface border border-line overflow-hidden"
                 >
                   <div className="p-4 sm:p-5">
                     {active === 'markers' && (

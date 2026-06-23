@@ -489,7 +489,7 @@ function CategoryChip({
       aria-pressed={active}
       className={`shrink-0 h-9 px-3.5 rounded-full text-caption font-semibold whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ${
         active
-          ? 'bg-indigo-600 text-white'
+          ? 'bg-indigo-600 text-on-primary'
           : 'bg-surface border border-line text-ink-soft hover:text-ink'
       }`}
     >

@@ -137,7 +137,7 @@ export default function MarkerAttentionCard({
     <motion.div
       whileHover={{ y: -3 }}
       transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className="relative bg-surface border border-line/70 rounded-[18px] shadow-soft h-full flex overflow-hidden group focus-within:ring-2 focus-within:ring-indigo-400/60 focus-within:border-indigo-400"
+      className="relative bg-surface border border-line rounded-lg h-full flex overflow-hidden group focus-within:ring-2 focus-within:ring-indigo-400/60 focus-within:border-indigo-400"
     >
       {/* Status edge bar */}
       <div className={`${edgeBarWidth} ${edgeBarColor} shrink-0`} aria-hidden />

@@ -1,22 +1,24 @@
 @import 'tailwindcss';
 
 @theme {
-  /* Clinical Blue — Digital Clinic primary (deep, authoritative, calm).
-   * Single source of truth: every `bg-blue-*` / `text-blue-*` /
-   * `border-blue-*` class resolves to one of these stops. The legacy
-   * `indigo-*` class names are aliased below — they were a leftover
-   * from the pre-rebrand identity, kept around so a wholesale
-   * indigo→blue find/replace isn't required. */
-  --color-blue-50: #ebf5ff;
-  --color-blue-100: #d6ebff;
-  --color-blue-200: #add6ff;
-  --color-blue-300: #7ab8ff;
-  --color-blue-400: #3d95ff;
-  --color-blue-500: #0f7aeb;
-  --color-blue-600: #0066cc;
-  --color-blue-700: #0052a3;
-  --color-blue-800: #003d7a;
-  --color-blue-900: #002852;
+  /* Terracotta — ForMen primary (warm, grounded, editorial). The brand
+   * primary was retargeted off the old Clinical Blue to this warm clay
+   * scale as part of the de-AI design rollout; the `blue-*`/`indigo-*`/
+   * `primary-*` CLASS NAMES are deliberately kept (single source of
+   * truth: re-pointing the hue is this one block), so every existing
+   * `bg-blue-*`/`text-indigo-*`/`bg-primary-*` usage app-wide now resolves
+   * to terracotta with no per-component edits. Distinct from the red
+   * `concern` status hue so "interactive" never reads as "alarm". */
+  --color-blue-50: #fbf0ea;
+  --color-blue-100: #f6ddd0;
+  --color-blue-200: #ecbfa9;
+  --color-blue-300: #e09b7b;
+  --color-blue-400: #d2774d;
+  --color-blue-500: #c25f33;
+  --color-blue-600: #b5512f;
+  --color-blue-700: #97421f;
+  --color-blue-800: #79351a;
+  --color-blue-900: #5c2814;
 
   /* Legacy alias — pre-rebrand brand was indigo. Now both class
    * families resolve to the same Clinical Blue stops, so a future
@@ -388,16 +390,16 @@ a,
   --color-muted: #6b7280;
 
   /* Brand blue scale (and indigo aliases inherit via var()) */
-  --color-blue-50: #ebf5ff;
-  --color-blue-100: #d6ebff;
-  --color-blue-200: #add6ff;
-  --color-blue-300: #7ab8ff;
-  --color-blue-400: #3d95ff;
-  --color-blue-500: #0f7aeb;
-  --color-blue-600: #0066cc;
-  --color-blue-700: #0052a3;
-  --color-blue-800: #003d7a;
-  --color-blue-900: #002852;
+  --color-blue-50: #fbf0ea;
+  --color-blue-100: #f6ddd0;
+  --color-blue-200: #ecbfa9;
+  --color-blue-300: #e09b7b;
+  --color-blue-400: #d2774d;
+  --color-blue-500: #c25f33;
+  --color-blue-600: #b5512f;
+  --color-blue-700: #97421f;
+  --color-blue-800: #79351a;
+  --color-blue-900: #5c2814;
 
   /* Gold */
   --color-gold-50: #fff9e5;
@@ -481,16 +483,16 @@ a,
    * crucial part for the contrast principle: `text-white` on
    * `bg-primary-600` would fail at ~2.3:1; `text-on-primary` (which
    * the dark theme re-binds to deep navy below) hits 8:1 instead. */
-  --color-blue-50: #0e1a2d;
-  --color-blue-100: #15263f;
-  --color-blue-200: #1e3457;
-  --color-blue-300: #2a4a78;
-  --color-blue-400: #5288d4;
-  --color-blue-500: #76a8f0;
-  --color-blue-600: #9dc2fa;
-  --color-blue-700: #bcd5fc;
-  --color-blue-800: #dae7fe;
-  --color-blue-900: #eef4ff;
+  --color-blue-50: #2a160d;
+  --color-blue-100: #3a1e12;
+  --color-blue-200: #512a19;
+  --color-blue-300: #6f3a22;
+  --color-blue-400: #b06a45;
+  --color-blue-500: #cc8158;
+  --color-blue-600: #dd9870;
+  --color-blue-700: #e8b394;
+  --color-blue-800: #f0cdb5;
+  --color-blue-900: #f7e6d8;
 
   /* `--color-indigo-*` and `--color-primary-*` legacy/role aliases
    * inherit via `var(--color-blue-*)` from the @theme block — no
@@ -626,15 +628,27 @@ a,
   outline: none;
   box-shadow:
     inset 0 0 0 1px rgb(255 255 255 / 0.15),
-    0 0 0 3px rgb(82 136 212 / 0.45);
+    0 0 0 3px rgb(221 152 112 / 0.5);
 }
 
 /* Selection — the light-theme `gold-200` flips to a deep brown in
  * dark, nearly invisible against canvas. Force a visible dark
  * selection. */
 :root[data-theme='dark'] ::selection {
-  background: rgb(82 136 212 / 0.45);
+  background: rgb(221 152 112 / 0.4);
   color: rgb(255 255 255 / 0.98);
+}
+
+/* Brand wordmark tint. The /formen-logo.png raster has the old cold-blue
+   baked in, which fights the warm identity. Render it as a single ink
+   tone that follows the theme — near-black on the warm light canvas,
+   near-white on the dark charcoal — so the mark reads as a neutral,
+   editorial wordmark instead of a stray blue. */
+.logo-mark {
+  filter: brightness(0);
+}
+:root[data-theme='dark'] .logo-mark {
+  filter: brightness(0) invert(1);
 }
 
 * {
@@ -827,7 +841,7 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.18);
+  box-shadow: 0 0 0 3px rgba(181, 81, 47, 0.28);
 }
 
 /* Print — Save as PDF flow */
@@ -964,7 +978,7 @@ input:focus-visible {
   50% {
     border-color: var(--color-indigo-400);
     box-shadow:
-      0 0 0 3px rgba(0, 102, 204, 0.15),
+      0 0 0 3px rgba(181, 81, 47, 0.15),
       var(--shadow-soft);
     opacity: 0.93;
   }
