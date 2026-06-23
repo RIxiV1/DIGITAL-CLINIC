@@ -1,5 +1,4 @@
 import { motion } from 'framer-motion';
-import Illustration from '../../components/Illustration';
 import { Reveal, SectionHeader } from './shared';
 
 export default function Credibility() {
@@ -20,10 +19,40 @@ export default function Credibility() {
             />
           </Reveal>
           <Reveal delay={0.1}>
-            <Illustration
-              src="/illustrations/research.svg"
-              className="w-full max-w-sm mx-auto md:ml-auto h-auto"
-            />
+            {/* Clinical Verification Ledger — replaces the stock research
+                illustration. An asymmetric two-column hairline ledger of
+                AUDITABLE vectors only. Every row is verified against the
+                repo: reference-range bodies appear in src/app/data
+                (WHO·ICMR·Endocrine Society), processing is on-device (no
+                server), the gate is tsc + 604 tests, and CI (.github/
+                workflows/ci.yml) runs it on every PR. No fabricated seals,
+                registration numbers, or board memberships. */}
+            <div className="w-full max-w-sm mx-auto md:ml-auto font-mono">
+              <div className="text-[10px] uppercase tracking-widest text-clay mb-3">
+                verification_ledger
+              </div>
+              <dl className="text-xs tracking-tight border-y-[0.5px] border-line divide-y-[0.5px] divide-line">
+                {(
+                  [
+                    ['RANGE_SOURCE', 'WHO · ICMR · ENDOCRINE'],
+                    ['DATA_RESIDENCY', 'ON_DEVICE'],
+                    ['VALIDATION', 'TYPECHECK · 604_TESTS'],
+                    ['INTEGRATION', 'CI_EVERY_PR'],
+                    ['TESTIMONIALS', 'NONE'],
+                  ] as const
+                ).map(([k, v]) => (
+                  <div
+                    key={k}
+                    className="flex items-baseline justify-between gap-4 py-3"
+                  >
+                    <dt className="uppercase text-muted whitespace-nowrap">
+                      {k}
+                    </dt>
+                    <dd className="text-ink-soft text-right">{v}</dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
           </Reveal>
         </div>
 
