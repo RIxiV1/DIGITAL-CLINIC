@@ -250,7 +250,7 @@ function AxisStation({
       <div
         className={`absolute -left-[60px] top-0.5 grid place-items-center w-12 h-12 rounded-full border-[2.5px] ${
           isOutput
-            ? 'bg-blue-600 border-blue-600 text-on-primary shadow-blue'
+            ? 'bg-clay border-clay text-on-clay'
             : 'bg-surface border-blue-500 text-blue-700 shadow-clinical'
         }`}
       >
@@ -261,33 +261,30 @@ function AxisStation({
       <div
         className={`relative rounded-2xl border p-4 md:p-5 overflow-hidden ${
           isOutput
-            ? 'bg-blue-600 border-blue-600 text-on-primary shadow-blue'
+            ? 'bg-clay border-clay text-on-clay'
             : 'bg-surface border-line shadow-clinical'
         }`}
       >
-        {isOutput && (
-          <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-blue-400/30 blur-2xl pointer-events-none" />
-        )}
         <div className="relative">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">
               <div
                 className={`text-micro uppercase tracking-eyebrow font-bold ${
-                  isOutput ? 'text-blue-200' : 'text-blue-700'
+                  isOutput ? 'text-on-clay/80' : 'text-blue-700'
                 }`}
               >
                 Stage {num}
               </div>
               <div
                 className={`font-display text-body md:text-body-lg leading-tight mt-1 ${
-                  isOutput ? 'text-white' : 'text-ink'
+                  isOutput ? 'text-on-clay' : 'text-ink'
                 }`}
               >
                 {organ}
               </div>
             </div>
             {isOutput && (
-              <span className="shrink-0 inline-flex items-center px-2 h-5 rounded-full bg-white/15 text-micro font-bold uppercase tracking-label text-blue-100">
+              <span className="shrink-0 inline-flex items-center px-2 h-5 rounded-full bg-on-clay/15 text-micro font-bold uppercase tracking-label text-on-clay">
                 Output
               </span>
             )}
@@ -295,7 +292,7 @@ function AxisStation({
 
           <p
             className={`mt-2 text-caption leading-relaxed ${
-              isOutput ? 'text-blue-100' : 'text-ink-soft'
+              isOutput ? 'text-on-clay/85' : 'text-ink-soft'
             }`}
           >
             {sub}
@@ -303,19 +300,19 @@ function AxisStation({
 
           <div
             className={`mt-3 pt-3 border-t flex items-baseline gap-2 ${
-              isOutput ? 'border-white/15' : 'border-line/70'
+              isOutput ? 'border-on-clay/20' : 'border-line/70'
             }`}
           >
             <span
               className={`text-micro uppercase tracking-eyebrow font-bold ${
-                isOutput ? 'text-blue-200' : 'text-blue-700'
+                isOutput ? 'text-on-clay/80' : 'text-blue-700'
               }`}
             >
               {verb}
             </span>
             <span
               className={`font-sans font-bold text-body tracking-tight ${
-                isOutput ? 'text-white' : 'text-ink'
+                isOutput ? 'text-on-clay' : 'text-ink'
               }`}
             >
               {hormone}
@@ -453,7 +450,7 @@ function CascadeCompact() {
               <div
                 className={`absolute -left-[40px] top-0.5 grid place-items-center w-8 h-8 rounded-full border-2 ${
                   s.isOutput
-                    ? 'bg-blue-600 border-blue-600 text-on-primary'
+                    ? 'bg-clay border-clay text-on-clay'
                     : 'bg-surface border-blue-500 text-blue-700'
                 }`}
               >
@@ -466,21 +463,21 @@ function CascadeCompact() {
               <div
                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg border ${
                   s.isOutput
-                    ? 'bg-blue-600 border-blue-600 text-on-primary'
+                    ? 'bg-clay border-clay text-on-clay'
                     : 'bg-surface border-blue-100'
                 }`}
               >
                 <div className="flex-1 min-w-0">
                   <div
                     className={`text-caption font-semibold leading-tight truncate ${
-                      s.isOutput ? 'text-white' : 'text-ink'
+                      s.isOutput ? 'text-on-clay' : 'text-ink'
                     }`}
                   >
                     {s.organ}
                   </div>
                   <div
                     className={`text-micro font-bold uppercase tracking-widest mt-0.5 truncate ${
-                      s.isOutput ? 'text-blue-100' : 'text-blue-700'
+                      s.isOutput ? 'text-on-clay/85' : 'text-blue-700'
                     }`}
                   >
                     {s.hormone}

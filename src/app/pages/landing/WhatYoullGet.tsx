@@ -140,10 +140,9 @@ function DoctorSummaryMockup() {
         <div className="p-5 md:p-6 grid md:grid-cols-5 gap-5">
           {/* Left — Top-line read */}
           <div className="md:col-span-2 space-y-4">
-            <div className="rounded-2xl bg-blue-600 text-on-primary p-5 shadow-clinical relative overflow-hidden">
-              <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-blue-400/30 blur-2xl" />
+            <div className="rounded-2xl bg-clay text-on-clay p-5 relative overflow-hidden">
               <div className="relative">
-                <div className="text-micro font-bold uppercase tracking-label text-blue-100">
+                <div className="text-micro font-bold uppercase tracking-label text-on-clay/85">
                   Top-line read
                 </div>
                 <p className="mt-2 font-sans font-semibold text-body leading-snug">
