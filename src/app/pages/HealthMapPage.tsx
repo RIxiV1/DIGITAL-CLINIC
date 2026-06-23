@@ -5,7 +5,6 @@ import Button from '../components/Button';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
-import Illustration from '../components/Illustration';
 import ProgressRing from '../components/ProgressRing';
 import StatusKey from '../components/StatusKey';
 import { useNavigation, useReports } from '../AppContext';
@@ -191,45 +190,85 @@ export default function HealthMapPage() {
 
   /* ---- Empty state: no parsed report yet. ---- */
   if (!ready || biomarkers.length === 0) {
+    // Empty state as an active readiness checklist, NOT a cartoon: a firm
+    // serif headline, a dense hairline "pipeline matrix" of the clinical
+    // panels the engine is waiting to ingest, and a microscopic mono
+    // system-config line. Reads as a powerful instrument idling for fuel.
+    const PIPELINE: { req: string; status: string }[] = [
+      { req: 'BLOOD_PANEL_V1', status: 'AWAITING_INGESTION' },
+      { req: 'HORMONAL_PROFILE', status: 'AWAITING_INGESTION' },
+      { req: 'METABOLIC_MARKERS', status: 'AWAITING_INGESTION' },
+      { req: 'THYROID_PROFILE', status: 'AWAITING_INGESTION' },
+    ];
     return (
       <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
         <Header variant="page" title="Health Map" />
-        <Container size="narrow" className="pt-10">
-          <div className="flex flex-col items-center text-center gap-5">
-            <Illustration
-              src="/illustrations/empty-reports.svg"
-              className="w-40 md:w-44 h-auto"
-            />
-            <div className="space-y-1.5">
-              <h1 className="font-display text-display-md leading-tight">
-                Your map starts with one report
-              </h1>
-              <p className="text-body-sm text-ink-soft max-w-sm">
-                Upload a blood test and we’ll lay out every system — hormones,
-                heart, thyroid, and the rest — on one calm screen, scored by
-                what’s healthy and tracking how it moves over time.
-              </p>
+        <Container size="narrow" className="pt-10 md:pt-12">
+          {/* Focal block — firm diagnostic truth in Instrument Serif. */}
+          <h1 className="font-display text-4xl md:text-5xl leading-[1.04] tracking-tight text-balance max-w-[15ch]">
+            No biomarker vectors mapped yet.
+          </h1>
+          <p className="mt-4 text-body-sm text-ink-soft leading-relaxed max-w-md">
+            Upload a blood test and every system — hormones, heart, thyroid, and
+            the rest — maps onto one screen, scored by what’s healthy and tracked
+            over time.
+          </p>
+
+          {/* Pipeline matrix — the clinical prerequisites the engine needs.
+              Hairline 3-col grid: requirement / status / action. */}
+          <div className="mt-8 border-[0.5px] border-line rounded-md overflow-hidden">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 sm:gap-x-5 px-3.5 py-2 border-b-[0.5px] border-line text-micro uppercase tracking-widest font-semibold text-muted">
+              <span>requirement</span>
+              <span>status</span>
+              <span className="text-right">action</span>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
-              <Button
-                onClick={() => navigate({ type: 'upload' })}
-                className="gap-1.5"
+            {PIPELINE.map((row) => (
+              <div
+                key={row.req}
+                className="grid grid-cols-[1fr_auto_auto] gap-x-3 sm:gap-x-5 items-center px-3.5 py-3 border-b-[0.5px] border-line last:border-b-0"
               >
-                <Upload size={16} />
-                Upload a report
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() =>
-                  navigate({
-                    type: 'results',
-                    reportId: getSampleReportForDashboard().id,
-                  })
-                }
-              >
-                See a sample first
-              </Button>
-            </div>
+                <span className="text-micro sm:text-caption uppercase tracking-wide font-semibold text-ink-soft truncate">
+                  {row.req}
+                </span>
+                <span className="font-mono text-micro tracking-wide text-muted">
+                  {row.status}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => navigate({ type: 'upload' })}
+                  className="font-mono text-micro sm:text-caption tracking-wide text-clay hover:opacity-70 transition-opacity duration-150 text-right focus-visible:outline-none focus-visible:underline"
+                >
+                  ingest →
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Primary actions — kept as real 44px controls below the matrix. */}
+          <div className="mt-6 flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
+            <Button
+              onClick={() => navigate({ type: 'upload' })}
+              className="gap-1.5"
+            >
+              <Upload size={16} />
+              Upload a report
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                navigate({
+                  type: 'results',
+                  reportId: getSampleReportForDashboard().id,
+                })
+              }
+            >
+              See a sample first
+            </Button>
+          </div>
+
+          {/* System-config line — microscopic mono status readout. */}
+          <div className="mt-10 font-mono text-[10px] uppercase tracking-widest text-muted">
+            SYSTEM_STATUS: IDLE // CORE_ENGINE: READY // PARSER_MAPPING: ACTIVATE
           </div>
         </Container>
         <BottomNav />
