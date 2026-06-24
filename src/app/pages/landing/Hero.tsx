@@ -1,10 +1,5 @@
 import { type ReactNode } from 'react';
-import {
-  motion,
-  useMotionTemplate,
-  useMotionValue,
-  useReducedMotion,
-} from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ArrowRight,
   Brain,
@@ -82,7 +77,7 @@ export default function Hero({
                 variant="primary"
                 onClick={onStart}
                 trailing={<ArrowRight size={16} />}
-                className="w-full sm:w-auto shadow-blue"
+                className="w-full sm:w-auto"
               >
                 Find out in 2 minutes
               </Button>
@@ -122,30 +117,11 @@ export default function Hero({
 }
 
 function HeroVisual() {
-  // Mouse-tracking spotlight on the Hormonal Health Map card below.
-  // Two motion values store the cursor's position relative to the
-  // card; useMotionTemplate builds the radial-gradient CSS string,
-  // and the motion.div's `style={{ background }}` subscribes via
-  // framer-motion's signal graph. The component itself does NOT
-  // re-render on each mousemove — that's the win over a raw
-  // onMouseMove → setState pattern, which would force a React render
-  // ~60 times a second for the duration of any cursor sweep. (The
-  // DOM still gets a style mutation per frame; that work happens on
-  // the compositor, not the React tree.)
-  //
-  // Disabled entirely when prefers-reduced-motion is set — the
-  // listener is gone, the overlay isn't rendered. Users who opt out
-  // of motion don't get a moving glow they didn't ask for.
-  const prefersReducedMotion = useReducedMotion();
-  const mouseX = useMotionValue(0);
-  const mouseY = useMotionValue(0);
-  const spotlight = useMotionTemplate`radial-gradient(240px circle at ${mouseX}px ${mouseY}px, rgba(0, 102, 204, 0.14), transparent 65%)`;
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const r = e.currentTarget.getBoundingClientRect();
-    mouseX.set(e.clientX - r.left);
-    mouseY.set(e.clientY - r.top);
-  };
-
+  // No mouse-tracking spotlight. The previous version painted a radial
+  // rgba(0,102,204,…) glow that tracked the cursor — a cold-cobalt halo
+  // that survived the Ink & Clay rebrand and read as exactly the glow-SaaS
+  // signal the design charter exists to avoid. The card stands on its own
+  // structure (hairline border + elevation), no glow.
   return (
     <div className="relative w-full max-w-[560px] mx-auto md:mx-0 md:ml-auto lg:-mb-20">
       {/* Founders / clinicians photo — WebP only (60 KB, universally
@@ -161,21 +137,7 @@ function HeroVisual() {
       {/* Hormonal Health Map card — overlaps the photo. Depicts a
           "window-chrome" mockup of the in-app hormonal-axis visual,
           like a screenshot pasted onto the hero. */}
-      <div
-        onMouseMove={prefersReducedMotion ? undefined : handleMouseMove}
-        className="group absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden"
-      >
-        {/* Spotlight overlay. Pointer-events-none so it never blocks
-            interaction; opacity gated by the parent's :hover (via
-            Tailwind's group-hover) so the glow only appears when the
-            cursor is over the card — no React state involved. */}
-        {!prefersReducedMotion && (
-          <motion.div
-            aria-hidden
-            style={{ background: spotlight }}
-            className="pointer-events-none absolute inset-0 z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-          />
-        )}
+      <div className="absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden">
         {/* Mac-style window chrome */}
         <div className="px-3.5 py-2 border-b border-line/70 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
