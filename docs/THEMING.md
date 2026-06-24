@@ -12,11 +12,13 @@ The visual identity is **warm editorial**, not cold-tech. Colour is organised in
 
 | Lane | Tokens | Use |
 | --- | --- | --- |
-| **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — these now resolve to a **warm-stone ramp**, NOT blue | links, nav, secondary buttons, focus, most fills |
-| **Accent** (one per view) | `--color-clay` (terracotta) + `--color-on-clay` for text on it | the primary CTA, a section's accent phrase, the single highlighted card |
-| **Alarm** | `--color-concern` → **crimson `#ef4444`** (dark) | clinical warnings / flagged diagnostics only |
+| **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — these now resolve to a **warm-stone ramp**, NOT blue | links, nav, secondary buttons, most fills |
+| **Interactive accent** (forest) | `--color-forest` + `--color-on-forest` for text on it | the primary CTA, action links, focus rings — the one colour that means "act here" |
+| **Alarm** (crimson) | `--color-concern` → **`#ef4444`** (dark) | clinical warnings / flagged diagnostics only |
 
-Plus `--color-forest` (the "in-range" green accent) and the warm-charcoal **dark ladder**: canvas `#0b0a09` → card `--color-surface` `#161514` → hero `--color-paper` `#242220` (real lightness steps so layers read without leaning on borders).
+**`--color-clay` (terracotta) is the DECORATIVE accent + the "needs-review" middle status tier** — landing accent phrases, the HowItWorks numerals, the split-meter "to-review" segment. It is *not* an interactive control. Forest, not clay, owns the interactive lane because clay (`#b5512f`) and the crimson alarm sit ~17° apart at near-identical luminance (0.159 vs 0.167), so a "click me" button and a "you might be sick" alarm collapse together under red-green colour-blindness; forest carries blue-green **and** is darker, separating from crimson on both hue and lightness. **Don't put clay back on buttons / links / focus.**
+
+**Dark ladder** (warm charcoal): canvas `#0b0a09` → card `--color-surface` `#1a1816` → hero `--color-paper` `#242220` — an even ~1.12:1 step each so layers read. In dark the drop-shadows are invisible, so the **hairline carries the card edge**: `--color-line` is `rgb(231 229 228 / 0.16)` (≈1.44:1 over canvas), not a barely-there 0.10.
 
 > **The class names lie, on purpose.** `bg-indigo-600` / `text-blue-700` render *terracotta-stone*, because the brand hue was retargeted in one place (`--color-blue-*`) rather than via 380+ per-component edits. Don't "fix" them back to blue. A future rename to `--color-primary-*` is the proper cleanup.
 
@@ -45,15 +47,16 @@ Components that use those classes reskin themselves automatically when `data-the
 Every filled surface has a paired "on-color" token:
 
 - `--color-on-primary` — text on `bg-primary-600` (the warm-stone chrome fill)
-- `--color-on-clay` — text on `bg-clay` (the terracotta accent: CTAs, accent panels)
+- `--color-on-forest` — text on `bg-forest` (the interactive accent: primary CTAs) — measures AAA in both themes
+- `--color-on-clay` — text on `bg-clay` (the decorative terracotta accent: landing panels, highlighted cards)
 - `--color-on-status` — text on `bg-good` / `bg-attention` / `bg-concern`
 - `--color-on-gold` — text on the brand gold
 
-These are deliberate. Without them, `text-white` on a light dark-mode fill drops below AA — illegible. With them, the on-color flips per theme (e.g. on-primary and on-clay become **deep warm ink** in dark, where the fills are light stone/tan) so contrast stays above WCAG AA. **Never put `text-white` on a fill — always pair the on-color token.**
+These are deliberate. Without them, `text-white` on a light dark-mode fill drops below AA — illegible. With them, the on-color flips per theme (e.g. on-primary / on-forest / on-clay become **deep warm ink** in dark, where the fills are light stone / sage / tan) so contrast stays above WCAG AA. **Never put `text-white` on a fill — always pair the on-color token.**
 
 ### 4. De-escalated status palette in dark mode
 
-Status fills de-escalate in dark mode: `good` → emerald `#5FCB95`, `attention` → warm amber `#D9A765`. **`concern` is an authoritative crimson `#ef4444`** — it deliberately breaks out of the warm-stone/clay hue arc so an alarm never reads as chrome or accent. The vivid Tailwind defaults are visual noise on a dark canvas; this set reads as clinical.
+Status fills de-escalate in dark mode: `good` → emerald `#5FCB95`, `attention` → warm amber `#D9A765`. **`concern` is an authoritative crimson `#ef4444`** — it deliberately stays clear of both the warm-stone chrome and the forest interactive accent so an alarm never reads as a button. Forest↔crimson also separate under colour-blindness (on both hue and lightness) — which is exactly why forest, not the red-family clay, owns the interactive lane. The vivid Tailwind defaults are visual noise on a dark canvas; this set reads as clinical.
 
 Status text *on soft backgrounds* uses dedicated `*-ink` tokens (`--color-good-ink`, `--color-attention-ink`, etc.) for AA contrast.
 
@@ -165,7 +168,7 @@ dark/light flip stops being uniform across the page.
 If you're building a new card, button, or page region:
 
 1. **Use semantic class names.** `bg-canvas` / `bg-surface` / `text-ink` / `text-ink-soft` / `border-line`. Don't use `bg-white` or `text-gray-900` — those don't re-theme.
-2. **For accent surfaces (CTAs, status fills),** pair the surface with its on-color: `bg-primary-600 text-on-primary`, `bg-good text-on-status`. Don't use `text-white` on accents.
+2. **For accent surfaces (CTAs, status fills),** pair the surface with its on-color: `bg-forest text-on-forest` (the primary CTA), `bg-primary-600 text-on-primary`, `bg-good text-on-status`. Don't use `text-white` on accents.
 3. **For status text on soft backgrounds,** use the `*-ink` variant: `bg-good-soft text-good-ink`. The vivid `text-good` measures ~3:1 on `bg-good-soft` — fails AA.
 4. **For shadows,** use the existing `shadow-clinical` / `shadow-pop` / `shadow-blue` utilities. Don't write `shadow-[0_2px_8px_rgba(0,0,0,0.1)]` — it won't theme.
 5. **Test both themes before committing.** Toggle via Profile or via dev tools (`document.documentElement.dataset.theme = 'light'`).
@@ -174,7 +177,7 @@ If you're building a new card, button, or page region:
 
 ## Adding a new color
 
-Don't, unless you really need to. The existing scale covers most needs: the warm-stone chrome ramp (`blue`/`indigo`/`primary`, all aliased together), the `clay` terracotta accent (+ `on-clay`), `forest`, the warm `paper`/`paper-ink` hero tones, `gold`, `mint`, the status colours, and neutrals. Before adding a hue, check it doesn't collapse a lane — keep chrome (stone), accent (clay), and alarm (crimson) distinct.
+Don't, unless you really need to. The existing scale covers most needs: the warm-stone chrome ramp (`blue`/`indigo`/`primary`, all aliased together), `forest` (+ `on-forest`, the interactive accent), the `clay` terracotta decorative accent (+ `on-clay`), the warm `paper`/`paper-ink` hero tones, `gold`, `mint`, the status colours, and neutrals. Before adding a hue, check it doesn't collapse a lane — keep chrome (stone), interactive accent (forest), and alarm (crimson) distinct.
 
 If you must:
 

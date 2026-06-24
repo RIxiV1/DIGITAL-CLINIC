@@ -47,7 +47,7 @@ PDF text extraction is notoriously fragile. This pipeline runs three reconstruct
 
 **Privacy by architecture** — there is no backend with user data: reports are parsed in-browser and stored in `localStorage`, namespaced (`dc_*`) and zod-validated on every read. An opt-in PIN lock encrypts reports + quiz answers at rest with **AES-GCM-256** keyed by **PBKDF2-SHA256 (200k iterations)** via Web Crypto — the key is non-extractable and never leaves memory, so a forgotten PIN is unrecoverable by design (no backdoor). Discreet Mode veils the screen on background. See [docs/SECURITY.md](docs/SECURITY.md).
 
-**Accessibility & motion** — `prefers-reduced-motion` cascaded through `MotionConfig` at the root so every framer-motion descendant collapses to 0ms without per-component checks. Skip-link to main content. Focus management on modals. Semantic landmarks throughout.
+**Accessibility & motion** — `prefers-reduced-motion` cascaded through `MotionConfig` at the root so every framer-motion descendant collapses to 0ms without per-component checks. Skip-link to main content. Focus management on modals. Semantic landmarks throughout. Colour is split into three never-overlapping lanes — neutral chrome, a **forest** interactive accent, and a **crimson** alarm — so the "act here" control and the "this is wrong" warning stay distinguishable under red-green colour-blindness (they differ in both hue and lightness); status is never carried by colour alone (every dot is paired with a text label). All text measured against WCAG AA/AAA in both themes.
 
 ## How it works
 
@@ -120,7 +120,7 @@ For anyone (human or AI) digging into the code, start here:
 - **[docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md)** — how a value becomes optimal / borderline / out-of-range / critical, the "trust the pathologist" rule, range validation, and the false-alarm vs false-assurance trade-offs.
 - **[docs/SECURITY.md](docs/SECURITY.md)** — the privacy/security model: threat model, on-device storage, the opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the consent-gated AI caveat, and how to report a vulnerability.
 - **[docs/NAVIGATION.md](docs/NAVIGATION.md)** — the no-router `NavigationContext`, typed `Page` union, the `location.key` back() trick, and the StrictMode async-navigation gotcha.
-- **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, dark-default bootstrap, `[data-theme='light']` scope-local islands.
+- **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, the three colour lanes (chrome / forest accent / crimson alarm), the dark warm-charcoal ladder, dark-default bootstrap, `[data-theme='light']` scope-local islands.
 - **[docs/I18N.md](docs/I18N.md)** — the UI-language system: dictionary, English-fallback chain, and why clinical copy is never auto-translated.
 - **[docs/MOBILE.md](docs/MOBILE.md)** — mobile-first patterns and footguns: PWA install, fixed nav, `min-w-0`, 44px touch targets, OCR prewarm.
 - **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** — workflow, commits, branches, where to make common changes.
