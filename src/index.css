@@ -1,39 +1,28 @@
 @import 'tailwindcss';
 
-/* Self-hosted Inter (body sans) via @fontsource — latin subset only, the
+/* Self-hosted Manrope (body sans) via @fontsource — latin subset only, the
  * exact weights the UI uses (400/500/600/700; no 800 — nothing renders
- * font-extrabold). Replaces the Google Fonts <link>, so the app makes ZERO
- * third-party font requests. Latin covers the English UI; Hindi is
- * Devanagari and falls back regardless, so the heavier subsets are skipped. */
-@import '@fontsource/inter/latin-400.css';
-@import '@fontsource/inter/latin-500.css';
-@import '@fontsource/inter/latin-600.css';
-@import '@fontsource/inter/latin-700.css';
+ * font-extrabold). Self-hosted, so the app makes ZERO third-party font
+ * requests. Latin covers the English UI; Hindi is Devanagari and falls back
+ * regardless, so the heavier subsets are skipped. */
+@import '@fontsource/manrope/latin-400.css';
+@import '@fontsource/manrope/latin-500.css';
+@import '@fontsource/manrope/latin-600.css';
+@import '@fontsource/manrope/latin-700.css';
 
-/* Self-hosted Instrument Serif (the editorial display face). Served from
- * /public/fonts as same-origin assets — NOT from Google Fonts — so the
+/* Self-hosted Domine (the editorial display serif). Served from
+ * /public/fonts as a same-origin asset — NOT from Google Fonts — so the
  * display face adds zero third-party request and satisfies the strict
- * `default-src 'self'` CSP. Complete TTFs (not subsetted): Instrument
- * Serif is only ever shown for Latin text + numerals here (Hindi headings
- * fall back), so one file per style covers every glyph we render.
- *
- * NOTE: Inter (body) still loads from Google Fonts via index.html — the
- * one remaining third-party font request. Self-hosting Inter's many
- * unicode-range subsets is the final step before a clean "no third-party
- * requests" claim. */
+ * `default-src 'self'` CSP. A single VARIABLE TTF spans weights 400–700,
+ * so unlike the prior single-weight display face, headings CAN take a
+ * heavier weight when the hierarchy calls for it. Domine ships no italic
+ * cut, so `.font-display-italic` synthesizes a faux slant. */
 @font-face {
-  font-family: 'Instrument Serif';
+  font-family: 'Domine';
   font-style: normal;
-  font-weight: 400;
+  font-weight: 400 700;
   font-display: swap;
-  src: url('/fonts/instrument-serif-normal.ttf') format('truetype');
-}
-@font-face {
-  font-family: 'Instrument Serif';
-  font-style: italic;
-  font-weight: 400;
-  font-display: swap;
-  src: url('/fonts/instrument-serif-italic.ttf') format('truetype');
+  src: url('/fonts/Domine-VariableFont_wght.ttf') format('truetype');
 }
 
 @theme {
@@ -210,15 +199,14 @@
    * theme-invariance we want here. */
   --color-on-gold: #002852;
 
-  /* Type system. Display face = Instrument Serif (self-hosted; @font-face
-   * at the top of this file). Playfair is GONE — no longer loaded. Both
-   * --font-display and --font-editorial point at Instrument Serif so the
-   * `.font-display` utility (which renders the app's headings) and any raw
-   * var() usage resolve to the same editorial serif. Body = Inter (self-
-   * hosted via @fontsource). */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
-  --font-editorial: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  /* Type system. Display face = Domine (self-hosted variable serif;
+   * @font-face at the top of this file). Both --font-display and
+   * --font-editorial point at Domine so the `.font-display` utility (which
+   * renders the app's headings) and any raw var() usage resolve to the same
+   * editorial serif. Body = Manrope (self-hosted via @fontsource). */
+  --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-display: 'Domine', Georgia, 'Times New Roman', serif;
+  --font-editorial: 'Domine', Georgia, 'Times New Roman', serif;
 
   /* Type scale — 8 semantic tokens, rem-based.
    *
@@ -749,13 +737,12 @@ button:disabled,
 }
 
 @layer utilities {
-  /* The app's display face is now Instrument Serif (--font-editorial),
-   * not Playfair. Instrument Serif ships a single 400 weight by design —
-   * forcing 600 would trigger ugly faux-bold synthesis — so headings lean
-   * on SIZE + tight tracking for authority, not weight. This single repoint
-   * flips every `font-display` heading + numeric readout app-wide to the
-   * editorial identity. `--font-display` (Playfair) is kept defined for any
-   * future opt-in but is no longer the default display face. */
+  /* The app's display face is Domine (--font-editorial), a variable serif
+   * spanning 400–700. We hold headings at 400 by default so this font swap
+   * doesn't silently re-weight every heading + numeric readout app-wide;
+   * heavier cuts are available per-heading (e.g. `font-bold`) when a
+   * specific hierarchy calls for it. This single repoint flips every
+   * `font-display` element to the editorial identity. */
   .font-display {
     font-family: var(--font-editorial);
     font-weight: 400;
