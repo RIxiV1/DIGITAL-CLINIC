@@ -433,10 +433,20 @@ export default function HealthMapPage() {
                                     {m.unit}
                                   </span>
                                 </span>
+                                {/* Status as a colored TEXT label, not a 6px
+                                    color-only dot. The old dot was aria-hidden
+                                    (so screen readers got nothing) AND carried
+                                    status by hue alone (fails WCAG 1.4.1 for
+                                    low-vision / colour-blind users). The label
+                                    is the catalog's canonical word in the
+                                    readable status colour — colour + text +
+                                    SR-accessible. Rows here are concern/critical
+                                    only, so "NEEDS CARE" / "SEE A DOCTOR". */}
                                 <span
-                                  className={`self-center w-1.5 h-1.5 rounded-full ${statusColor(m.status).dot}`}
-                                  aria-hidden
-                                />
+                                  className={`self-center shrink-0 text-micro font-bold uppercase tracking-label ${statusColor(m.status).textOnSurface}`}
+                                >
+                                  {statusColor(m.status).label}
+                                </span>
                               </span>
                             </div>
                           ))}
