@@ -504,22 +504,30 @@ a,
   color-scheme: dark;
 
   /* ─── Canvas + surface ladder ──────────────────────────────────
-   * Two visible tones from page floor to card surface. NOT pure
-   * black — `#100E0C` keeps the gamma curve away from OLED black-
-   * smearing during scroll, and is a warm ink-charcoal (neutral, not
-   * blue) so the warm bronze hero spotlight + paper tones read as one
-   * family rather than fighting a cold navy baseline. "Ink & Clay" ladder:
-   * warm charcoal-ink floor → warm dark-stone card → mid-stone hero, each
-   * a real ~5-8% lightness step so depth reads without leaning on borders. */
+   * Three warm ink-charcoal tones from page floor to hero. NOT pure
+   * black — the warm charcoal floor keeps the gamma curve away from
+   * OLED black-smearing during scroll, and is neutral (not blue) so the
+   * warm bronze hero spotlight + paper tones read as one family rather
+   * than fighting a cold navy baseline. "Ink & Clay" ladder:
+   *   canvas  #0b0a09  L 0.0031   floor
+   *   surface #1a1816  L 0.0093   card  (canvas↔surface ≈ 1.12:1)
+   *   paper   #242220  L 0.0162   hero  (surface↔paper   ≈ 1.12:1)
+   * Surface was lifted from #161514 (L 0.0076): the old canvas↔surface
+   * step measured only 1.085:1 — below the just-noticeable threshold, so
+   * card fills had no perceptible edge on low-DPI screens. An even ~1.12:1
+   * ladder + the strengthened hairline below now carry depth together. */
   --color-canvas: #0b0a09;
-  --color-surface: #161514;
+  --color-surface: #1a1816;
 
   /* ─── Line / border ────────────────────────────────────────────
    * Low-alpha white so a border scales with whatever surface tone
    * sits beneath it (canvas vs. surface vs. raised). A fixed grey
-   * line would stay one tone regardless of context. */
-  --color-line: rgb(231 229 228 / 0.1);
-  --color-line-strong: rgb(231 229 228 / 0.2);
+   * line would stay one tone regardless of context. Bumped 0.10→0.16
+   * (≈1.44:1 over canvas, up from a barely-there 1.22): in dark the
+   * shadow tokens are near-invisible, so the border IS the card edge
+   * and has to actually read on a cheap panel in daylight. */
+  --color-line: rgb(231 229 228 / 0.16);
+  --color-line-strong: rgb(231 229 228 / 0.26);
 
   /* ─── Text hierarchy ───────────────────────────────────────────
    * Opacity-based on white. 92/78/55 lands at APCA Lc 92/82/68 on
