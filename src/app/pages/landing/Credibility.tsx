@@ -1,5 +1,28 @@
-import { motion } from 'framer-motion';
 import { Reveal, SectionHeader } from './shared';
+
+// "By the numbers" figures — recast from the old three-stat-card row (canonical
+// template furniture) into a hairline data-strip: the big Instrument Serif
+// numbers stay (an identity element), but the card fills, shadows, hover-lift
+// and the clay accent-card are gone, and the source line becomes a mono
+// caption — the same editorial/ledger voice as the verification_ledger beside
+// it. Honest figures with their source named, not fabricated stats.
+const STATS = [
+  {
+    big: '29%',
+    line: 'of Indian men over 40 have an undiagnosed hormonal deficiency.',
+    source: 'Cross-sectional studies on Indian male endocrine health',
+  },
+  {
+    big: '2.2%',
+    line: 'of Indian men have heard of andropause — the male equivalent of menopause.',
+    source: 'Public-awareness surveys, urban India cohort',
+  },
+  {
+    big: '12+',
+    line: 'peer-reviewed studies inform the panels we recommend.',
+    source: 'Hormonal screening · endocrine indices · risk stratification',
+  },
+];
 
 export default function Credibility() {
   return (
@@ -51,30 +74,28 @@ export default function Credibility() {
           </Reveal>
         </div>
 
-        <div className="mt-12 md:mt-16 grid md:grid-cols-3 gap-5">
-          <Reveal>
-            <StatCard
-              big="29%"
-              line="of Indian men over 40 have an undiagnosed hormonal deficiency."
-              source="Cross-sectional studies on Indian male endocrine health"
-            />
-          </Reveal>
-          <Reveal delay={0.08}>
-            <StatCard
-              big="2.2%"
-              line="of Indian men have heard of andropause — the male equivalent of menopause."
-              source="Public-awareness surveys, urban India cohort"
-              accent
-            />
-          </Reveal>
-          <Reveal delay={0.16}>
-            <StatCard
-              big="12+"
-              line="peer-reviewed studies inform the panels we recommend."
-              source="Hormonal screening · endocrine indices · risk stratification"
-            />
-          </Reveal>
-        </div>
+        <Reveal>
+          <div className="mt-12 md:mt-16 border-y border-line grid md:grid-cols-3">
+            {STATS.map(({ big, line, source }, i) => (
+              <div
+                key={big}
+                className={`py-7 md:py-8 md:px-8 first:md:pl-0 last:md:pr-0 ${
+                  i > 0 ? 'border-t md:border-t-0 md:border-l border-line' : ''
+                }`}
+              >
+                <div className="font-display text-display-xl leading-none tracking-tight text-ink">
+                  {big}
+                </div>
+                <p className="mt-4 text-body md:text-body-lg leading-snug text-ink text-balance">
+                  {line}
+                </p>
+                <p className="mt-5 pt-3 border-t border-line/60 text-[10px] font-mono uppercase tracking-widest text-muted leading-relaxed">
+                  {source}
+                </p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
 
         <Reveal>
           <div className="mt-10 flex items-center justify-center gap-2 text-caption text-muted text-center max-w-2xl mx-auto">
@@ -89,53 +110,3 @@ export default function Credibility() {
   );
 }
 
-function StatCard({
-  big,
-  line,
-  source,
-  accent,
-}: {
-  big: string;
-  line: string;
-  source: string;
-  accent?: boolean;
-}) {
-  return (
-    <motion.div
-      whileHover={{ y: -3 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className={`h-full rounded-lg p-7 md:p-8 border ${
-        accent
-          ? 'bg-clay border-clay text-on-clay'
-          : 'bg-surface border-line'
-      }`}
-    >
-      {/* The big overview number IS large enough for the editorial serif
-          (brief: massive overview numbers in Instrument Serif). Small data
-          values elsewhere stay in Inter tabular. */}
-      <div
-        className={`font-display text-display-xl leading-none tracking-tight ${
-          accent ? 'text-on-clay' : 'text-ink'
-        }`}
-      >
-        {big}
-      </div>
-      <p
-        className={`mt-4 text-body md:text-body-lg leading-snug text-balance ${
-          accent ? 'text-on-clay' : 'text-ink'
-        }`}
-      >
-        {line}
-      </p>
-      <p
-        className={`mt-5 pt-4 text-caption border-t leading-relaxed ${
-          accent
-            ? 'text-on-clay/80 border-on-clay/25'
-            : 'text-muted border-line/80'
-        }`}
-      >
-        {source}
-      </p>
-    </motion.div>
-  );
-}
