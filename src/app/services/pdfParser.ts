@@ -968,6 +968,11 @@ function unitMultiplier(unit: string | null | undefined): number {
  */
 type ExtractedMarker = {
   value: number;
+  /** The original printed value + unit, set ONLY when the printed number
+   *  was rescaled to canonical units (e.g. lakh/thou/million count
+   *  prefixes). Drives the unit-reconciliation receipt in the UI. */
+  originalValue?: number;
+  originalUnit?: string;
   /** The reference range the lab itself printed alongside the value,
    *  captured by the `tail` regex's ref-range slot. Undefined when the
    *  row didn't include a printed range or the parser couldn't fit it
@@ -1213,6 +1218,13 @@ function extractMarkerValue(
         : undefined;
     return {
       value: v,
+      // Unit reconciliation receipt: when we rescaled the printed number
+      // (e.g. "2.4 lakh/cumm" → 240000 /µL), keep the ORIGINAL printed
+      // value + unit so the UI can show the user we didn't invent a
+      // different number — same result, standard units. Only set when a
+      // real rescale happened (scale !== 1).
+      originalValue: scale !== 1 ? raw : undefined,
+      originalUnit: scale !== 1 ? (printedUnit ?? undefined) : undefined,
       labRefMin: labRef?.min,
       labRefMax: labRef?.max,
       matchStart: m.index ?? 0,
@@ -1246,7 +1258,11 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
         ? { min: extracted.labRefMin, max: extracted.labRefMax }
         : undefined;
     hits.push({
-      marker: markerFromTemplate(template, extracted.value, labRef),
+      marker: {
+        ...markerFromTemplate(template, extracted.value, labRef),
+        originalValue: extracted.originalValue,
+        originalUnit: extracted.originalUnit,
+      },
       start: extracted.matchStart,
       end: extracted.matchEnd,
     });

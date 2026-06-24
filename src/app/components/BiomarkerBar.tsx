@@ -314,7 +314,19 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
         </div>
         <div className="text-right shrink-0 min-w-0">
           <div className="font-sans font-semibold text-display-md leading-none text-ink tabular-nums">
-            {marker.value}
+            {/* Dashed underline flags a unit conversion — the receipt below
+                ("What this means") explains it. Native title for a quick
+                hover hint; the full note is always there for tap/read. */}
+            {marker.originalValue !== undefined && marker.originalUnit ? (
+              <span
+                className="border-b border-dashed border-muted/60"
+                title={`Lab printed ${marker.originalValue} ${marker.originalUnit} — converted to standard units`}
+              >
+                {marker.value}
+              </span>
+            ) : (
+              marker.value
+            )}
             <span className="text-caption ml-1 text-muted font-sans font-medium">
               {marker.unit}
             </span>
@@ -455,6 +467,25 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           <p className="mt-1.5 text-caption leading-relaxed text-ink-soft">
             {marker.plain}
           </p>
+          {/* Unit-reconciliation receipt. Shown only when the parser
+              rescaled the lab's printed number into canonical units (Indian
+              count prefixes like lakh/thou/million per cumm). Reassures the
+              user we didn't invent a different number — same result, standard
+              unit. Indian digit grouping (en-IN) on the converted value. */}
+          {marker.originalValue !== undefined && marker.originalUnit && (
+            <p className="mt-2.5 text-micro text-muted leading-snug">
+              <span className="font-semibold text-ink-soft">Unit converted.</span>{' '}
+              Your lab printed{' '}
+              <span className="font-mono text-ink-soft">
+                {marker.originalValue} {marker.originalUnit}
+              </span>
+              . We show{' '}
+              <span className="font-mono text-ink-soft">
+                {marker.value.toLocaleString('en-IN')} {marker.unit}
+              </span>
+              , the standard unit. Same result.
+            </p>
+          )}
           {/* Harm-anchor explanation — ties the dashed tick to its cited
               clinical meaning. Gated on the same condition as the tick, so
               an uncited or in-range marker shows nothing (no fabricated

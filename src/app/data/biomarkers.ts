@@ -109,6 +109,14 @@ export type Biomarker = {
    *  display-only field that anchors the user back to the document. */
   labRefMin?: number;
   labRefMax?: number;
+  /** Unit-reconciliation receipt. Set ONLY when the parser rescaled the
+   *  lab's printed number into canonical units (Indian count prefixes:
+   *  lakh / thousand / million per cumm, or an SI altUnit). Holds what the
+   *  lab actually PRINTED so the UI can reassure the user we didn't invent
+   *  a different value — e.g. printed "2.4 lakh/cumm", shown "2,40,000 /µL".
+   *  Both undefined when the printed number was already in canonical units. */
+  originalValue?: number;
+  originalUnit?: string;
   /** Clinical-critical cliff bounds, propagated from the catalog
    *  template. Distinct from [min,max] (healthy) — these are the
    *  same-day-care thresholds (e.g. glucose >250, HbA1c >10). The bar

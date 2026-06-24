@@ -334,7 +334,14 @@ export function mapGeminiResultsToCatalog(
       recordUnmapped(r);
       continue;
     }
-    mapped.push(markerFromTemplate(template, value));
+    mapped.push({
+      ...markerFromTemplate(template, value),
+      // Unit-reconciliation receipt — keep the lab's printed value/unit
+      // when we rescaled (e.g. lakh/thou/million prefixes), so the UI can
+      // show "same result, standard units".
+      originalValue: scale !== 1 ? raw : undefined,
+      originalUnit: scale !== 1 ? (r.unit ?? undefined) : undefined,
+    });
     seen.add(template.id);
   }
   return pruneSuspectShortNameMarkers({ biomarkers: mapped, unmapped });

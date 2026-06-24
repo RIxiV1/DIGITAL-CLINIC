@@ -780,6 +780,26 @@ describe('extractBiomarkersFromText — count-prefix unit reconciliation', () =>
     expect(result.find((m) => m.id === 'wbc')?.value).toBe(8500);
   });
 
+  it('keeps the original printed value + unit as a reconciliation receipt', () => {
+    // When we rescale, the UI shows the user we didn't invent a different
+    // number — it surfaces what the lab actually printed.
+    const result = extractBiomarkersFromText('Platelet Count 2.45 lakh/cumm');
+    const p = result.find((m) => m.id === 'platelets');
+    expect(p?.value).toBe(245000);
+    expect(p?.originalValue).toBe(2.45);
+    expect(p?.originalUnit?.toLowerCase()).toContain('lakh');
+  });
+
+  it('omits the reconciliation receipt when no rescale happened', () => {
+    // A value already in canonical units carries no receipt (nothing to
+    // reconcile) — so the UI shows no "unit converted" note.
+    const result = extractBiomarkersFromText('Fasting Glucose 92 mg/dL');
+    const g = result.find((m) => m.id === 'glucose');
+    expect(g?.value).toBe(92);
+    expect(g?.originalValue).toBeUndefined();
+    expect(g?.originalUnit).toBeUndefined();
+  });
+
   it('passes through platelets already in raw /cumm', () => {
     const text = 'Platelet Count 280000 /cumm';
     const result = extractBiomarkersFromText(text);
