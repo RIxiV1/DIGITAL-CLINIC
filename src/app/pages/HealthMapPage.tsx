@@ -5,7 +5,6 @@ import Button from '../components/Button';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
-import ProgressRing from '../components/ProgressRing';
 import StatusKey from '../components/StatusKey';
 import { useNavigation, useReports } from '../AppContext';
 import {
@@ -163,15 +162,6 @@ export default function HealthMapPage() {
   const onTrackPct =
     summary.total > 0 ? Math.round((summary.good / summary.total) * 100) : 0;
 
-  // Two-tone ring: the remainder is tinted by the worst status, not grey,
-  // so the green share can't be misread as a passing grade.
-  const ringTrack =
-    summary.concern > 0 || summary.critical > 0
-      ? 'stroke-concern/40'
-      : summary.attention > 0
-        ? 'stroke-attention/40'
-        : 'stroke-line/50';
-
   // Movement since the last test — the come-back-and-check hook. Only
   // meaningful when markers carry history (a prior report was merged in).
   const movement = useMemo(() => {
@@ -279,26 +269,17 @@ export default function HealthMapPage() {
           test. Apple "Summary": a big ring, a confident headline, one
           honest line, and a celebratory/honest movement signal. */}
       <Container size="wide" className="pt-7 md:pt-9">
-        <div className="rounded-3xl border border-line/70 bg-surface shadow-soft p-5 sm:p-6">
-          <div className="flex items-center gap-5">
-            <ProgressRing pct={onTrackPct} trackClass={ringTrack}>
-              <div className="text-center leading-none">
-                <span className="font-display text-display-sm text-ink">
-                  {onTrackPct}
-                </span>
-                <span className="font-display text-caption text-muted align-top">
-                  %
-                </span>
-                <div className="text-micro uppercase tracking-eyebrow font-bold text-muted mt-1">
-                  in range
-                </div>
-              </div>
-            </ProgressRing>
-            <div className="min-w-0">
-              <h1 className="font-display text-display-md sm:text-display-lg leading-tight tracking-tight">
+        {/* Warm "paper" spotlight — same focal surface as the dashboard
+            hero: flat, hairline, no ring/glow. Big Instrument Serif score +
+            a split meter (in-range vs to-review) instead of the activity
+            ring, so the two heroes speak one language. */}
+        <div className="rounded-lg border border-paper-line bg-paper text-paper-ink p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
+            <div className="order-2 md:order-1 flex-1 min-w-0">
+              <h1 className="font-display text-display-md sm:text-display-lg leading-tight tracking-tight text-paper-ink">
                 {headline}
               </h1>
-              <p className="text-caption text-muted mt-1">
+              <p className="text-caption text-paper-soft mt-1.5">
                 {summary.good} of {summary.total} in a healthy range
               </p>
               {movement.any && (
@@ -315,17 +296,37 @@ export default function HealthMapPage() {
                       {movement.declined} slipped
                     </span>
                   )}
-                  <span className="text-micro text-muted">
+                  <span className="text-micro text-paper-soft">
                     since your last test
                   </span>
                 </div>
               )}
             </div>
+            <div className="order-1 md:order-2 shrink-0">
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-display text-[3.5rem] md:text-[4rem] leading-none text-paper-ink">
+                  {onTrackPct}
+                </span>
+                <span className="font-display text-2xl text-paper-soft">%</span>
+              </div>
+              <div className="text-micro uppercase tracking-eyebrow font-semibold text-paper-soft mt-1.5">
+                in range
+              </div>
+              <div
+                role="img"
+                aria-label={`${summary.good} of ${summary.total} markers in range`}
+                className="mt-3 flex h-2 w-44 overflow-hidden rounded-full border border-paper-line"
+              >
+                <div className="h-full bg-forest" style={{ width: `${onTrackPct}%` }} />
+                <div className="h-full w-[2px] shrink-0 bg-paper" aria-hidden />
+                <div className="h-full flex-1 bg-clay" />
+              </div>
+            </div>
           </div>
 
           {/* The honest plain-language line the report also leads with — so
               the map and the report tell one consistent story. */}
-          <p className="text-body-sm text-ink-soft mt-4 leading-relaxed border-t border-line/60 pt-4">
+          <p className="text-body-sm text-paper-ink/80 mt-6 leading-relaxed border-t border-paper-line pt-5">
             {bottomLine}
           </p>
         </div>
@@ -383,7 +384,7 @@ export default function HealthMapPage() {
                   delay: Math.min(i * 0.03, 0.2),
                   ease: [0.22, 1, 0.36, 1],
                 }}
-                className="group h-full text-left bg-surface rounded-3xl border border-line/70 shadow-soft p-4 sm:p-5 transition-all hover:shadow-pop hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                className="group h-full text-left bg-surface rounded-lg border border-line p-4 sm:p-5 transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
               >
                 {/* Header row — name + status · chevron. */}
                 <div className="flex items-center gap-3">
