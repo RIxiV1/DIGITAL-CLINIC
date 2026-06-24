@@ -453,48 +453,6 @@ export default function HomePage() {
           fails to persist (quota exceeded, private mode, storage
           disabled). Reports still work in memory, but a tab close wipes
           them — telling the user upfront is the only honest move. */}
-      {/* Catalog-migration notice. Surfaced once per CATALOG_VERSION
-          bump for users whose persisted reports were stamped at an
-          older version AND carry history — those trendlines would
-          otherwise drop a reading silently after the bump without
-          explanation. Dismissible; ack persists across reloads. */}
-      {activeBanner === 'catalog' && (
-        <Container size="wide" className="pt-4">
-          <div
-            role="status"
-            className="flex items-start gap-3 rounded-2xl bg-indigo-50/70 border border-indigo-200 px-4 py-3"
-          >
-            <span
-              aria-hidden
-              role="img"
-              className="text-body-lg leading-none mt-0.5"
-            >
-              ℹ️
-            </span>
-            <div className="flex-1 min-w-0 text-caption leading-relaxed text-ink">
-              <div className="font-semibold text-indigo-900">
-                We updated our biomarker catalog
-              </div>
-              <p className="mt-0.5 text-ink-soft">
-                Some of your trendlines might be missing readings from older
-                reports — that's because the marker shape (id or unit) changed
-                between catalog versions, and we don't fuse readings across the
-                change. Past reports are still in your locker; we just won't
-                merge their history into a different-shaped marker.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={dismissCatalogNotice}
-              aria-label="Dismiss"
-              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-indigo-700 hover:bg-indigo-100"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        </Container>
-      )}
-
       {activeBanner === 'quota' && (
         <Container size="wide" className="pt-4">
           <div
@@ -604,6 +562,49 @@ export default function HomePage() {
           </p>
         )}
       </Container>
+
+      {/* Catalog-migration notice. Surfaced once per CATALOG_VERSION bump
+          for users whose persisted reports were stamped at an older version
+          AND carry history. Rendered BELOW the hero deliberately: a frightened
+          user must see their health summary first, and this is an informational
+          note, not urgent (unlike the quota alert, which stays above). The copy
+          is plain language — the versioning mechanics (marker id/unit shape,
+          no cross-version fusion) live in the code, not in the user's face.
+          Dismissible; ack persists across reloads. */}
+      {activeBanner === 'catalog' && (
+        <Container size="wide" className="pt-4">
+          <div
+            role="status"
+            className="flex items-start gap-3 rounded-2xl bg-surface border border-line px-4 py-3"
+          >
+            <span
+              aria-hidden
+              role="img"
+              className="text-body-lg leading-none mt-0.5"
+            >
+              ℹ️
+            </span>
+            <div className="flex-1 min-w-0 text-caption leading-relaxed text-ink">
+              <div className="font-semibold text-ink">
+                Some older trend points may be missing
+              </div>
+              <p className="mt-0.5 text-ink-soft">
+                We changed how a few markers are measured, so some older readings
+                don’t line up on the same trend line. Your past reports are safe
+                and still open in full.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissCatalogNotice}
+              aria-label="Dismiss"
+              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-muted hover:bg-canvas"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </Container>
+      )}
 
       {/* ZONE 2a · Empty-state preview. Replaces the entire top-concern
           + disclosures stack when there's no analyzed report — a focused
