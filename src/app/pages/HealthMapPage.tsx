@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronRight, TrendingDown, TrendingUp, Upload } from 'lucide-react';
+import { Check, ChevronRight, TrendingDown, TrendingUp, Upload } from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
 import Header from '../components/Header';
@@ -348,90 +347,174 @@ export default function HealthMapPage() {
         </p>
       </Container>
 
-      {/* Section label — grouped-list header, the iOS table idiom. */}
-      <Container size="wide" className="mt-8 md:mt-10">
-        <h2 className="text-micro uppercase tracking-eyebrow font-bold text-muted">
-          Body systems · worst first
-        </h2>
-      </Container>
+      {/* Body systems — SEVERITY-RANKED, not a uniform grid. Systems that
+          need action get real estate AND surface their flagged markers
+          inline (no tap needed to see what's wrong); "watch" collapses to
+          one-line rows; healthy systems compress into a single calm strip.
+          Reads like a triage ledger: act-on first, reassurance last. */}
+      {(() => {
+        const SEV: Record<Biomarker['status'], number> = {
+          critical: 0,
+          concern: 1,
+          attention: 2,
+          good: 3,
+        };
+        const needs = groups.filter(
+          (g) => g.r.worst === 'critical' || g.r.worst === 'concern',
+        );
+        const watch = groups.filter((g) => g.r.worst === 'attention');
+        const clear = groups.filter((g) => g.r.worst === 'good');
+        const reportFor = (g: (typeof groups)[number]) =>
+          snap.sourceReportId[g.markers[0]?.id] ?? ready.id;
 
-      {/* System grid — uniform overview tiles. Whole card taps through to
-          the full report (the existing reference surface). */}
-      <Container size="wide" className="mt-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-stretch">
-          {groups.map((g, i) => {
-            const r = g.r;
-            const c = statusColor(r.worst);
-            const goodPct = r.total > 0 ? (r.good / r.total) * 100 : 0;
-            return (
-              <motion.button
-                key={g.category.id}
-                type="button"
-                onClick={() =>
-                  navigate({
-                    type: 'results',
-                    // Route to the report that owns this system's markers
-                    // (their latest reading's source), not always the
-                    // primary — so tapping "Fertility" opens the panel it
-                    // actually came from.
-                    reportId: snap.sourceReportId[g.markers[0]?.id] ?? ready.id,
-                  })
-                }
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.28,
-                  delay: Math.min(i * 0.03, 0.2),
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                className="group h-full text-left bg-surface rounded-lg border border-line p-4 sm:p-5 transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
-              >
-                {/* Header row — name + status · chevron. */}
-                <div className="flex items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-display text-body text-ink leading-tight truncate">
-                      {g.category.name}
-                    </div>
-                    <div
-                      className={`inline-flex items-center gap-1.5 text-caption font-semibold mt-0.5 ${c.textOnSurface}`}
+        return (
+          <>
+            {needs.length > 0 && (
+              <Container size="wide" className="mt-8 md:mt-10">
+                <h2 className="text-micro uppercase tracking-eyebrow font-bold text-concern-ink mb-3">
+                  Needs a look
+                </h2>
+                <div className="grid gap-3">
+                  {needs.map((g) => {
+                    const flagged = g.markers
+                      .filter(
+                        (m) =>
+                          m.status === 'critical' || m.status === 'concern',
+                      )
+                      .sort((a, b) => SEV[a.status] - SEV[b.status]);
+                    const shown = flagged.slice(0, 3);
+                    const more = flagged.length - shown.length;
+                    return (
+                      <div
+                        key={g.category.id}
+                        className="rounded-lg border border-line bg-surface overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate({
+                              type: 'results',
+                              reportId: reportFor(g),
+                            })
+                          }
+                          className="group w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-line text-left transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+                        >
+                          <span className="font-display text-body-lg text-ink">
+                            {g.category.name}
+                          </span>
+                          <span className="flex items-center gap-2 text-caption font-semibold text-concern-ink">
+                            {summaryText(g.r)}
+                            <ChevronRight
+                              size={16}
+                              className="text-muted transition-transform group-hover:translate-x-0.5"
+                            />
+                          </span>
+                        </button>
+                        <div className="divide-y divide-line">
+                          {shown.map((m) => (
+                            <div
+                              key={m.id}
+                              className="flex items-baseline justify-between gap-3 px-4 py-2.5"
+                            >
+                              <span className="min-w-0 truncate">
+                                <span className="text-caption font-semibold text-ink">
+                                  {m.name}
+                                </span>
+                                {m.simpleName && (
+                                  <span className="text-micro text-muted ml-2">
+                                    {m.simpleName}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="shrink-0 inline-flex items-baseline gap-2">
+                                <span className="font-sans font-semibold text-caption tabular-nums text-ink">
+                                  {m.value}
+                                  <span className="text-micro text-muted font-normal ml-0.5">
+                                    {m.unit}
+                                  </span>
+                                </span>
+                                <span
+                                  className={`self-center w-1.5 h-1.5 rounded-full ${statusColor(m.status).dot}`}
+                                  aria-hidden
+                                />
+                              </span>
+                            </div>
+                          ))}
+                          {more > 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate({
+                                  type: 'results',
+                                  reportId: reportFor(g),
+                                })
+                              }
+                              className="w-full text-left px-4 py-2.5 text-caption font-semibold text-clay hover:opacity-70 transition-opacity focus-visible:outline-none focus-visible:underline"
+                            >
+                              +{more} more →
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Container>
+            )}
+
+            {watch.length > 0 && (
+              <Container size="wide" className="mt-6">
+                <h2 className="text-micro uppercase tracking-eyebrow font-bold text-attention-ink mb-3">
+                  Keep an eye
+                </h2>
+                <div className="rounded-lg border border-line overflow-hidden bg-surface">
+                  {watch.map((g) => (
+                    <button
+                      key={g.category.id}
+                      type="button"
+                      onClick={() =>
+                        navigate({ type: 'results', reportId: reportFor(g) })
+                      }
+                      className="group w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-line last:border-b-0 text-left transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                      {summaryText(r)}
-                    </div>
-                  </div>
-                  <ChevronRight
-                    size={18}
-                    className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
-                  />
+                      <span className="font-display text-body text-ink">
+                        {g.category.name}
+                      </span>
+                      <span className="flex items-center gap-2 text-caption font-semibold text-attention-ink">
+                        {summaryText(g.r)}
+                        <ChevronRight size={16} className="text-muted" />
+                      </span>
+                    </button>
+                  ))}
                 </div>
+              </Container>
+            )}
 
-                {/* Slim on-track bar + count — a per-system mini-score that
-                    keeps every card the same height and gives a number to
-                    nudge upward. */}
-                {/* Two-tone bar: green = the in-range share, the tinted
-                    track = the share that needs a look. So "0 of 2" reads
-                    as a full red bar, "8 of 8" as a full green one — no
-                    ambiguous part-filled red. */}
-                <div className="mt-4">
-                  <div
-                    className={`h-1.5 rounded-full overflow-hidden ${
-                      r.worst === 'good' ? 'bg-line/60' : c.bg
-                    }`}
-                  >
-                    <div
-                      className="h-full rounded-full bg-good"
-                      style={{ width: `${goodPct}%` }}
-                    />
-                  </div>
-                  <div className="text-micro text-muted mt-2">
-                    {r.good} of {r.total} in a healthy range
-                  </div>
+            {clear.length > 0 && (
+              <Container size="wide" className="mt-6">
+                <h2 className="text-micro uppercase tracking-eyebrow font-bold text-muted mb-3">
+                  All clear
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {clear.map((g) => (
+                    <button
+                      key={g.category.id}
+                      type="button"
+                      onClick={() =>
+                        navigate({ type: 'results', reportId: reportFor(g) })
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 h-9 text-caption text-ink-soft transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+                    >
+                      <Check size={13} className="text-good" />
+                      {g.category.name}
+                    </button>
+                  ))}
                 </div>
-              </motion.button>
-            );
-          })}
-        </div>
-      </Container>
+              </Container>
+            )}
+          </>
+        );
+      })()}
 
       {/* Footer — gentle exit toward the detailed read + adding more data. */}
       <Container size="wide" className="mt-8 md:mt-10">
