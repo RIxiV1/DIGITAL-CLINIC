@@ -843,6 +843,20 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
   }
 }
 
+/**
+ * Stamp every marker that came from an OCR (photo / scanned-PDF) read with
+ * the page's OCR confidence (0–100). The UI uses it to flag — per value,
+ * not as a blanket banner — which numbers were read off a photo and are
+ * worth a double-check. Markers from a digital text layer never get this
+ * field (digital text is trustworthy), so the absence of it means "exact".
+ */
+function tagOcrConfidence(
+  markers: Biomarker[],
+  confidence: number,
+): Biomarker[] {
+  return markers.map((m) => ({ ...m, ocrConfidence: confidence }));
+}
+
 /* ------------------------------------------------------------------ */
 /* Catalog matching                                                     */
 /*                                                                      */
@@ -1796,12 +1810,13 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
       const ocr = await runPdfOcr(pdf);
       const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
       return {
-        biomarkers: ocrBiomarkers,
+        biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
         source: 'pdf-ocr',
         rawText: rawTextForDisplay(ocr.text),
         unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
         ocrPagesAttempted: ocr.pagesAttempted,
         ocrPagesSkipped: ocr.pagesSkipped,
+        ocrConfidence: ocr.confidence,
       };
     }
 
@@ -1850,7 +1865,7 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     const ocr = await runPdfOcr(pdf);
     const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
     return {
-      biomarkers: ocrBiomarkers,
+      biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
       source: 'pdf-ocr',
       rawText: ocr.text,
       unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
@@ -1869,7 +1884,7 @@ async function parseImage(file: File): Promise<PdfParseResult> {
   const { text, confidence } = await runImageOcr(file);
   const biomarkers = extractBiomarkersFromText(text);
   return {
-    biomarkers,
+    biomarkers: tagOcrConfidence(biomarkers, confidence),
     source: 'image-ocr',
     rawText: text,
     unrecognizedRows: findUnrecognizedRows(text, biomarkers),

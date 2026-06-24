@@ -117,6 +117,12 @@ export type Biomarker = {
    *  Both undefined when the printed number was already in canonical units. */
   originalValue?: number;
   originalUnit?: string;
+  /** OCR confidence (0–100) of the read this value came from. Set ONLY on
+   *  markers extracted via OCR (a photo or scanned PDF); undefined for
+   *  digital text-layer reads (which are exact). The UI flags individual
+   *  values below the low-confidence threshold so the user double-checks
+   *  the specific ones a photo read poorly — not a blanket "check all". */
+  ocrConfidence?: number;
   /** Clinical-critical cliff bounds, propagated from the catalog
    *  template. Distinct from [min,max] (healthy) — these are the
    *  same-day-care thresholds (e.g. glucose >250, HbA1c >10). The bar

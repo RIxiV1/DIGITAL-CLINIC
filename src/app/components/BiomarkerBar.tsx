@@ -320,7 +320,15 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
             {marker.originalValue !== undefined && marker.originalUnit ? (
               <span
                 className="border-b border-dashed border-muted/60"
-                title={`Lab printed ${marker.originalValue} ${marker.originalUnit} — converted to standard units`}
+                title={`Lab printed ${marker.originalValue} ${marker.originalUnit}, converted to standard units`}
+              >
+                {marker.value}
+              </span>
+            ) : typeof marker.ocrConfidence === 'number' &&
+              marker.ocrConfidence < 65 ? (
+              <span
+                className="border-b border-dashed border-attention/70"
+                title="Read from a photo, double-check this number against your report"
               >
                 {marker.value}
               </span>
@@ -486,6 +494,19 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
               , the standard unit. Same result.
             </p>
           )}
+          {/* OCR low-confidence flag. Shown only for values read off a photo
+              / scanned PDF whose OCR confidence fell below the threshold —
+              so the user double-checks the SPECIFIC unclear numbers, not the
+              whole report. Digital-text reads never carry ocrConfidence, so
+              they never flag. */}
+          {typeof marker.ocrConfidence === 'number' &&
+            marker.ocrConfidence < 65 && (
+              <p className="mt-2.5 text-micro text-attention-ink leading-snug">
+                <span className="font-semibold">Read from a photo.</span> This
+                number was scanned and the photo was a little unclear.
+                Double-check it against your report.
+              </p>
+            )}
           {/* Harm-anchor explanation — ties the dashed tick to its cited
               clinical meaning. Gated on the same condition as the tick, so
               an uncited or in-range marker shows nothing (no fabricated
