@@ -84,7 +84,7 @@ function HideButton({ onHide }: { onHide: () => void }) {
       onClick={onHide}
       aria-label="Hide the screen"
       title="Hide the screen"
-      className="grid place-items-center w-10 h-10 rounded-full text-muted hover:text-ink hover:bg-canvas/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-clay/60"
+      className="grid place-items-center w-10 h-10 rounded-full text-muted hover:text-ink hover:bg-canvas/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/60"
     >
       <EyeOff size={18} />
     </button>

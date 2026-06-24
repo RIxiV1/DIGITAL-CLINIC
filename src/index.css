@@ -127,12 +127,25 @@
   --color-paper-ink: #1c1917;
   --color-paper-soft: #57534e;
   --color-paper-line: rgb(28 25 23 / 0.12);
+  /* Forest is the INTERACTIVE accent (primary CTAs, links, focus rings).
+   * It was promoted out of decorative-only duty to resolve a colour-vision
+   * collision: the old clay accent (#b5512f) sat ~17° from the crimson alarm
+   * (--color-concern #dc2626), both red-dominant with near-zero blue — so
+   * under protanopia/deuteranopia a clay "click me" button and a crimson
+   * "you might be sick" alarm collapsed to the same muddy red. Forest carries
+   * blue-green content, separating from crimson on the channel CVD vision
+   * keeps. Clay stays as the warm DECORATIVE accent + the "needs-review"
+   * middle status tier (never an interactive control that sits by an alarm). */
   --color-clay: #b5512f;
   --color-forest: #2f5d50;
   /* Text that sits ON a filled terracotta accent panel (bg-clay). Light
    * theme: clay is a deep rust → near-white text (AA). Dark theme (rebind
    * below): clay lifts to a lighter tan → deep ink text. */
   --color-on-clay: #fdfbf7;
+  /* Text ON a filled forest panel (bg-forest, the primary CTA). Light theme:
+   * forest is a deep green → near-white text (~7.3:1, AAA). Dark theme: forest
+   * lifts to a light sage → deep ink text (~7.8:1, AAA). */
+  --color-on-forest: #fdfbf7;
 
   /* Status fills. The vivid stops here are tuned for BADGE FILLS
    * (white-on-color, e.g. `bg-good text-on-status`) — they hit AA
@@ -573,6 +586,7 @@ a,
   --color-clay: #d8845b;
   --color-forest: #74b59c;
   --color-on-clay: #1c1917;
+  --color-on-forest: #1c1917;
 
   /* ─── Status fills — DE-ESCALATED for AMOLED ───────────────────
    * Rose / warm-amber / emerald pastels instead of pure red/amber/
@@ -672,11 +686,13 @@ a,
 :root[data-theme='dark'] a:focus-visible,
 :root[data-theme='dark'] input:focus-visible {
   outline: none;
-  /* Solid terracotta ring on dark — high-contrast, not the old faint
-   * 0.5-alpha clay. Inner dark gap separates it from the focused fill. */
+  /* Solid forest ring on dark — high-contrast, not the old faint
+   * 0.5-alpha clay. Forest is the interactive accent, so the focus ring
+   * matches it (and stays clear of the crimson alarm hue). Inner dark gap
+   * separates it from the focused fill. */
   box-shadow:
     0 0 0 2px var(--color-canvas),
-    0 0 0 4px var(--color-clay);
+    0 0 0 4px var(--color-forest);
 }
 
 /* Selection — the light-theme `gold-200` flips to a deep brown in
@@ -889,12 +905,13 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible {
   outline: none;
-  /* Solid 2px terracotta ring (the brand accent doing real work) + a thin
-   * paper-coloured gap so it reads against any surface. Replaces the faint
+  /* Solid 2px forest ring (the interactive accent doing real work) + a thin
+   * surface-coloured gap so it reads against any surface. Forest, not clay,
+   * so focus never shares a hue with the crimson alarm. Replaces the faint
    * 0.28-alpha shadow that measured ~1.35:1 (failed SC 2.4.11). */
   box-shadow:
     0 0 0 2px var(--color-surface),
-    0 0 0 4px var(--color-clay);
+    0 0 0 4px var(--color-forest);
 }
 
 /* Print — Save as PDF flow */

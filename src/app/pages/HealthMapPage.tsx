@@ -220,7 +220,7 @@ export default function HealthMapPage() {
                 <button
                   type="button"
                   onClick={() => navigate({ type: 'upload' })}
-                  className="text-caption font-semibold text-clay hover:opacity-70 transition-opacity duration-150 text-right focus-visible:outline-none focus-visible:underline"
+                  className="text-caption font-semibold text-forest hover:opacity-70 transition-opacity duration-150 text-right focus-visible:outline-none focus-visible:underline"
                 >
                   Add →
                 </button>
@@ -449,7 +449,7 @@ export default function HealthMapPage() {
                                   reportId: reportFor(g),
                                 })
                               }
-                              className="w-full text-left px-4 py-2.5 text-caption font-semibold text-clay hover:opacity-70 transition-opacity focus-visible:outline-none focus-visible:underline"
+                              className="w-full text-left px-4 py-2.5 text-caption font-semibold text-forest hover:opacity-70 transition-opacity focus-visible:outline-none focus-visible:underline"
                             >
                               +{more} more →
                             </button>

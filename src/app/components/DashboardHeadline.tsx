@@ -105,7 +105,7 @@ export default function DashboardHeadline({
           <button
             type="button"
             onClick={onPrimaryCTA}
-            className="mt-6 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-md bg-clay text-paper text-caption font-semibold tracking-tight transition-colors duration-150 ease-in-out hover:bg-clay/90 whitespace-nowrap"
+            className="mt-6 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-md bg-forest text-on-forest text-caption font-semibold tracking-tight transition-colors duration-150 ease-in-out hover:bg-forest/90 whitespace-nowrap"
           >
             {ctaLabel}
             <ArrowRight size={14} />
