@@ -9,12 +9,7 @@ export default function Credibility() {
           <Reveal>
             <SectionHeader
               eyebrow="The science"
-              title={
-                <>
-                  Built on research,{' '}
-                  <span className="text-clay">backed by data.</span>
-                </>
-              }
+              title="Built on research, backed by data."
               subtitle="Indian male hormonal health is barely talked about — and barely tested. The data is sobering."
             />
           </Reveal>

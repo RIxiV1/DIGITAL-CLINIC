@@ -30,35 +30,63 @@ const VIEWPORTS = [
   { tag: 'mobile', opts: { ...devices['iPhone 13'] } },
 ];
 
-async function seedReports(page) {
+const THEME = process.env.THEME === 'light' ? 'light' : 'dark';
+// Light spot-check set (desktop only) — the palette-sensitive screens.
+const LIGHT_ONLY = new Set([
+  'landing-full', 'dashboard-populated', 'healthmap-populated', 'results', 'profile',
+]);
+
+async function primeStorage(page, { seed }) {
   await page.goto(`${BASE}/`, { waitUntil: 'domcontentloaded' });
+  await page.evaluate(
+    async ({ theme, seed }) => {
+      if (theme === 'light') localStorage.setItem('dc_theme', 'light');
+      if (seed) {
+        const mod = await import('/src/app/data/reports.ts');
+        localStorage.setItem(
+          'dc_reports',
+          JSON.stringify({ savedAt: '2026-04-12T00:00:00.000Z', reports: mod.sampleReports }),
+        );
+      }
+    },
+    { theme: THEME, seed: !!seed },
+  );
+}
+
+// Scroll top→bottom in viewport steps to trip every whileInView Reveal,
+// then return to top. Without this, full-page shots capture below-fold
+// sections frozen at opacity:0.
+async function triggerReveals(page) {
   await page.evaluate(async () => {
-    const mod = await import('/src/app/data/reports.ts');
-    const reports = mod.sampleReports;
-    localStorage.setItem(
-      'dc_reports',
-      JSON.stringify({ savedAt: '2026-04-12T00:00:00.000Z', reports }),
-    );
+    const step = window.innerHeight * 0.8;
+    const end = document.body.scrollHeight;
+    for (let y = 0; y < end; y += step) {
+      window.scrollTo(0, y);
+      await new Promise((r) => setTimeout(r, 120));
+    }
+    window.scrollTo(0, 0);
+    await new Promise((r) => setTimeout(r, 200));
   });
 }
 
 const browser = await chromium.launch();
 for (const vp of VIEWPORTS) {
   for (const s of SCREENS) {
+    if (THEME === 'light' && (vp.tag === 'mobile' || !LIGHT_ONLY.has(s.name))) continue;
     const ctx = await browser.newContext(vp.opts);
     const page = await ctx.newPage();
     try {
-      if (s.seed) await seedReports(page);
+      await primeStorage(page, s);
       await page.goto(`${BASE}${s.path}`, { waitUntil: 'networkidle' });
-      // Let entrance animations settle.
-      await page.waitForTimeout(1200);
+      await page.waitForTimeout(800);
+      await triggerReveals(page);
       await page.screenshot({
-        path: `${OUT}/${s.name}__${vp.tag}.png`,
+        path: `${OUT}/${s.name}__${vp.tag}__${THEME}.png`,
         fullPage: true,
       });
-      console.log(`OK  ${s.name} ${vp.tag}`);
+      console.log(`OK  ${s.name} ${vp.tag} ${THEME}`);
     } catch (e) {
-      console.log(`ERR ${s.name} ${vp.tag}: ${e.message}`);
+      console.log(`ERR ${s.name} ${vp.tag} ${THEME}: ${e.message}`);
     } finally {
       await ctx.close();
     }

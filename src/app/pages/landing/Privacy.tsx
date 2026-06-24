@@ -23,12 +23,7 @@ export default function Privacy() {
           <Reveal>
             <SectionHeader
               eyebrow="Your privacy"
-              title={
-                <>
-                  Your report never{' '}
-                  <span className="text-clay">leaves your device.</span>
-                </>
-              }
+              title="Your report never leaves your device."
               subtitle="No account to create, no file to upload to us. The whole thing runs in your browser — because a lab report is nobody else's business."
             />
           </Reveal>

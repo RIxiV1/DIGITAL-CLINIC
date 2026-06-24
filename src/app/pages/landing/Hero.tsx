@@ -134,21 +134,20 @@ function HeroVisual() {
         draggable={false}
       />
 
-      {/* Hormonal Health Map card — overlaps the photo. Depicts a
-          "window-chrome" mockup of the in-app hormonal-axis visual,
-          like a screenshot pasted onto the hero. */}
+      {/* Hormonal Health Map card — overlaps the photo. A hairline-framed
+          panel of the in-app hormonal-axis visual. The header is a mono
+          label, NOT macOS traffic-light window chrome (the colored
+          #FF5F57/#FEBC2E/#28C840 dots were the "look, an app screenshot"
+          cliché). HPG_AXIS = the hypothalamic-pituitary-gonadal axis the
+          three rows below actually depict. */}
       <div className="absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden">
-        {/* Mac-style window chrome */}
-        <div className="px-3.5 py-2 border-b border-line/70 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <span className="w-2 h-2 rounded-full bg-[#FF5F57]" />
-            <span className="w-2 h-2 rounded-full bg-[#FEBC2E]" />
-            <span className="w-2 h-2 rounded-full bg-[#28C840]" />
-          </div>
-          <div className="text-micro font-semibold text-ink">
-            Hormonal health map
-          </div>
-          <div className="w-10" />
+        <div className="px-3.5 py-2.5 border-b border-line/70 flex items-center justify-between">
+          <span className="text-[10px] font-mono uppercase tracking-widest text-ink">
+            hormonal_health_map
+          </span>
+          <span className="text-[10px] font-mono uppercase tracking-widest text-muted">
+            HPG_AXIS
+          </span>
         </div>
 
         <div className="relative px-3.5 pt-3.5 pb-2.5">

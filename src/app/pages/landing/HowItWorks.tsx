@@ -33,14 +33,7 @@ export default function HowItWorks() {
           <Reveal>
             <SectionHeader
               eyebrow="How it works"
-              title={
-                <>
-                  Find out what’s actually going on —{' '}
-                  <span className="text-blue-700 italic font-serif">
-                    in 2 minutes.
-                  </span>
-                </>
-              }
+              title="Find out what’s actually going on — in 2 minutes."
               subtitle="Three honest steps, about two minutes. You leave knowing which tests, which specialist, and what your symptoms might mean."
             />
           </Reveal>
