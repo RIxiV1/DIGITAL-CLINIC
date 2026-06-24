@@ -26,7 +26,6 @@ import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import StatusBadge from '../components/StatusBadge';
 import DashboardHeadline from '../components/DashboardHeadline';
-import Illustration from '../components/Illustration';
 import MarkerAttentionCard from '../components/MarkerAttentionCard';
 import TrendRow from '../components/TrendRow';
 import LearnMoreModal from '../components/LearnMoreModal';
@@ -454,48 +453,6 @@ export default function HomePage() {
           fails to persist (quota exceeded, private mode, storage
           disabled). Reports still work in memory, but a tab close wipes
           them — telling the user upfront is the only honest move. */}
-      {/* Catalog-migration notice. Surfaced once per CATALOG_VERSION
-          bump for users whose persisted reports were stamped at an
-          older version AND carry history — those trendlines would
-          otherwise drop a reading silently after the bump without
-          explanation. Dismissible; ack persists across reloads. */}
-      {activeBanner === 'catalog' && (
-        <Container size="wide" className="pt-4">
-          <div
-            role="status"
-            className="flex items-start gap-3 rounded-2xl bg-indigo-50/70 border border-indigo-200 px-4 py-3"
-          >
-            <span
-              aria-hidden
-              role="img"
-              className="text-body-lg leading-none mt-0.5"
-            >
-              ℹ️
-            </span>
-            <div className="flex-1 min-w-0 text-caption leading-relaxed text-ink">
-              <div className="font-semibold text-indigo-900">
-                We updated our biomarker catalog
-              </div>
-              <p className="mt-0.5 text-ink-soft">
-                Some of your trendlines might be missing readings from older
-                reports — that's because the marker shape (id or unit) changed
-                between catalog versions, and we don't fuse readings across the
-                change. Past reports are still in your locker; we just won't
-                merge their history into a different-shaped marker.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={dismissCatalogNotice}
-              aria-label="Dismiss"
-              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-indigo-700 hover:bg-indigo-100"
-            >
-              <X size={14} />
-            </button>
-          </div>
-        </Container>
-      )}
-
       {activeBanner === 'quota' && (
         <Container size="wide" className="pt-4">
           <div
@@ -606,6 +563,49 @@ export default function HomePage() {
         )}
       </Container>
 
+      {/* Catalog-migration notice. Surfaced once per CATALOG_VERSION bump
+          for users whose persisted reports were stamped at an older version
+          AND carry history. Rendered BELOW the hero deliberately: a frightened
+          user must see their health summary first, and this is an informational
+          note, not urgent (unlike the quota alert, which stays above). The copy
+          is plain language — the versioning mechanics (marker id/unit shape,
+          no cross-version fusion) live in the code, not in the user's face.
+          Dismissible; ack persists across reloads. */}
+      {activeBanner === 'catalog' && (
+        <Container size="wide" className="pt-4">
+          <div
+            role="status"
+            className="flex items-start gap-3 rounded-2xl bg-surface border border-line px-4 py-3"
+          >
+            <span
+              aria-hidden
+              role="img"
+              className="text-body-lg leading-none mt-0.5"
+            >
+              ℹ️
+            </span>
+            <div className="flex-1 min-w-0 text-caption leading-relaxed text-ink">
+              <div className="font-semibold text-ink">
+                Some older trend points may be missing
+              </div>
+              <p className="mt-0.5 text-ink-soft">
+                We changed how a few markers are measured, so some older readings
+                don’t line up on the same trend line. Your past reports are safe
+                and still open in full.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={dismissCatalogNotice}
+              aria-label="Dismiss"
+              className="shrink-0 grid place-items-center w-11 h-11 rounded-full text-muted hover:bg-canvas"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        </Container>
+      )}
+
       {/* ZONE 2a · Empty-state preview. Replaces the entire top-concern
           + disclosures stack when there's no analyzed report — a focused
           "here's what you'll see once you upload" pitch instead of an
@@ -613,15 +613,14 @@ export default function HomePage() {
           mirrors what the user sees in each state. */}
       {!ready && reports.every((r) => r.status !== 'ready') && (
         <Container size="wide" className="mt-6 md:mt-8">
-          <Illustration
-            src="/illustrations/empty-reports.svg"
-            className="mx-auto mb-6 w-36 md:w-44 h-auto"
-          />
-          <Pill tone="indigo" size="sm">
+          {/* Typographic empty state — no stock cartoon. The oversized
+              editorial serif carries the moment; structure + type do the
+              work an illustration used to. */}
+          <div className="text-micro uppercase tracking-[0.2em] font-semibold text-muted">
             What you’ll see
-          </Pill>
-          <h2 className="font-display text-display-md leading-tight mt-2">
-            Your dashboard, once you upload
+          </div>
+          <h2 className="font-display text-display-lg lg:text-display-xl leading-[1.05] tracking-tight mt-3 max-w-[20ch] text-balance">
+            Your dashboard, once you upload.
           </h2>
           <div className="mt-4 grid sm:grid-cols-2 md:grid-cols-3 gap-3">
             {[
@@ -776,7 +775,7 @@ export default function HomePage() {
                     scrollExploreRef.current = true;
                   }}
                   aria-label={`${p.name}: ${statusText} — view markers`}
-                  className={`text-left bg-surface rounded-[14px] border border-line/70 border-l-4 ${borderCls} shadow-soft p-3 sm:p-3.5 transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60`}
+                  className={`text-left bg-surface rounded-md border border-line border-l-4 ${borderCls} p-3 sm:p-3.5 transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60`}
                 >
                   <div className="min-w-0">
                     <span className="text-micro uppercase tracking-eyebrow font-bold text-muted truncate">
@@ -799,7 +798,7 @@ export default function HomePage() {
           <button
             type="button"
             onClick={() => navigate({ type: 'healthMap' })}
-            className="group mt-2.5 w-full flex items-center gap-2.5 rounded-[14px] border border-line/70 bg-surface/60 hover:bg-surface px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+            className="group mt-2.5 w-full flex items-center gap-2.5 rounded-md border border-line bg-surface/60 hover:bg-surface px-3.5 py-3 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
           >
             <span className="min-w-0 flex-1">
               <span className="block text-caption font-semibold text-ink">
@@ -858,7 +857,7 @@ export default function HomePage() {
               <div
                 role="group"
                 aria-labelledby={`${exploreBaseId}-heading`}
-                className="inline-flex flex-wrap gap-1 p-1 rounded-full bg-surface border border-line/70"
+                className="inline-flex flex-wrap gap-1 p-1 rounded-full bg-surface border border-line"
               >
                 {tabs.map((t) => {
                   const isActive = t.id === active;
@@ -876,7 +875,7 @@ export default function HomePage() {
                       }
                       className={`px-4 h-9 rounded-full text-caption font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ${
                         isActive
-                          ? 'bg-indigo-600 text-white shadow-soft'
+                          ? 'bg-indigo-600 text-on-primary shadow-soft'
                           : 'text-ink-soft hover:text-ink'
                       }`}
                     >
@@ -891,7 +890,7 @@ export default function HomePage() {
                   id={panelId}
                   role="region"
                   aria-labelledby={chipId(active)}
-                  className="mt-3 rounded-[18px] bg-surface border border-line/70 shadow-soft overflow-hidden"
+                  className="mt-3 rounded-lg bg-surface border border-line overflow-hidden"
                 >
                   <div className="p-4 sm:p-5">
                     {active === 'markers' && (

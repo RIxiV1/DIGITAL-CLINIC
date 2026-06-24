@@ -15,7 +15,7 @@
          Without this, the bar would render bright clinical-blue
          (#2A6FD9) against the dark canvas — visible mismatch on
          iOS Safari and Chrome on Android. -->
-    <meta name="theme-color" content="#0B0F1A" />
+    <meta name="theme-color" content="#100E0C" />
     <title>ForMen · Digital Clinic — Men's Hormonal Health</title>
     <meta
       name="description"
@@ -66,11 +66,16 @@
       fetchpriority="high"
     />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Fonts are FULLY self-hosted — zero third-party requests on load.
+         Domine (display) via @font-face in index.css; Manrope (body) via
+         @fontsource/manrope imported in index.css. Preload the display face
+         so the hero paints without a swap flash. -->
     <link
-      href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;0,700;0,800;1,500;1,600&family=Inter:wght@400;500;600;700;800&display=swap"
-      rel="stylesheet"
+      rel="preload"
+      href="/fonts/Domine-VariableFont_wght.ttf"
+      as="font"
+      type="font/ttf"
+      crossorigin
     />
 
     <!-- Theme bootstrap. Stamps `data-theme` onto <html> BEFORE the React

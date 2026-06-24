@@ -1,12 +1,9 @@
 import { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { ChevronRight, TrendingDown, TrendingUp, Upload } from 'lucide-react';
+import { Check, ChevronRight, TrendingDown, TrendingUp, Upload } from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
-import Illustration from '../components/Illustration';
-import ProgressRing from '../components/ProgressRing';
 import StatusKey from '../components/StatusKey';
 import { useNavigation, useReports } from '../AppContext';
 import {
@@ -164,15 +161,6 @@ export default function HealthMapPage() {
   const onTrackPct =
     summary.total > 0 ? Math.round((summary.good / summary.total) * 100) : 0;
 
-  // Two-tone ring: the remainder is tinted by the worst status, not grey,
-  // so the green share can't be misread as a passing grade.
-  const ringTrack =
-    summary.concern > 0 || summary.critical > 0
-      ? 'stroke-concern/40'
-      : summary.attention > 0
-        ? 'stroke-attention/40'
-        : 'stroke-line/50';
-
   // Movement since the last test — the come-back-and-check hook. Only
   // meaningful when markers carry history (a prior report was merged in).
   const movement = useMemo(() => {
@@ -191,45 +179,80 @@ export default function HealthMapPage() {
 
   /* ---- Empty state: no parsed report yet. ---- */
   if (!ready || biomarkers.length === 0) {
+    // Empty state as a calm readiness checklist, NOT a cartoon: a firm
+    // serif headline + a clean hairline list of the systems we'll map once
+    // a report is added. Structural look, but PLAIN words — anyone reads it.
+    const PIPELINE: { req: string; status: string }[] = [
+      { req: 'Blood count', status: 'Not added yet' },
+      { req: 'Hormones', status: 'Not added yet' },
+      { req: 'Sugar & metabolism', status: 'Not added yet' },
+      { req: 'Thyroid', status: 'Not added yet' },
+    ];
     return (
       <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
         <Header variant="page" title="Health Map" />
-        <Container size="narrow" className="pt-10">
-          <div className="flex flex-col items-center text-center gap-5">
-            <Illustration
-              src="/illustrations/empty-reports.svg"
-              className="w-40 md:w-44 h-auto"
-            />
-            <div className="space-y-1.5">
-              <h1 className="font-display text-display-md leading-tight">
-                Your map starts with one report
-              </h1>
-              <p className="text-body-sm text-ink-soft max-w-sm">
-                Upload a blood test and we’ll lay out every system — hormones,
-                heart, thyroid, and the rest — on one calm screen, scored by
-                what’s healthy and tracking how it moves over time.
-              </p>
+        <Container size="narrow" className="pt-10 md:pt-12">
+          {/* Focal block — plain, in Instrument Serif. */}
+          <h1 className="font-display text-4xl md:text-5xl leading-[1.04] tracking-tight text-balance max-w-[15ch]">
+            Nothing on your map yet.
+          </h1>
+          <p className="mt-4 text-body-sm text-ink-soft leading-relaxed max-w-md">
+            Add a blood test and we’ll lay every system out on one screen — what’s
+            healthy, and how it changes each time you test.
+          </p>
+
+          {/* Systems list — a clean hairline 3-col grid. Plain labels. */}
+          <div className="mt-8 border-[0.5px] border-line rounded-md overflow-hidden">
+            <div className="grid grid-cols-[1fr_auto_auto] gap-x-3 sm:gap-x-5 px-3.5 py-2 border-b-[0.5px] border-line text-micro uppercase tracking-widest font-semibold text-muted">
+              <span>What we’ll map</span>
+              <span>Status</span>
+              <span className="text-right">Add</span>
             </div>
-            <div className="flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
-              <Button
-                onClick={() => navigate({ type: 'upload' })}
-                className="gap-1.5"
+            {PIPELINE.map((row) => (
+              <div
+                key={row.req}
+                className="grid grid-cols-[1fr_auto_auto] gap-x-3 sm:gap-x-5 items-center px-3.5 py-3 border-b-[0.5px] border-line last:border-b-0"
               >
-                <Upload size={16} />
-                Upload a report
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() =>
-                  navigate({
-                    type: 'results',
-                    reportId: getSampleReportForDashboard().id,
-                  })
-                }
-              >
-                See a sample first
-              </Button>
-            </div>
+                <span className="text-caption font-semibold text-ink-soft truncate">
+                  {row.req}
+                </span>
+                <span className="text-micro text-muted">{row.status}</span>
+                <button
+                  type="button"
+                  onClick={() => navigate({ type: 'upload' })}
+                  className="text-caption font-semibold text-forest hover:opacity-70 transition-opacity duration-150 text-right focus-visible:outline-none focus-visible:underline"
+                >
+                  Add →
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Primary actions — kept as real 44px controls below the matrix. */}
+          <div className="mt-6 flex flex-col sm:flex-row gap-2.5 w-full sm:w-auto">
+            <Button
+              onClick={() => navigate({ type: 'upload' })}
+              className="gap-1.5"
+            >
+              <Upload size={16} />
+              Upload a report
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                navigate({
+                  type: 'results',
+                  reportId: getSampleReportForDashboard().id,
+                })
+              }
+            >
+              See a sample first
+            </Button>
+          </div>
+
+          {/* Footer line — plain, reassuring, India-privacy relevant. */}
+          <div className="mt-10 font-mono text-[10px] uppercase tracking-widest text-muted">
+            Runs on your phone · nothing is uploaded
           </div>
         </Container>
         <BottomNav />
@@ -245,26 +268,17 @@ export default function HealthMapPage() {
           test. Apple "Summary": a big ring, a confident headline, one
           honest line, and a celebratory/honest movement signal. */}
       <Container size="wide" className="pt-7 md:pt-9">
-        <div className="rounded-3xl border border-line/70 bg-surface shadow-soft p-5 sm:p-6">
-          <div className="flex items-center gap-5">
-            <ProgressRing pct={onTrackPct} trackClass={ringTrack}>
-              <div className="text-center leading-none">
-                <span className="font-display text-display-sm text-ink">
-                  {onTrackPct}
-                </span>
-                <span className="font-display text-caption text-muted align-top">
-                  %
-                </span>
-                <div className="text-micro uppercase tracking-eyebrow font-bold text-muted mt-1">
-                  in range
-                </div>
-              </div>
-            </ProgressRing>
-            <div className="min-w-0">
-              <h1 className="font-display text-display-md sm:text-display-lg leading-tight tracking-tight">
+        {/* Warm "paper" spotlight — same focal surface as the dashboard
+            hero: flat, hairline, no ring/glow. Big Instrument Serif score +
+            a split meter (in-range vs to-review) instead of the activity
+            ring, so the two heroes speak one language. */}
+        <div className="rounded-lg border border-paper-line bg-paper text-paper-ink p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
+            <div className="order-2 md:order-1 flex-1 min-w-0">
+              <h1 className="font-display text-display-md sm:text-display-lg leading-tight tracking-tight text-paper-ink">
                 {headline}
               </h1>
-              <p className="text-caption text-muted mt-1">
+              <p className="text-caption text-paper-soft mt-1.5">
                 {summary.good} of {summary.total} in a healthy range
               </p>
               {movement.any && (
@@ -281,17 +295,37 @@ export default function HealthMapPage() {
                       {movement.declined} slipped
                     </span>
                   )}
-                  <span className="text-micro text-muted">
+                  <span className="text-micro text-paper-soft">
                     since your last test
                   </span>
                 </div>
               )}
             </div>
+            <div className="order-1 md:order-2 shrink-0">
+              <div className="flex items-baseline gap-1.5">
+                <span className="font-display text-[3.5rem] md:text-[4rem] leading-none text-paper-ink">
+                  {onTrackPct}
+                </span>
+                <span className="font-display text-2xl text-paper-soft">%</span>
+              </div>
+              <div className="text-micro uppercase tracking-eyebrow font-semibold text-paper-soft mt-1.5">
+                in range
+              </div>
+              <div
+                role="img"
+                aria-label={`${summary.good} of ${summary.total} markers in range`}
+                className="mt-3 flex h-2 w-44 overflow-hidden rounded-full border border-paper-line"
+              >
+                <div className="h-full bg-forest" style={{ width: `${onTrackPct}%` }} />
+                <div className="h-full w-[2px] shrink-0 bg-paper" aria-hidden />
+                <div className="h-full flex-1 bg-clay" />
+              </div>
+            </div>
           </div>
 
           {/* The honest plain-language line the report also leads with — so
               the map and the report tell one consistent story. */}
-          <p className="text-body-sm text-ink-soft mt-4 leading-relaxed border-t border-line/60 pt-4">
+          <p className="text-body-sm text-paper-ink/80 mt-6 leading-relaxed border-t border-paper-line pt-5">
             {bottomLine}
           </p>
         </div>
@@ -313,90 +347,184 @@ export default function HealthMapPage() {
         </p>
       </Container>
 
-      {/* Section label — grouped-list header, the iOS table idiom. */}
-      <Container size="wide" className="mt-8 md:mt-10">
-        <h2 className="text-micro uppercase tracking-eyebrow font-bold text-muted">
-          Body systems · worst first
-        </h2>
-      </Container>
+      {/* Body systems — SEVERITY-RANKED, not a uniform grid. Systems that
+          need action get real estate AND surface their flagged markers
+          inline (no tap needed to see what's wrong); "watch" collapses to
+          one-line rows; healthy systems compress into a single calm strip.
+          Reads like a triage ledger: act-on first, reassurance last. */}
+      {(() => {
+        const SEV: Record<Biomarker['status'], number> = {
+          critical: 0,
+          concern: 1,
+          attention: 2,
+          good: 3,
+        };
+        const needs = groups.filter(
+          (g) => g.r.worst === 'critical' || g.r.worst === 'concern',
+        );
+        const watch = groups.filter((g) => g.r.worst === 'attention');
+        const clear = groups.filter((g) => g.r.worst === 'good');
+        const reportFor = (g: (typeof groups)[number]) =>
+          snap.sourceReportId[g.markers[0]?.id] ?? ready.id;
 
-      {/* System grid — uniform overview tiles. Whole card taps through to
-          the full report (the existing reference surface). */}
-      <Container size="wide" className="mt-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 items-stretch">
-          {groups.map((g, i) => {
-            const r = g.r;
-            const c = statusColor(r.worst);
-            const goodPct = r.total > 0 ? (r.good / r.total) * 100 : 0;
-            return (
-              <motion.button
-                key={g.category.id}
-                type="button"
-                onClick={() =>
-                  navigate({
-                    type: 'results',
-                    // Route to the report that owns this system's markers
-                    // (their latest reading's source), not always the
-                    // primary — so tapping "Fertility" opens the panel it
-                    // actually came from.
-                    reportId: snap.sourceReportId[g.markers[0]?.id] ?? ready.id,
-                  })
-                }
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.28,
-                  delay: Math.min(i * 0.03, 0.2),
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                className="group h-full text-left bg-surface rounded-3xl border border-line/70 shadow-soft p-4 sm:p-5 transition-all hover:shadow-pop hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-              >
-                {/* Header row — name + status · chevron. */}
-                <div className="flex items-center gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="font-display text-body text-ink leading-tight truncate">
-                      {g.category.name}
-                    </div>
-                    <div
-                      className={`inline-flex items-center gap-1.5 text-caption font-semibold mt-0.5 ${c.textOnSurface}`}
+        return (
+          <>
+            {needs.length > 0 && (
+              <Container size="wide" className="mt-8 md:mt-10">
+                <h2 className="text-micro uppercase tracking-eyebrow font-bold text-concern-ink mb-3">
+                  Needs a look
+                </h2>
+                <div className="grid gap-3">
+                  {needs.map((g) => {
+                    const flagged = g.markers
+                      .filter(
+                        (m) =>
+                          m.status === 'critical' || m.status === 'concern',
+                      )
+                      .sort((a, b) => SEV[a.status] - SEV[b.status]);
+                    const shown = flagged.slice(0, 3);
+                    const more = flagged.length - shown.length;
+                    return (
+                      <div
+                        key={g.category.id}
+                        className="rounded-lg border border-line bg-surface overflow-hidden"
+                      >
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate({
+                              type: 'results',
+                              reportId: reportFor(g),
+                            })
+                          }
+                          className="group w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-line text-left transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+                        >
+                          <span className="font-display text-body-lg text-ink">
+                            {g.category.name}
+                          </span>
+                          <span className="flex items-center gap-2 text-caption font-semibold text-concern-ink">
+                            {summaryText(g.r)}
+                            <ChevronRight
+                              size={16}
+                              className="text-muted transition-transform group-hover:translate-x-0.5"
+                            />
+                          </span>
+                        </button>
+                        <div className="divide-y divide-line">
+                          {shown.map((m) => (
+                            <div
+                              key={m.id}
+                              className="flex items-baseline justify-between gap-3 px-4 py-2.5"
+                            >
+                              <span className="min-w-0 truncate">
+                                <span className="text-caption font-semibold text-ink">
+                                  {m.name}
+                                </span>
+                                {m.simpleName && (
+                                  <span className="text-micro text-muted ml-2">
+                                    {m.simpleName}
+                                  </span>
+                                )}
+                              </span>
+                              <span className="shrink-0 inline-flex items-baseline gap-2">
+                                <span className="font-sans font-semibold text-caption tabular-nums text-ink">
+                                  {m.value}
+                                  <span className="text-micro text-muted font-normal ml-0.5">
+                                    {m.unit}
+                                  </span>
+                                </span>
+                                {/* Status as a colored TEXT label, not a 6px
+                                    color-only dot. The old dot was aria-hidden
+                                    (so screen readers got nothing) AND carried
+                                    status by hue alone (fails WCAG 1.4.1 for
+                                    low-vision / colour-blind users). The label
+                                    is the catalog's canonical word in the
+                                    readable status colour — colour + text +
+                                    SR-accessible. Rows here are concern/critical
+                                    only, so "NEEDS CARE" / "SEE A DOCTOR". */}
+                                <span
+                                  className={`self-center shrink-0 text-micro font-bold uppercase tracking-label ${statusColor(m.status).textOnSurface}`}
+                                >
+                                  {statusColor(m.status).label}
+                                </span>
+                              </span>
+                            </div>
+                          ))}
+                          {more > 0 && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                navigate({
+                                  type: 'results',
+                                  reportId: reportFor(g),
+                                })
+                              }
+                              className="w-full text-left px-4 py-2.5 text-caption font-semibold text-forest hover:opacity-70 transition-opacity focus-visible:outline-none focus-visible:underline"
+                            >
+                              +{more} more →
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Container>
+            )}
+
+            {watch.length > 0 && (
+              <Container size="wide" className="mt-6">
+                <h2 className="text-micro uppercase tracking-eyebrow font-bold text-attention-ink mb-3">
+                  Keep an eye
+                </h2>
+                <div className="rounded-lg border border-line overflow-hidden bg-surface">
+                  {watch.map((g) => (
+                    <button
+                      key={g.category.id}
+                      type="button"
+                      onClick={() =>
+                        navigate({ type: 'results', reportId: reportFor(g) })
+                      }
+                      className="group w-full flex items-center justify-between gap-3 px-4 py-3 border-b border-line last:border-b-0 text-left transition-colors hover:bg-canvas/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
                     >
-                      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-                      {summaryText(r)}
-                    </div>
-                  </div>
-                  <ChevronRight
-                    size={18}
-                    className="shrink-0 text-muted transition-transform group-hover:translate-x-0.5"
-                  />
+                      <span className="font-display text-body text-ink">
+                        {g.category.name}
+                      </span>
+                      <span className="flex items-center gap-2 text-caption font-semibold text-attention-ink">
+                        {summaryText(g.r)}
+                        <ChevronRight size={16} className="text-muted" />
+                      </span>
+                    </button>
+                  ))}
                 </div>
+              </Container>
+            )}
 
-                {/* Slim on-track bar + count — a per-system mini-score that
-                    keeps every card the same height and gives a number to
-                    nudge upward. */}
-                {/* Two-tone bar: green = the in-range share, the tinted
-                    track = the share that needs a look. So "0 of 2" reads
-                    as a full red bar, "8 of 8" as a full green one — no
-                    ambiguous part-filled red. */}
-                <div className="mt-4">
-                  <div
-                    className={`h-1.5 rounded-full overflow-hidden ${
-                      r.worst === 'good' ? 'bg-line/60' : c.bg
-                    }`}
-                  >
-                    <div
-                      className="h-full rounded-full bg-good"
-                      style={{ width: `${goodPct}%` }}
-                    />
-                  </div>
-                  <div className="text-micro text-muted mt-2">
-                    {r.good} of {r.total} in a healthy range
-                  </div>
+            {clear.length > 0 && (
+              <Container size="wide" className="mt-6">
+                <h2 className="text-micro uppercase tracking-eyebrow font-bold text-muted mb-3">
+                  All clear
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {clear.map((g) => (
+                    <button
+                      key={g.category.id}
+                      type="button"
+                      onClick={() =>
+                        navigate({ type: 'results', reportId: reportFor(g) })
+                      }
+                      className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 h-9 text-caption text-ink-soft transition-colors hover:border-line-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+                    >
+                      <Check size={13} className="text-good" />
+                      {g.category.name}
+                    </button>
+                  ))}
                 </div>
-              </motion.button>
-            );
-          })}
-        </div>
-      </Container>
+              </Container>
+            )}
+          </>
+        );
+      })()}
 
       {/* Footer — gentle exit toward the detailed read + adding more data. */}
       <Container size="wide" className="mt-8 md:mt-10">

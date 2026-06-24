@@ -149,6 +149,12 @@ const BiomarkerSchema = z.object({
    *  for display alongside the catalog's healthy band. Optional. */
   labRefMin: z.number().finite().optional(),
   labRefMax: z.number().finite().optional(),
+  /** Unit-reconciliation receipt — the lab's original printed value/unit,
+   *  set only when the parser rescaled to canonical units. Display-only. */
+  originalValue: z.number().finite().optional(),
+  originalUnit: z.string().max(40).optional(),
+  /** OCR confidence (0–100) for photo/scanned-PDF reads. Display-only. */
+  ocrConfidence: z.number().finite().optional(),
   /** Clinical-critical cliff bounds, propagated from the catalog so the
    *  BiomarkerBar can scale its zones against the real same-day-care
    *  thresholds after a reload (otherwise the bar reverts to a span

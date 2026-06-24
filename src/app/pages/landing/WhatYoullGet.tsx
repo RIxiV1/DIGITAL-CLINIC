@@ -1,14 +1,44 @@
-import {
-  BookOpen,
-  Download,
-  FileText,
-  FlaskConical,
-  Lock,
-  Microscope,
-  TrendingUp,
-} from 'lucide-react';
+import { Download, Lock, Microscope } from 'lucide-react';
 import Logo from '../../components/Logo';
 import { Reveal, SectionHeader } from './shared';
+
+// What you actually walk away with — re-cut from the old lucide icon-card
+// checklist (the stock generated-feature-list block) into a hairline mono
+// manifest, the same editorial voice as the HowItWorks axis and the
+// Credibility verification ledger. No icon squares, no card shadows: a
+// numbered list on hairlines, mono indices in the decorative clay accent.
+const DELIVERABLES = [
+  {
+    n: '01',
+    title: 'Which hormones to test — and why',
+    body: 'A panel matched to you, not the generic "men’s wellness" combo every lab pushes.',
+  },
+  {
+    n: '02',
+    title: 'What each result means for you',
+    body: 'Your numbers in plain words, with your symptoms connected to the markers.',
+  },
+  {
+    n: '03',
+    title: 'Which specialist to see — and what to ask',
+    body: 'Endocrinologist, urologist or GP? The right person, and the right questions.',
+  },
+  {
+    n: '04',
+    title: 'Trend tracking when you retest',
+    body: 'See whether what you’re doing is actually moving the needle.',
+  },
+  {
+    n: '05',
+    title: 'A one-page Doctor Summary to print',
+    body: 'A clean PDF you can hand to any clinician at any appointment.',
+  },
+  {
+    n: '06',
+    title: 'Your data, always yours',
+    body: 'Download or share it any time. Stored under your anonymous ID, on your device.',
+  },
+];
 
 export default function WhatYoullGet() {
   return (
@@ -33,73 +63,28 @@ export default function WhatYoullGet() {
             </Reveal>
           </div>
 
-          {/* RIGHT — Checklist */}
+          {/* RIGHT — Deliverables manifest (hairline mono, not icon cards) */}
           <div className="md:col-span-5 order-1 md:order-2">
             <Reveal>
-              <div className="grid gap-3">
-                {[
-                  {
-                    Icon: FlaskConical,
-                    title: 'Which hormones to test — and why',
-                    body: 'Personalised panel. Not the generic "men’s wellness" combo every lab pushes.',
-                  },
-                  {
-                    Icon: BookOpen,
-                    title: 'What each result means for you specifically',
-                    body: 'Your numbers, translated. Your symptoms, connected to the markers.',
-                  },
-                  {
-                    Icon: Microscope,
-                    title: 'Which specialist to see (and what to ask them)',
-                    body: 'Endocrinologist, urologist, GP? The right person, the right questions.',
-                  },
-                  {
-                    Icon: TrendingUp,
-                    title: 'Trend tracking when you retest',
-                    body: 'See whether what you’re doing is actually moving the needle.',
-                  },
-                  {
-                    Icon: FileText,
-                    title: 'A Doctor Summary you can print',
-                    body: 'A clean one-page PDF you can hand to any clinician at any appointment.',
-                  },
-                ].map(({ Icon, title, body }) => (
+              <div className="border-t border-line">
+                {DELIVERABLES.map(({ n, title, body }) => (
                   <div
-                    key={title}
-                    className="flex items-start gap-3 rounded-2xl bg-surface border border-line p-4 shadow-clinical"
+                    key={n}
+                    className="grid grid-cols-[auto_1fr] gap-x-4 sm:gap-x-5 py-4 border-b border-line"
                   >
-                    <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-50 text-blue-700 border border-blue-100 shrink-0">
-                      <Icon size={17} />
-                    </div>
+                    <span className="font-mono text-caption font-bold text-clay tabular-nums leading-none pt-0.5">
+                      {n}
+                    </span>
                     <div>
-                      <div className="font-semibold text-ink text-body-sm">
+                      <div className="font-semibold text-ink text-body-sm leading-snug">
                         {title}
                       </div>
-                      <div className="text-caption text-ink-soft leading-relaxed mt-0.5">
+                      <div className="text-caption text-ink-soft leading-relaxed mt-1">
                         {body}
                       </div>
                     </div>
                   </div>
                 ))}
-
-                {/* PDF folded in as sub-feature. Inline "See a sample
-                    report" CTA removed — TopNav + Hero already carry
-                    that affordance, having a third on the same page
-                    diluted both. */}
-                <div className="mt-2 flex items-center gap-3 rounded-2xl bg-surface border border-blue-100 p-4 shadow-clinical">
-                  <div className="grid place-items-center w-10 h-10 rounded-xl bg-blue-600 text-on-primary shrink-0">
-                    <Download size={17} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="font-semibold text-ink text-body-sm">
-                      Your health data, always accessible
-                    </div>
-                    <div className="text-caption text-ink-soft mt-0.5">
-                      Download as PDF. Share with any doctor. Stored under your
-                      anonymous ID.
-                    </div>
-                  </div>
-                </div>
               </div>
             </Reveal>
           </div>
@@ -112,8 +97,6 @@ export default function WhatYoullGet() {
 function DoctorSummaryMockup() {
   return (
     <div className="relative">
-      <div className="absolute -inset-2 rounded-[24px] bg-gradient-to-br from-blue-100/70 via-surface to-blue-50 blur-2xl opacity-60 pointer-events-none" />
-
       <div className="relative rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden">
         {/* Header — Doctor Summary */}
         <div className="px-5 md:px-6 py-4 border-b border-line bg-blue-50/40">
@@ -140,10 +123,9 @@ function DoctorSummaryMockup() {
         <div className="p-5 md:p-6 grid md:grid-cols-5 gap-5">
           {/* Left — Top-line read */}
           <div className="md:col-span-2 space-y-4">
-            <div className="rounded-2xl bg-blue-600 text-on-primary p-5 shadow-clinical relative overflow-hidden">
-              <div className="absolute -top-8 -right-8 w-32 h-32 rounded-full bg-blue-400/30 blur-2xl" />
+            <div className="rounded-2xl bg-clay text-on-clay p-5 relative overflow-hidden">
               <div className="relative">
-                <div className="text-micro font-bold uppercase tracking-label text-blue-100">
+                <div className="text-micro font-bold uppercase tracking-label text-on-clay/85">
                   Top-line read
                 </div>
                 <p className="mt-2 font-sans font-semibold text-body leading-snug">

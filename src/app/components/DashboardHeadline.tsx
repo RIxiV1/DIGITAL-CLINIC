@@ -1,6 +1,5 @@
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
-import ProgressRing from './ProgressRing';
 import {
   formatDelta,
   getPreviousValue,
@@ -26,15 +25,21 @@ type Props = {
 /**
  * Top-of-page headline per the dashboard brief.
  *
- * Visual treatment: the "engineering monolith" language — structure over
- * decoration. A flat `bg-surface` panel bounded by a single hairline
- * (`border-line`), tight 8px radius, NO drop shadow and NO status-tinted
- * glow blob (both read as generated-SaaS chrome). Hierarchy is carried by
- * type, not effects: a tight-tracked sans headline (NOT the old Playfair
- * display face), an uppercase muted eyebrow, and the score set in
- * tabular monospace so the digits read as precise instrument data. Colour
- * is reserved for meaning — the score ring's track tints to the worst
- * status present; everything else stays neutral ink.
+ * Visual treatment: the "warm paper clinic-chart" identity — a deliberate
+ * break from BOTH AI defaults (the cold navy glow-SaaS look AND the safe
+ * greyscale monolith). The hero is a warm off-white `bg-paper` card with a
+ * warm hairline, split into an ASYMMETRIC two-panel layout: a wide
+ * narrative column and a narrower score panel divided by a warm rule.
+ *
+ * Hierarchy comes from radical type CONTRAST, not effects: an oversized,
+ * thin Instrument Serif headline + score (`font-editorial`) set against
+ * dense, tightly-tracked monospace counts and tiny uppercase labels —
+ * the kind of intentional scale jump a human designer makes and a
+ * generator's uniform hierarchy doesn't. The score is a custom split
+ * meter (in-range vs to-review), not the generic activity ring every
+ * dashboard reaches for. Colour is owned and restrained: warm charcoal
+ * ink, a deep forest "in-range" tone, and a single terracotta accent on
+ * the CTA + the "to review" count.
  *
  * Four data-driven copy states (logic unchanged):
  *   A. 2+ readings on at least one marker  → call out the biggest change
@@ -61,96 +66,139 @@ export default function DashboardHeadline({
       ? Math.round((summary.good / summary.total) * 100)
       : null;
 
-  // Two-tone ring: the un-filled remainder is tinted by the worst status,
-  // not neutral grey — so a 72% green ring can't be misread as a passing
-  // grade while markers still need attention. Green = in range, the rest
-  // = the share that needs a look.
-  const ringTrack = !summary
-    ? 'stroke-line/50'
-    : summary.concern > 0 || summary.critical > 0
-      ? 'stroke-concern/40'
-      : summary.attention > 0
-        ? 'stroke-attention/40'
-        : 'stroke-line/50';
-
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="rounded-lg bg-surface border border-line p-6 md:p-8"
+      className="overflow-hidden rounded-lg bg-paper text-paper-ink border border-paper-line"
     >
-      <div className="flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
-        {/* Text column — the narrative. */}
-        <div className="order-2 md:order-1 flex-1 min-w-0">
-          <div className="text-micro uppercase tracking-eyebrow font-semibold text-muted">
+      <div className="flex flex-col md:flex-row">
+        {/* Narrative column — intentionally the wider of the two. */}
+        <div className="flex-1 min-w-0 p-6 md:p-9">
+          <div className="text-micro uppercase tracking-[0.2em] font-semibold text-paper-soft">
             {eyebrow}
           </div>
-          <h1 className="mt-3 text-display-md lg:text-display-lg font-semibold tracking-tight leading-[1.1] text-balance text-ink">
+          {/* Oversized, thin editorial headline — the deliberate scale
+              jump. leading is pulled tight so the serif reads as a
+              confident masthead, not body copy. */}
+          <h1 className="mt-3 font-editorial text-[2.5rem] md:text-[3.25rem] leading-[1.04] tracking-tight text-balance text-paper-ink">
             {headline}
           </h1>
           {qualifier && (
-            <p className="mt-2 text-caption lg:text-body-sm text-ink-soft leading-relaxed max-w-[60ch]">
+            <p className="mt-3 text-body-sm leading-relaxed max-w-[56ch] text-paper-ink/80">
               {qualifier}
             </p>
           )}
           {sub && (
-            <p className="mt-1 text-caption lg:text-body-sm text-muted leading-relaxed max-w-[60ch]">
+            <p className="mt-1.5 text-body-sm leading-relaxed max-w-[56ch] text-paper-soft">
               {sub}
             </p>
           )}
           {source && (
-            <p className="mt-2.5 text-micro text-muted truncate max-w-full">
+            <p className="mt-4 text-micro uppercase tracking-[0.14em] text-paper-soft truncate max-w-full">
               Based on{' '}
-              <span className="font-semibold text-ink-soft">{source.name}</span>{' '}
+              <span className="font-semibold text-paper-ink">{source.name}</span>{' '}
               · {source.uploadedOn}
             </p>
           )}
           <button
             type="button"
             onClick={onPrimaryCTA}
-            className="mt-6 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-md bg-gold-500 hover:bg-gold-400 text-on-gold text-caption font-semibold transition-colors duration-150 ease-in-out whitespace-nowrap"
+            className="mt-6 inline-flex items-center justify-center gap-2 h-11 px-5 rounded-md bg-forest text-on-forest text-caption font-semibold tracking-tight transition-colors duration-150 ease-in-out hover:bg-forest/90 whitespace-nowrap"
           >
             {ctaLabel}
             <ArrowRight size={14} />
           </button>
         </div>
 
-        {/* Score ring — the visual anchor. Same "on-track" language as the
-            Health Map. On mobile it leads (order-1) as the hero element;
-            on desktop it anchors the right. */}
-        {onTrackPct !== null && (
-          <div className="order-1 md:order-2 shrink-0 flex flex-col items-start md:items-center gap-2 self-start md:self-center">
-            <ProgressRing
-              pct={onTrackPct}
-              size={120}
-              stroke={10}
-              trackClass={ringTrack}
-            >
-              <div className="text-center leading-none">
-                <span className="font-mono tabular-nums text-display-md font-semibold tracking-tight text-ink">
-                  {onTrackPct}
-                </span>
-                <span className="font-mono text-body-sm text-muted align-top">
-                  %
-                </span>
-                <div className="text-micro uppercase tracking-eyebrow font-semibold text-muted mt-1.5">
-                  in range
-                </div>
-              </div>
-            </ProgressRing>
-            {summary && (
-              <div className="text-caption text-muted">
-                <span className="font-mono tabular-nums font-semibold text-ink-soft">
-                  {summary.good}
-                </span>{' '}
-                of {summary.total} in a healthy range
-              </div>
-            )}
+        {/* Score panel — the oversized callout + custom split meter. A
+            distinct sub-panel divided by a warm rule (top on mobile, left
+            on desktop) so the asymmetry reads as intentional structure. */}
+        {onTrackPct !== null && summary && (
+          <div className="shrink-0 md:w-60 border-t md:border-t-0 md:border-l border-paper-line p-6 md:p-9 flex flex-col justify-center">
+            <div className="flex items-baseline gap-1.5">
+              <span className="font-editorial text-[5rem] md:text-[5.5rem] leading-[0.8] text-paper-ink">
+                {onTrackPct}
+              </span>
+              <span className="font-editorial text-3xl leading-none text-paper-soft">
+                %
+              </span>
+            </div>
+            <div className="mt-1.5 text-micro uppercase tracking-[0.2em] font-semibold text-paper-soft">
+              markers in range
+            </div>
+
+            <SplitMeter good={summary.good} total={summary.total} />
+
+            <div className="mt-3.5 flex items-start gap-5">
+              <Count value={summary.good} label="in range" tone="forest" />
+              <Count
+                value={summary.total - summary.good}
+                label="to review"
+                tone="clay"
+              />
+            </div>
           </div>
         )}
       </div>
     </motion.div>
+  );
+}
+
+/**
+ * Custom split meter — the in-range share (forest) butted against the
+ * to-review share (terracotta) in one continuous bar, divided by a warm
+ * hairline so the two zones read as a single split rather than a generic
+ * progress fill. Domain-specific: it answers "how much of my panel is
+ * clear" at a glance, and pairs with the mono counts below it.
+ */
+function SplitMeter({ good, total }: { good: number; total: number }) {
+  const pct = total > 0 ? Math.round((good / total) * 100) : 0;
+  return (
+    <div
+      role="img"
+      aria-label={`${good} of ${total} markers in range`}
+      className="mt-5 flex h-2.5 w-full overflow-hidden rounded-full border border-paper-line"
+    >
+      <div className="h-full bg-forest" style={{ width: `${pct}%` }} />
+      {/* A 2px paper-coloured notch — a NON-colour delimiter so the in-range
+          / to-review split reads even under red-green colour blindness (the
+          forest/clay hues alone collapse). Pairs with the labelled counts
+          below. */}
+      <div className="h-full w-[2px] shrink-0 bg-paper" aria-hidden />
+      <div className="h-full flex-1 bg-clay" />
+    </div>
+  );
+}
+
+/**
+ * A single dense count — the mono numeral deliberately small + tight
+ * against the oversized serif score above it, the radical scale contrast
+ * the identity leans on.
+ */
+function Count({
+  value,
+  label,
+  tone,
+}: {
+  value: number;
+  label: string;
+  tone: 'forest' | 'clay';
+}) {
+  return (
+    <div>
+      <div
+        className={`font-mono tabular-nums text-body-lg font-semibold leading-none ${
+          tone === 'forest' ? 'text-forest' : 'text-clay'
+        }`}
+      >
+        {value}
+      </div>
+      <div className="mt-1.5 text-micro uppercase tracking-[0.14em] text-paper-soft">
+        {label}
+      </div>
+    </div>
   );
 }
 

@@ -843,6 +843,20 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
   }
 }
 
+/**
+ * Stamp every marker that came from an OCR (photo / scanned-PDF) read with
+ * the page's OCR confidence (0–100). The UI uses it to flag — per value,
+ * not as a blanket banner — which numbers were read off a photo and are
+ * worth a double-check. Markers from a digital text layer never get this
+ * field (digital text is trustworthy), so the absence of it means "exact".
+ */
+function tagOcrConfidence(
+  markers: Biomarker[],
+  confidence: number,
+): Biomarker[] {
+  return markers.map((m) => ({ ...m, ocrConfidence: confidence }));
+}
+
 /* ------------------------------------------------------------------ */
 /* Catalog matching                                                     */
 /*                                                                      */
@@ -968,6 +982,11 @@ function unitMultiplier(unit: string | null | undefined): number {
  */
 type ExtractedMarker = {
   value: number;
+  /** The original printed value + unit, set ONLY when the printed number
+   *  was rescaled to canonical units (e.g. lakh/thou/million count
+   *  prefixes). Drives the unit-reconciliation receipt in the UI. */
+  originalValue?: number;
+  originalUnit?: string;
   /** The reference range the lab itself printed alongside the value,
    *  captured by the `tail` regex's ref-range slot. Undefined when the
    *  row didn't include a printed range or the parser couldn't fit it
@@ -1213,6 +1232,13 @@ function extractMarkerValue(
         : undefined;
     return {
       value: v,
+      // Unit reconciliation receipt: when we rescaled the printed number
+      // (e.g. "2.4 lakh/cumm" → 240000 /µL), keep the ORIGINAL printed
+      // value + unit so the UI can show the user we didn't invent a
+      // different number — same result, standard units. Only set when a
+      // real rescale happened (scale !== 1).
+      originalValue: scale !== 1 ? raw : undefined,
+      originalUnit: scale !== 1 ? (printedUnit ?? undefined) : undefined,
       labRefMin: labRef?.min,
       labRefMax: labRef?.max,
       matchStart: m.index ?? 0,
@@ -1246,7 +1272,11 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
         ? { min: extracted.labRefMin, max: extracted.labRefMax }
         : undefined;
     hits.push({
-      marker: markerFromTemplate(template, extracted.value, labRef),
+      marker: {
+        ...markerFromTemplate(template, extracted.value, labRef),
+        originalValue: extracted.originalValue,
+        originalUnit: extracted.originalUnit,
+      },
       start: extracted.matchStart,
       end: extracted.matchEnd,
     });
@@ -1780,12 +1810,13 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
       const ocr = await runPdfOcr(pdf);
       const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
       return {
-        biomarkers: ocrBiomarkers,
+        biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
         source: 'pdf-ocr',
         rawText: rawTextForDisplay(ocr.text),
         unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
         ocrPagesAttempted: ocr.pagesAttempted,
         ocrPagesSkipped: ocr.pagesSkipped,
+        ocrConfidence: ocr.confidence,
       };
     }
 
@@ -1834,7 +1865,7 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     const ocr = await runPdfOcr(pdf);
     const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
     return {
-      biomarkers: ocrBiomarkers,
+      biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
       source: 'pdf-ocr',
       rawText: ocr.text,
       unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
@@ -1853,7 +1884,7 @@ async function parseImage(file: File): Promise<PdfParseResult> {
   const { text, confidence } = await runImageOcr(file);
   const biomarkers = extractBiomarkersFromText(text);
   return {
-    biomarkers,
+    biomarkers: tagOcrConfidence(biomarkers, confidence),
     source: 'image-ocr',
     rawText: text,
     unrecognizedRows: findUnrecognizedRows(text, biomarkers),

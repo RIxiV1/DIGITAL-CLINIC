@@ -1,122 +1,68 @@
-import { motion } from 'framer-motion';
-import { ClipboardList, Microscope, TrendingUp } from 'lucide-react';
-import Illustration from '../../components/Illustration';
 import { Reveal, SectionHeader } from './shared';
+
+/**
+ * How it works — restructured from a 3-icon card grid into a single
+ * Chronological Hairline Axis: one vertical rule threading three numbered
+ * checkpoints. The markers are raw Instrument Serif numerals (low weight,
+ * clay), with dense copy packed tight beneath — no stock illustration, no
+ * lucide step-icons. The process itself is unchanged.
+ */
+const STEPS = [
+  {
+    step: '01',
+    title: 'Tell us what you’re experiencing',
+    body: 'Hair changes, energy, sexual health, sleep, mood, weight — flag everything that’s off. About a minute.',
+  },
+  {
+    step: '02',
+    title: 'Get your hormonal health map',
+    body: 'Which tests to run, which specialist to see, and what your symptoms might mean — in plain language, not jargon.',
+  },
+  {
+    step: '03',
+    title: 'Store, track, share',
+    body: 'Upload your reports, track changes over time, and hand your doctor a clean summary.',
+  },
+];
 
 export default function HowItWorks() {
   return (
     <section id="how" className="py-16 sm:py-20 md:py-28 bg-canvas">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
-        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
+        <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-start">
           <Reveal>
             <SectionHeader
               eyebrow="How it works"
-              title={
-                <>
-                  Find out what’s actually going on —{' '}
-                  <span className="text-blue-700 italic font-serif">
-                    in 2 minutes.
-                  </span>
-                </>
-              }
+              title="Find out what’s actually going on — in 2 minutes."
               subtitle="Three honest steps, about two minutes. You leave knowing which tests, which specialist, and what your symptoms might mean."
             />
           </Reveal>
-          <Reveal delay={0.1}>
-            <Illustration
-              src="/illustrations/health-signals.svg"
-              className="w-full max-w-sm mx-auto md:ml-auto h-auto"
-            />
-          </Reveal>
-        </div>
 
-        <div className="mt-12 md:mt-16 grid md:grid-cols-3 gap-5">
-          <Reveal>
-            <StepCard
-              step="01"
-              Icon={ClipboardList}
-              title="Tell us what you’re experiencing"
-              body="Hair changes, energy, sexual health, sleep, mood, weight — check everything that’s off. Takes about a minute."
-            />
-          </Reveal>
-          <Reveal delay={0.08}>
-            <StepCard
-              step="02"
-              Icon={Microscope}
-              title="Get your personalized hormonal health map"
-              body="Which tests to run, which specialist to see, and what your symptoms might mean — explained in plain language."
-              emphasized
-            />
-          </Reveal>
-          <Reveal delay={0.16}>
-            <StepCard
-              step="03"
-              Icon={TrendingUp}
-              title="Store, track, share"
-              body="Upload your reports. Track changes over time. Share a clean summary with your doctor."
-            />
+          <Reveal delay={0.1}>
+            <ol className="border-l-[0.5px] border-line ml-3 pl-7 space-y-10 md:space-y-12">
+              {STEPS.map((s) => (
+                <li key={s.step} className="relative">
+                  {/* Node dot riding the axis line. ring-4 ring-canvas
+                      punches a clean gap in the rule behind it. */}
+                  <span
+                    aria-hidden
+                    className="absolute -left-7 top-2.5 w-2 h-2 -translate-x-1/2 rounded-full bg-clay ring-4 ring-canvas"
+                  />
+                  <div className="font-display text-4xl md:text-5xl leading-none text-clay">
+                    {s.step}
+                  </div>
+                  <h3 className="mt-3 font-sans font-bold text-body-lg leading-snug text-ink">
+                    {s.title}
+                  </h3>
+                  <p className="mt-2 text-body-sm text-ink-soft leading-relaxed max-w-md text-pretty">
+                    {s.body}
+                  </p>
+                </li>
+              ))}
+            </ol>
           </Reveal>
         </div>
       </div>
     </section>
-  );
-}
-
-function StepCard({
-  step,
-  Icon,
-  title,
-  body,
-  emphasized,
-}: {
-  step: string;
-  Icon: React.ElementType;
-  title: string;
-  body: string;
-  emphasized?: boolean;
-}) {
-  return (
-    <motion.div
-      whileHover={{ y: -3 }}
-      transition={{ type: 'spring', stiffness: 320, damping: 26 }}
-      className={`relative h-full rounded-2xl p-6 sm:p-7 md:p-8 border transition-all ${
-        emphasized
-          ? 'bg-blue-600 border-blue-600 text-on-primary shadow-blue'
-          : 'bg-surface border-line shadow-clinical'
-      }`}
-    >
-      <div className="flex items-start justify-between">
-        <div
-          className={`grid place-items-center w-12 h-12 rounded-2xl ${
-            emphasized
-              ? 'bg-white/15 text-blue-100'
-              : 'bg-blue-50 text-blue-700 border border-blue-100'
-          }`}
-        >
-          <Icon size={20} />
-        </div>
-        <span
-          className={`font-semibold text-caption uppercase tracking-eyebrow ${
-            emphasized ? 'text-blue-200' : 'text-muted'
-          }`}
-        >
-          Step {step}
-        </span>
-      </div>
-      <div
-        className={`mt-6 font-sans font-bold text-display-md tracking-tight leading-snug ${
-          emphasized ? 'text-white' : 'text-ink'
-        }`}
-      >
-        {title}
-      </div>
-      <p
-        className={`mt-3 text-body-sm leading-relaxed ${
-          emphasized ? 'text-blue-100' : 'text-ink-soft'
-        }`}
-      >
-        {body}
-      </p>
-    </motion.div>
   );
 }

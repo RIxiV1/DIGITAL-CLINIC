@@ -1,5 +1,4 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
-import Illustration from './Illustration';
 import { isChunkLoadError } from '../utils/lazyWithReload';
 import { wipeAllData } from '../utils/persistence';
 import { clearPendingUpload } from '../services/api';
@@ -107,10 +106,38 @@ export default class ErrorBoundary extends Component<Props, State> {
       return (
         <div className="min-h-dvh bg-canvas grid place-items-center px-6 py-12">
           <div className="max-w-md text-center">
-            <Illustration
-              src="/illustrations/error-warning.svg"
-              className="mx-auto w-40 sm:w-48 h-auto"
-            />
+            {/* System diagnostic read-out — replaces the old stock error
+                illustration. A raw, authoritative terracotta-hairline
+                manifest (clay = the brand accent, theme-aware) over a
+                dense mono key/value grid. The raw stack message keeps its
+                own block below. */}
+            <div className="text-left font-mono border border-clay/50 rounded-md overflow-hidden">
+              <div className="px-3.5 py-2 border-b border-clay/40 text-micro uppercase tracking-widest text-clay">
+                system diagnostic
+              </div>
+              <dl className="divide-y divide-line text-caption">
+                {[
+                  ['fault', isChunkError ? 'chunk_load' : 'render_error'],
+                  ['scope', 'application'],
+                  [
+                    'state',
+                    showWipeRecovery
+                      ? 'recurring'
+                      : isChunkError
+                        ? 'stale_bundle'
+                        : 'recoverable',
+                  ],
+                  ['recovery', isChunkError ? 'hard_reload' : 'retry'],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-4 px-3.5 py-2">
+                    <dt className="text-muted lowercase tracking-wide">{k}</dt>
+                    <dd className="text-ink-soft lowercase tracking-wide">
+                      {v}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
             <div className="mt-6 text-micro uppercase tracking-eyebrow font-bold text-concern">
               {isChunkError ? 'New version available' : 'Something broke'}
             </div>

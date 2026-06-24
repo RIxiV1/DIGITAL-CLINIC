@@ -21,7 +21,9 @@ export default function Logo({ size = 'md', tone = 'dark' }: Props) {
   const [pngFailed, setPngFailed] = useState(false);
 
   const heightPx = size === 'sm' ? 28 : size === 'md' ? 36 : 48;
-  const color = tone === 'dark' ? '#2D3B8E' : '#FFFFFF';
+  // SVG fallback: `currentColor` so the wordmark inherits the ink tone of
+  // its context (theme-adaptive) instead of the old baked-in brand indigo.
+  const color = tone === 'dark' ? 'currentColor' : '#FFFFFF';
 
   if (pngFailed) {
     // Inline SVG wordmark fallback — same shape as the favicon.
@@ -30,7 +32,7 @@ export default function Logo({ size = 'md', tone = 'dark' }: Props) {
     const w = Math.round(heightPx * 1.0);
     return (
       <span
-        className="inline-flex items-center align-middle select-none"
+        className="inline-flex items-center align-middle select-none text-ink"
         aria-label="ForMen · Digital Clinic"
         style={{ width: w, height: heightPx }}
       >
@@ -72,7 +74,7 @@ export default function Logo({ size = 'md', tone = 'dark' }: Props) {
         draggable={false}
         onError={() => setPngFailed(true)}
         style={{ height: heightPx }}
-        className={`w-auto block ${tone === 'light' ? 'invert brightness-0' : ''}`}
+        className={`w-auto block ${tone === 'light' ? 'invert brightness-0' : 'logo-mark'}`}
       />
     </span>
   );

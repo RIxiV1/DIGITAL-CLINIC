@@ -1,22 +1,49 @@
 @import 'tailwindcss';
 
+/* Self-hosted Manrope (body sans) via @fontsource — latin subset only, the
+ * exact weights the UI uses (400/500/600/700; no 800 — nothing renders
+ * font-extrabold). Self-hosted, so the app makes ZERO third-party font
+ * requests. Latin covers the English UI; Hindi is Devanagari and falls back
+ * regardless, so the heavier subsets are skipped. */
+@import '@fontsource/manrope/latin-400.css';
+@import '@fontsource/manrope/latin-500.css';
+@import '@fontsource/manrope/latin-600.css';
+@import '@fontsource/manrope/latin-700.css';
+
+/* Self-hosted Domine (the editorial display serif). Served from
+ * /public/fonts as a same-origin asset — NOT from Google Fonts — so the
+ * display face adds zero third-party request and satisfies the strict
+ * `default-src 'self'` CSP. A single VARIABLE TTF spans weights 400–700,
+ * so unlike the prior single-weight display face, headings CAN take a
+ * heavier weight when the hierarchy calls for it. Domine ships no italic
+ * cut, so `.font-display-italic` synthesizes a faux slant. */
+@font-face {
+  font-family: 'Domine';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/Domine-VariableFont_wght.ttf') format('truetype');
+}
+
 @theme {
-  /* Clinical Blue — Digital Clinic primary (deep, authoritative, calm).
-   * Single source of truth: every `bg-blue-*` / `text-blue-*` /
-   * `border-blue-*` class resolves to one of these stops. The legacy
-   * `indigo-*` class names are aliased below — they were a leftover
-   * from the pre-rebrand identity, kept around so a wholesale
-   * indigo→blue find/replace isn't required. */
-  --color-blue-50: #ebf5ff;
-  --color-blue-100: #d6ebff;
-  --color-blue-200: #add6ff;
-  --color-blue-300: #7ab8ff;
-  --color-blue-400: #3d95ff;
-  --color-blue-500: #0f7aeb;
-  --color-blue-600: #0066cc;
-  --color-blue-700: #0052a3;
-  --color-blue-800: #003d7a;
-  --color-blue-900: #002852;
+  /* Neutral warm-stone CHROME (the "Ink & Clay" idiom). The primary/blue/
+   * indigo alias resolves to a neutral warm-stone ramp — links, buttons,
+   * focus, secondary labels — so chrome stays quiet. The ONE brand accent
+   * is terracotta, held separately in --color-clay and used with restraint
+   * (one accent per view); the alarm hue is a distinct crimson
+   * (--color-concern). Chrome / accent / alarm are three separate lanes by
+   * design, so "interactive" never competes with "accent" or reads as
+   * "alarm". (Class names kept as blue/indigo for single-source retarget.) */
+  --color-blue-50: #f5f3f0;
+  --color-blue-100: #e7e2dc;
+  --color-blue-200: #d6cfc7;
+  --color-blue-300: #b8aea3;
+  --color-blue-400: #8a8077;
+  --color-blue-500: #6b6259;
+  --color-blue-600: #57514a;
+  --color-blue-700: #44403c;
+  --color-blue-800: #332f2b;
+  --color-blue-900: #1c1917;
 
   /* Legacy alias — pre-rebrand brand was indigo. Now both class
    * families resolve to the same Clinical Blue stops, so a future
@@ -68,13 +95,46 @@
   --color-gold-800: #8a6500;
 
   /* Neutrals */
-  --color-canvas: #f8f9fa;
-  --color-surface: #ffffff;
+  --color-canvas: #f7f4ef;
+  --color-surface: #fffdf8;
   --color-ink: #0f1422;
   --color-ink-soft: #2c3344;
   --color-muted: #6b7280;
   --color-line: #e5e7eb;
   --color-line-strong: #d1d5db;
+
+  /* ── Warm "paper" identity ─────────────────────────────────────────
+   * An owned, culturally-grounded palette that deliberately breaks BOTH
+   * AI defaults — the cold navy/indigo glow-SaaS look AND the safe
+   * greyscale/zinc "Linear clone" look. Warm off-white paper, warm
+   * charcoal ink, a deep forest "on-track" tone, and a terracotta
+   * accent used with restraint (CTA + the single "to review" count).
+   * Currently consumed ONLY by DashboardHeadline — the design-direction
+   * demo — so adding these tokens reskins nothing else. Theme-aware
+   * (dark rebind below) so a future rollout inherits dark mode for free. */
+  --color-paper: #fdfbf7;
+  --color-paper-ink: #1c1917;
+  --color-paper-soft: #57534e;
+  --color-paper-line: rgb(28 25 23 / 0.12);
+  /* Forest is the INTERACTIVE accent (primary CTAs, links, focus rings).
+   * It was promoted out of decorative-only duty to resolve a colour-vision
+   * collision: the old clay accent (#b5512f) sat ~17° from the crimson alarm
+   * (--color-concern #dc2626), both red-dominant with near-zero blue — so
+   * under protanopia/deuteranopia a clay "click me" button and a crimson
+   * "you might be sick" alarm collapsed to the same muddy red. Forest carries
+   * blue-green content, separating from crimson on the channel CVD vision
+   * keeps. Clay stays as the warm DECORATIVE accent + the "needs-review"
+   * middle status tier (never an interactive control that sits by an alarm). */
+  --color-clay: #b5512f;
+  --color-forest: #2f5d50;
+  /* Text that sits ON a filled terracotta accent panel (bg-clay). Light
+   * theme: clay is a deep rust → near-white text (AA). Dark theme (rebind
+   * below): clay lifts to a lighter tan → deep ink text. */
+  --color-on-clay: #fdfbf7;
+  /* Text ON a filled forest panel (bg-forest, the primary CTA). Light theme:
+   * forest is a deep green → near-white text (~7.3:1, AAA). Dark theme: forest
+   * lifts to a light sage → deep ink text (~7.8:1, AAA). */
+  --color-on-forest: #fdfbf7;
 
   /* Status fills. The vivid stops here are tuned for BADGE FILLS
    * (white-on-color, e.g. `bg-good text-on-status`) — they hit AA
@@ -139,9 +199,14 @@
    * theme-invariance we want here. */
   --color-on-gold: #002852;
 
-  /* Type system */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  /* Type system. Display face = Domine (self-hosted variable serif;
+   * @font-face at the top of this file). Both --font-display and
+   * --font-editorial point at Domine so the `.font-display` utility (which
+   * renders the app's headings) and any raw var() usage resolve to the same
+   * editorial serif. Body = Manrope (self-hosted via @fontsource). */
+  --font-sans: 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-display: 'Domine', Georgia, 'Times New Roman', serif;
+  --font-editorial: 'Domine', Georgia, 'Times New Roman', serif;
 
   /* Type scale — 8 semantic tokens, rem-based.
    *
@@ -208,7 +273,7 @@
   --shadow-clinical: 0 4px 30px rgb(0 0 0 / 0.03);
   --shadow-clinical-lg:
     0 6px 40px rgb(0 0 0 / 0.05), 0 1px 1px rgb(0 0 0 / 0.02);
-  --shadow-blue: 0 10px 30px rgb(0 102 204 / 0.18);
+  --shadow-blue: 0 10px 30px rgb(181 81 47 / 0.2);
   --shadow-indigo: var(--shadow-blue);
 
   /* Radii */
@@ -355,8 +420,8 @@ a,
   color-scheme: light;
 
   /* Canvas + surface */
-  --color-canvas: #f8f9fa;
-  --color-surface: #ffffff;
+  --color-canvas: #f7f4ef;
+  --color-surface: #fffdf8;
   --color-line: #e5e7eb;
   --color-line-strong: #d1d5db;
 
@@ -366,16 +431,16 @@ a,
   --color-muted: #6b7280;
 
   /* Brand blue scale (and indigo aliases inherit via var()) */
-  --color-blue-50: #ebf5ff;
-  --color-blue-100: #d6ebff;
-  --color-blue-200: #add6ff;
-  --color-blue-300: #7ab8ff;
-  --color-blue-400: #3d95ff;
-  --color-blue-500: #0f7aeb;
-  --color-blue-600: #0066cc;
-  --color-blue-700: #0052a3;
-  --color-blue-800: #003d7a;
-  --color-blue-900: #002852;
+  --color-blue-50: #f5f3f0;
+  --color-blue-100: #e7e2dc;
+  --color-blue-200: #d6cfc7;
+  --color-blue-300: #b8aea3;
+  --color-blue-400: #8a8077;
+  --color-blue-500: #6b6259;
+  --color-blue-600: #57514a;
+  --color-blue-700: #44403c;
+  --color-blue-800: #332f2b;
+  --color-blue-900: #1c1917;
 
   /* Gold */
   --color-gold-50: #fff9e5;
@@ -416,7 +481,7 @@ a,
   --shadow-clinical: 0 4px 30px rgb(0 0 0 / 0.03);
   --shadow-clinical-lg:
     0 6px 40px rgb(0 0 0 / 0.05), 0 1px 1px rgb(0 0 0 / 0.02);
-  --shadow-blue: 0 10px 30px rgb(0 102 204 / 0.18);
+  --shadow-blue: 0 10px 30px rgb(181 81 47 / 0.2);
   --shadow-indigo: var(--shadow-blue);
 }
 
@@ -427,27 +492,38 @@ a,
   color-scheme: dark;
 
   /* ─── Canvas + surface ladder ──────────────────────────────────
-   * Two visible tones from page floor to card surface. NOT pure
-   * black — `#0B0F1A` keeps the gamma curve away from OLED black-
-   * smearing during scroll, and reads as "navy night" instead of
-   * "void", which fits the clinical-blue brand. */
-  --color-canvas: #0b0f1a;
-  --color-surface: #131826;
+   * Three warm ink-charcoal tones from page floor to hero. NOT pure
+   * black — the warm charcoal floor keeps the gamma curve away from
+   * OLED black-smearing during scroll, and is neutral (not blue) so the
+   * warm bronze hero spotlight + paper tones read as one family rather
+   * than fighting a cold navy baseline. "Ink & Clay" ladder:
+   *   canvas  #0b0a09  L 0.0031   floor
+   *   surface #1a1816  L 0.0093   card  (canvas↔surface ≈ 1.12:1)
+   *   paper   #242220  L 0.0162   hero  (surface↔paper   ≈ 1.12:1)
+   * Surface was lifted from #161514 (L 0.0076): the old canvas↔surface
+   * step measured only 1.085:1 — below the just-noticeable threshold, so
+   * card fills had no perceptible edge on low-DPI screens. An even ~1.12:1
+   * ladder + the strengthened hairline below now carry depth together. */
+  --color-canvas: #0b0a09;
+  --color-surface: #1a1816;
 
   /* ─── Line / border ────────────────────────────────────────────
    * Low-alpha white so a border scales with whatever surface tone
    * sits beneath it (canvas vs. surface vs. raised). A fixed grey
-   * line would stay one tone regardless of context. */
-  --color-line: rgb(255 255 255 / 0.08);
-  --color-line-strong: rgb(255 255 255 / 0.14);
+   * line would stay one tone regardless of context. Bumped 0.10→0.16
+   * (≈1.44:1 over canvas, up from a barely-there 1.22): in dark the
+   * shadow tokens are near-invisible, so the border IS the card edge
+   * and has to actually read on a cheap panel in daylight. */
+  --color-line: rgb(231 229 228 / 0.16);
+  --color-line-strong: rgb(231 229 228 / 0.26);
 
   /* ─── Text hierarchy ───────────────────────────────────────────
    * Opacity-based on white. 92/78/55 lands at APCA Lc 92/82/68 on
    * canvas — AAA / AAA / AA. Slightly less than pure white kills
    * the haloing effect that #FFFFFF gets on AMOLED. */
-  --color-ink: rgb(255 255 255 / 0.92);
-  --color-ink-soft: rgb(255 255 255 / 0.78);
-  --color-muted: rgb(255 255 255 / 0.55);
+  --color-ink: #e7e5e4;
+  --color-ink-soft: #c4bfb9;
+  --color-muted: #8c857e;
 
   /* ─── Primary / Clinical Blue, dark-tuned ──────────────────────
    * The blue scale inverts: 50 (lightest in light) becomes a deep
@@ -458,16 +534,16 @@ a,
    * crucial part for the contrast principle: `text-white` on
    * `bg-primary-600` would fail at ~2.3:1; `text-on-primary` (which
    * the dark theme re-binds to deep navy below) hits 8:1 instead. */
-  --color-blue-50: #0e1a2d;
-  --color-blue-100: #15263f;
-  --color-blue-200: #1e3457;
-  --color-blue-300: #2a4a78;
-  --color-blue-400: #5288d4;
-  --color-blue-500: #76a8f0;
-  --color-blue-600: #9dc2fa;
-  --color-blue-700: #bcd5fc;
-  --color-blue-800: #dae7fe;
-  --color-blue-900: #eef4ff;
+  --color-blue-50: #1c1a18;
+  --color-blue-100: #242220;
+  --color-blue-200: #34302c;
+  --color-blue-300: #4a443e;
+  --color-blue-400: #7c746c;
+  --color-blue-500: #9c938a;
+  --color-blue-600: #bdb4aa;
+  --color-blue-700: #d6cec5;
+  --color-blue-800: #e7e1d9;
+  --color-blue-900: #f2ede6;
 
   /* `--color-indigo-*` and `--color-primary-*` legacy/role aliases
    * inherit via `var(--color-blue-*)` from the @theme block — no
@@ -492,6 +568,22 @@ a,
   --color-mint-100: #163422;
   --color-mint-500: #4dbe8c;
 
+  /* ─── Warm "paper" identity — dark-tuned ───────────────────────
+   * The hero stays warm in dark mode: a warm CHARCOAL (not navy) paper,
+   * warm off-white ink, and lifted forest/terracotta so both read on the
+   * dark card. The hero is the warm bronze SPOTLIGHT — deliberately
+   * lighter + warmer than both the ink-charcoal canvas and the slate
+   * card surface, so it reads as the focal panel rather than blending
+   * into the ladder. Keeps the owned palette intact across themes. */
+  --color-paper: #242220;
+  --color-paper-ink: #ece9e4;
+  --color-paper-soft: #a8a29c;
+  --color-paper-line: rgb(231 229 228 / 0.14);
+  --color-clay: #d8845b;
+  --color-forest: #74b59c;
+  --color-on-clay: #1c1917;
+  --color-on-forest: #1c1917;
+
   /* ─── Status fills — DE-ESCALATED for AMOLED ───────────────────
    * Rose / warm-amber / emerald pastels instead of pure red/amber/
    * green. The labelled status still reads as "the rose row" / "the
@@ -502,8 +594,8 @@ a,
   --color-good-soft: rgb(95 203 149 / 0.1);
   --color-attention: #d9a765;
   --color-attention-soft: rgb(217 167 101 / 0.1);
-  --color-concern: #e27482;
-  --color-concern-soft: rgb(226 116 130 / 0.1);
+  --color-concern: #ef4444;
+  --color-concern-soft: rgb(239 68 68 / 0.12);
 
   /* In dark mode, the *-ink tokens (used by Pill chips for the colored
    * text on a tinted `*-soft` background) flip from the AA-darker
@@ -513,15 +605,18 @@ a,
    * near-dark tints. The pastel hues hit ~7:1 on the dark soft grounds. */
   --color-good-ink: var(--color-good);
   --color-attention-ink: var(--color-attention);
-  --color-concern-ink: var(--color-concern);
+  /* Lighter crimson for TEXT on the dark concern-soft ground (the vivid
+   * #ef4444 fill is a touch low-contrast as small text); the fill itself
+   * stays #ef4444 for badges/edges. */
+  --color-concern-ink: #f87171;
 
   /* ─── ON-COLOR TOKENS — the principal contrast pair ────────────
    * Flipped to deep navy because the matching dynamic fills above
    * are now pastels. `text-on-primary` on `bg-primary-600` (pastel
    * blue): ~8:1. `text-on-status` on `bg-concern` (pastel rose):
    * ~5.5:1. Both meet AA; the first meets AAA. */
-  --color-on-primary: #0b0f1a;
-  --color-on-status: #0b0f1a;
+  --color-on-primary: #0b0a09;
+  --color-on-status: #0b0a09;
 
   /* ─── Shadow ladder — inset + deep ─────────────────────────────
    * External shadows are darker than the canvas they sit on, so
@@ -536,7 +631,7 @@ a,
   --shadow-clinical-lg:
     inset 0 1px 0 rgb(255 255 255 / 0.05), 0 8px 24px rgb(0 0 0 / 0.6);
   --shadow-blue:
-    0 0 0 1px rgb(82 136 212 / 0.35), 0 6px 24px rgb(82 136 212 / 0.18);
+    0 0 0 1px rgb(221 152 112 / 0.3), 0 6px 24px rgb(221 152 112 / 0.16);
   --shadow-indigo: var(--shadow-blue);
 
   /* Match the active theme on native UA chrome. */
@@ -587,17 +682,33 @@ a,
 :root[data-theme='dark'] a:focus-visible,
 :root[data-theme='dark'] input:focus-visible {
   outline: none;
+  /* Solid forest ring on dark — high-contrast, not the old faint
+   * 0.5-alpha clay. Forest is the interactive accent, so the focus ring
+   * matches it (and stays clear of the crimson alarm hue). Inner dark gap
+   * separates it from the focused fill. */
   box-shadow:
-    inset 0 0 0 1px rgb(255 255 255 / 0.15),
-    0 0 0 3px rgb(82 136 212 / 0.45);
+    0 0 0 2px var(--color-canvas),
+    0 0 0 4px var(--color-forest);
 }
 
 /* Selection — the light-theme `gold-200` flips to a deep brown in
  * dark, nearly invisible against canvas. Force a visible dark
  * selection. */
 :root[data-theme='dark'] ::selection {
-  background: rgb(82 136 212 / 0.45);
+  background: rgb(221 152 112 / 0.4);
   color: rgb(255 255 255 / 0.98);
+}
+
+/* Brand wordmark tint. The /formen-logo.png raster has the old cold-blue
+   baked in, which fights the warm identity. Render it as a single ink
+   tone that follows the theme — near-black on the warm light canvas,
+   near-white on the dark charcoal — so the mark reads as a neutral,
+   editorial wordmark instead of a stray blue. */
+.logo-mark {
+  filter: brightness(0);
+}
+:root[data-theme='dark'] .logo-mark {
+  filter: brightness(0) invert(1);
 }
 
 * {
@@ -626,16 +737,22 @@ button:disabled,
 }
 
 @layer utilities {
+  /* The app's display face is Domine (--font-editorial), a variable serif
+   * spanning 400–700. We hold headings at 400 by default so this font swap
+   * doesn't silently re-weight every heading + numeric readout app-wide;
+   * heavier cuts are available per-heading (e.g. `font-bold`) when a
+   * specific hierarchy calls for it. This single repoint flips every
+   * `font-display` element to the editorial identity. */
   .font-display {
-    font-family: var(--font-display);
-    font-weight: 600;
-    letter-spacing: -0.015em;
+    font-family: var(--font-editorial);
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
 
   .font-display-italic {
-    font-family: var(--font-display);
+    font-family: var(--font-editorial);
     font-style: italic;
-    font-weight: 500;
+    font-weight: 400;
   }
 
   .shadow-soft {
@@ -688,7 +805,7 @@ button:disabled,
    * tone — it just gives a faint dotted texture. */
   .bg-dot-grid {
     background-image: radial-gradient(
-      rgb(0 102 204 / 0.08) 1px,
+      rgb(181 81 47 / 0.08) 1px,
       transparent 1px
     );
     background-size: 18px 18px;
@@ -700,7 +817,7 @@ button:disabled,
    * subtle on either tone. */
   .bg-hero-grid {
     background-image:
-      radial-gradient(rgb(0 102 204 / 0.07) 1px, transparent 1px),
+      radial-gradient(rgb(181 81 47 / 0.07) 1px, transparent 1px),
       linear-gradient(180deg, var(--color-blue-50) 0%, var(--color-surface) 78%);
     background-size:
       22px 22px,
@@ -717,32 +834,32 @@ button:disabled,
     background:
       radial-gradient(
         120% 70% at 50% 0%,
-        rgb(0 102 204 / 0.06) 0%,
+        rgb(181 81 47 / 0.06) 0%,
         transparent 60%
       ),
       linear-gradient(180deg, var(--color-surface) 0%, var(--color-canvas) 100%);
   }
 
   /* `.bg-cta-gradient` — permanent dark hero callout used by FinalCta.
-   * Stops are hardcoded brand-blue values intentionally; this surface
-   * stays the same in BOTH themes (a dark blue gradient is a
-   * deliberate visual constant on the landing's closing CTA, not
-   * something that should flip with the user's theme). Modern
-   * `rgb(R G B / A)` syntax across the alpha stops for Tailwind v4
-   * color-mix compat. */
+   * Stops are hardcoded WARM values intentionally; this surface stays the
+   * same in BOTH themes (a deep bronze gradient is a deliberate visual
+   * constant on the landing's closing CTA, not something that should flip
+   * with the user's theme). A terracotta highlight + a forest-green accent
+   * sit over a deep-clay base — the owned palette, not the old brand blue.
+   * Modern `rgb(R G B / A)` syntax for Tailwind v4 color-mix compat. */
   .bg-cta-gradient {
     background:
       radial-gradient(
         60% 80% at 80% 20%,
-        rgb(61 149 255 / 0.3) 0%,
+        rgb(216 132 91 / 0.32) 0%,
         transparent 60%
       ),
       radial-gradient(
         80% 100% at 0% 100%,
-        rgb(21 185 124 / 0.15) 0%,
+        rgb(47 93 80 / 0.28) 0%,
         transparent 55%
       ),
-      linear-gradient(135deg, #003d7a 0%, #0052a3 45%, #0066cc 100%);
+      linear-gradient(135deg, #2a160d 0%, #5c2814 48%, #79351a 100%);
   }
 }
 
@@ -783,7 +900,13 @@ button:focus-visible,
 a:focus-visible,
 input:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.18);
+  /* Solid 2px forest ring (the interactive accent doing real work) + a thin
+   * surface-coloured gap so it reads against any surface. Forest, not clay,
+   * so focus never shares a hue with the crimson alarm. Replaces the faint
+   * 0.28-alpha shadow that measured ~1.35:1 (failed SC 2.4.11). */
+  box-shadow:
+    0 0 0 2px var(--color-surface),
+    0 0 0 4px var(--color-forest);
 }
 
 /* Print — Save as PDF flow */
@@ -920,7 +1043,7 @@ input:focus-visible {
   50% {
     border-color: var(--color-indigo-400);
     box-shadow:
-      0 0 0 3px rgba(0, 102, 204, 0.15),
+      0 0 0 3px rgba(181, 81, 47, 0.15),
       var(--shadow-soft);
     opacity: 0.93;
   }

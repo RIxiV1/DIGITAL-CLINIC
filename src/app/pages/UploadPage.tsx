@@ -13,7 +13,6 @@ import {
 import Button from '../components/Button';
 import Container from '../components/Container';
 import Header from '../components/Header';
-import Illustration from '../components/Illustration';
 import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useReports } from '../AppContext';
 import { makeReport } from '../data/reports';
@@ -395,13 +394,25 @@ export default function UploadPage() {
             }`}
           >
             {!fileName && !dragging ? (
-              // Idle empty state: a friendly illustration of adding a
-              // report. Drag / chosen states fall through to the animated
-              // icon tile below so the drop affordance still reacts.
-              <Illustration
-                src="/illustrations/add-report.svg"
-                className="mx-auto w-32 sm:w-36 h-auto"
-              />
+              // Idle empty state: a compact, hairline-bordered manifest of
+              // the upload contract — what's accepted + the privacy
+              // guarantees — in tracked lowercase monospace. Replaces the
+              // old stock illustration with structure, not another icon.
+              // Drag / chosen states fall through to the animated icon
+              // tile below so the drop affordance still reacts.
+              <dl className="mx-auto max-w-[15rem] text-left font-mono text-caption border border-line rounded-md divide-y divide-line">
+                {[
+                  ['formats', 'pdf · jpg · png'],
+                  ['parsing', 'on-device'],
+                  ['storage', 'this browser'],
+                  ['network', 'none'],
+                ].map(([k, v]) => (
+                  <div key={k} className="flex justify-between gap-3 px-3 py-1.5">
+                    <dt className="text-muted lowercase tracking-wide">{k}</dt>
+                    <dd className="text-ink-soft lowercase tracking-wide">{v}</dd>
+                  </div>
+                ))}
+              </dl>
             ) : (
               <motion.div
                 animate={{

@@ -97,7 +97,7 @@ export default function BottomNav() {
                   )}
                   <div
                     className={`relative flex flex-col items-center gap-0.5 ${
-                      active ? 'text-white' : 'text-muted'
+                      active ? 'text-on-primary' : 'text-muted'
                     }`}
                   >
                     <Icon size={18} strokeWidth={active ? 2.4 : 2} />

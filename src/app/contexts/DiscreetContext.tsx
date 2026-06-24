@@ -22,6 +22,11 @@ import { loadDiscreetMode, saveDiscreetMode } from '../utils/persistence';
 type DiscreetValue = {
   discreet: boolean;
   setDiscreet: (on: boolean) => void;
+  /** Bumps each time the user hits "hide now" — PrivacyScreen watches this
+   *  and raises the veil immediately, regardless of the Discreet setting.
+   *  A nonce (not a boolean) so repeated taps always re-trigger. */
+  concealNonce: number;
+  concealNow: () => void;
 };
 
 const DiscreetContext = createContext<DiscreetValue | null>(null);
@@ -36,9 +41,12 @@ export function DiscreetProvider({ children }: { children: ReactNode }) {
     saveDiscreetMode(on);
   }, []);
 
+  const [concealNonce, setConcealNonce] = useState(0);
+  const concealNow = useCallback(() => setConcealNonce((n) => n + 1), []);
+
   const value = useMemo<DiscreetValue>(
-    () => ({ discreet, setDiscreet }),
-    [discreet, setDiscreet],
+    () => ({ discreet, setDiscreet, concealNonce, concealNow }),
+    [discreet, setDiscreet, concealNonce, concealNow],
   );
 
   return (
