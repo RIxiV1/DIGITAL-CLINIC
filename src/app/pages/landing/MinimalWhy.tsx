@@ -1,4 +1,3 @@
-import { CheckCircle2, FlaskConical, Microscope } from 'lucide-react';
 import { Reveal } from './shared';
 
 /**
@@ -23,21 +22,18 @@ export default function MinimalWhy() {
           </h2>
         </Reveal>
 
-        <div className="mt-8 grid gap-5">
-          {ITEMS.map(({ Icon, title, body }) => (
+        {/* Hairline manifest — not icon-cards. Matches the editorial idiom
+            used across the full landing (WhatYoullGet / Privacy / Credibility);
+            the lucide-square-in-a-shadow-card pattern was the stock
+            generated-feature-list look removed everywhere else. */}
+        <div className="mt-8 border-t border-line">
+          {ITEMS.map(({ title, body }) => (
             <Reveal key={title}>
-              <div className="flex items-start gap-4 rounded-2xl bg-surface border border-line p-5 shadow-clinical">
-                <div className="grid place-items-center w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 shrink-0">
-                  <Icon size={18} />
-                </div>
-                <div className="min-w-0">
-                  <div className="font-semibold text-ink text-body">
-                    {title}
-                  </div>
-                  <p className="mt-1 text-caption text-ink-soft leading-relaxed">
-                    {body}
-                  </p>
-                </div>
+              <div className="py-5 border-b border-line">
+                <div className="font-semibold text-ink text-body">{title}</div>
+                <p className="mt-1 text-caption text-ink-soft leading-relaxed max-w-[60ch]">
+                  {body}
+                </p>
               </div>
             </Reveal>
           ))}
@@ -49,17 +45,14 @@ export default function MinimalWhy() {
 
 const ITEMS = [
   {
-    Icon: FlaskConical,
     title: 'Tests picked for your symptoms.',
-    body: 'Not the generic "men\'s wellness" combo every lab pushes — a personalised panel based on what you actually told us.',
+    body: 'Not the generic "men\'s wellness" combo every lab pushes — a panel based on what you actually told us.',
   },
   {
-    Icon: Microscope,
     title: 'Numbers translated into plain English.',
-    body: 'Upload a lab report, we read it, you get what each value means for you. No more Googling "what is HbA1c."',
+    body: 'Upload a lab report, we read it, and you get what each value means for you. No more Googling "what is HbA1c."',
   },
   {
-    Icon: CheckCircle2,
     title: 'Anonymous by default. Your data, your device.',
     body: 'No email needed. Nothing leaves your browser. Delete everything in one tap from Profile.',
   },

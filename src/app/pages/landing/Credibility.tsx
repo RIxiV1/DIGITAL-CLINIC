@@ -98,10 +98,15 @@ export default function Credibility() {
         </Reveal>
 
         <Reveal>
-          <div className="mt-10 flex items-center justify-center gap-2 text-caption text-muted text-center max-w-2xl mx-auto">
+          <div className="mt-10 max-w-2xl mx-auto text-center text-caption text-muted flex flex-col gap-2.5">
             <span>
               No testimonials, no fake user counts. Credibility comes from
               science and methodology — not staged quotes.
+            </span>
+            <span>
+              And it’s a screening tool, not a diagnosis. It helps you
+              understand your results and ask your doctor better questions — it
+              doesn’t replace one. For anything urgent, see a doctor.
             </span>
           </div>
         </Reveal>

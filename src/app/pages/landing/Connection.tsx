@@ -104,7 +104,7 @@ export default function ConnectionSection({
                   {[
                     'One bloodwork picture, not eight specialists.',
                     'Personalised to your symptoms, not a generic panel.',
-                    'Plain English. Doctor-grade depth.',
+                    'Plain English, backed by cited guidelines.',
                   ].map((line) => (
                     <li key={line} className="flex items-start gap-2">
                       <CheckCircle2
