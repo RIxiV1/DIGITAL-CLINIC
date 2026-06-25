@@ -203,8 +203,9 @@ function Count({
 }
 
 /** Two short lines beat one long sentence under a glance-pace
- *  headline. `qualifier` carries the optional positive-trend clause
- *  (state A only); `sub` carries the count or tagline. */
+ *  headline. In the trend state, `qualifier` carries the specific change
+ *  + a "re-test to confirm" reassurance; `sub` carries any positive trend
+ *  and the count. */
 type Copy = {
   eyebrow: string;
   headline: string;
@@ -266,14 +267,19 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
       const priorReadingDate =
         newsworthy.history?.[newsworthy.history.length - 1]?.date;
       const countLine = `${summary.needCare} marker${summary.needCare === 1 ? '' : 's'} still need${summary.needCare === 1 ? 's' : ''} care.`;
+      // Cushion the trend. The masthead names WHICH marker to look at — calm,
+      // not the raw drop as an 88px scare. The specific change + a "one reading
+      // isn't the whole picture, re-test" note move to the line beneath:
+      // insight kept, alarm removed (anxiety-reduction research on how to
+      // surface abnormal results). Any positive trend + the count sit in `sub`.
       return {
         eyebrow: `Since your last test`,
-        headline: `Your ${newsworthy.name} dropped ${formatAbsDelta(newsworthy)} since ${formatRoughDate(priorReadingDate)}.`,
-        qualifier:
+        headline: `One marker to look at: your ${newsworthy.name}.`,
+        qualifier: `It's down ${formatAbsDelta(newsworthy)} since ${formatRoughDate(priorReadingDate)}. One reading isn't the full picture — worth a re-test to confirm.`,
+        sub:
           positive && positiveDelta
-            ? `${positive.name} is ${positiveDelta.startsWith('-') ? 'down' : 'up'} ${stripSign(positiveDelta)} ${positive.unit}. That's working.`
-            : undefined,
-        sub: countLine,
+            ? `${positive.name} is ${positiveDelta.startsWith('-') ? 'down' : 'up'} ${stripSign(positiveDelta)} ${positive.unit} — that's working. ${countLine}`
+            : countLine,
         ctaLabel: 'See what needs attention',
       };
     }

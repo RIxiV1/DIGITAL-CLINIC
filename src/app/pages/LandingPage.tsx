@@ -6,6 +6,7 @@ import ConnectionSection from './landing/Connection';
 import HowItWorks from './landing/HowItWorks';
 import WhatYoullGet from './landing/WhatYoullGet';
 import Credibility from './landing/Credibility';
+import HowWeAnalyze from './landing/HowWeAnalyze';
 import Privacy from './landing/Privacy';
 import FinalCta from './landing/FinalCta';
 import Footer from './landing/Footer';
@@ -89,6 +90,7 @@ export default function LandingPage() {
       <Hero onStart={startQuiz} onSample={viewSample} />
       <ConnectionSection onStart={startQuiz} />
       <Credibility />
+      <HowWeAnalyze />
       <Privacy />
       <HowItWorks />
       <WhatYoullGet />

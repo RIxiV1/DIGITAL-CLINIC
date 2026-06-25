@@ -356,7 +356,7 @@ function whyForMetabolic(q: QuizAnswers): string {
 
 function whyForNutritional(q: QuizAnswers): string {
   if (q.symptoms.includes('hair-loss')) {
-    return 'Iron and zinc deficiency accelerate male hair loss — cheap to fix once spotted.';
+    return 'Iron and zinc deficiency accelerate male hair loss — cheap to address once spotted.';
   }
   if (q.symptoms.includes('low-energy') || q.symptoms.includes('brain-fog')) {
     return 'Low energy and brain fog are most often a Vitamin D, B12, or iron deficiency.';
@@ -364,7 +364,7 @@ function whyForNutritional(q: QuizAnswers): string {
   if (q.symptoms.includes('poor-sleep') || q.symptoms.includes('stress')) {
     return 'Magnesium is the sleep + stress mineral. Most men are short of it without knowing.';
   }
-  return 'Cheap to test, easy to fix. Many fatigue and mood complaints have a nutritional cause underneath.';
+  return 'Cheap to test, often manageable. Many fatigue and mood complaints have a nutritional cause underneath.';
 }
 
 function whyForScreening(_q: QuizAnswers, triggered: Marker[]): string {

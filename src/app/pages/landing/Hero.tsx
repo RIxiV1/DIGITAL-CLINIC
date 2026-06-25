@@ -20,7 +20,7 @@ export default function Hero({
   onSample: () => void;
 }) {
   return (
-    <section id="connection" className="relative bg-canvas overflow-hidden">
+    <section id="top" className="relative bg-canvas overflow-hidden">
       {/* Left blue accent bar */}
       <div className="absolute left-0 top-0 bottom-0 w-[4px] bg-gradient-to-b from-blue-400 via-blue-500 to-blue-600 hidden md:block" />
 
@@ -56,10 +56,11 @@ export default function Hero({
 
             <motion.p
               variants={fadeUp}
-              className="mt-5 text-body-lg leading-snug text-ink-soft max-w-[42ch] text-pretty"
+              className="mt-5 text-body-lg leading-snug text-ink-soft max-w-[48ch] text-pretty"
             >
-              One hormonal system quietly drives all three — answer a few
-              private questions for a clear, science-backed read.
+              One hormonal system quietly drives all three. Answer a few
+              private questions to find out which tests you need — or upload a
+              blood test you already have, and we’ll explain it in plain English.
             </motion.p>
 
             <motion.div

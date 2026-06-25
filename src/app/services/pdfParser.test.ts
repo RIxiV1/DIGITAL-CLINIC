@@ -592,6 +592,36 @@ describe('extractBiomarkersFromText — full lipid panel (real report)', () => {
   });
 });
 
+describe('extractBiomarkersFromText — hormone SI units (nmol/L, pmol/L)', () => {
+  // Non-US/SI labs report sex hormones in molar units. Without these
+  // altUnits a healthy man's testosterone in nmol/L reads as critically
+  // low (or is dropped on the unmatched unit). Factors live on each
+  // template's `altUnits` (MW-derived).
+
+  it('converts total testosterone nmol/L → ng/dL', () => {
+    const r = extractBiomarkersFromText('Total Testosterone 20.8 nmol/L');
+    // 20.8 * 28.842 ≈ 600 ng/dL — a healthy mid-range value, NOT hypogonadal
+    expect(r.find((m) => m.id === 'testosterone')?.value).toBeCloseTo(600, 0);
+  });
+
+  it('converts free testosterone pmol/L → pg/mL', () => {
+    const r = extractBiomarkersFromText('Free Testosterone 50 pmol/L');
+    // 50 * 0.28842 ≈ 14.4 pg/mL (inside the direct-assay band)
+    expect(r.find((m) => m.id === 'free-t')?.value).toBeCloseTo(14.4, 1);
+  });
+
+  it('converts estradiol pmol/L → pg/mL', () => {
+    const r = extractBiomarkersFromText('Estradiol 100 pmol/L');
+    // 100 * 0.27238 ≈ 27.2 pg/mL
+    expect(r.find((m) => m.id === 'estradiol')?.value).toBeCloseTo(27.2, 1);
+  });
+
+  it('does NOT alter conventional ng/dL testosterone (no false conversion)', () => {
+    const r = extractBiomarkersFromText('Total Testosterone 600 ng/dL');
+    expect(r.find((m) => m.id === 'testosterone')?.value).toBe(600);
+  });
+});
+
 describe('extractBiomarkersFromText — SI-unit reports (mmol/L, µmol/L)', () => {
   // Regression for a real Malaysian (Innoquest) report in SI units, which
   // silently dropped every conventional-unit marker. The matcher now

@@ -32,7 +32,7 @@ const problems: Record<string, Problem> = {
       {
         title: 'Get your Vitamin D up',
         detail:
-          'Low D and low T travel together. If yours is low (it usually is), fixing it can shift both.',
+          'Low D and low T travel together. If yours is low (it usually is), addressing it can shift both.',
       },
       {
         title: 'Cut alcohol where you can',
@@ -48,7 +48,7 @@ const problems: Record<string, Problem> = {
     id: 'low-vit-d',
     title: 'Low Vitamin D',
     summary:
-      'Your vitamin D is below the healthy range. Very common, very easy to fix — but worth taking seriously.',
+      'Your vitamin D is below the healthy range. Very common, and usually manageable once identified — but worth taking seriously.',
     what: 'Vitamin D is more like a hormone than a vitamin. It’s involved in bone strength, immunity, mood, and hormone balance. Most people in India are deficient because indoor work + sunscreen + skin tone = less natural production.',
     whyMatters:
       'Persistent fatigue, low mood, frequent colds, muscle aches, and even low testosterone are all linked to low D. It’s often the single biggest lever for how you feel day-to-day.',
@@ -56,7 +56,7 @@ const problems: Record<string, Problem> = {
       {
         title: 'Sun on bare skin, 15–20 min',
         detail:
-          'Morning sun on arms and legs, a few times a week. The cheapest fix on the planet.',
+          'Morning sun on arms and legs, a few times a week. The cheapest thing you can do for it.',
       },
       {
         title: 'Supplement 60,000 IU weekly · 8 weeks',
@@ -93,7 +93,7 @@ const problems: Record<string, Problem> = {
       {
         title: 'Daily 30-min walk after dinner',
         detail:
-          'A short walk after meals lowers triglycerides and LDL over weeks. Easy, repeatable, effective.',
+          'A short walk after meals can help lower triglycerides and LDL for many people over weeks — simple and repeatable.',
       },
       {
         title: 'Cut deep-fried, ultra-processed snacks',
@@ -136,7 +136,7 @@ const problems: Record<string, Problem> = {
       {
         title: 'Strength training 2× a week',
         detail:
-          'More muscle = more places to park glucose. The most durable fix there is.',
+          'More muscle = more places to park glucose. The most durable lever there is.',
       },
     ],
     retest: 'Re-test fasting insulin in 12 weeks.',

@@ -13,7 +13,7 @@ const testInfo: Record<string, LearnMore> = {
     importance:
       'This is your starting line. If you only ever run one set of tests, run these. Without them, every other test result is just numbers floating in space. With them, you have a baseline you can compare against for the rest of your life.',
     hormonalImpact:
-      'These six numbers tell you whether your testosterone is low, why it might be low, and whether something else — your thyroid, your blood sugar, your Vitamin D — is the actual cause. You can’t fix one without checking the others.',
+      'These six numbers tell you whether your testosterone is low, why it might be low, and whether something else — your thyroid, your blood sugar, your Vitamin D — is the actual cause. You can’t address one without checking the others.',
     improve: [
       'Just getting tested is the action — you can’t improve what you haven’t measured',
       'Always test in the morning, before eating, so re-tests are comparable',
@@ -25,7 +25,7 @@ const testInfo: Record<string, LearnMore> = {
     measures:
       'The signals from your brain to your testes (LH and FSH), the other hormones in the system (prolactin, estrogen, DHT), and your stress hormones (cortisol, DHEA). Basically, everything that talks to testosterone or shuts it down.',
     importance:
-      'These tell you WHERE the problem is. Low testosterone with high signals from the brain means your testes are tired. Low testosterone with low signals means your brain isn’t pushing hard enough. High prolactin or cortisol means something else is shutting the whole system down. You can’t fix what you haven’t found.',
+      'These tell you WHERE the problem is. Low testosterone with high signals from the brain means your testes are tired. Low testosterone with low signals means your brain isn’t pushing hard enough. High prolactin or cortisol means something else is shutting the whole system down. You can’t address what you haven’t found.',
     hormonalImpact:
       'Your brain talks to your testes through a chain of signals. This panel measures every step in that chain — plus your stress hormones, which interrupt it constantly. The quickest path to a real diagnosis when something’s clearly off but the basics didn’t explain why.',
     improve: [
@@ -57,9 +57,9 @@ const testInfo: Record<string, LearnMore> = {
     measures:
       'Iron stores (ferritin), Vitamin B12, zinc, and magnesium — the four shortages that quietly cause symptoms that LOOK hormonal. Tired? Foggy? Hair falling? Sleeping badly? It’s often one of these, not your hormones.',
     importance:
-      'Cheap to check, easy to fix. Many men get treated for low testosterone or thyroid problems when the actual cause is one of these four shortages. Rule these out before assuming the problem is hormonal.',
+      'Cheap to check, often manageable. Many men get treated for low testosterone or thyroid problems when the actual cause is one of these four shortages. Rule these out before assuming the problem is hormonal.',
     hormonalImpact:
-      'You need Vitamin D to make testosterone. You need zinc to make testosterone. You need iron for your thyroid to work. You need magnesium to handle stress. Fix the basics first — a lot of "hormone problems" disappear once you do.',
+      'You need Vitamin D to make testosterone. You need zinc to make testosterone. You need iron for your thyroid to work. You need magnesium to handle stress. Cover the basics first — a lot of "hormone problems" ease once you do.',
     improve: [
       'Vitamin D: get sunlight + take a supplement if needed; aim for a level between 40 and 80',
       'B12: take methylcobalamin if you’re vegetarian or your level is on the low side',
@@ -73,9 +73,9 @@ const testInfo: Record<string, LearnMore> = {
     measures:
       'A full thyroid check (T3 and T4 on top of TSH), a general blood count, and a prostate marker (PSA, for men 40+). Routine checks that catch problems before symptoms show up.',
     importance:
-      'These aren’t for fixing what’s wrong — they’re for spotting what could go wrong before it does. Catches thyroid problems the basic test misses, blood disorders, and early prostate changes.',
+      'These aren’t for addressing what’s wrong — they’re for spotting what could go wrong before it does. Catches thyroid problems the basic test misses, blood disorders, and early prostate changes.',
     hormonalImpact:
-      'Thyroid problems and low testosterone feel almost identical — tired, slow, low sex drive — but the fix is different for each. Anaemia (from any cause) also drags testosterone down. PSA gives you a personal baseline for prostate health.',
+      'Thyroid problems and low testosterone feel almost identical — tired, slow, low sex drive — but the approach is different for each. Anaemia (from any cause) also drags testosterone down. PSA gives you a personal baseline for prostate health.',
     improve: [
       'These tests are early-warning systems — the action is just running them',
       'Once a year is right for most men over 40',

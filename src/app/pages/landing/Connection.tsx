@@ -1,10 +1,13 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
+  Check,
   CheckCircle2,
   ChevronDown,
   FlaskConical,
 } from 'lucide-react';
+import { useQuiz } from '../../AppContext';
 import { Reveal, SectionHeader } from './shared';
 
 type Station = {
@@ -41,15 +44,21 @@ const STATIONS: Station[] = [
   },
 ];
 
-const SYMPTOMS: string[] = [
-  'Hair loss',
-  'Low libido',
-  'Belly fat',
-  'Infertility',
-  'Low energy',
-  'ED',
-  'Poor sleep',
-  'Brain fog',
+// Landing symptom chips, mapped to the quiz's own symptom ids (data/quiz.ts)
+// so a selection here can SEED the quiz — the user taps what sounds like
+// them, hits the CTA, and the quiz opens already pre-filled. That continuity
+// (the Hims/Noom "quiz-funnel" pattern) is the conversion lift; an
+// interactive checklist on the landing turns a passive section into
+// onboarding. ids must match SYMPTOM_WEIGHTS keys in QuizContext.
+const SYMPTOMS: { id: string; label: string }[] = [
+  { id: 'hair-loss', label: 'Hair loss' },
+  { id: 'low-libido', label: 'Low libido' },
+  { id: 'belly-fat', label: 'Belly fat' },
+  { id: 'fertility-concerns', label: 'Infertility' },
+  { id: 'low-energy', label: 'Low energy' },
+  { id: 'difficulty-in-bed', label: 'ED' },
+  { id: 'poor-sleep', label: 'Poor sleep' },
+  { id: 'brain-fog', label: 'Brain fog' },
 ];
 
 export default function ConnectionSection({
@@ -57,6 +66,27 @@ export default function ConnectionSection({
 }: {
   onStart: () => void;
 }) {
+  const { setQuiz } = useQuiz();
+  // Tap-to-select symptoms. Selection lives here (lifted) so the diagram's
+  // chip grid and the conversion CTA in the right column share one source.
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const toggle = (id: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  // Seed the quiz with whatever the user ticked, then open it — so the
+  // quiz's symptoms step is already pre-filled (no re-asking). With nothing
+  // ticked this is just "start the quiz", preserving the old behaviour.
+  const startWithSelected = () => {
+    if (selected.size > 0) setQuiz({ symptoms: [...selected] });
+    onStart();
+  };
+  const n = selected.size;
+
   return (
     <section
       id="connection"
@@ -82,7 +112,7 @@ export default function ConnectionSection({
         <div className="mt-12 md:mt-16 grid md:grid-cols-12 gap-10 md:gap-14 items-start">
           <div className="md:col-span-7">
             <Reveal>
-              <ConnectionDiagram />
+              <ConnectionDiagram selected={selected} onToggle={toggle} />
             </Reveal>
           </div>
 
@@ -103,8 +133,8 @@ export default function ConnectionSection({
                 <ul className="mt-5 grid gap-2.5 text-caption">
                   {[
                     'One bloodwork picture, not eight specialists.',
-                    'Personalised to your symptoms, not a generic panel.',
-                    'Plain English. Doctor-grade depth.',
+                    'Matched to your symptoms, not a generic panel.',
+                    'Plain English, backed by cited guidelines.',
                   ].map((line) => (
                     <li key={line} className="flex items-start gap-2">
                       <CheckCircle2
@@ -115,11 +145,28 @@ export default function ConnectionSection({
                     </li>
                   ))}
                 </ul>
+                {/* Live echo of the selection — closes the loop on the tapped
+                    chips and previews that the quiz will continue from here. */}
+                <p className="mt-5 text-caption text-ink-soft min-h-5" aria-live="polite">
+                  {n > 0 ? (
+                    <>
+                      <span className="font-bold text-clay">{n}</span> selected —
+                      we’ll start your check-up with{' '}
+                      {n === 1 ? 'it' : 'these'}.
+                    </>
+                  ) : (
+                    <span className="text-muted">
+                      Tap the symptoms that sound like you →
+                    </span>
+                  )}
+                </p>
                 <button
-                  onClick={onStart}
-                  className="mt-6 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-blue-600 hover:bg-blue-700 text-on-primary text-caption font-semibold shadow-clinical transition-colors"
+                  onClick={startWithSelected}
+                  className="mt-3 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-clay hover:opacity-90 text-on-clay text-caption font-semibold shadow-clinical transition-opacity"
                 >
-                  See what’s actually going on
+                  {n > 0
+                    ? `See what your ${n} ${n === 1 ? 'symptom' : 'symptoms'} connect to`
+                    : 'See what’s actually going on'}
                   <ArrowRight size={14} />
                 </button>
               </div>
@@ -137,12 +184,26 @@ export default function ConnectionSection({
  * Replaces the previous radial "hub + spokes" treatment, which read as a
  * generic healthtech logo. This version actually teaches the science.
  */
-function ConnectionDiagram({ compact = false }: { compact?: boolean }) {
+function ConnectionDiagram({
+  compact = false,
+  selected,
+  onToggle,
+}: {
+  compact?: boolean;
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+}) {
   if (compact) return <CascadeCompact />;
-  return <CascadeBig />;
+  return <CascadeBig selected={selected} onToggle={onToggle} />;
 }
 
-function CascadeBig() {
+function CascadeBig({
+  selected,
+  onToggle,
+}: {
+  selected: Set<string>;
+  onToggle: (id: string) => void;
+}) {
   return (
     <div className="mx-auto w-full max-w-[480px]">
       <span className="sr-only">
@@ -200,29 +261,43 @@ function CascadeBig() {
         </div>
       </div>
 
-      {/* Branching divider */}
+      {/* Branching divider — now an invitation to interact. */}
       <div className="mt-8 flex items-center gap-3">
         <span className="flex-1 h-px bg-blue-200" />
         <span className="text-micro uppercase tracking-eyebrow font-bold text-blue-700 whitespace-nowrap">
-          When the axis is off — you feel it as
+          When the axis is off — tap what you feel
         </span>
         <span className="flex-1 h-px bg-blue-200" />
       </div>
 
-      {/* Symptoms — 2 × 4 grid */}
+      {/* Symptoms — 2 × 4 grid of TAPPABLE chips. Selecting any seeds the
+          quiz (handled by the parent), turning this teaching diagram into
+          the first step of onboarding. Selected = clay accent + check. */}
       <div className="mt-5 grid grid-cols-2 gap-2">
-        {SYMPTOMS.map((label, i) => (
-          <motion.div
-            key={label}
-            initial={{ opacity: 0, y: 8 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.35, delay: 1.2 + i * 0.05 }}
-            className="px-3 py-2.5 rounded-xl bg-surface border border-line text-center font-semibold text-caption text-ink shadow-clinical"
-          >
-            {label}
-          </motion.div>
-        ))}
+        {SYMPTOMS.map((s, i) => {
+          const isSel = selected.has(s.id);
+          return (
+            <motion.button
+              key={s.id}
+              type="button"
+              onClick={() => onToggle(s.id)}
+              aria-pressed={isSel}
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.35, delay: 1.2 + i * 0.05 }}
+              whileTap={{ scale: 0.97 }}
+              className={`inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl border text-center font-semibold text-caption shadow-clinical transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/60 ${
+                isSel
+                  ? 'bg-clay border-clay text-on-clay'
+                  : 'bg-surface border-line text-ink hover:border-line-strong'
+              }`}
+            >
+              {isSel && <Check size={13} className="shrink-0" />}
+              {s.label}
+            </motion.button>
+          );
+        })}
       </div>
     </div>
   );
@@ -499,12 +574,12 @@ function CascadeCompact() {
       </div>
 
       <div className="mt-2 flex flex-wrap justify-center gap-1">
-        {SYMPTOMS.slice(0, 5).map((label) => (
+        {SYMPTOMS.slice(0, 5).map((s) => (
           <span
-            key={label}
+            key={s.id}
             className="text-micro px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold"
           >
-            {label}
+            {s.label}
           </span>
         ))}
         <span className="text-micro text-muted px-1 py-0.5">+ 3 more</span>

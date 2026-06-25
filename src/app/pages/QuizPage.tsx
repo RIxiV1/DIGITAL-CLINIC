@@ -6,7 +6,6 @@ import {
   Brain,
   Check,
   ShieldCheck,
-  Sparkles,
   X,
 } from 'lucide-react';
 import Button from '../components/Button';
@@ -689,7 +688,7 @@ function ExitConfirm({
 }
 
 /* ------------------------------------------------------------------ */
-/* "Personalizing your insights..." transition                         */
+/* "Reading your answers…" transition                                  */
 /* ------------------------------------------------------------------ */
 
 const personalizingSteps = [
@@ -739,22 +738,11 @@ function PersonalizingOverlay({ onDone }: { onDone: () => void }) {
             className="relative grid place-items-center w-16 h-16 rounded-3xl bg-indigo-600 text-on-primary shadow-indigo"
           >
             <Brain size={26} strokeWidth={2.2} />
-            <motion.span
-              animate={{ opacity: [0, 1, 0], y: [4, -10] }}
-              transition={{
-                duration: 1.4,
-                repeat: Infinity,
-                ease: 'easeOut',
-              }}
-              className="absolute -top-1.5 -right-1.5 grid place-items-center w-6 h-6 rounded-full bg-gold-500 text-indigo-900"
-            >
-              <Sparkles size={12} />
-            </motion.span>
           </motion.div>
         </div>
 
         <h2 className="font-display text-display-md leading-tight mt-7 text-balance">
-          Personalizing your insights…
+          Reading your answers…
         </h2>
 
         <div className="mt-3 h-5 relative">

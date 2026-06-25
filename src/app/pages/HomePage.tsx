@@ -6,42 +6,30 @@ import {
   useRef,
   useState,
 } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   AlertTriangle,
   CalendarClock,
   ChevronRight,
-  FileText,
-  Plus,
-  Search,
-  Trash2,
   Upload,
   X,
 } from 'lucide-react';
-import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
-import Pill from '../components/Pill';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
-import StatusBadge from '../components/StatusBadge';
 import DashboardHeadline from '../components/DashboardHeadline';
 import MarkerAttentionCard from '../components/MarkerAttentionCard';
-import TrendRow from '../components/TrendRow';
 import LearnMoreModal from '../components/LearnMoreModal';
 import StatusKey from '../components/StatusKey';
 import { useNavigation, useReports } from '../AppContext';
-import { useModalA11y } from '../utils/useModalA11y';
 import {
   CATALOG_VERSION,
   getTrend,
-  STATUS_FILTER_OPTIONS,
   type Biomarker,
   type BiomarkerCategoryId,
-  type StatusFilterId,
 } from '../data/biomarkers';
 import {
-  badgeFor,
   getCombinedSnapshot,
   getPrimaryReport,
   getRetestReminder,
@@ -55,8 +43,15 @@ import {
   saveRetestDismissedReportId,
 } from '../utils/persistence';
 import { getMarkerInfo } from '../data/markerInfo';
-
-type StatusFilter = StatusFilterId;
+// Extracted dashboard view components + shared types. This page was a
+// ~1,600-line monolith; the Explore panes and the delete modal now live
+// in ./home/*.
+import type { LockerSort, StatusFilter } from './home/types';
+import AllMarkersPane from './home/AllMarkersPane';
+import TrendsPane from './home/TrendsPane';
+import LockerPane from './home/LockerPane';
+import DeleteReportConfirm from './home/DeleteReportConfirm';
+import SectionHeading from './home/SectionHeading';
 
 // Filter labels are sourced from biomarkers.ts STATUS_FILTER_OPTIONS so
 // the dashboard, the results page, and any future filter surface read
@@ -96,7 +91,6 @@ type StatusFilter = StatusFilterId;
  * "what you'll see" preview + sample-data affordance — no point hiding
  * disclosures behind drawers when there's nothing to disclose.
  */
-type LockerSort = 'newest' | 'oldest' | 'lab';
 type ExploreTab = 'markers' | 'trends' | 'reports';
 
 // How many flagged markers the Top Concern zone (2b) surfaces on first
@@ -428,6 +422,13 @@ export default function HomePage() {
     0,
     flaggedMarkersAll.length - topFlagged.length,
   );
+  // Reassurance count for the "Where to start" section. Research on
+  // abnormal-result communication (patient-portal studies) is consistent:
+  // pairing the flagged markers with the in-range majority — and noting one
+  // reading isn't the whole story — mitigates the alarm that a wall of
+  // "flagged" items triggers. So we close the section with what's FINE, not
+  // only what's off.
+  const inRangeCount = biomarkers.filter((m) => m.status === 'good').length;
   const totalMatches = visibleMarkers.length;
   const hasAnyMarkers = biomarkers.length > 0;
   const hasTrends = trendsByPathway.length > 0;
@@ -731,6 +732,17 @@ export default function HomePage() {
               </button>
             </div>
           )}
+          {/* Reassurance close — pairs the flagged markers with the in-range
+              majority so the section doesn't read as all-bad-news (anxiety
+              mitigation, grounded in abnormal-result-communication research). */}
+          {inRangeCount > 0 && (
+            <p className="mt-4 text-caption text-ink-soft leading-relaxed max-w-2xl">
+              The rest — {inRangeCount}{' '}
+              {inRangeCount === 1 ? 'marker is' : 'markers are'} in range. One
+              reading isn’t the whole story; bring the flagged ones to your
+              doctor.
+            </p>
+          )}
           </Container>
         </motion.div>
       )}
@@ -971,560 +983,6 @@ export default function HomePage() {
 }
 
 /* ------------------------------------------------------------------ */
-/* The old Disclosure primitive was removed here: Zone 4's three        */
-/* independent drawers (which stacked into a three-screen wall when more */
-/* than one was open) are replaced by the segmented "Explore your data"  */
-/* control in the main render, showing a single pane at a time.          */
-/* ------------------------------------------------------------------ */
-
-/* ------------------------------------------------------------------ */
-/* AllMarkersPane — body of the "All markers" tab                      */
-/*                                                                      */
-/* Contains the search input, status filter pills, match-count live    */
-/* region, and the marker grid. Lifted out of the main render so the    */
-/* HomePage component stays under the cognitive limit too.              */
-/* ------------------------------------------------------------------ */
-
-function AllMarkersPane({
-  query,
-  setQuery,
-  statusFilter,
-  setStatusFilter,
-  isFiltering,
-  totalMatches,
-  totalMarkers,
-  disclosedMarkers,
-  onMarkerAction,
-  openLearnMore,
-  scopeLabel,
-  onClearScope,
-  flaggedCount,
-}: {
-  query: string;
-  setQuery: (v: string) => void;
-  statusFilter: StatusFilter;
-  setStatusFilter: (v: StatusFilter) => void;
-  isFiltering: boolean;
-  totalMatches: number;
-  totalMarkers: number;
-  disclosedMarkers: Biomarker[];
-  onMarkerAction: (m: Biomarker) => (() => void) | undefined;
-  openLearnMore: (name: string) => (e: React.MouseEvent) => void;
-  /** Pathway name when the pane was opened via a Vitals Strip tile —
-   *  shown as a removable chip so the implicit scope is visible. */
-  scopeLabel?: string;
-  onClearScope: () => void;
-  /** How many markers are flagged in this report — drives the idle
-   *  empty-state copy when the hero already shows them all. */
-  flaggedCount: number;
-}) {
-  return (
-    <div>
-      <div className="flex items-center gap-2">
-        <div className="relative flex-1">
-          <Search
-            size={16}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
-          />
-          <input
-            type="text"
-            inputMode="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search markers, goals, or tests"
-            aria-label="Search markers, goals, or tests"
-            className="w-full h-12 pl-10 pr-12 rounded-[14px] bg-canvas/70 border border-line text-body-sm placeholder:text-muted text-ink focus:outline-none focus:ring-2 focus:ring-indigo-400/60 focus:border-indigo-400"
-          />
-          <AnimatePresence initial={false}>
-            {query && (
-              <motion.button
-                key="clear-marker-search"
-                type="button"
-                onClick={() => setQuery('')}
-                aria-label="Clear search"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.8 }}
-                transition={{ duration: 0.15, ease: 'easeOut' }}
-                className="absolute right-0 top-1/2 -translate-y-1/2 grid place-items-center w-12 h-12 rounded-full text-muted hover:text-ink"
-              >
-                <X size={14} />
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Pathway scope chip. Present when the pane was opened by tapping a
-          Vitals Strip tile — makes the otherwise-invisible category scope
-          explicit and removable, so the user isn't left wondering why only
-          some markers show. */}
-      {scopeLabel && (
-        <div className="mt-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-1 pl-3 pr-1.5 h-8 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 text-caption font-semibold">
-            {scopeLabel}
-            <button
-              type="button"
-              onClick={onClearScope}
-              aria-label={`Clear ${scopeLabel} filter`}
-              className="grid place-items-center w-6 h-6 rounded-full hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-            >
-              <X size={12} />
-            </button>
-          </span>
-        </div>
-      )}
-
-      {/* Bleed pattern: -mx-5 expands the scroll viewport past the
-       *  Container's px-5 gutters so the leftmost pill aligns to the
-       *  Container's outer left edge (rather than its inner content
-       *  edge) and the row can scroll edge-to-edge. The matching px-5
-       *  restores comfortable padding inside the scroll viewport for
-       *  the first and last pills. ReportResultsPage's mobile filter
-       *  strip uses the identical pattern — previously this one used
-       *  `-mx-1 px-1` which was asymmetric with the parent Container
-       *  and could let a long-label pill cause horizontal overflow
-       *  on a narrow phone. */}
-      <div className="mt-3 overflow-x-auto scrollbar-none -mx-5 px-5">
-        <div className="flex gap-2 w-max">
-          {STATUS_FILTER_OPTIONS.map((f) => {
-            const active = statusFilter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setStatusFilter(f.id)}
-                className={`px-4 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
-                  active
-                    ? 'bg-indigo-600 text-on-primary shadow-soft'
-                    : 'bg-canvas/70 border border-line text-ink-soft hover:border-indigo-300'
-                }`}
-                aria-pressed={active}
-              >
-                {f.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {isFiltering && (
-        <div
-          role="status"
-          aria-live="polite"
-          className="mt-3 text-caption text-ink-soft"
-        >
-          {totalMatches === 0 ? (
-            <span>No matches. Try a broader search.</span>
-          ) : (
-            <span>
-              Showing{' '}
-              <span className="font-semibold text-ink">{totalMatches}</span> of{' '}
-              {totalMarkers} markers
-            </span>
-          )}
-          <button
-            type="button"
-            onClick={() => {
-              setQuery('');
-              setStatusFilter('all');
-              onClearScope();
-            }}
-            className="ml-2 text-indigo-700 font-semibold hover:underline"
-          >
-            Clear filters
-          </button>
-        </div>
-      )}
-
-      {disclosedMarkers.length > 0 ? (
-        <div className="mt-4 grid sm:grid-cols-2 gap-3">
-          {disclosedMarkers.map((m) => (
-            <div key={m.id} className="h-full">
-              <MarkerAttentionCard
-                marker={m}
-                onAction={onMarkerAction(m)}
-                onLearnMore={
-                  getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
-                }
-              />
-            </div>
-          ))}
-        </div>
-      ) : isFiltering ? (
-        <Card className="mt-4 text-center !py-8">
-          <div className="mx-auto grid place-items-center w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-100 mb-3">
-            <Search size={20} />
-          </div>
-          <div className="font-display text-body-lg">Nothing matched.</div>
-          <p className="text-caption text-ink-soft mt-1.5 max-w-sm mx-auto leading-relaxed">
-            Try a different keyword, or switch the filter back to "All markers".
-          </p>
-        </Card>
-      ) : (
-        <Card className="mt-4 text-center !py-8">
-          <div className="text-caption text-ink-soft leading-relaxed">
-            {flaggedCount > 0
-              ? 'Every flagged marker is shown up top. Switch the filter to "All markers" to browse the rest of this report.'
-              : 'Everything looks healthy. Switch the filter to "All markers" to browse everything in this report.'}
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* TrendsPane — body of the "Compare to your last report" disclosure  */
-/* Same pathway-grouped sparkline rows that used to sit always-on;    */
-/* now rendered only when the parent disclosure is open.              */
-/* ------------------------------------------------------------------ */
-
-function TrendsPane({
-  trendsByPathway,
-  asOf,
-  openLearnMore,
-}: {
-  trendsByPathway: Array<{
-    id: string;
-    name: string;
-    categories: BiomarkerCategoryId[];
-    markers: Biomarker[];
-  }>;
-  asOf?: string;
-  openLearnMore: (name: string) => (e: React.MouseEvent) => void;
-}) {
-  return (
-    <div className="grid gap-3">
-      {trendsByPathway.map((group) => {
-        const borderClass =
-          group.id === 'hormonal'
-            ? 'border-l-4 border-l-attention'
-            : group.id === 'metabolic'
-              ? 'border-l-4 border-l-indigo-600'
-              : group.id === 'nutritional'
-                ? 'border-l-4 border-l-good'
-                : '';
-        return (
-          <div
-            key={group.id}
-            className={`rounded-[18px] bg-canvas/40 border border-line/70 ${borderClass} overflow-hidden`}
-          >
-            <div className="px-4 pt-4 pb-1">
-              <div className="text-micro uppercase tracking-eyebrow font-bold text-indigo-700">
-                {group.name}
-              </div>
-            </div>
-            <div className="px-4 pb-2">
-              {group.markers.map((m) => (
-                <TrendRow
-                  key={m.id}
-                  marker={m}
-                  asOf={asOf}
-                  onLearnMore={
-                    getMarkerInfo(m.name) ? openLearnMore(m.name) : undefined
-                  }
-                />
-              ))}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* LockerPane — body of the "Your reports" disclosure                   */
-/*                                                                      */
-/* Search + sort controls (only when 3+ reports) + the full grid of    */
-/* report cards + the Upload action. The disclosure parent is the       */
-/* open/close control, so this pane doesn't need its own collapse       */
-/* affordance — when it renders, it renders ALL reports (no cap). The   */
-/* previous "see all N reports / show fewer" buttons are gone.         */
-/* ------------------------------------------------------------------ */
-
-function LockerPane({
-  reports,
-  displayedReports,
-  lockerQuery,
-  setLockerQuery,
-  lockerSort,
-  setLockerSort,
-  onUpload,
-  onOpenReport,
-  onDeleteReport,
-}: {
-  reports: Report[];
-  displayedReports: Report[];
-  lockerQuery: string;
-  setLockerQuery: (v: string) => void;
-  lockerSort: LockerSort;
-  setLockerSort: (v: LockerSort) => void;
-  onUpload: () => void;
-  onOpenReport: (r: Report) => void;
-  onDeleteReport: (id: string) => void;
-}) {
-  // Surface the search + sort row only when the locker holds enough
-  // reports to need them. Below 3, the chrome is louder than the
-  // content it would control.
-  const showControls = reports.length >= 3;
-
-  return (
-    <div>
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="text-caption text-muted">
-          {reports.length} {reports.length === 1 ? 'report' : 'reports'} on file
-        </div>
-        <button
-          type="button"
-          onClick={onUpload}
-          aria-label="Upload a new report"
-          className="inline-flex items-center justify-center gap-1.5 min-h-12 h-12 w-12 sm:w-auto px-0 sm:px-4 rounded-full bg-indigo-600 text-on-primary text-caption font-semibold shadow-soft hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-        >
-          <Plus size={16} />
-          <span className="hidden sm:inline">Upload</span>
-        </button>
-      </div>
-
-      {showControls && (
-        <div className="flex flex-col sm:flex-row gap-2.5 mb-4">
-          <div className="relative flex-1 min-w-0">
-            <Search
-              size={14}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none"
-              aria-hidden
-            />
-            <input
-              type="search"
-              value={lockerQuery}
-              onChange={(e) => setLockerQuery(e.target.value)}
-              placeholder="Search by filename or lab…"
-              aria-label="Filter reports"
-              className="w-full h-10 pl-9 pr-9 rounded-full bg-surface border border-line text-caption placeholder:text-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-            />
-            <AnimatePresence initial={false}>
-              {lockerQuery && (
-                <motion.button
-                  key="clear-locker-search"
-                  type="button"
-                  onClick={() => setLockerQuery('')}
-                  aria-label="Clear search"
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.8 }}
-                  transition={{ duration: 0.15, ease: 'easeOut' }}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 grid place-items-center w-6 h-6 rounded-full text-muted hover:text-ink hover:bg-canvas"
-                >
-                  <X size={12} />
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
-          <div
-            role="radiogroup"
-            aria-label="Sort reports"
-            className="inline-flex p-0.5 rounded-full bg-surface border border-line text-caption font-semibold shrink-0"
-          >
-            {(
-              [
-                { id: 'newest', label: 'Newest' },
-                { id: 'oldest', label: 'Oldest' },
-                { id: 'lab', label: 'Lab' },
-              ] as Array<{ id: LockerSort; label: string }>
-            ).map((opt) => (
-              <button
-                key={opt.id}
-                type="button"
-                role="radio"
-                aria-checked={lockerSort === opt.id}
-                onClick={() => setLockerSort(opt.id)}
-                className={`h-9 px-3.5 rounded-full transition-colors ${
-                  lockerSort === opt.id
-                    ? 'bg-indigo-600 text-on-primary'
-                    : 'text-ink-soft hover:text-ink'
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {displayedReports.length === 0 ? (
-        <Card className="text-center !py-8">
-          <div className="text-caption text-ink-soft">
-            No reports match{' '}
-            <span className="font-semibold text-ink">"{lockerQuery}"</span>.
-          </div>
-          <Button
-            size="sm"
-            variant="ghost"
-            className="mt-3"
-            onClick={() => setLockerQuery('')}
-          >
-            Clear search
-          </Button>
-        </Card>
-      ) : (
-        <div className="grid sm:grid-cols-2 gap-3">
-          {displayedReports.map((r) => (
-            <div key={r.id} className="group min-w-0">
-              <Card
-                interactive
-                onClick={() => onOpenReport(r)}
-                className={`h-full ${
-                  r.status === 'processing' ? 'animate-pulse-shimmer' : ''
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="grid place-items-center w-11 h-11 rounded-2xl bg-indigo-50 text-indigo-700 shrink-0">
-                    <FileText size={20} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="font-semibold text-ink truncate">
-                        {r.name}
-                      </div>
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onDeleteReport(r.id);
-                        }}
-                        aria-label={`Delete ${r.name}`}
-                        title="Delete this report"
-                        className="shrink-0 grid place-items-center w-11 h-11 -mr-2 rounded-full text-muted hover:text-concern hover:bg-concern-soft opacity-100 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-within:opacity-100 focus-visible:opacity-100 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-concern/60"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                    <div className="text-caption text-muted mt-1 flex items-center gap-1.5 min-w-0">
-                      <span className="truncate min-w-0">
-                        {r.uploadedOn} · {r.lab}
-                      </span>
-                      {r.isSample && (
-                        <Pill tone="gold" size="sm" className="shrink-0">
-                          Sample
-                        </Pill>
-                      )}
-                    </div>
-                    <div className="mt-2 flex items-center gap-2 flex-wrap">
-                      <StatusBadge status={badgeFor(r)} />
-                    </div>
-                    {r.status === 'ready' && r.biomarkers.length > 0 && (
-                      <div className="text-caption text-muted mt-0.5">
-                        {r.biomarkers.length} marker
-                        {r.biomarkers.length === 1 ? '' : 's'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/* Per-report delete confirmation                                       */
-/*                                                                      */
-/* Lives at the page level (one modal at a time) so destruction-of-data */
-/* is uniformly Esc/click-out dismissable and shares the focus-trap +   */
-/* scroll-lock contract with the rest of the app's modals.              */
-/* ------------------------------------------------------------------ */
-
-function DeleteReportConfirm({
-  report,
-  onCancel,
-  onConfirm,
-}: {
-  report: Report | null;
-  onCancel: () => void;
-  onConfirm: () => void;
-}) {
-  const cardRef = useRef<HTMLDivElement | null>(null);
-  const titleId = useId();
-  useModalA11y({
-    open: !!report,
-    cardRef,
-    onClose: onCancel,
-  });
-
-  return (
-    <AnimatePresence>
-      {report && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.15 }}
-          onClick={onCancel}
-          className="fixed inset-0 z-50 grid place-items-center bg-ink/40 backdrop-blur-sm p-4"
-          role="presentation"
-        >
-          <motion.div
-            ref={cardRef}
-            initial={{ y: 20, opacity: 0, scale: 0.97 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            exit={{ y: 12, opacity: 0, scale: 0.97 }}
-            transition={{ type: 'spring', stiffness: 360, damping: 30 }}
-            onClick={(e) => e.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={titleId}
-            className="w-full sm:max-w-sm bg-surface rounded-3xl shadow-pop border border-line p-5"
-          >
-            <div className="flex items-start gap-3">
-              <div className="grid place-items-center w-11 h-11 rounded-2xl bg-concern-soft text-concern shrink-0">
-                <Trash2 size={18} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <h2
-                  id={titleId}
-                  className="font-display text-body-lg leading-tight text-ink"
-                >
-                  Delete this report?
-                </h2>
-                <p className="mt-1.5 text-caption text-ink-soft leading-relaxed break-words">
-                  <span className="font-semibold text-ink">{report.name}</span>{' '}
-                  ({report.lab}) will be removed from your locker. This can’t be
-                  undone.
-                </p>
-              </div>
-            </div>
-            <div className="mt-5 flex flex-col-reverse sm:flex-row gap-2">
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={onCancel}
-                responsiveFullWidth
-              >
-                Cancel
-              </Button>
-              <Button
-                size="sm"
-                variant="primary"
-                onClick={onConfirm}
-                responsiveFullWidth
-                className="!bg-concern hover:!bg-concern/90"
-                leading={<Trash2 size={14} />}
-              >
-                Delete report
-              </Button>
-            </div>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
-  );
-}
-
-/* ------------------------------------------------------------------ */
 /* Local helpers                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -1559,38 +1017,3 @@ export const PATHWAYS: Pathway[] = [
   { id: 'electrolytes', name: 'Electrolytes', categories: ['electrolytes'] },
   { id: 'inflammation', name: 'Inflammation', categories: ['inflammation'] },
 ];
-
-function SectionHeading({
-  eyebrow,
-  eyebrowTone = 'indigo',
-  title,
-  subtitle,
-  rightSlot,
-}: {
-  eyebrow: string;
-  /** Pill tone for the eyebrow. Defaults to brand indigo; the top-concern
-   *  heading passes 'concern' for a critical marker so the section's
-   *  urgency matches the card's "talk to a doctor today" framing instead
-   *  of a casual "worth a look". */
-  eyebrowTone?: React.ComponentProps<typeof Pill>['tone'];
-  title: string;
-  subtitle?: string;
-  rightSlot?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-end justify-between gap-3">
-      <div className="min-w-0">
-        <Pill tone={eyebrowTone} size="sm">
-          {eyebrow}
-        </Pill>
-        <h2 className="font-display text-display-md leading-tight mt-2">
-          {title}
-        </h2>
-        {subtitle && (
-          <p className="text-caption text-ink-soft mt-1">{subtitle}</p>
-        )}
-      </div>
-      {rightSlot && <div className="shrink-0">{rightSlot}</div>}
-    </div>
-  );
-}

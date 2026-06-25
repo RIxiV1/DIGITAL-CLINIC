@@ -16,7 +16,7 @@ type Item = {
 
 const items: Item[] = [
   { id: 'home', label: 'Home', page: { type: 'home' }, Icon: House },
-  { id: 'healthMap', label: 'Map', page: { type: 'healthMap' }, Icon: MapIcon },
+  { id: 'healthMap', label: 'Health', page: { type: 'healthMap' }, Icon: MapIcon },
   { id: 'quiz', label: 'Quiz', page: { type: 'quiz' }, Icon: ClipboardList },
   { id: 'profile', label: 'Profile', page: { type: 'profile' }, Icon: User },
 ];
@@ -37,6 +37,7 @@ function navIdFor(page: Page): ItemId {
       return 'quiz';
     case 'profile':
       return 'profile';
+    case 'privacy':
     case 'landing':
       return 'home';
     default:

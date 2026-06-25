@@ -37,6 +37,9 @@ const ProblemDetailPage = lazyWithReload(
   () => import('./pages/ProblemDetailPage'),
 );
 const ProfilePage = lazyWithReload(() => import('./pages/ProfilePage'));
+const PrivacyPolicyPage = lazyWithReload(
+  () => import('./pages/PrivacyPolicyPage'),
+);
 
 function pageKey(p: Page): string {
   switch (p.type) {
@@ -53,6 +56,7 @@ function pageKey(p: Page): string {
     case 'processing':
     case 'manualEntry':
     case 'profile':
+    case 'privacy':
       return p.type;
     default:
       return assertNever(p);
@@ -112,6 +116,9 @@ function PageHost() {
       break;
     case 'profile':
       node = <ProfilePage />;
+      break;
+    case 'privacy':
+      node = <PrivacyPolicyPage />;
       break;
     default:
       assertNever(page);

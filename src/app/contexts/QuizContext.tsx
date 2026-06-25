@@ -106,7 +106,14 @@ export const SYMPTOM_WEIGHTS: Record<
   Partial<Record<RiskSystemId, number>>
 > = {
   'low-energy': { hypogonadism: 4, erectileDysfunction: 1, cardiovascular: 2 },
-  'hair-loss': { hypogonadism: 3 },
+  // Hair loss is a WEAK low-T signal, so it adds only a small hypogonadism
+  // weight (was 3). Male-pattern loss is driven mostly by DHT / androgen
+  // sensitivity and genetics — a man can be bald with high testosterone — so
+  // treating it as a strong low-T flag over-implies hypogonadism. The
+  // hair-relevant workup (DHT, ferritin, thyroid, zinc) is already handled on
+  // the test-recommendation side (SYMPTOM_ADDS in tests.ts), not by inflating
+  // the low-T risk score here.
+  'hair-loss': { hypogonadism: 1 },
   'low-libido': { hypogonadism: 5, erectileDysfunction: 4 },
   'belly-fat': { hypogonadism: 3, erectileDysfunction: 2, cardiovascular: 4 },
   'brain-fog': { hypogonadism: 2, cardiovascular: 1 },

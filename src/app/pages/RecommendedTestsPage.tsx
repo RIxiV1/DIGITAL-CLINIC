@@ -135,7 +135,7 @@ export default function RecommendedTestsPage() {
             offered. */}
         <div className="lg:max-w-3xl">
           <Pill tone="gold" size="md">
-            Personalised for you
+            Based on your answers
           </Pill>
 
           <h1 className="font-display text-display-md lg:text-display-lg leading-tight mt-3 text-balance">
@@ -364,6 +364,17 @@ export default function RecommendedTestsPage() {
                               {starter.includes.length} markers
                             </Pill>
                           </div>
+                          {/* Surface the personalised "why" in the COLLAPSED
+                              state — previously it only appeared after the user
+                              tapped to expand, hiding the one thing that makes
+                              the recommendation feel earned. Existing copy, just
+                              shown up front; line-clamped so the card stays
+                              compact. */}
+                          {!open && (
+                            <p className="mt-2 text-caption leading-relaxed text-ink-soft border-l-2 border-l-gold-500/70 pl-2.5 line-clamp-2">
+                              {starter.whyTemplate(quiz)}
+                            </p>
+                          )}
                           {starter.includes.length > 0 && (
                             <div className="mt-2 text-caption text-ink-soft leading-relaxed">
                               <span className="font-semibold">Includes:</span>{' '}
@@ -442,6 +453,14 @@ export default function RecommendedTestsPage() {
                                 {t.includes.length} markers
                               </Pill>
                             </div>
+                            {/* Personalised "why" up front (collapsed) — this
+                                is the symptom-driven reasoning, the magic that
+                                was hidden behind the expand tap. */}
+                            {!open && (
+                              <p className="mt-2 text-caption leading-relaxed text-ink-soft border-l-2 border-l-gold-500/70 pl-2.5 line-clamp-2">
+                                {t.whyTemplate(quiz)}
+                              </p>
+                            )}
                           </div>
                           <div className="text-indigo-700 shrink-0 mt-1">
                             {open ? (

@@ -69,6 +69,8 @@ export function pageToPath(page: Page): string {
       return '/manual-entry';
     case 'profile':
       return '/profile';
+    case 'privacy':
+      return '/privacy';
     case 'results':
       return `/reports/${encodeURIComponent(page.reportId)}`;
     case 'problem':
@@ -117,6 +119,8 @@ export function pathToPage(pathname: string): Page {
       return { type: 'manualEntry' };
     case '/profile':
       return { type: 'profile' };
+    case '/privacy':
+      return { type: 'privacy' };
   }
 
   // Parameterised routes — keyword case-insensitive (`/i`), param case
