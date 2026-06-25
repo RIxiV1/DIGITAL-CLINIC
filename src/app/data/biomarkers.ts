@@ -190,7 +190,7 @@ export const categories: BiomarkerCategory[] = [
   {
     id: 'liver',
     name: 'Liver',
-    description: 'Your main detox organ.',
+    description: 'Processes nutrients, medications, and waste.',
     icon: '🧪',
   },
   {
@@ -1730,7 +1730,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'down',
     simpleName: 'A triglyceride-carrying cholesterol',
     plain:
-      'Mostly carries triglycerides. It rises and falls with them, so the fix is the same: less sugar, refined carbs, and alcohol.',
+      'Mostly carries triglycerides. It rises and falls with them, so what helps is the same: less sugar, refined carbs, and alcohol.',
   },
 
   /* ---- Thyroid ------------------------------------------------- */

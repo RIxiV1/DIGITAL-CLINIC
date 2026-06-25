@@ -73,7 +73,7 @@ const markerInfo: Record<string, LearnMore> = {
       'LH and FSH are the middle stage of the HPG axis. They sit between hypothalamic GnRH and testicular T / sperm output. Reading them with Total T tells the whole pathway in a single snapshot.',
     improve: [
       'These aren’t numbers you "improve" directly — they’re the diagnostic compass',
-      'If abnormal, the fix sits upstream or downstream: pituitary imaging, weight loss, treat sleep apnea, address opioid/alcohol use',
+      'If abnormal, the answer sits upstream or downstream: pituitary imaging, weight loss, treat sleep apnea, address opioid/alcohol use',
       'Talk to an endocrinologist before any hormone-therapy decision',
     ],
   },
@@ -114,7 +114,7 @@ const markerInfo: Record<string, LearnMore> = {
     importance:
       'Elevated prolactin in men shuts down the entire testosterone system — it suppresses LH/FSH, which suppresses T, which causes low libido, ED, fatigue, and infertility. Often missed because doctors don’t routinely check it in men.',
     hormonalImpact:
-      'High prolactin is one of the most common reversible causes of low T. The fix is usually identifying the cause (medication, pituitary microadenoma, chronic stress, hypothyroidism) and treating that. Once prolactin normalises, T usually follows on its own.',
+      'High prolactin is one of the most common reversible causes of low T. The approach is usually identifying the cause (medication, pituitary microadenoma, chronic stress, hypothyroidism) and treating that. Once prolactin normalises, T usually follows on its own.',
     improve: [
       'Avoid blood draws right after sexual activity or strenuous exercise — both transiently raise it',
       'Review any medications: antipsychotics, antidepressants, and some anti-nausea drugs can raise prolactin',
@@ -406,7 +406,7 @@ const markerInfo: Record<string, LearnMore> = {
     measures:
       'Fats circulating in your blood, mostly converted by your liver from carbs and alcohol. Healthy under 150 mg/dL, ideal under 100.',
     importance:
-      'High triglycerides are usually the FIRST lipid number to rise when metabolic health declines — before LDL, before HbA1c. Catching them early is the easiest fix on the panel.',
+      'High triglycerides are usually the FIRST lipid number to rise when metabolic health declines — before LDL, before HbA1c. Catching them early is the easiest one to turn around on the panel.',
     hormonalImpact:
       'Triglycerides reflect insulin resistance and excess carb/alcohol intake. Both directly suppress testosterone. High triglycerides almost always travel with low free T.',
     improve: [
@@ -485,7 +485,7 @@ const markerInfo: Record<string, LearnMore> = {
     importance:
       'Vitamin D is more like a hormone than a vitamin. Drives bone strength, immune function, mood, and — in men — testosterone production. Most Indian men are deficient because indoor work + sunscreen + skin tone = less natural production.',
     hormonalImpact:
-      'Receptors for Vitamin D exist in the testes — adequate D is required for testosterone production. Indian studies show men with low D have 2.6× higher odds of low T. Fixing D often raises T as a side effect.',
+      'Receptors for Vitamin D exist in the testes — adequate D is required for testosterone production. Indian studies show men with low D have 2.6× higher odds of low T. Correcting low D often improves T too.',
     improve: [
       'Sun on bare skin (arms, legs) for 15–20 min, 3–4× a week',
       'If deficient: 60,000 IU weekly for 8 weeks under medical supervision, then maintenance',
