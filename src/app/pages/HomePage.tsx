@@ -428,6 +428,13 @@ export default function HomePage() {
     0,
     flaggedMarkersAll.length - topFlagged.length,
   );
+  // Reassurance count for the "Where to start" section. Research on
+  // abnormal-result communication (patient-portal studies) is consistent:
+  // pairing the flagged markers with the in-range majority — and noting one
+  // reading isn't the whole story — mitigates the alarm that a wall of
+  // "flagged" items triggers. So we close the section with what's FINE, not
+  // only what's off.
+  const inRangeCount = biomarkers.filter((m) => m.status === 'good').length;
   const totalMatches = visibleMarkers.length;
   const hasAnyMarkers = biomarkers.length > 0;
   const hasTrends = trendsByPathway.length > 0;
@@ -730,6 +737,17 @@ export default function HomePage() {
                 {moreFlaggedCount === 1 ? 'marker' : 'markers'} →
               </button>
             </div>
+          )}
+          {/* Reassurance close — pairs the flagged markers with the in-range
+              majority so the section doesn't read as all-bad-news (anxiety
+              mitigation, grounded in abnormal-result-communication research). */}
+          {inRangeCount > 0 && (
+            <p className="mt-4 text-caption text-ink-soft leading-relaxed max-w-2xl">
+              The rest — {inRangeCount}{' '}
+              {inRangeCount === 1 ? 'marker is' : 'markers are'} in range. One
+              reading isn’t the whole story; bring the flagged ones to your
+              doctor.
+            </p>
           )}
           </Container>
         </motion.div>
