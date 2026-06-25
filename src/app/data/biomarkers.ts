@@ -1461,7 +1461,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'up',
     simpleName: 'Testosterone your body can actually use',
     plain:
-      'The testosterone your body can actually use. Even a small lift here makes a noticeable daily difference. This range assumes the direct (immunoassay) method most labs use — calculated or equilibrium-dialysis free-T reads on a much higher scale, so go by your report’s own reference range.',
+      'The testosterone your body can actually use. When it’s low, even a small lift makes a noticeable daily difference. This range assumes the direct (immunoassay) method most labs use — calculated or equilibrium-dialysis free-T reads on a much higher scale, so go by your report’s own reference range.',
   },
   {
     id: 'estradiol',
@@ -1656,7 +1656,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'down',
     simpleName: 'The bad cholesterol',
     plain:
-      'The cholesterol that builds up in artery walls. Meaningfully above ideal is worth a 12-week plan.',
+      'The cholesterol that builds up in artery walls — lower is better here. When it’s above the ideal range, a focused 12-week plan can bring it down.',
     problemId: 'high-ldl',
   },
   {
