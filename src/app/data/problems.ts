@@ -93,7 +93,7 @@ const problems: Record<string, Problem> = {
       {
         title: 'Daily 30-min walk after dinner',
         detail:
-          'A short walk after meals lowers triglycerides and LDL over weeks. Easy, repeatable, effective.',
+          'A short walk after meals can help lower triglycerides and LDL for many people over weeks — simple and repeatable.',
       },
       {
         title: 'Cut deep-fried, ultra-processed snacks',

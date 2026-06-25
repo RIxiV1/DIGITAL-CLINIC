@@ -331,7 +331,7 @@ export const sampleBiomarkers: Biomarker[] = [
     category: 'metabolic',
     direction: 'down',
     plain:
-      'Right at the upper edge of normal. A walk after every meal will pull this comfortably down.',
+      'Right at the upper edge of normal. For many men, a short walk after meals helps nudge this down over time.',
     history: [
       { date: '2026-01-15', value: 95 },
       { date: '2026-03-04', value: 97 },
@@ -1581,7 +1581,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'down',
     simpleName: 'Blood sugar this morning',
     plain:
-      'A walk after every meal pulls a borderline reading comfortably back down.',
+      'Your blood sugar this morning, before food. Movement after meals helps many men keep it steady — but a high reading is worth confirming with a doctor.',
   },
   {
     id: 'insulin',
