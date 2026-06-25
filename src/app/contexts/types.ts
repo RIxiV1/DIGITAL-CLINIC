@@ -15,7 +15,8 @@ export type Page =
   | { type: 'manualEntry' }
   | { type: 'results'; reportId: string }
   | { type: 'problem'; problemId: string }
-  | { type: 'profile' };
+  | { type: 'profile' }
+  | { type: 'privacy' };
 
 export type QuizAnswers = {
   age?: string;

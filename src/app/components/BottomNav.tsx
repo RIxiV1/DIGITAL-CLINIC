@@ -37,6 +37,7 @@ function navIdFor(page: Page): ItemId {
       return 'quiz';
     case 'profile':
       return 'profile';
+    case 'privacy':
     case 'landing':
       return 'home';
     default:

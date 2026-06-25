@@ -43,6 +43,7 @@ function activeNavId(page: Page): NavSlot['id'] {
       return 'quiz';
     case 'profile':
       return 'profile';
+    case 'privacy':
     case 'landing':
       return 'home';
     default:

@@ -1,4 +1,6 @@
-import { ShieldCheck } from 'lucide-react';
+import { ArrowRight, ShieldCheck } from 'lucide-react';
+import { useNavigation } from '../../AppContext';
+import { pageToPath } from '../../contexts/NavigationContext';
 import { Reveal, SectionHeader } from './shared';
 
 // The three privacy promises — recast from lucide icon-cards (the same stock
@@ -33,6 +35,7 @@ const PROMISES = [
  * reads as one block before the page asks for an upload.
  */
 export default function Privacy() {
+  const { navigate } = useNavigation();
   return (
     <section
       id="privacy"
@@ -89,6 +92,23 @@ export default function Privacy() {
                   ))}
                 </dl>
               </div>
+              {/* Real <a href> so the dedicated /privacy page is crawlable +
+                  shareable; onClick keeps it an in-app SPA navigation
+                  (preventDefault stops the full reload). */}
+              <a
+                href={pageToPath({ type: 'privacy' })}
+                onClick={(e) => {
+                  e.preventDefault();
+                  navigate({ type: 'privacy' });
+                }}
+                className="group mt-4 inline-flex items-center gap-1.5 text-caption font-semibold text-clay hover:opacity-70 transition-opacity focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-forest/60 rounded-sm"
+              >
+                Read the full security model
+                <ArrowRight
+                  size={14}
+                  className="transition-transform group-hover:translate-x-0.5"
+                />
+              </a>
             </div>
           </Reveal>
         </div>
