@@ -1380,6 +1380,13 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     ],
     unit: 'ng/dL',
     unitAliases: ['ng/dl', 'ng / dL'],
+    // SI conversion: many non-US labs (Europe + a large share of Indian
+    // labs) report testosterone in nmol/L. 1 nmol/L = 28.842 ng/dL
+    // (MW 288.42). Without this a perfectly healthy ~20 nmol/L either reads
+    // as ~21 ng/dL — severe-hypogonadism-looking — or gets dropped on the
+    // unmatched unit. Factor lives here so the unit-reconciliation receipt
+    // shows "lab printed 20.8 nmol/L → converted".
+    altUnits: [{ units: ['nmol/L', 'nmol/l'], toCanonical: 28.842 }],
     min: 300,
     max: 1000,
     optimalMin: 600,
@@ -1418,6 +1425,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Free Testosterone', 'Testosterone Free'],
     unit: 'pg/mL',
     unitAliases: ['pg/ml'],
+    // SI conversion ONLY (not a band/method switch): pmol/L → pg/mL at
+    // 0.28842 (MW 288.42). This converts the unit; the assay-method
+    // ambiguity documented below is a separate, deliberately-unsolved issue.
+    altUnits: [{ units: ['pmol/L', 'pmol/l'], toCanonical: 0.28842 }],
     // Method-dependent marker. This 8.7–25.1 pg/mL band is the DIRECT
     // (analog immunoassay) male range — the method most Indian labs run.
     // Calculated free-T and equilibrium-dialysis assays read on a wholly
@@ -1458,6 +1469,9 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Estradiol', 'E2', 'Estradiol (E2)'],
     unit: 'pg/mL',
     unitAliases: ['pg/ml'],
+    // SI conversion: pmol/L → pg/mL at 0.27238 (MW 272.38). Estradiol is
+    // very commonly reported in pmol/L outside the US.
+    altUnits: [{ units: ['pmol/L', 'pmol/l'], toCanonical: 0.27238 }],
     min: 11,
     max: 44,
     category: 'hormones',

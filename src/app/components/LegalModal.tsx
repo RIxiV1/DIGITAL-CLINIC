@@ -177,7 +177,7 @@ const CONTENT: Record<LegalKind, Doc> = {
         heading: "What this protects against (and what it doesn't)",
         paragraphs: [
           'Because there is no server, there is nothing for us — or anyone breaching us — to leak. We cannot sell, share, or accidentally expose data we never received.',
-          'However: anyone with access to your unlocked device can open the app and read your data, and any browser extension you have installed can read localStorage on this site. We do not encrypt the values. Use this product on a device you trust.',
+          'By default the values are stored unencrypted, so anyone with access to your unlocked device — or a browser extension with page access — can read them. For a shared device, turn on the optional PIN lock in Profile: it encrypts your reports and quiz answers at rest (AES-GCM-256), so a snoop sees only ciphertext. Either way, use this product on a device you trust.',
         ],
       },
       {
