@@ -22,7 +22,7 @@ type NavSlot = {
 
 const NAV_SLOTS: NavSlot[] = [
   { id: 'home', label: 'Home', target: { type: 'home' } },
-  { id: 'healthMap', label: 'Map', target: { type: 'healthMap' } },
+  { id: 'healthMap', label: 'Health', target: { type: 'healthMap' } },
   { id: 'quiz', label: 'Quiz', target: { type: 'quiz' } },
   { id: 'profile', label: 'Profile', target: { type: 'profile' } },
 ];
