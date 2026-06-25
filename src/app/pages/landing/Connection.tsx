@@ -103,7 +103,7 @@ export default function ConnectionSection({
                 <ul className="mt-5 grid gap-2.5 text-caption">
                   {[
                     'One bloodwork picture, not eight specialists.',
-                    'Personalised to your symptoms, not a generic panel.',
+                    'Matched to your symptoms, not a generic panel.',
                     'Plain English, backed by cited guidelines.',
                   ].map((line) => (
                     <li key={line} className="flex items-start gap-2">

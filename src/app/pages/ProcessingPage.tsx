@@ -185,7 +185,7 @@ export default function ProcessingPage() {
   const detailText =
     detailOverride ??
     parseSteps[stepIndex]?.detail ??
-    'Almost done — getting your insights ready.';
+    'Almost done — putting your results together.';
   const typedDetail = useTypewriter(detailText, !prefersReduced);
   /** Holds the parsed result after a successful extraction. We DON'T
    *  navigate to /results until the user confirms — previously the

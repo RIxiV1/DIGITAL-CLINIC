@@ -135,7 +135,7 @@ export default function RecommendedTestsPage() {
             offered. */}
         <div className="lg:max-w-3xl">
           <Pill tone="gold" size="md">
-            Personalised for you
+            Based on your answers
           </Pill>
 
           <h1 className="font-display text-display-md lg:text-display-lg leading-tight mt-3 text-balance">
