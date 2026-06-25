@@ -56,10 +56,11 @@ export default function Hero({
 
             <motion.p
               variants={fadeUp}
-              className="mt-5 text-body-lg leading-snug text-ink-soft max-w-[42ch] text-pretty"
+              className="mt-5 text-body-lg leading-snug text-ink-soft max-w-[48ch] text-pretty"
             >
-              One hormonal system quietly drives all three — answer a few
-              private questions for a clear, science-backed read.
+              One hormonal system quietly drives all three. Answer a few
+              private questions to find out which tests you need — or upload a
+              blood test you already have, and we’ll explain it in plain English.
             </motion.p>
 
             <motion.div
