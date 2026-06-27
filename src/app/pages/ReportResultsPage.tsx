@@ -13,6 +13,7 @@ import { Reveal } from './landing/shared';
 import { useIsMdUp } from '../utils/useMediaQuery';
 import { useNavigation, useQuiz, useReports } from '../AppContext';
 import { markerContextNote } from '../utils/markerContext';
+import { reportProvenanceNote } from '../utils/reportProvenance';
 import {
   biomarkersByCategory,
   bottomLineFor,
@@ -61,6 +62,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const summary = useMemo(() => summarizeStatuses(biomarkers), [biomarkers]);
 
   const bottomLine = useMemo(() => bottomLineFor(biomarkers), [biomarkers]);
+
+  // "How sure are you?" — the worried-human's 4th question, answered once
+  // here rather than card by card. Clean reads get a quiet affirmation;
+  // unclear photo scans get an up-front heads-up that ties to the inline
+  // per-card flags below.
+  const provenance = useMemo(
+    () => reportProvenanceNote(biomarkers),
+    [biomarkers],
+  );
 
   const groups = useMemo(() => biomarkersByCategory(filtered), [filtered]);
   const presentCategoryIds = useMemo(
@@ -242,6 +252,22 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                     </span>
                   )}
                 </div>
+              )}
+
+              {/* Data-provenance line — "how sure are you?" answered once.
+                  Quiet for a clean read; amber-tinted when some photo
+                  scans need a double-check (mirrors the per-card flag
+                  colour below). */}
+              {provenance && (
+                <p
+                  className={`mt-4 text-caption leading-snug ${
+                    provenance.tone === 'flagged'
+                      ? 'text-attention-ink font-medium'
+                      : 'text-ink-soft'
+                  }`}
+                >
+                  {provenance.text}
+                </p>
               )}
 
               <div className="mt-5 flex flex-wrap items-center gap-2 no-print">
