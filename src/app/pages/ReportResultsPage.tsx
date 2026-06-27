@@ -19,7 +19,11 @@ import {
   REPORT_LIMITATIONS_SOURCES,
   CRITICAL_LIMITATION_CAVEAT,
   HOW_WE_READ,
+  buildBodySystems,
+  connectedStoryHeadline,
+  healthStorySentence,
 } from '../clinical';
+import ConnectedSystems from '../components/ConnectedSystems';
 import {
   biomarkersByCategory,
   bottomLineFor,
@@ -76,6 +80,18 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const provenance = useMemo(
     () => reportProvenanceNote(biomarkers),
     [biomarkers],
+  );
+
+  // The signature "Connected Systems" model — the report's markers folded
+  // into the five men's-health systems, hormonal hub at the centre.
+  const bodySystems = useMemo(() => buildBodySystems(biomarkers), [biomarkers]);
+  const storyHeadline = useMemo(
+    () => connectedStoryHeadline(bodySystems),
+    [bodySystems],
+  );
+  const systemStory = useMemo(
+    () => healthStorySentence(bodySystems),
+    [bodySystems],
   );
 
   const groups = useMemo(() => biomarkersByCategory(filtered), [filtered]);
@@ -306,6 +322,22 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           shipped twice. Now we mount exactly one tree based on the
           `useIsMdUp` viewport check (the BottomNav pattern), so the
           invisible variant doesn't cost DOM + event-listener overhead. */}
+      {/* Signature moment — "your body as one connected system". Leads the
+          body of the report, right under the Bottom Line. Built on the same
+          markers, it reframes the wall of values as one story before the
+          user scrolls into the per-marker detail. (Home is the eventual
+          stage for this; it's the other agent's lane right now, so it lives
+          on the report first.) */}
+      {biomarkers.length > 0 && (
+        <Container size="wide" className="mt-6 md:mt-8">
+          <ConnectedSystems
+            systems={bodySystems}
+            headline={storyHeadline}
+            story={systemStory}
+          />
+        </Container>
+      )}
+
       {!isMdUp && deepDives.length > 0 && (
         <Container size="wide" className="mt-6 no-print">
           <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">

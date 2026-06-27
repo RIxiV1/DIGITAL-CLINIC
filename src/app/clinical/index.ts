@@ -37,3 +37,11 @@ export {
 } from './evidence';
 export { HOW_WE_READ, DECISION_PRINCIPLE, type MethodStep } from './methodology';
 export { markerTrendNote, type MarkerTrendNote } from './markerTrend';
+export {
+  buildBodySystems,
+  healthStorySentence,
+  connectedStoryHeadline,
+  type BodySystem,
+  type BodySystemId,
+  type SystemStatus,
+} from './bodySystems';
