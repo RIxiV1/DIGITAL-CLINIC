@@ -25,6 +25,7 @@ import {
   type BodySystemId,
 } from '../clinical';
 import ConnectedSystems from '../components/ConnectedSystems';
+import MarkerSheet from '../components/MarkerSheet';
 import {
   biomarkersByCategory,
   bottomLineFor,
@@ -32,6 +33,7 @@ import {
   statusColor,
   STATUS_FILTER_OPTIONS,
   summarizeStatuses,
+  type Biomarker,
   type StatusFilterId,
 } from '../data/biomarkers';
 import { findReport } from '../data/reports';
@@ -95,6 +97,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     [bodySystems],
   );
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+  // Mobile marker detail opens in a focused sheet rather than expanding the
+  // whole list inline (functional audit #6).
+  const [sheetMarker, setSheetMarker] = useState<Biomarker | null>(null);
 
   const groups = useMemo(() => biomarkersByCategory(filtered), [filtered]);
   const presentCategoryIds = useMemo(
@@ -604,15 +609,18 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                                 <BiomarkerBar
                                   key={m.id}
                                   marker={m}
+                                  compact={!isMdUp}
                                   contextNote={markerContextNote(m, quiz)}
                                   onClick={
-                                    m.problemId
-                                      ? () =>
-                                          navigate({
-                                            type: 'problem',
-                                            problemId: m.problemId!,
-                                          })
-                                      : undefined
+                                    !isMdUp
+                                      ? () => setSheetMarker(m)
+                                      : m.problemId
+                                        ? () =>
+                                            navigate({
+                                              type: 'problem',
+                                              problemId: m.problemId!,
+                                            })
+                                        : undefined
                                   }
                                 />
                               ))}
@@ -865,6 +873,22 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
       </Container>
 
       <BottomNav />
+
+      {/* Mobile marker detail — focused sheet instead of inline scroll. */}
+      <MarkerSheet
+        marker={sheetMarker}
+        contextNote={sheetMarker ? markerContextNote(sheetMarker, quiz) : null}
+        onClose={() => setSheetMarker(null)}
+        onOpenProblem={
+          sheetMarker?.problemId
+            ? () => {
+                const problemId = sheetMarker.problemId!;
+                setSheetMarker(null);
+                navigate({ type: 'problem', problemId });
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }
