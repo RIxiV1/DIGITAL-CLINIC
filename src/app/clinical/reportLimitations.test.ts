@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   REPORT_LIMITATIONS,
   REPORT_LIMITATIONS_SOURCES,
+  CRITICAL_LIMITATION_CAVEAT,
 } from './reportLimitations';
 
 describe('reportLimitations', () => {
@@ -34,6 +35,18 @@ describe('reportLimitations', () => {
     const all = REPORT_LIMITATIONS.map((l) => `${l.title} ${l.body}`).join(' ');
     expect(all).not.toMatch(
       /don.?t worry|nothing to worry|it.?s fine|no cause for concern/i,
+    );
+  });
+
+  it('SAFETY: the critical caveat conveys urgency and never softens it', () => {
+    // Shown when a report has a same-day-care result, so the false-positive
+    // framing can't read as reassurance to someone with a real emergency.
+    expect(CRITICAL_LIMITATION_CAVEAT).toMatch(/today|same-day|don.?t wait/i);
+    expect(CRITICAL_LIMITATION_CAVEAT).toMatch(/doctor/i);
+    // Must explicitly fence the routine framing off from the urgent result.
+    expect(CRITICAL_LIMITATION_CAVEAT).toMatch(/do not|don.?t/i);
+    expect(CRITICAL_LIMITATION_CAVEAT).not.toMatch(
+      /false positive|1 in 20|probably fine|likely fine/i,
     );
   });
 });

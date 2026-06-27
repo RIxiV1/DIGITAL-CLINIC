@@ -25,6 +25,7 @@ export { reportProvenanceNote, type ProvenanceNote } from './reportProvenance';
 export {
   REPORT_LIMITATIONS,
   REPORT_LIMITATIONS_SOURCES,
+  CRITICAL_LIMITATION_CAVEAT,
   type Limitation,
   type LimitationsSource,
 } from './reportLimitations';

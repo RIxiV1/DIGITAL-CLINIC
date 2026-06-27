@@ -17,6 +17,7 @@ import {
   reportProvenanceNote,
   REPORT_LIMITATIONS,
   REPORT_LIMITATIONS_SOURCES,
+  CRITICAL_LIMITATION_CAVEAT,
 } from '../clinical';
 import {
   biomarkersByCategory,
@@ -601,6 +602,14 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 What a single report can’t tell you
               </summary>
               <div className="px-4 pb-4 pt-1 space-y-3 border-t border-line/60">
+                {/* Critical-aware fence: when a same-day-care result exists,
+                    the false-positive framing below must not read as
+                    reassurance. Lead with an unmissable caveat. */}
+                {summary.critical > 0 && (
+                  <p className="mt-3 rounded-lg border border-concern/40 bg-concern-soft/50 px-3 py-2 text-caption font-medium leading-snug text-concern-ink">
+                    {CRITICAL_LIMITATION_CAVEAT}
+                  </p>
+                )}
                 {REPORT_LIMITATIONS.map((l) => (
                   <div key={l.title} className="pt-3 first:pt-2">
                     <div className="text-caption font-semibold text-ink">

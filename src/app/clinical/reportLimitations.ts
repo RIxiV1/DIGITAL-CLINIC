@@ -63,6 +63,20 @@ export const REPORT_LIMITATIONS: Limitation[] = [
   },
 ];
 
+/**
+ * Shown at the TOP of the limitations panel when the report contains a
+ * critical (same-day-care) result. Without it, the "1 in 20 results are
+ * false positives / a flag isn't a diagnosis" framing below can read as
+ * reassurance to someone whose value is a genuine emergency — the worst
+ * failure mode for an anxious user with a real abnormal result. This
+ * caveat fences the false-positive framing off from urgent results.
+ */
+export const CRITICAL_LIMITATION_CAVEAT =
+  'One or more of your results is flagged for same-day medical attention. ' +
+  'The notes below are about routine, borderline readings — they do NOT ' +
+  'apply to a result flagged that urgently. Don’t wait on it; speak to a ' +
+  'doctor today.';
+
 export const REPORT_LIMITATIONS_SOURCES: LimitationsSource[] = [
   {
     label: 'Mayo Clinic Press — “Should you worry about abnormal lab results?”',
