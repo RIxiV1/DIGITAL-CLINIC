@@ -45,3 +45,8 @@ export {
   type BodySystemId,
   type SystemStatus,
 } from './bodySystems';
+export {
+  certaintyOfAction,
+  type NextAction,
+  type ActionCertainty,
+} from './certaintyOfAction';

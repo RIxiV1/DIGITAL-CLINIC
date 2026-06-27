@@ -9,6 +9,7 @@ import {
   evidenceForRecommendation,
   EVIDENCE_TIERS,
   DECISION_PRINCIPLE,
+  certaintyOfAction,
   type EvidenceLevel,
 } from '../clinical';
 
@@ -59,14 +60,9 @@ export default function LearnMoreModal({
   // not buried under three paragraphs of education.
   const isFlagged =
     status === 'attention' || status === 'concern' || status === 'critical';
-  const nextStep =
-    status === 'critical'
-      ? 'Worth prompt attention — see a doctor soon and bring this result.'
-      : status === 'concern'
-        ? 'Worth acting on now. A re-check in about 90 days shows whether it’s moving.'
-        : status === 'attention'
-          ? 'Not urgent — keep an eye on it. A re-check in ~90 days confirms the trend.'
-          : '';
+  // Q4 of the First-Impression Contract — radiate certainty about the
+  // ACTION, not the diagnosis (certaintyOfAction).
+  const next = certaintyOfAction({ status: status ?? 'good' });
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
@@ -129,11 +125,23 @@ export default function LearnMoreModal({
             <div className="flex-1 overflow-y-auto px-6 py-5">
               {isFlagged && (
                 <Section eyebrow="What to do now">
-                  {nextStep && (
-                    <p className="text-body-sm leading-relaxed text-ink font-medium mb-3">
-                      {nextStep}
+                  {/* The action, with a confidence chip ON THE ACTION — "we
+                      may not be sure what this means, but we're sure what to
+                      do." The chip is status-neutral indigo, so it reads as
+                      confidence-in-advice, not a health verdict. */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-body-sm font-semibold text-ink">
+                        {next.action}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-micro font-semibold text-indigo-700">
+                        High confidence
+                      </span>
+                    </div>
+                    <p className="mt-1 text-caption leading-relaxed text-ink-soft">
+                      {next.detail}
                     </p>
-                  )}
+                  </div>
                   <ImproveList items={info.improve} />
                   {/* Decision aid (Persona 1 — the core gym user): answers
                       "so should I stop X?" with the only safe, correct
