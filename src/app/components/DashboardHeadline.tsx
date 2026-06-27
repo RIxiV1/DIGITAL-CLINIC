@@ -75,7 +75,7 @@ export default function DashboardHeadline({
     >
       <div className="flex flex-col md:flex-row">
         {/* Narrative column — intentionally the wider of the two. */}
-        <div className="flex-1 min-w-0 p-6 md:p-9">
+        <div className="flex-1 min-w-0 p-7 md:p-11">
           <div className="text-micro uppercase tracking-[0.2em] font-semibold text-paper-soft">
             {eyebrow}
           </div>
@@ -116,7 +116,7 @@ export default function DashboardHeadline({
             distinct sub-panel divided by a warm rule (top on mobile, left
             on desktop) so the asymmetry reads as intentional structure. */}
         {onTrackPct !== null && summary && (
-          <div className="shrink-0 md:w-60 border-t md:border-t-0 md:border-l border-paper-line p-6 md:p-9 flex flex-col justify-center">
+          <div className="shrink-0 md:w-60 border-t md:border-t-0 md:border-l border-paper-line p-7 md:p-11 flex flex-col justify-center">
             <div className="flex items-baseline gap-1.5">
               <span className="font-editorial text-[5rem] md:text-[5.5rem] leading-[0.8] text-paper-ink">
                 {onTrackPct}

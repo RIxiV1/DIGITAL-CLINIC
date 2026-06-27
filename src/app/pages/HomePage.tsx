@@ -478,7 +478,7 @@ export default function HomePage() {
       )}
 
       {/* ZONE 1 · Headline */}
-      <Container size="wide" className="pt-5 md:pt-8 relative">
+      <Container size="wide" className="pt-8 md:pt-14 relative">
         <DashboardHeadline
           markers={ready ? biomarkers : null}
           hasReport={!!ready}
@@ -616,7 +616,7 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 md:mt-8"
+          className="mt-12 md:mt-20"
         >
           <Container size="wide">
           <SectionHeading
