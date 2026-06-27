@@ -163,14 +163,16 @@ export function healthStorySentence(systems: BodySystem[]): string | null {
   const worst = worstMeasured(systems);
   if (!worst) return null;
 
-  const name = worst.label.toLowerCase();
+  // Put the system LABEL at the end as a noun, so plural labels
+  // ("Hormones") don't trip subject-verb agreement ("your hormones IS…").
+  const label = worst.label;
   switch (worst.status) {
     case 'critical':
-      return `Your ${name} needs attention today — one result is flagged for same-day care. Everything else can wait until you've spoken to a doctor.`;
+      return `One system needs attention today: ${label}. A result there is flagged for same-day care — speak to a doctor before acting on anything else.`;
     case 'concern':
-      return `Strong overall — your ${name} is the one system worth a closer look right now.`;
+      return `Strong overall — the one system worth a closer look right now is ${label}.`;
     case 'attention':
-      return `Looking solid. Keep a light eye on your ${name}; nothing here is a red flag.`;
+      return `Looking solid. The one system to keep a light eye on is ${label} — nothing here is a red flag.`;
     default:
       return 'Every system we can see is in good shape. Keep doing what you’re doing.';
   }
