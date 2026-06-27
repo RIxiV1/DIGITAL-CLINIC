@@ -82,6 +82,7 @@ Read the one matching what you're touching before you grep — each is a focused
 | [docs/FIRST-IMPRESSION-CONTRACT.md](docs/FIRST-IMPRESSION-CONTRACT.md) | The experience-first contract every report-interpretation screen must satisfy: the five questions, the honesty gates (prioritize-confidently/synthesize-conservatively), `certaintyOfAction`, and a deliberately-light enforcement (five functions + one guard test, no mega-type) |
 | [docs/SECURITY.md](docs/SECURITY.md) | The privacy/security model: threat model, on-device storage, opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the consent-gated AI caveat, vuln reporting |
 | [docs/THEMING.md](docs/THEMING.md) | Dark-default semantic tokens, the external (CSP-safe) theme bootstrap, on-color contrast |
+| [docs/DESIGN-PHILOSOPHY.md](docs/DESIGN-PHILOSOPHY.md) | The design *principles* (not the system): one question/one action per screen, reveal-don't-dump, system-first, reassure-in-voice-gate-on-data, every-word-is-behavior — plus the self-understanding metric |
 | [docs/I18N.md](docs/I18N.md) | The UI-language system: dictionary, English-fallback chain, adding keys/languages |
 | [docs/MOBILE.md](docs/MOBILE.md) | Mobile-first patterns + footguns: PWA, fixed nav, `min-w-0`, touch targets, OCR prewarm |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Setup, running locally, and how to ship a change |
