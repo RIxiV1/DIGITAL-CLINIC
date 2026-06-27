@@ -48,8 +48,24 @@ the canonical label.
 | **Health Map** | the connected-systems signature view | — see collision below |
 | **System** | one of the five body systems (hormonal hub + 4) | "category" (that's the 11 internal data categories) |
 | **Trend** | change over time | "movement", "trajectory" (internal only) |
-| **Evidence** | strength behind a recommendation (Strong/Moderate/Emerging) | — |
-| **Confidence** | ⚠ used for TWO things: parser/OCR read confidence AND `certaintyOfAction` ("High confidence"). Disambiguate — e.g. "read clearly" for OCR, "confidence" for action. |
+
+
+## "Confidence" is three concepts — never overload it
+
+The audit's most important finding wasn't vocabulary, it was domain modeling:
+"confidence" was being used for two different things, with "evidence" a
+related third. These are **three permanent, separate concepts** — three
+names, never overloaded:
+
+| concept | means | code today | user-facing word |
+| --- | --- | --- | --- |
+| **Read quality** | how cleanly the parser/OCR read the number | `ocrConfidence`, `reportProvenance` | "read clearly" / "scanned, double-check" — NOT "confidence" |
+| **Evidence strength** | how strong the clinical support for a recommendation is | `evidence.ts` (Strong/Moderate/Emerging) | "Evidence: Strong" |
+| **Action confidence** | how sure we are about what to DO (not the diagnosis) | `certaintyOfAction` | "High confidence" (on the action) |
+
+Today `certaintyOfAction`'s chip and OCR both lean on the word "confidence".
+Reserve "confidence" for **action** only; rename the OCR sense to read
+quality. (Reconciliation belongs to the consolidation pass.)
 
 ## Naming collision to resolve
 
