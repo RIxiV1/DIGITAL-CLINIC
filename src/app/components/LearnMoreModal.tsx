@@ -5,6 +5,11 @@ import Button from './Button';
 import type { LearnMore } from '../data/markerInfo';
 import type { BiomarkerStatus } from '../data/biomarkers';
 import { useModalA11y } from '../utils/useModalA11y';
+import {
+  evidenceForRecommendation,
+  EVIDENCE_TIERS,
+  type EvidenceLevel,
+} from '../clinical';
 
 type Props = {
   open: boolean;
@@ -176,18 +181,57 @@ export default function LearnMoreModal({
   );
 }
 
+// Subtle, status-neutral evidence styling — deliberately NOT the
+// green/amber/red health-status palette, so an evidence grade can't be
+// misread as a health verdict. The tier label carries the meaning; colour
+// only nudges weight.
+const TIER_STYLE: Record<EvidenceLevel, string> = {
+  strong: 'text-indigo-700 bg-indigo-50 border-indigo-200',
+  moderate: 'text-ink-soft bg-canvas border-line',
+  emerging: 'text-muted bg-canvas/60 border-line/70',
+};
+
 function ImproveList({ items }: { items: string[] }) {
+  const anyGraded = items.some((line) => evidenceForRecommendation(line));
   return (
-    <ul className="grid gap-2">
-      {items.map((line) => (
-        <li key={line} className="flex items-start gap-2.5">
-          <CheckCircle2 size={15} className="text-indigo-600 shrink-0 mt-0.5" />
-          <span className="text-body-sm leading-relaxed text-ink-soft">
-            {line}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="grid gap-2">
+        {items.map((line) => {
+          const ev = evidenceForRecommendation(line);
+          const tier = ev ? EVIDENCE_TIERS[ev.level] : null;
+          return (
+            <li key={line} className="flex items-start gap-2.5">
+              <CheckCircle2
+                size={15}
+                className="text-indigo-600 shrink-0 mt-0.5"
+              />
+              <span className="text-body-sm leading-relaxed text-ink-soft">
+                {line}
+                {ev && tier && (
+                  <span
+                    className={`ml-2 align-middle inline-flex items-center px-1.5 py-0.5 rounded-full border text-micro font-semibold whitespace-nowrap ${TIER_STYLE[ev.level]}`}
+                    title={`${tier.meaning} Supports ${ev.supports}. Source: ${ev.source.label}`}
+                    aria-label={`Evidence: ${tier.label}. ${tier.meaning} Supports ${ev.supports}.`}
+                  >
+                    {tier.label}
+                  </span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {/* Tier legend — defines the grades inline so the meaning never
+          depends on hover (which doesn't exist on touch). Shown only when
+          something on this list is actually graded. */}
+      {anyGraded && (
+        <p className="mt-3 text-micro text-muted leading-snug">
+          <span className="font-semibold text-ink-soft">Evidence grades:</span>{' '}
+          Strong (trials &amp; guidelines) · Moderate (probably helps) ·
+          Emerging (early or mixed). Based on GRADE certainty.
+        </p>
+      )}
+    </>
   );
 }
 

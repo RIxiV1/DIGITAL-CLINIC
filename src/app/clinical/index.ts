@@ -28,3 +28,9 @@ export {
   type Limitation,
   type LimitationsSource,
 } from './reportLimitations';
+export {
+  EVIDENCE_TIERS,
+  evidenceForRecommendation,
+  type EvidenceLevel,
+  type EvidenceMatch,
+} from './evidence';
