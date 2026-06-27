@@ -124,32 +124,41 @@ owned by the clinical layer — not a parallel build.
 
 ---
 
-## 6. Enforcement (so the contract holds when someone's in a hurry)
+## 6. Enforcement (kept deliberately light)
 
-A contract that lives only in a doc is a suggestion. Make it a type:
+A contract that lives only in a doc is a suggestion — but the enforcement must
+not become heavier than the thing it guards. Two rules, no framework:
 
-```ts
-// A first-impression view-model cannot be constructed with a missing slot.
-type FirstImpression = {
-  okay: OkayVerdict;          // Q1 — gated; encodes the critical override
-  headline: RankedMarker;     // Q2 — never empty when markers exist
-  why: WhyItMatters;          // Q3 — harm anchor + context, no diagnosis
-  next: ActionWithCertainty;  // Q4 — certaintyOfAction, not diagnosis
-  limits: ReportLimitations;  // Q5 — always present
-};
-```
+1. **One invariant, expressed as functions — not an exposed type.** A first
+   screen is composed of five steps, in order:
 
-Then a guard test — in the spirit of the existing copy-guard tests — asserts
-that no `FirstImpression` renders with an empty slot, and that `okay` is never
-"you're fine" while a critical marker is present. The five questions stop being
-something a reviewer has to remember and become something the build refuses to
-skip.
+   ```
+   reassure() → prioritize() → contextualize() → action() → limitations()
+   ```
+
+   Keep that composition *internal* to the clinical layer. Do **not** thread a
+   `FirstImpression` mega-object through the app — that's the kind of
+   infrastructure that becomes the headline. The five functions give the same
+   guarantee with room to move.
+
+2. **One guard test, scoped to meaning — not a word blocklist.** Fail the build
+   if a screen claims more certainty than its evidence supports, uses diagnosis
+   language, or answers "you're okay" with a critical marker present. Resist
+   banning bare words ("always", "never", "confirms"): *"never leaves your
+   device"* and *"always see a doctor for chest pain"* are correct. Guard the
+   **claim-vs-evidence relationship**, not the vocabulary — a word blocklist
+   over-fires and becomes the over-engineering it was meant to prevent.
+
+The point is the sentence the user reads — *"here's the one to look at first,
+here's why, here's what it doesn't mean yet."* Everything here exists to make
+that sentence safe to say. If any of it stops serving that, delete it.
 
 ---
 
 ## 7. Ownership
 
 This contract is a cross-cutting **product + clinical** spec. Implementation —
-the `FirstImpression` type, the guard test, and the screen — belongs to the
-clinical interpretation layer (`src/app/clinical/`), not to a page refactor.
-Treat this file as the brief that layer is built against.
+the five-function invariant, the one guard test, and the screen — belongs to
+the clinical interpretation layer (`src/app/clinical/`), not to a page
+refactor. Treat this file as the brief that layer is built against, and keep it
+shorter than the thing it describes.
