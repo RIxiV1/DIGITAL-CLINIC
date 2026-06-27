@@ -52,6 +52,18 @@ describe('buildBodySystems', () => {
     expect(find(systems, 'metabolic').status).toBe('attention');
   });
 
+  it('names the worst-status marker driving a flagged system', () => {
+    const systems = buildBodySystems([
+      { ...mk('heart', 'concern'), name: 'LDL Cholesterol' } as Biomarker,
+      { ...mk('heart', 'critical'), name: 'Triglycerides' } as Biomarker,
+      { ...mk('heart', 'good'), name: 'HDL' } as Biomarker,
+    ]);
+    // Worst status (critical) wins as the driver.
+    expect(find(systems, 'heart').topFlaggedMarker).toBe('Triglycerides');
+    // A calm system names nothing.
+    expect(find(systems, 'metabolic').topFlaggedMarker).toBeUndefined();
+  });
+
   it('marks a system with no markers as unmeasured, never a fake "good"', () => {
     const systems = buildBodySystems([mk('hormones', 'good')]);
     expect(find(systems, 'heart').status).toBe('unmeasured');

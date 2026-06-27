@@ -87,6 +87,10 @@ export type BodySystem = {
   /** The clinical categories this system folds in — lets the map act as
    *  navigation (tap a system → open its categories on the report). */
   categories: BiomarkerCategoryId[];
+  /** Name of the worst-status marker in this system, when something is
+   *  flagged — lets the map say what's DRIVING a system ("LDL Cholesterol")
+   *  instead of a monotone "Worth a look". Undefined when nothing's flagged. */
+  topFlaggedMarker?: string;
   link?: string;
 };
 
@@ -113,17 +117,22 @@ function worstStatus(markers: Biomarker[]): SystemStatus {
 export function buildBodySystems(markers: Biomarker[]): BodySystem[] {
   return SYSTEM_DEFS.map((def) => {
     const inSystem = markers.filter((m) => def.categories.includes(m.category));
-    const flaggedCount = inSystem.filter(
+    const flagged = inSystem.filter(
       (m) => m.status === 'concern' || m.status === 'critical',
-    ).length;
+    );
+    // The single worst marker names what's driving the system.
+    const topFlaggedMarker = flagged
+      .slice()
+      .sort((a, b) => STATUS_RANK[b.status] - STATUS_RANK[a.status])[0]?.name;
     return {
       id: def.id,
       label: def.label,
       hub: !!def.hub,
       status: worstStatus(inSystem),
       markerCount: inSystem.length,
-      flaggedCount,
+      flaggedCount: flagged.length,
       categories: def.categories,
+      topFlaggedMarker,
       link: def.link,
     };
   });
@@ -181,7 +190,7 @@ export function healthStorySentence(systems: BodySystem[]): string | null {
     case 'critical':
       return `One system needs attention today: ${label}. A result there is flagged for same-day care — speak to a doctor before acting on anything else.`;
     case 'concern':
-      return `Most of your health picture looks reassuring. If I were prioritising one system to look at next, I’d start with ${label}.`;
+      return `Most of your health picture looks reassuring. If I were choosing one place to begin, I’d start with ${label}.`;
     case 'attention':
       return `Most of your picture looks reassuring. The one system I’d keep a light eye on is ${label} — nothing here is a red flag.`;
     default:
