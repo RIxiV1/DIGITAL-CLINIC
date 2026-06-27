@@ -44,9 +44,12 @@ const STATUS: Record<
     caption: 'Keep an eye',
   },
   concern: {
+    // De-escalated colour (amber, not red) but the canonical WORD — the rest
+    // of the app says "Needs care" for this tier; the map must not invent a
+    // softer synonym. (Vocabulary glossary: one word, one meaning.)
     ring: 'border-attention/60 bg-attention-soft/40',
     dot: 'bg-attention',
-    caption: 'Worth a look',
+    caption: 'Needs care',
   },
   critical: {
     ring: 'border-concern/70 bg-concern-soft/50',
