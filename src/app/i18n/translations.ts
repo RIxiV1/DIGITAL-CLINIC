@@ -38,7 +38,7 @@ export const LANGUAGES: ReadonlyArray<{
  */
 export const en = {
   'nav.home': 'Home',
-  'nav.healthMap': 'Map',
+  'nav.healthMap': 'Health',
   'nav.quiz': 'Quiz',
   'nav.profile': 'Profile',
   'profile.language': 'Language',
@@ -53,7 +53,7 @@ export type TranslationKey = keyof typeof en;
  */
 const hi: Partial<Record<TranslationKey, string>> = {
   'nav.home': 'होम',
-  'nav.healthMap': 'मैप',
+  'nav.healthMap': 'स्वास्थ्य',
   'nav.quiz': 'क्विज़',
   'nav.profile': 'प्रोफ़ाइल',
   'profile.language': 'भाषा',
