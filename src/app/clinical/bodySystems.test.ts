@@ -79,23 +79,24 @@ describe('healthStorySentence', () => {
     expect(s).toMatch(/today|same-day/i);
   });
 
-  it('is reassuring-first when only mild things are flagged', () => {
+  it('is reassuring-first and doctor-voiced when only mild things are flagged', () => {
     const s = healthStorySentence(buildBodySystems([mk('metabolic', 'concern')]));
-    expect(s).toMatch(/strong|solid|closer look/i);
+    expect(s).toMatch(/reassuring|prioritis|start with/i);
     expect(s).not.toMatch(/today|same-day/i);
   });
 });
 
 describe('connectedStoryHeadline', () => {
-  it('states the one idea against the real flagged count', () => {
+  it('frames the SYSTEMS LENS without overpromising a connected story', () => {
     const two = connectedStoryHeadline(
       buildBodySystems([mk('heart', 'concern'), mk('metabolic', 'critical')]),
     );
-    expect(two).toMatch(/2 separate problems/);
-    expect(two).toMatch(/one connected story/i);
+    expect(two).toMatch(/by system/i);
+    // It must NOT assert the findings form one story (contract §3).
+    expect(two).not.toMatch(/one connected story|connected story/i);
 
     const one = connectedStoryHeadline(buildBodySystems([mk('heart', 'concern')]));
-    expect(one).toMatch(/isolated problem/i);
+    expect(one).toMatch(/by system/i);
 
     const none = connectedStoryHeadline(buildBodySystems([mk('heart', 'good')]));
     expect(none).toMatch(/calm/i);

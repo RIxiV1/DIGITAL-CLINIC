@@ -57,7 +57,7 @@ const STATUS: Record<
 
 // Spoke positions around the hub, in SVG/percent units (hub at 50,50).
 // top · right · bottom · left — assigned in system order.
-const R = 33;
+const R = 34;
 const ANGLES = [-90, 0, 90, 180];
 const pointAt = (angle: number) => ({
   x: 50 + R * Math.cos((angle * Math.PI) / 180),
@@ -79,7 +79,7 @@ export default function ConnectedSystems({
   return (
     <section
       aria-label="Your body as one connected system"
-      className="rounded-[20px] border border-line/70 bg-surface/70 px-5 py-7 sm:px-8 sm:py-9"
+      className="rounded-[20px] border border-line/70 bg-surface/70 px-5 py-9 sm:px-10 sm:py-12"
     >
       {/* The idea, first. */}
       <motion.p
@@ -92,7 +92,7 @@ export default function ConnectedSystems({
       </motion.p>
 
       {/* The system, connecting. */}
-      <div className="relative mx-auto mt-7 aspect-square w-full max-w-[380px]">
+      <div className="relative mx-auto mt-8 aspect-square w-full max-w-[440px] sm:max-w-[560px]">
         {/* Connection lines — every spoke joins the hormonal hub. They draw
             in after the headline so the user watches the body 'connect'. */}
         <svg
@@ -110,8 +110,8 @@ export default function ConnectedSystems({
                 y1={50}
                 x2={p.x}
                 y2={p.y}
-                className={flagged ? 'stroke-concern/30' : 'stroke-ink/15'}
-                strokeWidth={0.8}
+                className={flagged ? 'stroke-concern/50' : 'stroke-ink/12'}
+                strokeWidth={flagged ? 1.5 : 0.7}
                 strokeLinecap="round"
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ pathLength: 1, opacity: 1 }}
@@ -133,7 +133,7 @@ export default function ConnectedSystems({
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
         >
           <div
-            className={`grid place-items-center w-28 h-28 sm:w-32 sm:h-32 rounded-full border-2 text-center shadow-soft ${hubStyle.ring}`}
+            className={`grid place-items-center w-32 h-32 sm:w-40 sm:h-40 rounded-full border-2 text-center shadow-soft ${hubStyle.ring}`}
           >
             <div>
               <div className="text-micro font-bold uppercase tracking-label text-muted">
@@ -154,12 +154,15 @@ export default function ConnectedSystems({
         {spokes.map((s, i) => {
           const p = pointAt(ANGLES[i]);
           const st = STATUS[s.status];
-          const Tag = onSelectSystem ? motion.button : motion.div;
+          // Only systems that actually have markers are tappable — an
+          // unmeasured system has nothing to navigate to.
+          const clickable = !!onSelectSystem && s.markerCount > 0;
+          const Tag = clickable ? motion.button : motion.div;
           return (
             <Tag
               key={s.id}
-              {...(onSelectSystem
-                ? { type: 'button', onClick: () => onSelectSystem(s.id) }
+              {...(clickable
+                ? { type: 'button', onClick: () => onSelectSystem!(s.id) }
                 : {})}
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -170,9 +173,9 @@ export default function ConnectedSystems({
                 delay: 0.65 + i * 0.12,
               }}
               style={{ left: `${p.x}%`, top: `${p.y}%` }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-[104px] rounded-2xl border px-2.5 py-2 text-center ${st.ring} ${
-                onSelectSystem
-                  ? 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60'
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-[116px] sm:w-[132px] rounded-2xl border px-2.5 py-2 text-center ${st.ring} ${
+                clickable
+                  ? 'cursor-pointer transition-transform hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60'
                   : ''
               }`}
             >

@@ -84,6 +84,9 @@ export type BodySystem = {
   markerCount: number;
   /** Count of markers that need care (concern + critical). */
   flaggedCount: number;
+  /** The clinical categories this system folds in — lets the map act as
+   *  navigation (tap a system → open its categories on the report). */
+  categories: BiomarkerCategoryId[];
   link?: string;
 };
 
@@ -120,6 +123,7 @@ export function buildBodySystems(markers: Biomarker[]): BodySystem[] {
       status: worstStatus(inSystem),
       markerCount: inSystem.length,
       flaggedCount,
+      categories: def.categories,
       link: def.link,
     };
   });
@@ -132,13 +136,18 @@ export function buildBodySystems(markers: Biomarker[]): BodySystem[] {
  * actual report (how many markers are flagged), so it's true, not slogan.
  */
 export function connectedStoryHeadline(systems: BodySystem[]): string {
+  // Earned language only. The systems LENS is the signature — not a claim
+  // that today's findings form one story. We can't know that without a
+  // recognized cluster (contract §3: "the engine must be able to say these
+  // are separate"), so the headline frames the view, it doesn't synthesize.
   const flagged = systems.reduce((n, s) => n + s.flaggedCount, 0);
   if (flagged === 0) {
-    return 'Your body is one connected system — and right now, the whole story is calm.';
+    return 'Your health, by system — and right now, the whole picture looks calm.';
   }
-  const noun =
-    flagged === 1 ? 'an isolated problem' : `${flagged} separate problems`;
-  return `Your body isn’t showing ${noun}. It’s telling one connected story.`;
+  if (flagged === 1) {
+    return 'Your health, by system. One marker stands out — here’s where it sits.';
+  }
+  return 'Your health, by system. A few markers stand out — here’s how they sort across your body.';
 }
 
 /** The worst-status MEASURED system, or null if nothing was measured. */
@@ -165,15 +174,17 @@ export function healthStorySentence(systems: BodySystem[]): string | null {
 
   // Put the system LABEL at the end as a noun, so plural labels
   // ("Hormones") don't trip subject-verb agreement ("your hormones IS…").
+  // Doctor's voice — reassure first, then prioritise one system, without
+  // claiming a diagnosis. Label at the end avoids plural/singular agreement.
   const label = worst.label;
   switch (worst.status) {
     case 'critical':
       return `One system needs attention today: ${label}. A result there is flagged for same-day care — speak to a doctor before acting on anything else.`;
     case 'concern':
-      return `Strong overall — the one system worth a closer look right now is ${label}.`;
+      return `Most of your health picture looks reassuring. If I were prioritising one system to look at next, I’d start with ${label}.`;
     case 'attention':
-      return `Looking solid. The one system to keep a light eye on is ${label} — nothing here is a red flag.`;
+      return `Most of your picture looks reassuring. The one system I’d keep a light eye on is ${label} — nothing here is a red flag.`;
     default:
-      return 'Every system we can see is in good shape. Keep doing what you’re doing.';
+      return 'Every system we can see looks to be in good shape. Keep doing what you’re doing.';
   }
 }

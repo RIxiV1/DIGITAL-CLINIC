@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown, ChevronRight, Download, Info } from 'lucide-react';
 import Button from '../components/Button';
@@ -22,6 +22,7 @@ import {
   buildBodySystems,
   connectedStoryHeadline,
   healthStorySentence,
+  type BodySystemId,
 } from '../clinical';
 import ConnectedSystems from '../components/ConnectedSystems';
 import {
@@ -93,6 +94,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     () => healthStorySentence(bodySystems),
     [bodySystems],
   );
+  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
 
   const groups = useMemo(() => biomarkersByCategory(filtered), [filtered]);
   const presentCategoryIds = useMemo(
@@ -139,6 +141,33 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const filtersAreNarrowing = filter !== 'all' || activeCategory !== 'all';
   const isCategoryOpen = (id: string) =>
     filtersAreNarrowing || expandedCategoryIds.has(id);
+
+  // The systems map as navigation: tapping a system opens its categories
+  // and scrolls to the first present one — "the story drives navigation"
+  // instead of leaving the user to scroll-hunt for the section.
+  const handleSelectSystem = useCallback(
+    (id: BodySystemId) => {
+      const sys = bodySystems.find((s) => s.id === id);
+      if (!sys) return;
+      setExpandedCategoryIds((prev) => {
+        const next = new Set(prev);
+        sys.categories.forEach((c) => next.add(c));
+        return next;
+      });
+      const firstPresent = sys.categories.find((c) =>
+        presentCategoryIds.has(c),
+      );
+      if (firstPresent) setScrollTarget(`system-cat-${firstPresent}`);
+    },
+    [bodySystems, presentCategoryIds],
+  );
+  useEffect(() => {
+    if (!scrollTarget) return;
+    document
+      .getElementById(scrollTarget)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setScrollTarget(null);
+  }, [scrollTarget]);
 
   // Ref-based dedup so a double-tap on the download button doesn't
   // produce two PDFs while the lazy chunk is still resolving.
@@ -329,11 +358,12 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           stage for this; it's the other agent's lane right now, so it lives
           on the report first.) */}
       {biomarkers.length > 0 && (
-        <Container size="wide" className="mt-6 md:mt-8">
+        <Container size="wide" className="mt-12 md:mt-20">
           <ConnectedSystems
             systems={bodySystems}
             headline={storyHeadline}
             story={systemStory}
+            onSelectSystem={handleSelectSystem}
           />
         </Container>
       )}
@@ -486,7 +516,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                       good: markers.filter((m) => m.status === 'good').length,
                     };
                     return (
-                      <div key={category.id}>
+                      <div key={category.id} id={`system-cat-${category.id}`}>
                         <Card padded={false}>
                           <button
                             type="button"
