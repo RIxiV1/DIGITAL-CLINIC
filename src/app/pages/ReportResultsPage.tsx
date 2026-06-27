@@ -12,8 +12,7 @@ import StatusKey from '../components/StatusKey';
 import { Reveal } from './landing/shared';
 import { useIsMdUp } from '../utils/useMediaQuery';
 import { useNavigation, useQuiz, useReports } from '../AppContext';
-import { markerContextNote } from '../utils/markerContext';
-import { reportProvenanceNote } from '../utils/reportProvenance';
+import { markerContextNote, reportProvenanceNote } from '../clinical';
 import {
   biomarkersByCategory,
   bottomLineFor,
