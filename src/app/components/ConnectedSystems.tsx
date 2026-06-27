@@ -1,68 +1,78 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { ChevronRight } from 'lucide-react';
 import type { BodySystem, BodySystemId, SystemStatus } from '../clinical';
 
 /**
- * ForMen's signature moment.
+ * The Health Map — ForMen's signature.
  *
- * Not a dashboard widget — the manifestation of the one idea: a man's body
- * isn't a pile of separate lab values, it's one connected system. The
- * philosophy line lands first; then the five systems connect THROUGH the
- * hormonal hub (the science: testosterone behaves as a network hub). The
- * point isn't to drill — it's to make the user feel their body as one thing.
+ * The manifestation of the one idea: a man's body isn't a pile of separate
+ * lab values, it's one connected system, regulated from the hormonal hub
+ * (the science: testosterone behaves as a network hub). Tapping a system
+ * teaches the connection — it highlights the link to the hub and shows the
+ * cited, GENERAL reason the two relate, and dims the rest.
  *
- * Presentational only — the model (buildBodySystems / connectedStoryHeadline
- * / healthStorySentence) is computed and tested in clinical/bodySystems.
- * All motion runs under the app-wide MotionConfig reducedMotion="user", so
- * it snaps for users who ask for less motion.
+ * Deliberately NOT claimed: a personal causal story ("your metabolism is
+ * pulling down your recovery"). The engine can't know that from one report,
+ * so the map shows where findings sit and the established associations
+ * between systems — it never fabricates a ripple. (First-Impression
+ * Contract §3: the engine must be able to say "these are separate".)
+ *
+ * Presentational only; the model lives in clinical/bodySystems. Motion runs
+ * under the app-wide reducedMotion="user" cascade.
  */
 
 type Props = {
   systems: BodySystem[];
-  /** The one idea, against this report (connectedStoryHeadline). */
   headline: string;
-  /** Reassurance-first story line (healthStorySentence); may be null. */
   story: string | null;
+  /** Navigate to a system's markers (the caption's "View markers" action). */
   onSelectSystem?: (id: BodySystemId) => void;
 };
 
-/* Node styling per status — status-bearing but calm. Unmeasured is
-   deliberately faint + dashed: honest "we didn't see this" rather than a
-   reassuring green. */
+/* Status palette — RED IS RESERVED. Only `critical` is red; `concern` is
+   amber so the map doesn't read as one big alarm. */
 const STATUS: Record<
   SystemStatus,
   { ring: string; dot: string; caption: string }
 > = {
-  good: { ring: 'border-good/50 bg-good-soft/40', dot: 'bg-good', caption: 'On track' },
+  good: { ring: 'border-good/50 bg-good-soft/30', dot: 'bg-good', caption: 'On track' },
   attention: {
-    ring: 'border-attention/50 bg-attention-soft/40',
+    ring: 'border-attention/50 bg-attention-soft/30',
     dot: 'bg-attention',
     caption: 'Keep an eye',
   },
   concern: {
-    ring: 'border-concern/50 bg-concern-soft/40',
-    dot: 'bg-concern',
-    caption: 'Needs care',
+    ring: 'border-attention/60 bg-attention-soft/40',
+    dot: 'bg-attention',
+    caption: 'Worth a look',
   },
   critical: {
-    ring: 'border-concern/70 bg-concern-soft/60',
+    ring: 'border-concern/70 bg-concern-soft/50',
     dot: 'bg-concern',
     caption: 'See a doctor',
   },
   unmeasured: {
-    ring: 'border-dashed border-line bg-transparent',
+    ring: 'border-line bg-canvas/40',
     dot: 'bg-muted/40',
-    caption: 'Not measured',
+    caption: 'No markers yet',
   },
 };
 
-// Spoke positions around the hub, in SVG/percent units (hub at 50,50).
-// top · right · bottom · left — assigned in system order.
+// Spokes sit on a circle around the hub (50,50 in viewBox units). Diagonal
+// start angle (an X, not a +) reads a touch less like a coordinate graph.
 const R = 34;
-const ANGLES = [-90, 0, 90, 180];
+const ANGLES = [-45, 45, 135, 225];
 const pointAt = (angle: number) => ({
   x: 50 + R * Math.cos((angle * Math.PI) / 180),
   y: 50 + R * Math.sin((angle * Math.PI) / 180),
 });
+
+function lineStyle(status: SystemStatus): { cls: string; w: number } {
+  if (status === 'critical') return { cls: 'stroke-concern/60', w: 1.6 };
+  if (status === 'concern') return { cls: 'stroke-attention/60', w: 1.2 };
+  return { cls: 'stroke-ink/12', w: 0.7 };
+}
 
 export default function ConnectedSystems({
   systems,
@@ -72,29 +82,31 @@ export default function ConnectedSystems({
 }: Props) {
   const hub = systems.find((s) => s.hub);
   const spokes = systems.filter((s) => !s.hub).slice(0, ANGLES.length);
+  const [selectedId, setSelectedId] = useState<BodySystemId | null>(null);
   if (!hub) return null;
 
   const hubStyle = STATUS[hub.status];
+  const hubUnmeasured = hub.status === 'unmeasured';
+  const selected = spokes.find((s) => s.id === selectedId) ?? null;
 
   return (
     <section
-      aria-label="Your body as one connected system"
+      aria-label="Your Health Map — your body as one connected system"
       className="rounded-[20px] border border-line/70 bg-surface/70 px-5 py-9 sm:px-10 sm:py-12"
     >
-      {/* The idea, first. */}
+      <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700">
+        Your Health Map
+      </div>
       <motion.p
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-        className="font-display text-display-md leading-[1.25] text-balance text-ink max-w-xl"
+        className="mt-1.5 font-display text-display-md leading-[1.25] text-balance text-ink max-w-xl"
       >
         {headline}
       </motion.p>
 
-      {/* The system, connecting. */}
       <div className="relative mx-auto mt-8 aspect-square w-full max-w-[440px] sm:max-w-[560px]">
-        {/* Connection lines — every spoke joins the hormonal hub. They draw
-            in after the headline so the user watches the body 'connect'. */}
         <svg
           viewBox="0 0 100 100"
           className="absolute inset-0 h-full w-full overflow-visible"
@@ -102,7 +114,16 @@ export default function ConnectedSystems({
         >
           {spokes.map((s, i) => {
             const p = pointAt(ANGLES[i]);
-            const flagged = s.status === 'concern' || s.status === 'critical';
+            const isSel = s.id === selectedId;
+            const base = lineStyle(s.status);
+            // When something's selected, the chosen link brightens and the
+            // rest recede — the line stops being decoration and points.
+            const cls = isSel
+              ? 'stroke-indigo-500/80'
+              : selectedId
+                ? 'stroke-ink/8'
+                : base.cls;
+            const w = isSel ? 2 : base.w;
             return (
               <motion.line
                 key={s.id}
@@ -110,22 +131,18 @@ export default function ConnectedSystems({
                 y1={50}
                 x2={p.x}
                 y2={p.y}
-                className={flagged ? 'stroke-concern/50' : 'stroke-ink/12'}
-                strokeWidth={flagged ? 1.5 : 0.7}
+                className={cls}
+                strokeWidth={w}
                 strokeLinecap="round"
                 initial={{ pathLength: 0, opacity: 0 }}
                 animate={{ pathLength: 1, opacity: 1 }}
-                transition={{
-                  duration: 0.7,
-                  ease: 'easeOut',
-                  delay: 0.55 + i * 0.12,
-                }}
+                transition={{ duration: 0.7, ease: 'easeOut', delay: 0.55 + i * 0.12 }}
               />
             );
           })}
         </svg>
 
-        {/* Hub — the hormonal axis, the centre everything orbits. */}
+        {/* Hub — the hormonal axis everything is regulated from. */}
         <motion.div
           initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -133,50 +150,45 @@ export default function ConnectedSystems({
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
         >
           <div
-            className={`grid place-items-center w-32 h-32 sm:w-40 sm:h-40 rounded-full border-2 text-center shadow-soft ${hubStyle.ring}`}
+            className={`grid place-items-center w-32 h-32 sm:w-40 sm:h-40 rounded-full border-2 text-center shadow-soft px-3 ${
+              hubUnmeasured ? 'border-line bg-canvas/40' : hubStyle.ring
+            }`}
           >
             <div>
-              <div className="text-micro font-bold uppercase tracking-label text-muted">
-                Hub
-              </div>
-              <div className="font-display text-body-lg leading-tight text-ink mt-0.5">
+              <div className="font-display text-body-lg leading-tight text-ink">
                 {hub.label}
               </div>
-              <div className="mt-1 inline-flex items-center gap-1 text-caption text-ink-soft">
-                <span className={`w-1.5 h-1.5 rounded-full ${hubStyle.dot}`} />
-                {hubStyle.caption}
+              <div className="mt-1 text-micro leading-snug text-ink-soft">
+                {hubUnmeasured
+                  ? 'Add a hormone panel to complete the picture'
+                  : 'Regulates every other system'}
               </div>
             </div>
           </div>
         </motion.div>
 
-        {/* Spokes — the other systems, each tethered to the hub. */}
+        {/* Spokes. Tap teaches the connection; weight reflects what's flagged. */}
         {spokes.map((s, i) => {
           const p = pointAt(ANGLES[i]);
           const st = STATUS[s.status];
-          // Only systems that actually have markers are tappable — an
-          // unmeasured system has nothing to navigate to.
           const clickable = !!onSelectSystem && s.markerCount > 0;
-          const Tag = clickable ? motion.button : motion.div;
+          const isSel = s.id === selectedId;
+          const dim = selectedId && !isSel;
           return (
-            <Tag
+            <motion.button
               key={s.id}
-              {...(clickable
-                ? { type: 'button', onClick: () => onSelectSystem!(s.id) }
-                : {})}
+              type="button"
+              disabled={!clickable}
+              onClick={() => setSelectedId(isSel ? null : s.id)}
               initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{
-                type: 'spring',
-                stiffness: 320,
-                damping: 24,
-                delay: 0.65 + i * 0.12,
-              }}
+              animate={{ opacity: dim ? 0.45 : 1, scale: 1 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 24, delay: 0.65 + i * 0.12 }}
               style={{ left: `${p.x}%`, top: `${p.y}%` }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-[116px] sm:w-[132px] rounded-2xl border px-2.5 py-2 text-center ${st.ring} ${
-                clickable
-                  ? 'cursor-pointer transition-transform hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60'
-                  : ''
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-[116px] sm:w-[132px] rounded-2xl border px-2.5 py-2 text-center transition-transform ${st.ring} ${
+                isSel ? 'ring-2 ring-indigo-400/70 scale-[1.06]' : ''
+              } ${clickable ? 'cursor-pointer hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60' : 'cursor-default'} ${
+                // Flagged systems carry slightly more weight than calm ones.
+                s.flaggedCount > 0 ? 'font-semibold' : ''
               }`}
             >
               <div className="text-caption font-semibold leading-tight text-ink">
@@ -184,25 +196,61 @@ export default function ConnectedSystems({
               </div>
               <div className="mt-1 inline-flex items-center gap-1 text-micro text-ink-soft">
                 <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
-                {s.status === 'concern' && s.flaggedCount > 0
-                  ? `${s.flaggedCount} to review`
-                  : st.caption}
+                {st.caption}
               </div>
-            </Tag>
+            </motion.button>
           );
         })}
       </div>
 
-      {/* The reassurance-first story line, last. */}
-      {story && (
-        <motion.p
+      {/* Caption area — teaches on selection, reassures by default. */}
+      {selected ? (
+        <motion.div
+          key={selected.id}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className="mt-7 max-w-xl rounded-xl border border-indigo-100 bg-indigo-50/40 px-4 py-3"
+        >
+          <div className="text-caption font-semibold text-ink">
+            {selected.label} · {STATUS[selected.status].caption}
+          </div>
+          {selected.link && (
+            <p className="mt-1 text-caption leading-snug text-ink-soft">
+              <span className="font-medium text-ink-soft">
+                Why it connects:
+              </span>{' '}
+              {selected.link}
+            </p>
+          )}
+          {onSelectSystem && selected.markerCount > 0 && (
+            <button
+              type="button"
+              onClick={() => onSelectSystem(selected.id)}
+              className="mt-2 inline-flex items-center gap-1 text-caption font-semibold text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+            >
+              View {selected.markerCount} marker
+              {selected.markerCount === 1 ? '' : 's'} <ChevronRight size={14} />
+            </button>
+          )}
+        </motion.div>
+      ) : (
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 0.6, delay: 1.15 }}
-          className="mt-7 text-body-sm leading-relaxed text-ink-soft text-balance max-w-xl"
+          className="mt-7 max-w-xl space-y-1.5"
         >
-          {story}
-        </motion.p>
+          <p className="text-micro text-muted leading-snug">
+            Hormones sit at the centre because testosterone influences every
+            other system — tap a system to see how it connects.
+          </p>
+          {story && (
+            <p className="text-body-sm leading-relaxed text-ink-soft text-balance">
+              {story}
+            </p>
+          )}
+        </motion.div>
       )}
     </section>
   );

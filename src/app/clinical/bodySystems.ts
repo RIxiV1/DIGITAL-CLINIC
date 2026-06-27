@@ -145,9 +145,9 @@ export function connectedStoryHeadline(systems: BodySystem[]): string {
     return 'Your health, by system — and right now, the whole picture looks calm.';
   }
   if (flagged === 1) {
-    return 'Your health, by system. One marker stands out — here’s where it sits.';
+    return 'Your health, by system. Here’s where today’s finding belongs.';
   }
-  return 'Your health, by system. A few markers stand out — here’s how they sort across your body.';
+  return 'Your health, by system. Here’s where today’s findings belong.';
 }
 
 /** The worst-status MEASURED system, or null if nothing was measured. */
