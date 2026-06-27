@@ -11,7 +11,8 @@ import BottomNav from '../components/BottomNav';
 import StatusKey from '../components/StatusKey';
 import { Reveal } from './landing/shared';
 import { useIsMdUp } from '../utils/useMediaQuery';
-import { useNavigation, useReports } from '../AppContext';
+import { useNavigation, useQuiz, useReports } from '../AppContext';
+import { markerContextNote } from '../utils/markerContext';
 import {
   biomarkersByCategory,
   bottomLineFor,
@@ -28,6 +29,7 @@ type Filter = StatusFilterId;
 export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const { reports } = useReports();
   const { navigate } = useNavigation();
+  const { quiz } = useQuiz();
   // findReport falls back to the curated sample-reports list, so links
   // like /results/rep-001 keep working even though the user's locker
   // starts empty.
@@ -508,6 +510,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                                 <BiomarkerBar
                                   key={m.id}
                                   marker={m}
+                                  contextNote={markerContextNote(m, quiz)}
                                   onClick={
                                     m.problemId
                                       ? () =>
