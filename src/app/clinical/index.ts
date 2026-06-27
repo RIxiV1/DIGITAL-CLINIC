@@ -35,3 +35,4 @@ export {
   type EvidenceLevel,
   type EvidenceMatch,
 } from './evidence';
+export { HOW_WE_READ, DECISION_PRINCIPLE, type MethodStep } from './methodology';

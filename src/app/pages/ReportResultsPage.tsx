@@ -18,6 +18,7 @@ import {
   REPORT_LIMITATIONS,
   REPORT_LIMITATIONS_SOURCES,
   CRITICAL_LIMITATION_CAVEAT,
+  HOW_WE_READ,
 } from '../clinical';
 import {
   biomarkersByCategory,
@@ -637,6 +638,40 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                   ))}
                 </p>
               </div>
+            </details>
+
+            {/* "How we read your report" — Persona 9 (skeptic) / 8 (doctor):
+                trust through visible method. Collapsed like the limitations
+                panel; every line is literally true of the pipeline. */}
+            <details className="mt-3 group rounded-xl border border-line/70 bg-surface/60">
+              <summary className="cursor-pointer list-none px-4 py-3 flex items-center gap-2 text-caption font-semibold text-ink-soft select-none">
+                <ChevronRight
+                  size={15}
+                  className="text-muted shrink-0 transition-transform group-open:rotate-90"
+                  aria-hidden
+                />
+                How we read your report
+              </summary>
+              <ol className="px-4 pb-4 pt-1 space-y-3 border-t border-line/60">
+                {HOW_WE_READ.map((s, i) => (
+                  <li key={s.title} className="flex gap-3 pt-3 first:pt-2">
+                    <span
+                      className="font-display text-indigo-700 text-body-lg leading-none shrink-0 w-5 tabular-nums"
+                      aria-hidden
+                    >
+                      {i + 1}
+                    </span>
+                    <div>
+                      <div className="text-caption font-semibold text-ink">
+                        {s.title}
+                      </div>
+                      <p className="mt-0.5 text-caption leading-snug text-ink-soft">
+                        {s.body}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
             </details>
           </main>
 

@@ -8,6 +8,7 @@ import { useModalA11y } from '../utils/useModalA11y';
 import {
   evidenceForRecommendation,
   EVIDENCE_TIERS,
+  DECISION_PRINCIPLE,
   type EvidenceLevel,
 } from '../clinical';
 
@@ -134,6 +135,13 @@ export default function LearnMoreModal({
                     </p>
                   )}
                   <ImproveList items={info.improve} />
+                  {/* Decision aid (Persona 1 — the core gym user): answers
+                      "so should I stop X?" with the only safe, correct
+                      principle — don't decide off one marker — instead of
+                      marker-specific instructions we can't responsibly give. */}
+                  <p className="mt-3 text-caption leading-snug text-ink-soft border-l-2 border-l-indigo-300 pl-3">
+                    {DECISION_PRINCIPLE}
+                  </p>
                 </Section>
               )}
 
