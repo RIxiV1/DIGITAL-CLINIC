@@ -79,6 +79,7 @@ Read the one matching what you're touching before you grep — each is a focused
 | [docs/NAVIGATION.md](docs/NAVIGATION.md) | The hand-rolled no-router `Page`-union navigation + the StrictMode async gotcha |
 | [docs/PARSER.md](docs/PARSER.md) | The three-pipeline parser, the biomarker catalog + its fields (optimal / action / critical), India-localized ranges |
 | [docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md) | How a value becomes optimal/borderline/out-of-range/critical, the "trust the pathologist" rule, cite-or-omit, range validation, and known accuracy caveats |
+| [docs/FIRST-IMPRESSION-CONTRACT.md](docs/FIRST-IMPRESSION-CONTRACT.md) | The experience-first contract every report-interpretation screen must satisfy: the five questions, the honesty gates (prioritize-confidently/synthesize-conservatively), `certaintyOfAction`, and how it's enforced as a type |
 | [docs/SECURITY.md](docs/SECURITY.md) | The privacy/security model: threat model, on-device storage, opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the consent-gated AI caveat, vuln reporting |
 | [docs/THEMING.md](docs/THEMING.md) | Dark-default semantic tokens, the external (CSP-safe) theme bootstrap, on-color contrast |
 | [docs/I18N.md](docs/I18N.md) | The UI-language system: dictionary, English-fallback chain, adding keys/languages |
