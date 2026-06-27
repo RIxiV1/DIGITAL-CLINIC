@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { statusColor, type Biomarker } from '../data/biomarkers';
+import { markerTrendNote } from '../clinical';
 
 type Props = {
   marker: Biomarker;
@@ -204,6 +205,11 @@ export default function BiomarkerBar({
   const colors = statusColor(marker.status);
   const tier = tierFor(marker);
   const direction = marker.direction ?? 'band';
+  // Trend beats a single reading — show movement (and reinforce progress)
+  // when the marker carries history. The status pill keeps the range
+  // verdict; this carries the direction, so "still flagged but improving"
+  // reads naturally without special-casing.
+  const trendNote = markerTrendNote(marker);
 
   // Healthy-zone boundaries are always at the segment edges, regardless
   // of the absolute clinical scale. That's the entire point of the
@@ -475,6 +481,23 @@ export default function BiomarkerBar({
           the status pill in a second vocabulary; now it's just the
           descriptive caption so there's one status word per card. */}
       <div className="mt-2 text-caption text-ink-soft">{tier.caption}.</div>
+
+      {/* Trend line — movement since the last test, direction-aware.
+          Improving reads green (reinforce progress); declining is a calm
+          amber "worth watching", never alarm; steady is quiet. */}
+      {trendNote && (
+        <div
+          className={`mt-1 text-caption font-medium ${
+            trendNote.tone === 'improving'
+              ? 'text-good'
+              : trendNote.tone === 'declining'
+                ? 'text-attention-ink'
+                : 'text-muted'
+          }`}
+        >
+          {trendNote.text}
+        </div>
+      )}
 
       {/* What this means */}
       {!compact && (
