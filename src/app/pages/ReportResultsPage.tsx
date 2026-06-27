@@ -12,7 +12,12 @@ import StatusKey from '../components/StatusKey';
 import { Reveal } from './landing/shared';
 import { useIsMdUp } from '../utils/useMediaQuery';
 import { useNavigation, useQuiz, useReports } from '../AppContext';
-import { markerContextNote, reportProvenanceNote } from '../clinical';
+import {
+  markerContextNote,
+  reportProvenanceNote,
+  REPORT_LIMITATIONS,
+  REPORT_LIMITATIONS_SOURCES,
+} from '../clinical';
 import {
   biomarkersByCategory,
   bottomLineFor,
@@ -578,6 +583,52 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 results.
               </p>
             </div>
+
+            {/* "What a single report can't tell you" — a progressive-
+                disclosure panel that mitigates over-trust with research-
+                grounded limits (reference ranges are statistical, one
+                reading isn't a trend, etc.). Native <details> keeps it
+                accessible and zero-JS; collapsed by default so it adds no
+                weight to the default read — it's there for the user who
+                wants to know how far to trust a number. */}
+            <details className="mt-3 group rounded-xl border border-line/70 bg-surface/60">
+              <summary className="cursor-pointer list-none px-4 py-3 flex items-center gap-2 text-caption font-semibold text-ink-soft select-none">
+                <ChevronRight
+                  size={15}
+                  className="text-muted shrink-0 transition-transform group-open:rotate-90"
+                  aria-hidden
+                />
+                What a single report can’t tell you
+              </summary>
+              <div className="px-4 pb-4 pt-1 space-y-3 border-t border-line/60">
+                {REPORT_LIMITATIONS.map((l) => (
+                  <div key={l.title} className="pt-3 first:pt-2">
+                    <div className="text-caption font-semibold text-ink">
+                      {l.title}
+                    </div>
+                    <p className="mt-0.5 text-caption leading-snug text-ink-soft">
+                      {l.body}
+                    </p>
+                  </div>
+                ))}
+                <p className="text-micro text-muted leading-snug pt-1">
+                  Sources:{' '}
+                  {REPORT_LIMITATIONS_SOURCES.map((s, i) => (
+                    <span key={s.url}>
+                      {i > 0 && ' · '}
+                      <a
+                        href={s.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline underline-offset-2 decoration-indigo-300 hover:text-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+                      >
+                        {s.label}
+                      </a>
+                    </span>
+                  ))}
+                </p>
+              </div>
+            </details>
           </main>
 
           {/* RIGHT — Sticky sidebar (filters + deep dives). Mounted only

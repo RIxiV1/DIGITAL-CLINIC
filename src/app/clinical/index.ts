@@ -22,3 +22,9 @@
  */
 export { markerContextNote } from './markerContext';
 export { reportProvenanceNote, type ProvenanceNote } from './reportProvenance';
+export {
+  REPORT_LIMITATIONS,
+  REPORT_LIMITATIONS_SOURCES,
+  type Limitation,
+  type LimitationsSource,
+} from './reportLimitations';
