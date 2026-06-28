@@ -15,7 +15,7 @@
  * flag).
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   loadReports,
   saveReports,
@@ -235,9 +235,27 @@ describe('theme — bare-string format shared with the bootstrap', () => {
     expect(loadTheme()).toBe('light');
   });
 
-  it('defaults to dark for any non-light value', () => {
-    localStorage.setItem('dc_theme', 'garbage');
+  it('an explicit saved choice always wins over the OS preference', () => {
+    saveTheme('dark');
+    vi.stubGlobal('matchMedia', () => ({ matches: false })); // OS = light
     expect(loadTheme()).toBe('dark');
+    vi.unstubAllGlobals();
+  });
+
+  it('with no explicit choice, honors the OS preference', () => {
+    localStorage.removeItem('dc_theme');
+    vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('dark') }));
+    expect(loadTheme()).toBe('dark'); // OS prefers dark
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    expect(loadTheme()).toBe('light'); // OS prefers light / no preference
+    vi.unstubAllGlobals();
+  });
+
+  it('ignores a garbage value → warm-paper light default (no explicit choice)', () => {
+    localStorage.setItem('dc_theme', 'garbage');
+    vi.stubGlobal('matchMedia', () => ({ matches: false }));
+    expect(loadTheme()).toBe('light');
+    vi.unstubAllGlobals();
   });
 });
 

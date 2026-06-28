@@ -1,6 +1,6 @@
 # Theming
 
-Dark is the default. Light is opt-in. The whole system runs on semantic Tailwind v4 tokens — there are zero `dark:` variants sprinkled across components.
+An explicit saved choice always wins; with no choice we honor the OS `prefers-color-scheme` and fall back to the **warm-paper light** theme (the brand's distinctive identity, and the safer default for dense clinical numbers). Both themes are first-class. The whole system runs on semantic Tailwind v4 tokens — there are zero `dark:` variants sprinkled across components.
 
 This doc explains the five principles, the no-FOUC bootstrap, and how to add a new themed surface without breaking dark mode.
 
@@ -75,19 +75,26 @@ We use `rgb(R G B / A)` and `color-mix(in oklab, …)` throughout — no legacy 
 ## How the bootstrap works (no FOUC)
 
 The theme is stamped on `<html data-theme="...">` by a script that runs
-*before* React mounts. Without it, the page paints in light mode (the CSS
-default) then flickers to dark when React reads `localStorage`.
+*before* React mounts. Without it, the page would paint in the CSS-default
+theme and then flicker to the resolved theme once React reads
+`localStorage` / the OS preference — so the bootstrap resolves it first.
 
 > ⚠️ **This script lives in [`public/theme-init.js`](../public/theme-init.js) — an EXTERNAL file, loaded synchronously from `<head>`. It is deliberately NOT inline.** The production CSP's `script-src` in `vercel.json` allows `'self'`, `'wasm-unsafe-eval'` (for the pdfjs/Tesseract WASM), and the jsdelivr CDN — but **no `'unsafe-inline'`**, which silently blocks inline scripts. As an inline `<script>` the bootstrap never ran in prod — `data-theme` stayed unset and the deployed site loaded in **light** on fresh devices, while local dev (no CSP) looked fine. A same-origin file satisfies `'self'` with no CSP hash to maintain, and a blocking `<head>` script still runs before first paint. **Don't move it back inline.** If you edit it, it's still just one same-origin file — no CSP change needed.
 
 ```js
 // public/theme-init.js — referenced as <script src="/theme-init.js"></script>
 (function () {
-  var theme = 'dark';
+  var theme;
   try {
     var saved = localStorage.getItem('dc_theme');
-    if (saved === 'light') theme = 'light';
-  } catch (e) { /* private mode / disabled storage */ }
+    if (saved === 'light' || saved === 'dark') {
+      theme = saved; // explicit user choice always wins
+    } else {
+      theme = window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark' : 'light';
+    }
+  } catch (e) { theme = 'light'; /* private mode / disabled storage */ }
   document.documentElement.dataset.theme = theme;
 
   var themeColor = theme === 'light' ? '#F7F4EF' : '#100E0C';
@@ -98,11 +105,11 @@ default) then flickers to dark when React reads `localStorage`.
 
 Three things this script does:
 
-1. Reads `localStorage['dc_theme']` — defaults to `'dark'` on any failure (private mode, disabled storage, parse error).
+1. Resolves the theme: an explicit `localStorage['dc_theme']` wins; otherwise it honors the OS `prefers-color-scheme` and falls back to **`'light'`** (the warm-paper identity) — including on any storage failure. `loadTheme()` in `persistence.ts` mirrors this exactly, or first paint flashes.
 2. Stamps `<html data-theme="dark">` or `<html data-theme="light">`.
 3. Syncs the `<meta name="theme-color">` tag so the mobile browser top-bar tint matches the canvas color on first paint.
 
-**`prefers-color-scheme` is deliberately not consulted.** The brand identity on first paint is dark regardless of OS preference. Users who want light explicitly opt in via Profile.
+**`prefers-color-scheme` IS honored now** (it previously wasn't). Rationale: the distinctive warm-paper look should lead the first impression, and the evidence on dense clinical data + astigmatism halation favors light; dark-preferrers still get dark via their OS setting or the Profile toggle.
 
 ---
 

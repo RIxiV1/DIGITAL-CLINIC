@@ -123,7 +123,7 @@ For anyone (human or AI) digging into the code, start here:
 - **[docs/DESIGN-PHILOSOPHY.md](docs/DESIGN-PHILOSOPHY.md)** — the design *principles* (not the system): one question per screen, reveal-don't-dump, system-first, and the self-understanding metric.
 - **[docs/SECURITY.md](docs/SECURITY.md)** — the privacy/security model: threat model, on-device storage, the opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the consent-gated AI caveat, and how to report a vulnerability.
 - **[docs/NAVIGATION.md](docs/NAVIGATION.md)** — the no-router `NavigationContext`, typed `Page` union, the `location.key` back() trick, and the StrictMode async-navigation gotcha.
-- **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, the three colour lanes (chrome / forest accent / crimson alarm), the dark warm-charcoal ladder, dark-default bootstrap, `[data-theme='light']` scope-local islands.
+- **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, the three colour lanes (chrome / forest accent / crimson alarm), the dark warm-charcoal ladder, theme resolution (explicit choice → OS preference → warm-paper light), `[data-theme='light']` scope-local islands.
 - **[docs/I18N.md](docs/I18N.md)** — the UI-language system: dictionary, English-fallback chain, and why clinical copy is never auto-translated.
 - **[docs/MOBILE.md](docs/MOBILE.md)** — mobile-first patterns and footguns: PWA install, fixed nav, `min-w-0`, 44px touch targets, OCR prewarm.
 - **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** — workflow, commits, branches, where to make common changes.

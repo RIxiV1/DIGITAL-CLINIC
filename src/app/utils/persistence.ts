@@ -504,12 +504,17 @@ export type Theme = 'light' | 'dark';
 export function loadTheme(): Theme {
   try {
     const raw = window.localStorage.getItem(THEME_KEY);
-    return raw === 'light' ? 'light' : 'dark';
+    if (raw === 'light' || raw === 'dark') return raw; // explicit choice wins
+    // No stored choice: honor the OS preference, fall back to the warm-paper
+    // LIGHT identity. Must match public/theme-init.js exactly or first paint
+    // flashes the wrong theme.
+    return window.matchMedia?.('(prefers-color-scheme: dark)').matches
+      ? 'dark'
+      : 'light';
   } catch {
-    // Private mode / quota / disabled storage. Mirror the bootstrap
-    // script's fallback so the React-controlled state matches what's
-    // already on <html>.
-    return 'dark';
+    // Private mode / quota / disabled storage → the warm-paper default,
+    // mirroring the bootstrap so React state matches what's on <html>.
+    return 'light';
   }
 }
 
