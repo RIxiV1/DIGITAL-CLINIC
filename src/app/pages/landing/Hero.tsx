@@ -141,14 +141,21 @@ function HeroVisual({ onSample }: { onSample: () => void }) {
           actually returns on a real sample, not an abstract diagram. */}
       <div className="absolute left-0 sm:-left-4 bottom-[16%] sm:bottom-[20%] w-[82%] sm:w-[74%] rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden">
         <div className="px-4 py-2.5 border-b border-line/70 flex items-center justify-between">
-          <span className="text-caption font-semibold text-ink">
-            Top findings
+          {/* Labelled "Sample" so a first-time visitor never mistakes these
+              for their own results or a real statistic. */}
+          <span className="inline-flex items-center gap-2">
+            <span className="text-caption font-semibold text-ink">
+              Sample findings
+            </span>
+            <span className="text-[9px] font-bold uppercase tracking-widest text-muted border border-line rounded px-1 py-0.5 leading-none">
+              Sample
+            </span>
           </span>
           <button
             onClick={onSample}
             className="inline-flex items-center gap-0.5 text-micro font-semibold text-blue-700 hover:text-blue-800 transition-colors"
           >
-            See sample <ChevronRight size={12} />
+            See full report <ChevronRight size={12} />
           </button>
         </div>
 
