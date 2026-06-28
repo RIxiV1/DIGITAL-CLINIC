@@ -70,8 +70,9 @@ quality. (Reconciliation belongs to the consolidation pass.)
 ## Naming collision to resolve
 
 **"Health Map" is used twice.** The new signature section is "Your Health
-Map" (ConnectedSystems), but the bottom-nav **Map** tab routes to
-`HealthMapPage` (a per-marker systems list). Two things called Map. The
+Map" (ConnectedSystems), but the bottom-nav **Health** tab routes to
+`HealthMapPage` (titled "Health Map" — a per-marker systems list). Two things
+called Health Map. The
 intended end state: the signature *becomes* the Map tab and the old list
 retires — a nav change for the consolidation pass (nav is shared/active, so
 not now).

@@ -79,7 +79,7 @@ The separation matters: Pipelines 1+2 are free (CPU on the user's device), Pipel
 
 ## The catalog and the matcher
 
-Everything the parser returns gets mapped against [`data/biomarkers.ts`](../src/app/data/biomarkers.ts) — a hand-curated catalog of ~100 biomarker templates. A template looks like:
+Everything the parser returns gets mapped against the catalog in [`data/biomarkerCatalog.ts`](../src/app/data/biomarkerCatalog.ts) — a hand-curated table of 77 biomarker templates (extracted out of `biomarkers.ts`, which keeps the grading/trend logic). A template looks like:
 
 ```ts
 {
@@ -241,10 +241,10 @@ The client surfaces this as `Internal error... [<kind>: <hint>]` so the next fai
 
 | You want to… | Edit |
 |---|---|
-| Add a new biomarker | `data/biomarkers.ts` (add to `biomarkerCatalog`) |
-| Add a new lab's unit alias | `data/biomarkers.ts` → `unitAliases` on the relevant template |
-| Add a harm-anchor (action threshold) | `data/biomarkers.ts` → `actionMin`/`actionMax` + `actionSource` on the template |
-| Localize a reference range to India | `data/biomarkers.ts` (cite an Indian guideline — ICMR / LAI / IAP) |
+| Add a new biomarker | `data/biomarkerCatalog.ts` (append to `biomarkerCatalog`) |
+| Add a new lab's unit alias | `data/biomarkerCatalog.ts` → `unitAliases` on the relevant template |
+| Add a harm-anchor (action threshold) | `data/biomarkerCatalog.ts` → `actionMin`/`actionMax` + `actionSource` on the template |
+| Localize a reference range to India | `data/biomarkerCatalog.ts` (cite an Indian guideline — ICMR / LAI / IAP) |
 | Speed up first OCR | `services/pdfParser.ts` → `prewarmOcr()` (fired from `UploadPage` on image select) |
 | Add / translate a UI string | `i18n/translations.ts` — see [I18N.md](I18N.md) |
 | Tighten the Gemini prompt | `api/parse-image.ts` → `SYSTEM_PROMPT` constant |

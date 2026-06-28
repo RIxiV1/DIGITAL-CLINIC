@@ -41,13 +41,14 @@ There are four React contexts, combined under one `AppProvider`:
 
 ```
 AppProvider (src/app/AppContext.tsx)
-└── LanguageProvider       →  selected UI language + the t() translator
-    ├── NavigationProvider   →  the typed Page state machine + URL sync
-    ├── QuizProvider         →  the symptom/priority quiz answers + risk tiers
-    └── ReportsProvider      →  the user's locker of lab reports
+└── LanguageProvider          →  selected UI language + the t() translator
+    └── DiscreetProvider       →  Discreet Mode (screen veil) preference
+        └── NavigationProvider →  the typed Page state machine + URL sync
+            └── QuizProvider     →  the symptom/priority quiz answers + risk tiers
+                └── ReportsProvider →  the user's locker of lab reports
 ```
 
-Each context exposes hooks (`useNavigation()`, `useQuiz()`, `useReports()`, `useLanguage()`) and a `loadXxx()` / `saveXxx()` pair in `utils/persistence.ts`.
+Each context exposes hooks (`useNavigation()`, `useQuiz()`, `useReports()`, `useLanguage()`, `useDiscreet()`) and a `loadXxx()` / `saveXxx()` pair in `utils/persistence.ts`.
 
 ### NavigationContext — the no-router system
 
@@ -57,15 +58,17 @@ We don't use React Router for navigation. Instead, a typed union models every pa
 // src/app/contexts/types.ts
 export type Page =
   | { type: 'landing' }
+  | { type: 'quiz' }
+  | { type: 'recommendedTests' }
   | { type: 'home' }
+  | { type: 'healthMap' }
   | { type: 'upload' }
   | { type: 'processing' }
   | { type: 'manualEntry' }
   | { type: 'results'; reportId: string }
   | { type: 'problem'; problemId: string }
-  | { type: 'quiz' }
-  | { type: 'recommendedTests' }
-  | { type: 'profile' };
+  | { type: 'profile' }
+  | { type: 'privacy' };
 ```
 
 `navigate(page)` pushes a new URL **path** (e.g. `/reports/:id`), `replace(page)` rewrites the current entry, and `back()` defers to the browser. `page` is derived from the URL, so back/forward and pasted deep links work for free. The whole thing is ~250 lines. See [NAVIGATION.md](NAVIGATION.md) for the deep dive.
@@ -153,6 +156,40 @@ The parser is the biggest single chunk of complexity. See [PARSER.md](PARSER.md)
 
 ---
 
+## The clinical interpretation layer
+
+Between the data and the UI sits `src/app/clinical/` — the layer that turns
+matched markers into something a person understands. Keeping it separate is the
+point: the **data** (`data/biomarkers.ts` logic + types, and the extracted
+`data/biomarkerCatalog.ts` 77-marker table) says *what a value is*; the
+**clinical layer** says *what it means and what to do*; the **UI only displays.**
+
+Its public surface is `clinical/index.ts`. The pieces, by role:
+
+- **System grouping** (`bodySystems.ts`) — folds markers into body systems
+  (`buildBodySystems`) and writes the honest, reassurance-first signature
+  sentences (`healthStorySentence`, `connectedStoryHeadline`). This is why the
+  app navigates body → system → finding, not as a flat marker list.
+- **Per-marker meaning** — context from the user's own intake
+  (`markerContextNote`), trend reading (`markerTrendNote`), action certainty
+  (`certaintyOfAction`), and the harm-anchored "why it matters."
+- **Honesty rails** — report-level limitations (`reportLimitations`),
+  provenance (`reportProvenanceNote`), visible methodology (`methodology`).
+  These keep interpretation from over-claiming.
+
+Two docs govern this layer's *behaviour*, not just its code:
+[FIRST-IMPRESSION-CONTRACT.md](FIRST-IMPRESSION-CONTRACT.md) (what every
+report-interpretation screen must answer, and the prioritize-confidently /
+synthesize-only-when-earned gates) and [DESIGN-PHILOSOPHY.md](DESIGN-PHILOSOPHY.md).
+
+> Note: pages were split for the same separation. `ProcessingPage` →
+> `pages/processing/` (parse state machine + the confirm / cascade / failed
+> views); `HomePage` → `pages/home/` (the Explore panes + `dashboardModel.ts`,
+> the dashboard's pure derivations). The page file orchestrates; the logic and
+> sub-views live beside it.
+
+---
+
 ## Persistence
 
 Everything user-owned is in `localStorage`, namespaced with a `dc_` prefix and validated against a zod schema on every read.
@@ -191,7 +228,7 @@ forgot-PIN-means-wipe trade-off and the cross-context lock-event bus — in
 
 Every other page is lazy-loaded through `lazyWithReload` (not raw `React.lazy`). The wrapper catches the specific `ChunkLoadError` that happens when a user has the app open during a deploy (old chunk URLs gone) and triggers a hard reload instead of dumping them on the ErrorBoundary.
 
-Per-page chunks: Quiz, RecommendedTests, Home, Upload, Processing, ManualEntry, ReportResults, ProblemDetail, Profile.
+Per-page chunks: Quiz, RecommendedTests, Home, HealthMap, Upload, Processing, ManualEntry, ReportResults, ProblemDetail, Profile, Privacy.
 
 Suspense fallback is a low-fidelity `PageSkeleton` — kept deliberately ugly so it never gets mistaken for the real page during slow networks.
 
@@ -199,7 +236,9 @@ Suspense fallback is a low-fidelity `PageSkeleton` — kept deliberately ugly so
 
 ## Animation
 
-`framer-motion` is the only animation library. `AnimatePresence` wraps the page host so cross-route transitions can be choreographed (fade-out the old page, fade-in the new). `MotionConfig` sets project-wide defaults.
+`framer-motion` is the only animation library. `MotionConfig` sets project-wide defaults.
+
+**Page transitions are enter-only — deliberately NOT `AnimatePresence`.** The page host in `App.tsx` is a single `motion.div` keyed on `pageKey(page)`; changing the key unmounts the old page and mounts the new one with an enter animation, no exit. We tried `AnimatePresence` and removed it: its exit-complete callback never reliably fired here, so the outgoing page lingered as a ghost overlay (it read as "infinite scroll" on sign-out). **Don't re-introduce `AnimatePresence` at the page-host level.** `AnimatePresence` is still the right tool *inside* components for mount/unmount of modals and sheets (LearnMoreModal, MarkerSheet, the home panes) — that's where it's used.
 
 We respect `prefers-reduced-motion` — anywhere we animate beyond a fade, there's a `useReducedMotion()` check that short-circuits to no animation.
 

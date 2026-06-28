@@ -86,6 +86,7 @@ Read the one matching what you're touching before you grep — each is a focused
 | [docs/I18N.md](docs/I18N.md) | The UI-language system: dictionary, English-fallback chain, adding keys/languages |
 | [docs/MOBILE.md](docs/MOBILE.md) | Mobile-first patterns + footguns: PWA, fixed nav, `min-w-0`, touch targets, OCR prewarm |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Setup, running locally, and how to ship a change |
+| [docs/VOCABULARY.md](docs/VOCABULARY.md) | "One word, one meaning" — the canonical term for each concept and the naming collisions still being reconciled |
 
 ---
 

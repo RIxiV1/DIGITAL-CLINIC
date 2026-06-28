@@ -125,16 +125,17 @@ For trivial commits (typo fixes, lint), one-line is fine. For anything else, wri
 
 | You want to… | Edit |
 |---|---|
-| Add a biomarker to the dashboard | [`src/app/data/biomarkers.ts`](../src/app/data/biomarkers.ts) — add to `biomarkerCatalog` |
-| Add a new lab's unit alias | Same file — extend `unitAliases` on the relevant template |
+| Add a biomarker to the dashboard | [`src/app/data/biomarkerCatalog.ts`](../src/app/data/biomarkerCatalog.ts) — append to the `biomarkerCatalog` table (grading/trend logic stays in [`biomarkers.ts`](../src/app/data/biomarkers.ts)) |
+| Add a new lab's unit alias | Same catalog file — extend `unitAliases` on the relevant template |
+| Change how a marker is interpreted / explained | [`src/app/clinical/`](../src/app/clinical/) — the interpretation layer (system grouping, context, trends, limitations); see [ARCHITECTURE.md](ARCHITECTURE.md#the-clinical-interpretation-layer) |
 | Add a new page route | Add a variant to `Page` in [`src/app/contexts/types.ts`](../src/app/contexts/types.ts), wire it in [`src/app/App.tsx`](../src/app/App.tsx), build the page component |
 | Change a theme color | [`src/index.css`](../src/index.css) — `@theme :root` (light) + `:root[data-theme='dark']` (dark) |
 | Add a quiz symptom | [`src/app/data/quiz.ts`](../src/app/data/quiz.ts) + scoring weights in [`src/app/contexts/QuizContext.tsx`](../src/app/contexts/QuizContext.tsx) |
 | Tighten the Gemini system prompt | [`api/parse-image.ts`](../api/parse-image.ts) — `SYSTEM_PROMPT` constant |
 | Add a tracked toggle to Profile | Persistence helper in [`src/app/utils/persistence.ts`](../src/app/utils/persistence.ts), UI in [`src/app/pages/ProfilePage.tsx`](../src/app/pages/ProfilePage.tsx) |
-| Adjust the dashboard layout | [`src/app/pages/HomePage.tsx`](../src/app/pages/HomePage.tsx) |
+| Adjust the dashboard layout | [`src/app/pages/HomePage.tsx`](../src/app/pages/HomePage.tsx) + [`src/app/pages/home/`](../src/app/pages/home/) (Explore panes; pure derivations in `dashboardModel.ts`) |
 | Adjust the report results layout | [`src/app/pages/ReportResultsPage.tsx`](../src/app/pages/ReportResultsPage.tsx) |
-| Adjust the upload flow | [`src/app/pages/UploadPage.tsx`](../src/app/pages/UploadPage.tsx) + [`src/app/pages/ProcessingPage.tsx`](../src/app/pages/ProcessingPage.tsx) |
+| Adjust the upload flow | [`src/app/pages/UploadPage.tsx`](../src/app/pages/UploadPage.tsx) + [`src/app/pages/processing/`](../src/app/pages/processing/) (parse state machine + confirm/cascade/failed views) |
 
 For anything bigger, read [`ARCHITECTURE.md`](ARCHITECTURE.md) and [`PARSER.md`](PARSER.md) first.
 

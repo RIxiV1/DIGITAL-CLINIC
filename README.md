@@ -102,10 +102,11 @@ npm run preview      # serve dist/
 ```text
 src/
 └── app/
+    ├── clinical/    # Interpretation layer — turns matched markers into meaning (systems, context, trends, limitations)
     ├── components/  # Reusable UI (BiomarkerBar, HealthRing, Sparkline, modals)
-    ├── contexts/    # React Contexts (Quiz, Reports, Navigation)
-    ├── data/        # Static catalogs (biomarkers, tests, quiz questions)
-    ├── pages/       # Route-level page components (Landing, Quiz, Upload, HomePage, etc.)
+    ├── contexts/    # React Contexts (Language, Discreet, Navigation, Quiz, Reports)
+    ├── data/        # Static catalogs (biomarkerCatalog, tests, quiz) + grading/trend logic
+    ├── pages/       # Route-level pages; big ones split into folders (home/, processing/)
     ├── services/    # Client-side services (PDF parser pipeline, PDF report exporter, API)
     └── utils/       # Global utilities (localStorage helpers, lazy reloading, a11y hooks)
 ```
@@ -118,6 +119,8 @@ For anyone (human or AI) digging into the code, start here:
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — 10-minute system map: state, routing, code-splitting, the upload flow.
 - **[docs/PARSER.md](docs/PARSER.md)** — the multi-strategy PDF / OCR / Gemini pipeline. The hardest part of the codebase.
 - **[docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md)** — how a value becomes optimal / borderline / out-of-range / critical, the "trust the pathologist" rule, range validation, and the false-alarm vs false-assurance trade-offs.
+- **[docs/FIRST-IMPRESSION-CONTRACT.md](docs/FIRST-IMPRESSION-CONTRACT.md)** — the experience-first contract every report-interpretation screen must satisfy (the five questions, the honesty gates, `certaintyOfAction`).
+- **[docs/DESIGN-PHILOSOPHY.md](docs/DESIGN-PHILOSOPHY.md)** — the design *principles* (not the system): one question per screen, reveal-don't-dump, system-first, and the self-understanding metric.
 - **[docs/SECURITY.md](docs/SECURITY.md)** — the privacy/security model: threat model, on-device storage, the opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the consent-gated AI caveat, and how to report a vulnerability.
 - **[docs/NAVIGATION.md](docs/NAVIGATION.md)** — the no-router `NavigationContext`, typed `Page` union, the `location.key` back() trick, and the StrictMode async-navigation gotcha.
 - **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, the three colour lanes (chrome / forest accent / crimson alarm), the dark warm-charcoal ladder, dark-default bootstrap, `[data-theme='light']` scope-local islands.
