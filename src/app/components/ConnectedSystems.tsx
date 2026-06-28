@@ -26,9 +26,14 @@ import type { BodySystem, BodySystemId, SystemStatus } from '../clinical';
 
 type Props = {
   systems: BodySystem[];
-  headline: string;
+  /** Big headline above the map. Omit to render just the visual (e.g. when an
+   *  embedding surface like the landing owns the heading). */
+  headline?: string;
   story: string | null;
   onSelectSystem?: (id: BodySystemId) => void;
+  /** Suppress the "Your Health Map" eyebrow when the surrounding surface
+   *  already labels the section. */
+  hideEyebrow?: boolean;
 };
 
 /* Status palette — RED IS RESERVED for critical; concern is amber so the
@@ -105,6 +110,7 @@ export default function ConnectedSystems({
   headline,
   story,
   onSelectSystem,
+  hideEyebrow,
 }: Props) {
   const hub = systems.find((s) => s.hub);
   const spokes = systems.filter((s) => !s.hub).slice(0, ANGLES.length);
@@ -135,17 +141,21 @@ export default function ConnectedSystems({
       aria-label="Your Health Map — your body as one connected system"
       className="rounded-[20px] border border-line/70 bg-surface/70 px-5 py-9 sm:px-10 sm:py-12"
     >
-      <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700">
-        Your Health Map
-      </div>
-      <motion.p
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
-        className="mt-1.5 font-display text-display-md leading-[1.25] text-balance text-ink max-w-xl"
-      >
-        {headline}
-      </motion.p>
+      {!hideEyebrow && (
+        <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700">
+          Your Health Map
+        </div>
+      )}
+      {headline && (
+        <motion.p
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+          className="mt-1.5 font-display text-display-md leading-[1.25] text-balance text-ink max-w-xl"
+        >
+          {headline}
+        </motion.p>
+      )}
 
       <div className="relative mx-auto mt-8 aspect-square w-full max-w-[440px] sm:max-w-[560px]">
         <svg
