@@ -14,6 +14,22 @@ describe the discipline that emerged, they don't aspire to a new one.
 think in their body. Every decision below serves the move from *"I have 47 lab
 values"* to *"I understand my body."*
 
+**The overriding filter — applied before every principle below:** *does this
+reduce the user's anxiety, or increase it?* The person arrives already stressed
+about their blood test; the app is the **relief, not another obstacle**. So the
+emotional order is **reassurance → understanding → action** — never problem →
+more scary information → recommendation. Lead with the healthy majority, then
+the one or two things worth attention, in the voice of a doctor you trust
+(*"most of this looks reassuring; I'd start here"*) — not a verdict (*"⚠ HIGH /
+LOW / DEFICIENT"*). **Make people feel understood, not diagnosed:** *"this
+explains what you've been feeling,"* not *"something is wrong with you."* Never
+simulate stress to show off the fix. Colour follows this too: ~95% of the
+interface stays calm (forest healthy, terracotta attention), and red is spent
+only on genuine urgency — never the 🟢🟡🔴 panic palette. If a choice — a word,
+a colour, a score, a motion — adds anxiety without adding honest signal, it's
+wrong, however impressive it looks. (Honest signal still ships: calm ≠ hiding a
+critical value — see the First-Impression Contract's Q1 gate.)
+
 1. **One question per screen.** Dashboard: *what deserves my attention?* Health
    Map: *where in my body does it belong?* Marker: *why does this number
    matter?* A screen that answers two will bloat. (Filter, not a feature.)
