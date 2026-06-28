@@ -125,14 +125,16 @@
    * blue-green content, separating from crimson on the channel CVD vision
    * keeps. Clay stays as the warm DECORATIVE accent + the "needs-review"
    * middle status tier (never an interactive control that sits by an alarm). */
-  /* ForMen brand indigo — the wordmark hue, restored as the app's accent.
-   * Both the decorative accent (was terracotta #b5512f) and the interactive
-   * lane (was forest #2f5d50) now carry the one brand indigo; gold
-   * (--color-gold-*, the brand's #FFB800) is the warm secondary. Indigo is
-   * blue-dominant, so interactive vs the crimson alarm separate under
-   * protanopia/deuteranopia even more cleanly than forest did. */
-  --color-clay: #3b4a9e;
-  --color-forest: #3b4a9e;
+  /* ForMen brand indigo — the EXACT wordmark hue #2D3B8E, sampled from the
+   * brand vector (public/favicon.svg), not an approximation. Both the
+   * decorative accent (was terracotta #b5512f) and the interactive lane (was
+   * forest #2f5d50) carry this one verified brand indigo; gold
+   * (--color-gold-*) is the warm reward. Indigo is blue-dominant, so
+   * interactive vs the crimson alarm separate under protanopia/deuteranopia
+   * even more cleanly than forest did. Calm comes from warm paper + restraint,
+   * NOT from desaturating the brand hue. */
+  --color-clay: #2d3b8e;
+  --color-forest: #2d3b8e;
   /* Text that sits ON a filled terracotta accent panel (bg-clay). Light
    * theme: clay is a deep rust → near-white text (AA). Dark theme (rebind
    * below): clay lifts to a lighter tan → deep ink text. */
@@ -585,8 +587,8 @@ a,
   --color-paper-ink: #ece9e4;
   --color-paper-soft: #a8a29c;
   --color-paper-line: rgb(231 229 228 / 0.14);
-  --color-clay: #9aa6ee; /* ForMen indigo, lifted for the dark charcoal */
-  --color-forest: #9aa6ee; /* ForMen indigo, lifted for the dark charcoal */
+  --color-clay: #97a3ea; /* ForMen indigo #2D3B8E, lifted for the dark charcoal */
+  --color-forest: #97a3ea; /* ForMen indigo #2D3B8E, lifted for the dark charcoal */
   --color-on-clay: #1c1917;
   --color-on-forest: #1c1917;
 

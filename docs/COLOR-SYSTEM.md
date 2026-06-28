@@ -103,7 +103,7 @@ red-green CVD, so lightness + words carry the signal, not hue alone.
 | Secondary | `text-secondary` | `#5A534B` | |
 | Muted | `text-muted` | `#8C8478` | |
 | Faint | `text-faint` | `#ADA597` | footers — should almost disappear |
-| **Accent / thread** | `accent` | `#363A57` | deep ink-indigo; the one interactive hue + the heartbeat |
+| **Accent / thread** | `accent` | `#2D3B8E` | the **verified** ForMen brand indigo (exact wordmark hex from `public/favicon.svg`); the one interactive hue + the heartbeat. Calm comes from warm paper + restraint, NOT from desaturating the brand. |
 | Accent hover | `accent-hover` | `#2C2F49` | |
 | On accent | `on-accent` | `#FBF6EC` | |
 | Reward | `brass` | `#9C7A3C` | earned good news only |
@@ -121,7 +121,7 @@ red-green CVD, so lightness + words carry the signal, not hue alone.
 | --- | --- | --- |
 | Page / surface / raised | `bg` / `surface` / `surface-raised` | `#16130F` / `#1F1B16` / `#262019` |
 | Ink / secondary / muted | `text` / `-secondary` / `-muted` | `#ECE6DC` / `#B4ACA0` / `#857D70` |
-| Accent / thread | `accent` | `#9DA2CC` (ink lifted to soft periwinkle, still ink) |
+| Accent / thread | `accent` | `#97A3EA` (the brand `#2D3B8E` lifted for the dark charcoal) |
 | Reward | `brass` | `#C39E5E` |
 | Healthy / attention / critical | `good` / `attention` / `critical` | `#8AA089` / `#C99A5E` / `#CC7A6E` (dusty brick — visible, never neon) |
 | Border / divider | `border` / `divider` | `rgba(236,230,220,0.14)` / `0.07` |
@@ -141,9 +141,12 @@ opacity when neutral); multi-series caps at three (indigo → brass → slate
 ---
 
 ## Relationship to what's shipped
-The repo currently carries the brand-aligned but *loud* step (royal indigo
-`#3b4a9e`, vivid `#16a34a` / `#dc2626` status). "Lamplight" is the same brand
-**turned down**: indigo → ink `#363A57`, vivid status → muted sage/ochre/oxblood,
-neutrals warmed. Reversible, token-level. The **words** (relief, guidance) are
+The live app uses the **verified** brand indigo `#2D3B8E` (exact wordmark hex
+from `public/favicon.svg`) as the accent, on warm paper, with vivid
+`#16a34a` / `#dc2626` status. "Lamplight" keeps that *exact brand hue* and turns
+down everything around it — vivid status → muted sage/ochre/oxblood, neutrals
+warmed — so calm comes from restraint, not from altering the brand colour.
+Reversible, token-level. (An earlier step used an approximate `#3b4a9e`; that was
+corrected to the sampled `#2D3B8E`.) The **words** (relief, guidance) are
 the clinical layer's; the **calm field, the thread, and the grading** are this
 system's. They meet on the first screen.

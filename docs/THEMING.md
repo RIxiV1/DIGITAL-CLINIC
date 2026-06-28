@@ -14,7 +14,7 @@ The visual identity is the **ForMen brand** (deep indigo + gold) rendered as
 | Lane | Tokens | Use |
 | --- | --- | --- |
 | **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — resolves to a **warm-stone ramp**, NOT blue | nav, secondary buttons, most fills |
-| **Brand / interactive accent** (ForMen indigo) | `--color-forest` **and** `--color-clay`, both `#3b4a9e` (light) / `#9aa6ee` (dark), with `--color-on-*` for text on them | the wordmark, primary CTA, action links, focus rings, landing accent phrases — the one ownable brand hue |
+| **Brand / interactive accent** (ForMen indigo) | `--color-forest` **and** `--color-clay`, both `#2D3B8E` (light — the EXACT wordmark hex, sampled from `public/favicon.svg`) / `#97A3EA` (dark), with `--color-on-*` for text on them | the wordmark, primary CTA, action links, focus rings, landing accent phrases — the one ownable brand hue |
 | **Warm secondary** (ForMen gold) | `--color-gold-*` (`#FFB800`, desaturated for dark) | highlights, gold pills, the calm `attention` status family |
 | **Alarm** (crimson) | `--color-concern` → **`#ef4444`** (dark) | clinical warnings / flagged diagnostics only |
 
