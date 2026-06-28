@@ -1,15 +1,11 @@
-import { type ReactNode } from 'react';
 import { motion } from 'framer-motion';
-import {
-  ArrowRight,
-  Brain,
-  ChevronRight,
-  CircleDot,
-  Droplet,
-  FlaskConical,
-  Lock,
-} from 'lucide-react';
+import { ArrowRight, ChevronRight, FlaskConical, Lock } from 'lucide-react';
 import Button from '../../components/Button';
+import {
+  sampleBiomarkers,
+  statusColor,
+  summarizeStatuses,
+} from '../../data/biomarkers';
 import { fadeUp, stagger } from './shared';
 
 export default function Hero({
@@ -107,9 +103,9 @@ export default function Hero({
             </motion.div>
           </div>
 
-          {/* RIGHT — Connection visual preview */}
+          {/* RIGHT — sample-report findings preview */}
           <motion.div variants={fadeUp} className="md:col-span-6">
-            <HeroVisual />
+            <HeroVisual onSample={onSample} />
           </motion.div>
         </motion.div>
       </div>
@@ -117,17 +113,23 @@ export default function Hero({
   );
 }
 
-function HeroVisual() {
-  // No mouse-tracking spotlight. The previous version painted a radial
-  // rgba(0,102,204,…) glow that tracked the cursor — a cold-cobalt halo
-  // that survived the Ink & Clay rebrand and read as exactly the glow-SaaS
-  // signal the design charter exists to avoid. The card stands on its own
-  // structure (hairline border + elevation), no glow.
+function HeroVisual({ onSample }: { onSample: () => void }) {
+  // A peek at the actual product, from the SAMPLE report — real flagged
+  // markers with their real tier labels, and an honest "N of M on track"
+  // bar. Deliberately NOT a synthetic 0–100 "health score" (implies a
+  // precision we don't have) and NOT fabricated severities. No glow; the
+  // card stands on its hairline border + elevation.
+  const flagged = sampleBiomarkers
+    .filter((m) => m.status === 'concern' || m.status === 'critical')
+    .slice(0, 3);
+  const summary = summarizeStatuses(sampleBiomarkers);
+  const total = sampleBiomarkers.length;
+  const onTrack = summary.good;
+  const pct = total > 0 ? Math.round((onTrack / total) * 100) : 0;
+
   return (
     <div className="relative w-full max-w-[560px] mx-auto md:mx-0 md:ml-auto lg:-mb-20">
-      {/* Founders / clinicians photo — WebP only (60 KB, universally
-          supported in modern browsers). The PNG fallback got removed
-          to keep /public lean. */}
+      {/* Founders / clinicians photo — WebP only (60 KB). */}
       <img
         src="/hero-cover.webp"
         alt="ForMen · Digital Clinic clinicians"
@@ -135,94 +137,56 @@ function HeroVisual() {
         draggable={false}
       />
 
-      {/* Hormonal Health Map card — overlaps the photo. A hairline-framed
-          panel of the in-app hormonal-axis visual. The header is a mono
-          label, NOT macOS traffic-light window chrome (the colored
-          #FF5F57/#FEBC2E/#28C840 dots were the "look, an app screenshot"
-          cliché). HPG_AXIS = the hypothalamic-pituitary-gonadal axis the
-          three rows below actually depict. */}
-      <div className="absolute left-0 sm:-left-4 bottom-[18%] sm:bottom-[22%] w-[78%] sm:w-[72%] rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden">
-        <div className="px-3.5 py-2.5 border-b border-line/70 flex items-center justify-between">
-          <span className="text-[10px] font-mono uppercase tracking-widest text-ink">
-            hormonal_health_map
+      {/* Top-findings card — overlaps the photo. Shows what the product
+          actually returns on a real sample, not an abstract diagram. */}
+      <div className="absolute left-0 sm:-left-4 bottom-[16%] sm:bottom-[20%] w-[82%] sm:w-[74%] rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden">
+        <div className="px-4 py-2.5 border-b border-line/70 flex items-center justify-between">
+          <span className="text-caption font-semibold text-ink">
+            Top findings
           </span>
-          <span className="text-[10px] font-mono uppercase tracking-widest text-muted">
-            HPG_AXIS
-          </span>
+          <button
+            onClick={onSample}
+            className="inline-flex items-center gap-0.5 text-micro font-semibold text-blue-700 hover:text-blue-800 transition-colors"
+          >
+            See sample <ChevronRight size={12} />
+          </button>
         </div>
 
-        <div className="relative px-3.5 pt-3.5 pb-2.5">
-          {/* Backbone axis line that visually connects the three icons */}
-          <div className="absolute left-[23px] top-[32px] bottom-[50px] w-px bg-blue-200" />
+        <div className="px-4 py-3 grid gap-2">
+          {flagged.map((m) => {
+            const c = statusColor(m.status);
+            return (
+              <div
+                key={m.id}
+                className="flex items-center justify-between gap-3"
+              >
+                <span className="text-caption text-ink truncate">
+                  {m.name}
+                </span>
+                <span
+                  className={`shrink-0 inline-flex items-center px-1.5 h-5 rounded-full text-micro font-bold uppercase tracking-widest ${c.bg} ${c.text}`}
+                >
+                  {c.label}
+                </span>
+              </div>
+            );
+          })}
+        </div>
 
-          <div className="relative grid gap-1">
-            <MapRow
-              icon={<Brain size={10} className="text-blue-700" />}
-              organ="Hypothalamus"
-              hormone="GnRH"
-            />
-            <MapRow
-              icon={<Droplet size={10} className="text-blue-700" />}
-              organ="Pituitary gland"
-              hormone="LH · FSH"
-            />
-            <MapRow
-              icon={<CircleDot size={11} className="text-on-primary" />}
-              organ="Testes"
-              hormone="Testosterone"
-              highlighted
+        {/* Honest summary — a count, not a synthetic score. */}
+        <div className="px-4 pb-3 pt-2 border-t border-line/70">
+          <div className="flex items-center justify-between text-micro mb-1.5">
+            <span className="font-semibold text-ink-soft">On track</span>
+            <span className="tabular-nums text-muted">
+              {onTrack} of {total} markers
+            </span>
+          </div>
+          <div className="h-1.5 rounded-full bg-canvas overflow-hidden">
+            <div
+              className="h-full rounded-full bg-good"
+              style={{ width: `${pct}%` }}
             />
           </div>
-
-          <p className="mt-2.5 text-center font-sans text-caption font-semibold text-ink">
-            One system. Eight signals.
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MapRow({
-  icon,
-  organ,
-  hormone,
-  highlighted,
-}: {
-  icon: ReactNode;
-  organ: string;
-  hormone: string;
-  highlighted?: boolean;
-}) {
-  return (
-    <div className="flex items-center gap-2.5">
-      <div
-        className={`grid place-items-center w-6 h-6 rounded-full shrink-0 ${
-          highlighted
-            ? 'bg-blue-600 ring-2 ring-surface'
-            : 'bg-surface border border-blue-200'
-        }`}
-      >
-        {icon}
-      </div>
-      <div
-        className={`flex-1 rounded-lg px-2.5 py-1 ${
-          highlighted ? 'bg-blue-600 text-on-primary' : ''
-        }`}
-      >
-        <div
-          className={`text-caption font-semibold leading-tight ${
-            highlighted ? 'text-inherit' : 'text-ink'
-          }`}
-        >
-          {organ}
-        </div>
-        <div
-          className={`text-micro font-bold uppercase tracking-widest leading-tight mt-0.5 ${
-            highlighted ? 'text-inherit opacity-90' : 'text-blue-700'
-          }`}
-        >
-          {hormone}
         </div>
       </div>
     </div>
