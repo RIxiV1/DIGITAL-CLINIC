@@ -276,6 +276,18 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 {bottomLine}
               </p>
 
+              {/* Orienting line — relax (or get the right urgency) before
+                  reading a word, plus an honest reading-time estimate. */}
+              <p className="mt-3 text-caption text-ink-soft">
+                {summary.critical > 0
+                  ? 'One result needs attention today — start with the flagged items.'
+                  : 'Nothing here needs same-day attention.'}
+                <span className="text-muted">
+                  {' '}· about {Math.max(2, Math.round(biomarkers.length * 0.25))}{' '}
+                  min to read
+                </span>
+              </p>
+
               {/* Status-count signal. Kept the inline dot+number+label
                   pattern (integrates with the gold hero's text-indigo-900
                   treatment) but dropped the "N on track" branch and
