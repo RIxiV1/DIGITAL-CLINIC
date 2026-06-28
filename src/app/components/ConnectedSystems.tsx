@@ -210,7 +210,11 @@ export default function ConnectedSystems({
         {spokes.map((s, i) => {
           const p = pointAt(ANGLES[i]);
           const st = STATUS[s.status];
-          const clickable = !!onSelectSystem && s.markerCount > 0;
+          // Tappable to TEACH (select → highlight + cited reason) whenever
+          // the system has markers — even with no onSelectSystem (the landing
+          // demo has nowhere to navigate, but the connection should still
+          // teach). Navigation ("View N markers") stays gated on onSelectSystem.
+          const clickable = s.markerCount > 0;
           const isSel = s.id === selectedId;
           const isLead = s.id === leadId;
           const dim = selectedId && !isSel;
