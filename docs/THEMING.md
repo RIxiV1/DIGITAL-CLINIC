@@ -6,23 +6,25 @@ This doc explains the five principles, the no-FOUC bootstrap, and how to add a n
 
 ---
 
-## Palette & type identity ("Ink & Clay")
+## Palette & type identity ("ForMen — Indigo & Gold on warm paper")
 
-The visual identity is **warm editorial**, not cold-tech. Colour is organised into **three deliberate lanes** — keep them separate:
+The visual identity is the **ForMen brand** (deep indigo + gold) rendered as
+**navy-and-gold on a warm paper canvas** — premium men's-apothecary / editorial-clinic, not blue on a dark-SaaS slab. The canvas decides everything: indigo on cream reads premium; the same indigo on dark charcoal reads generic. Colour is organised into deliberate lanes — keep them separate:
 
 | Lane | Tokens | Use |
 | --- | --- | --- |
-| **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — these now resolve to a **warm-stone ramp**, NOT blue | links, nav, secondary buttons, most fills |
-| **Interactive accent** (forest) | `--color-forest` + `--color-on-forest` for text on it | the primary CTA, action links, focus rings — the one colour that means "act here" |
+| **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — resolves to a **warm-stone ramp**, NOT blue | nav, secondary buttons, most fills |
+| **Brand / interactive accent** (ForMen indigo) | `--color-forest` **and** `--color-clay`, both `#3b4a9e` (light) / `#9aa6ee` (dark), with `--color-on-*` for text on them | the wordmark, primary CTA, action links, focus rings, landing accent phrases — the one ownable brand hue |
+| **Warm secondary** (ForMen gold) | `--color-gold-*` (`#FFB800`, desaturated for dark) | highlights, gold pills, the calm `attention` status family |
 | **Alarm** (crimson) | `--color-concern` → **`#ef4444`** (dark) | clinical warnings / flagged diagnostics only |
 
-**`--color-clay` (terracotta) is the DECORATIVE accent + the "needs-review" middle status tier** — landing accent phrases, the HowItWorks numerals, the split-meter "to-review" segment. It is *not* an interactive control. Forest, not clay, owns the interactive lane because clay (`#b5512f`) and the crimson alarm sit ~17° apart at near-identical luminance (0.159 vs 0.167), so a "click me" button and a "you might be sick" alarm collapse together under red-green colour-blindness; forest carries blue-green **and** is darker, separating from crimson on both hue and lightness. **Don't put clay back on buttons / links / focus.**
+The accent is **blue-dominant**, so the "act here" indigo separates from the crimson alarm under protanopia/deuteranopia (blue-vs-red is the safe CVD pair) — even more reliably than the old forest did. Clay and forest now resolve to the *same* indigo (the app has one brand accent + gold, not two warm accents); terracotta has retired into the brand. The clinical status colours (`good` / `attention` / `concern` / `critical`) are **unchanged** and stay label-backed, never colour-only.
 
 **Dark ladder** (warm charcoal): canvas `#0b0a09` → card `--color-surface` `#1a1816` → hero `--color-paper` `#242220` — an even ~1.12:1 step each so layers read. In dark the drop-shadows are invisible, so the **hairline carries the card edge**: `--color-line` is `rgb(231 229 228 / 0.16)` (≈1.44:1 over canvas), not a barely-there 0.10.
 
 > **The class names lie, on purpose.** `bg-indigo-600` / `text-blue-700` render *terracotta-stone*, because the brand hue was retargeted in one place (`--color-blue-*`) rather than via 380+ per-component edits. Don't "fix" them back to blue. A future rename to `--color-primary-*` is the proper cleanup.
 
-**Type:** display = **Instrument Serif** (self-hosted `@font-face` in `index.css`, files in `public/fonts/`) — used LARGE for headlines + big overview numbers via the `.font-display` utility. Body = **Inter** (self-hosted via `@fontsource/inter`, latin subset, weights 400–700). **No Google Fonts `<link>` — zero third-party font requests.** Small/clinical data numbers use **Inter `tabular-nums`**, not the serif.
+**Type:** display = **Domine** (variable serif, self-hosted `@font-face` in `index.css`, file in `public/fonts/`) — used LARGE for headlines + big overview numbers via the `.font-display` utility. Body = **Manrope** (self-hosted via `@fontsource/manrope`, latin subset). **No Google Fonts `<link>` — zero third-party font requests.** Small/clinical data numbers use `tabular-nums`, not the serif.
 
 ---
 
