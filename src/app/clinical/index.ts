@@ -50,3 +50,8 @@ export {
   type NextAction,
   type ActionCertainty,
 } from './certaintyOfAction';
+export {
+  explainFinding,
+  type FindingExplanation,
+  type ExplanationBeat,
+} from './explainFinding';

@@ -18,9 +18,11 @@ import {
   buildBodySystems,
   connectedStoryHeadline,
   healthStorySentence,
+  explainFinding,
   type BodySystemId,
 } from '../clinical';
 import ConnectedSystems from '../components/ConnectedSystems';
+import FindingExplanation from '../components/FindingExplanation';
 import MarkerSheet from '../components/MarkerSheet';
 import ReportAboutPanel from '../components/ReportAboutPanel';
 import {
@@ -92,6 +94,11 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const systemStory = useMemo(
     () => healthStorySentence(bodySystems),
     [bodySystems],
+  );
+  // The core experience: the four-question, person-first explanation.
+  const explanation = useMemo(
+    () => explainFinding(biomarkers, quiz),
+    [biomarkers, quiz],
   );
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   // Mobile marker detail opens in a focused sheet rather than expanding the
@@ -353,6 +360,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           shipped twice. Now we mount exactly one tree based on the
           `useIsMdUp` viewport check (the BottomNav pattern), so the
           invisible variant doesn't cost DOM + event-listener overhead. */}
+      {/* The core experience — the four-question, person-first read. Comes
+          right after the one-line Bottom Line: the quick verdict, then the
+          human explanation, before any diagram or marker list. */}
+      {explanation && (
+        <Container size="wide" className="mt-10 md:mt-14">
+          <FindingExplanation data={explanation} />
+        </Container>
+      )}
+
       {/* Signature moment — "your body as one connected system". Leads the
           body of the report, right under the Bottom Line. Built on the same
           markers, it reframes the wall of values as one story before the
