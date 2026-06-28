@@ -12,14 +12,17 @@ import type { FindingExplanation as FindingExplanationData } from '../clinical';
  */
 export default function FindingExplanation({
   data,
+  eyebrow = 'What this means for you',
 }: {
   data: FindingExplanationData;
+  /** Section label — e.g. "Since your last test" for the longitudinal read. */
+  eyebrow?: string;
 }) {
   const urgent = data.tone === 'urgent';
   return (
-    <section aria-label="What this means for you">
+    <section aria-label={eyebrow}>
       <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700">
-        What this means for you
+        {eyebrow}
       </div>
 
       {/* The opener frames it as guidance, not diagnosis. */}

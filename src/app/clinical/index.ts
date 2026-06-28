@@ -55,3 +55,4 @@ export {
   type FindingExplanation,
   type ExplanationBeat,
 } from './explainFinding';
+export { explainChange } from './explainChange';
