@@ -91,7 +91,12 @@ export default function HealthMapPreview({
             <div className="text-micro font-bold uppercase tracking-eyebrow text-muted mb-2.5">
               Sample report
             </div>
-            <ConnectedSystems systems={systems} story={story} hideEyebrow />
+            <ConnectedSystems
+              systems={systems}
+              story={story}
+              hideEyebrow
+              showLegend
+            />
           </Reveal>
         </div>
       </div>

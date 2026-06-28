@@ -34,6 +34,9 @@ type Props = {
   /** Suppress the "Your Health Map" eyebrow when the surrounding surface
    *  already labels the section. */
   hideEyebrow?: boolean;
+  /** Show the colour key. Off by default (the report page has its own
+   *  StatusKey); the landing turns it on so the map reads standalone. */
+  showLegend?: boolean;
 };
 
 /* Status palette — RED IS RESERVED for critical; concern is amber so the
@@ -49,11 +52,12 @@ const STATUS: Record<
     caption: 'Keep an eye',
   },
   concern: {
-    // De-escalated colour (amber, not red) but the canonical WORD — the rest
-    // of the app says "Needs care" for this tier; the map must not invent a
-    // softer synonym. (Vocabulary glossary: one word, one meaning.)
-    ring: 'border-attention/60 bg-attention-soft/40',
-    dot: 'bg-attention',
+    // Concern's real colour (red), matching the report cards (statusColor →
+    // bg-concern). Distinct from attention's amber, so "keep an eye" vs
+    // "needs care" reads at a glance — and the map agrees with the cards.
+    // (An earlier amber de-escalation had collapsed concern into attention.)
+    ring: 'border-concern/50 bg-concern-soft/40',
+    dot: 'bg-concern',
     caption: 'Needs care',
   },
   critical: {
@@ -101,9 +105,17 @@ function curvePath(angle: number, sign: number): string {
 
 function lineStyle(status: SystemStatus): { cls: string; w: number } {
   if (status === 'critical') return { cls: 'stroke-concern/60', w: 1.6 };
-  if (status === 'concern') return { cls: 'stroke-attention/60', w: 1.2 };
+  if (status === 'concern') return { cls: 'stroke-concern/55', w: 1.3 };
   return { cls: 'stroke-ink/12', w: 0.7 };
 }
+
+// Three colour families exist app-wide (green / amber / red); concern and
+// critical share red, distinguished by the node's own label.
+const LEGEND: { dot: string; label: string }[] = [
+  { dot: 'bg-good', label: 'On track' },
+  { dot: 'bg-attention', label: 'Keep an eye' },
+  { dot: 'bg-concern', label: 'Needs care' },
+];
 
 export default function ConnectedSystems({
   systems,
@@ -111,6 +123,7 @@ export default function ConnectedSystems({
   story,
   onSelectSystem,
   hideEyebrow,
+  showLegend,
 }: Props) {
   const hub = systems.find((s) => s.hub);
   const spokes = systems.filter((s) => !s.hub).slice(0, ANGLES.length);
@@ -262,6 +275,17 @@ export default function ConnectedSystems({
           );
         })}
       </div>
+
+      {showLegend && (
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-x-4 gap-y-1.5 text-micro text-muted">
+          {LEGEND.map(({ dot, label }) => (
+            <span key={label} className="inline-flex items-center gap-1.5">
+              <span className={`w-1.5 h-1.5 rounded-full ${dot}`} />
+              {label}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* Caption area — teaches on selection, reassures by default. */}
       {selected ? (
