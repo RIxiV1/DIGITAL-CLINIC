@@ -45,11 +45,12 @@ export default function HealthMapPreview({
               The Health Map
             </div>
             <h2 className="mt-4 font-sans font-bold text-display-md sm:text-display-lg leading-[1.08] tracking-tight text-balance">
-              Not a wall of numbers. Your body as one connected system.
+              This is what your report becomes.
             </h2>
             <p className="mt-5 text-body text-ink-soft leading-relaxed max-w-[46ch] text-pretty">
-              Upload a blood test and every marker sorts into the system it
-              belongs to. You understand your whole report in a minute — not an
+              Upload a blood test and every marker lands in the system it
+              belongs to, with the one place to start highlighted. The wall of
+              numbers becomes a picture you can read in a minute — not an
               afternoon of Googling.
             </p>
 
