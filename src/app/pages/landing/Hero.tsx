@@ -124,8 +124,11 @@ function HeroVisual({ onSample }: { onSample: () => void }) {
     .slice(0, 3);
   const summary = summarizeStatuses(sampleBiomarkers);
   const total = sampleBiomarkers.length;
-  const onTrack = summary.good;
-  const pct = total > 0 ? Math.round((onTrack / total) * 100) : 0;
+  // "In range" = everything not flagged for care. Counting only `good`
+  // understated it ("8 of 17") and contradicted the report's "most looks
+  // reassuring" — attention markers ARE inside the healthy range.
+  const inRange = total - summary.needCare;
+  const pct = total > 0 ? Math.round((inRange / total) * 100) : 0;
 
   return (
     <div className="relative w-full max-w-[560px] mx-auto md:mx-0 md:ml-auto lg:-mb-20">
@@ -183,9 +186,9 @@ function HeroVisual({ onSample }: { onSample: () => void }) {
         {/* Honest summary — a count, not a synthetic score. */}
         <div className="px-4 pb-3 pt-2 border-t border-line/70">
           <div className="flex items-center justify-between text-micro mb-1.5">
-            <span className="font-semibold text-ink-soft">On track</span>
+            <span className="font-semibold text-ink-soft">In range</span>
             <span className="tabular-nums text-muted">
-              {onTrack} of {total} markers
+              {inRange} of {total} markers
             </span>
           </div>
           <div className="h-1.5 rounded-full bg-canvas overflow-hidden">
