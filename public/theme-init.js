@@ -4,26 +4,38 @@
  *
  * Why this is an EXTERNAL file and not an inline <script>: the production
  * CSP is `script-src 'self'` with no 'unsafe-inline'. An inline bootstrap
- * is silently blocked in prod — `data-theme` never gets set and the page
- * falls back to the light base palette, so the deployed site loaded in
- * light even though dark is the brand default (dev has no CSP, so it
- * looked fine locally — a dev/prod divergence). A same-origin file
- * satisfies 'self' with no CSP hash to maintain. Keep it dependency-free
- * and loaded synchronously in <head> so it executes before paint.
+ * is silently blocked in prod — `data-theme` never gets set and the
+ * bootstrap doesn't run at all (dev has no CSP, so it looked fine locally
+ * — a dev/prod divergence). A same-origin file satisfies 'self' with no
+ * CSP hash to maintain. Keep it dependency-free and loaded synchronously
+ * in <head> so it executes before paint.
  *
- * Default is dark (brand identity on first impression). The OS
- * `prefers-color-scheme` is intentionally NOT honored; the only way to
- * land on light is an explicit 'light' written to localStorage by the
- * Profile toggle.
+ * Default: an explicit saved choice always wins; otherwise honor the OS
+ * `prefers-color-scheme` and fall back to the warm-paper LIGHT theme.
+ * Light is the brand's distinctive ("warm paper clinic-chart") identity —
+ * so it leads the first impression — and it's the safer default for the
+ * dense numeric/clinical data this app shows (research: dark mode's
+ * eye-comfort edge isn't supported, and light-on-dark causes halation for
+ * the large minority with astigmatism). Dark-preferrers still get it via
+ * their OS setting or the Profile toggle. Must match loadTheme() in
+ * persistence.ts exactly, or first paint will flash.
  */
 (function () {
-  var theme = 'dark';
+  var theme;
   try {
     var saved = localStorage.getItem('dc_theme');
-    if (saved === 'light') theme = 'light';
+    if (saved === 'light' || saved === 'dark') {
+      theme = saved; // explicit user choice always wins
+    } else {
+      theme =
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark'
+          : 'light';
+    }
   } catch (e) {
-    /* Private mode / quota / disabled storage. Falls through to the dark
-       default so the brand stays consistent. */
+    /* Private mode / quota / disabled storage → the warm-paper identity. */
+    theme = 'light';
   }
   document.documentElement.dataset.theme = theme;
 

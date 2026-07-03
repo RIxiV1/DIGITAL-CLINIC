@@ -10,12 +10,12 @@ const STATS = [
   {
     big: '29%',
     line: 'of Indian men over 40 have an undiagnosed hormonal deficiency.',
-    source: 'Cross-sectional studies on Indian male endocrine health',
+    source: 'Cross-sectional study, Indian men 40+ · symptomatic + lab-confirmed TDS',
   },
   {
     big: '2.2%',
     line: 'of Indian men have heard of andropause — the male equivalent of menopause.',
-    source: 'Public-awareness surveys, urban India cohort',
+    source: 'Awareness of andropause: a North Indian study',
   },
   {
     big: '12+',
@@ -42,8 +42,10 @@ export default function Credibility() {
                 AUDITABLE vectors only. Every row is verified against the
                 repo: reference-range bodies appear in src/app/data
                 (WHO·ICMR·Endocrine Society), processing is on-device (no
-                server), the gate is tsc + 604 tests, and CI (.github/
-                workflows/ci.yml) runs it on every PR. No fabricated seals,
+                server), the gate is tsc + the full test suite (600+), and
+                CI (.github/workflows/ci.yml) runs it on every PR. The count
+                is shown as a magnitude ("600+"), not an exact integer, so it
+                stays honest as the suite grows. No fabricated seals,
                 registration numbers, or board memberships. */}
             <div className="w-full max-w-sm mx-auto md:ml-auto font-mono">
               <div className="text-[10px] uppercase tracking-widest text-clay mb-3">
@@ -54,7 +56,7 @@ export default function Credibility() {
                   [
                     ['RANGE_SOURCE', 'WHO · ICMR · ENDOCRINE'],
                     ['DATA_RESIDENCY', 'ON_DEVICE'],
-                    ['VALIDATION', 'TYPECHECK · 604_TESTS'],
+                    ['VALIDATION', 'TYPECHECK · 600+_TESTS'],
                     ['INTEGRATION', 'CI_EVERY_PR'],
                     ['TESTIMONIALS', 'NONE'],
                   ] as const

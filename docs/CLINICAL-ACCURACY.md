@@ -28,7 +28,7 @@ The fourth tier exists because a three-tier system lumped `platelet 149k` (mild,
 
 ## How a value becomes a tier
 
-All of it lives in one pure function, [`statusForValue(template, value, labRef?)`](../src/app/data/biomarkers.ts) (≈ L992). The order of checks is the whole design — read it top to bottom:
+All of it lives in one pure function, [`statusForValue(template, value, labRef?)`](../src/app/data/biomarkers.ts) (≈ L1037, after the catalog data moved to `biomarkerCatalog.ts`). The order of checks is the whole design — read it top to bottom:
 
 ```
 1. value < criticalLow  OR  value > criticalHigh   → 'critical'   (catalog only; checked FIRST)
@@ -123,10 +123,10 @@ Everything else in the audited set (51 of the graded markers checked clean, plus
 
 | You want to… | Edit | Then |
 |---|---|---|
-| Change a healthy range | `data/biomarkers.ts` → `min`/`max` on the template | cite the source in a comment; re-run the audit bar above |
-| Change a critical cliff | `data/biomarkers.ts` → `criticalLow`/`criticalHigh` | **highest care** — this fires regardless of `labRef`; validate against published panic values |
-| Add/tighten an optimal band | `data/biomarkers.ts` → `optimalMin`/`optimalMax` **+ `optimalSource`** | no source → don't add it |
-| Add a harm-anchor tick | `data/biomarkers.ts` → `actionMin`/`actionMax` **+ `actionSource`** | tick won't render without the source |
+| Change a healthy range | `data/biomarkerCatalog.ts` → `min`/`max` on the template | cite the source in a comment; re-run the audit bar above |
+| Change a critical cliff | `data/biomarkerCatalog.ts` → `criticalLow`/`criticalHigh` | **highest care** — this fires regardless of `labRef`; validate against published panic values |
+| Add/tighten an optimal band | `data/biomarkerCatalog.ts` → `optimalMin`/`optimalMax` **+ `optimalSource`** | no source → don't add it |
+| Add a harm-anchor tick | `data/biomarkerCatalog.ts` → `actionMin`/`actionMax` **+ `actionSource`** | tick won't render without the source |
 | Change how tiers are derived | `data/biomarkers.ts` → `statusForValue()` | update [`biomarkers.test.ts`](../src/app/data/biomarkers.test.ts) — it pins the tier boundaries |
 
 ---

@@ -11,6 +11,7 @@ import Privacy from './landing/Privacy';
 import FinalCta from './landing/FinalCta';
 import Footer from './landing/Footer';
 import MinimalWhy from './landing/MinimalWhy';
+import HealthMapPreview from './landing/HealthMapPreview';
 
 /**
  * Two variants, same Page type:
@@ -89,6 +90,9 @@ export default function LandingPage() {
        * before the page asks for any action.  */}
       <Hero onStart={startQuiz} onSample={viewSample} />
       <ConnectionSection onStart={startQuiz} />
+      {/* Show the signature, don't just describe it — the real Health Map on
+          a sample report, right after the science that explains it. */}
+      <HealthMapPreview onStart={startQuiz} onSample={viewSample} />
       <Credibility />
       <HowWeAnalyze />
       <Privacy />

@@ -17,12 +17,14 @@ export type Page =
   | { type: 'quiz' }
   | { type: 'recommendedTests' }
   | { type: 'home' }
+  | { type: 'healthMap' }
   | { type: 'upload' }
   | { type: 'processing' }
   | { type: 'manualEntry' }
   | { type: 'results'; reportId: string }
   | { type: 'problem'; problemId: string }
-  | { type: 'profile' };
+  | { type: 'profile' }
+  | { type: 'privacy' };
 ```
 
 Page state is a discriminated union with route params baked in. `results` knows it needs a `reportId`. `problem` knows it needs a `problemId`. There's no global params dictionary that the page has to type-assert against.

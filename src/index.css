@@ -125,8 +125,16 @@
    * blue-green content, separating from crimson on the channel CVD vision
    * keeps. Clay stays as the warm DECORATIVE accent + the "needs-review"
    * middle status tier (never an interactive control that sits by an alarm). */
-  --color-clay: #b5512f;
-  --color-forest: #2f5d50;
+  /* ForMen brand indigo — the EXACT wordmark hue #2D3B8E, sampled from the
+   * brand vector (public/favicon.svg), not an approximation. Both the
+   * decorative accent (was terracotta #b5512f) and the interactive lane (was
+   * forest #2f5d50) carry this one verified brand indigo; gold
+   * (--color-gold-*) is the warm reward. Indigo is blue-dominant, so
+   * interactive vs the crimson alarm separate under protanopia/deuteranopia
+   * even more cleanly than forest did. Calm comes from warm paper + restraint,
+   * NOT from desaturating the brand hue. */
+  --color-clay: #2d3b8e;
+  --color-forest: #2d3b8e;
   /* Text that sits ON a filled terracotta accent panel (bg-clay). Light
    * theme: clay is a deep rust → near-white text (AA). Dark theme (rebind
    * below): clay lifts to a lighter tan → deep ink text. */
@@ -579,8 +587,8 @@ a,
   --color-paper-ink: #ece9e4;
   --color-paper-soft: #a8a29c;
   --color-paper-line: rgb(231 229 228 / 0.14);
-  --color-clay: #d8845b;
-  --color-forest: #74b59c;
+  --color-clay: #97a3ea; /* ForMen indigo #2D3B8E, lifted for the dark charcoal */
+  --color-forest: #97a3ea; /* ForMen indigo #2D3B8E, lifted for the dark charcoal */
   --color-on-clay: #1c1917;
   --color-on-forest: #1c1917;
 
@@ -699,13 +707,12 @@ a,
   color: rgb(255 255 255 / 0.98);
 }
 
-/* Brand wordmark tint. The /formen-logo.png raster has the old cold-blue
-   baked in, which fights the warm identity. Render it as a single ink
-   tone that follows the theme — near-black on the warm light canvas,
-   near-white on the dark charcoal — so the mark reads as a neutral,
-   editorial wordmark instead of a stray blue. */
+/* Brand wordmark. The /formen-logo.png raster carries the ForMen brand
+   indigo — which is now the app's accent — so we let it show as-is on the
+   warm light canvas (navy-on-cream reads premium + on-brand). On the dark
+   charcoal the indigo would sink, so there we render it near-white. */
 .logo-mark {
-  filter: brightness(0);
+  filter: none;
 }
 :root[data-theme='dark'] .logo-mark {
   filter: brightness(0) invert(1);

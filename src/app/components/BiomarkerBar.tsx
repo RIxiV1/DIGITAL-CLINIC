@@ -1,11 +1,17 @@
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { statusColor, type Biomarker } from '../data/biomarkers';
+import { markerTrendNote } from '../clinical';
 
 type Props = {
   marker: Biomarker;
   onClick?: () => void;
   compact?: boolean;
+  /** Optional context-aware note tying this marker to something the user
+   *  told us in the quiz (a disclosed condition, their activity level).
+   *  Computed by the caller via `markerContextNote` so this component
+   *  stays presentational and the note logic stays unit-tested. */
+  contextNote?: string | null;
 };
 
 /* ------------------------------------------------------------------ */
@@ -190,10 +196,20 @@ export function piecewisePosition(value: number, marker: Biomarker): number {
 /* Component                                                            */
 /* ------------------------------------------------------------------ */
 
-export default function BiomarkerBar({ marker, onClick, compact }: Props) {
+export default function BiomarkerBar({
+  marker,
+  onClick,
+  compact,
+  contextNote,
+}: Props) {
   const colors = statusColor(marker.status);
   const tier = tierFor(marker);
   const direction = marker.direction ?? 'band';
+  // Trend beats a single reading — show movement (and reinforce progress)
+  // when the marker carries history. The status pill keeps the range
+  // verdict; this carries the direction, so "still flagged but improving"
+  // reads naturally without special-casing.
+  const trendNote = markerTrendNote(marker);
 
   // Healthy-zone boundaries are always at the segment edges, regardless
   // of the absolute clinical scale. That's the entire point of the
@@ -466,6 +482,23 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           descriptive caption so there's one status word per card. */}
       <div className="mt-2 text-caption text-ink-soft">{tier.caption}.</div>
 
+      {/* Trend line — movement since the last test, direction-aware.
+          Improving reads green (reinforce progress); declining is a calm
+          amber "worth watching", never alarm; steady is quiet. */}
+      {trendNote && (
+        <div
+          className={`mt-1 text-caption font-medium ${
+            trendNote.tone === 'improving'
+              ? 'text-good'
+              : trendNote.tone === 'declining'
+                ? 'text-attention-ink'
+                : 'text-muted'
+          }`}
+        >
+          {trendNote.text}
+        </div>
+      )}
+
       {/* What this means */}
       {!compact && (
         <div className="mt-4 pt-4 border-t border-line/70">
@@ -475,6 +508,24 @@ export default function BiomarkerBar({ marker, onClick, compact }: Props) {
           <p className="mt-1.5 text-caption leading-relaxed text-ink-soft">
             {marker.plain}
           </p>
+          {/* Context-aware note — ties this marker to what the user told
+              us in the quiz (a disclosed condition, their training load).
+              A left border + "Based on your answers" label marks it as
+              personal context, distinct from the generic clinical copy
+              above. The note ADDS context and always points toward the
+              doctor; it never tells the user a flagged value is fine
+              (and markerContextNote suppresses the benign-flavoured note
+              on critical readings). */}
+          {contextNote && (
+            <div className="mt-2.5 border-l-2 border-l-indigo-300 pl-3">
+              <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
+                Based on your answers
+              </div>
+              <p className="mt-1 text-caption leading-snug text-ink-soft">
+                {contextNote}
+              </p>
+            </div>
+          )}
           {/* Unit-reconciliation receipt. Shown only when the parser
               rescaled the lab's printed number into canonical units (Indian
               count prefixes like lakh/thou/million per cumm). Reassures the

@@ -23,18 +23,12 @@ import MarkerAttentionCard from '../components/MarkerAttentionCard';
 import LearnMoreModal from '../components/LearnMoreModal';
 import StatusKey from '../components/StatusKey';
 import { useNavigation, useReports } from '../AppContext';
-import {
-  CATALOG_VERSION,
-  getTrend,
-  type Biomarker,
-  type BiomarkerCategoryId,
-} from '../data/biomarkers';
+import { CATALOG_VERSION, type Biomarker } from '../data/biomarkers';
 import {
   getCombinedSnapshot,
   getPrimaryReport,
   getRetestReminder,
   getSampleReportForDashboard,
-  type Report,
 } from '../data/reports';
 import {
   loadCatalogAck,
@@ -52,6 +46,20 @@ import TrendsPane from './home/TrendsPane';
 import LockerPane from './home/LockerPane';
 import DeleteReportConfirm from './home/DeleteReportConfirm';
 import SectionHeading from './home/SectionHeading';
+import { PATHWAYS } from './home/pathways';
+import {
+  filterAndSortReports,
+  selectVisibleMarkers,
+  rankFlaggedMarkers,
+  selectDisclosedMarkers,
+  groupTrendsByPathway,
+  computePathwayVitals,
+} from './home/dashboardModel';
+
+// PATHWAYS lives in ./home/pathways now; re-exported so the existing
+// HomePage.pathways.test.ts import (`{ PATHWAYS } from './HomePage'`) and
+// any other consumer keep resolving unchanged.
+export { PATHWAYS } from './home/pathways';
 
 // Filter labels are sourced from biomarkers.ts STATUS_FILTER_OPTIONS so
 // the dashboard, the results page, and any future filter surface read
@@ -202,35 +210,10 @@ export default function HomePage() {
    *      visible would be controls louder than the content they control. */
   const [lockerQuery, setLockerQuery] = useState('');
   const [lockerSort, setLockerSort] = useState<LockerSort>('newest');
-  const displayedReports = useMemo(() => {
-    const tokens = lockerQuery
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean);
-    const filtered =
-      tokens.length > 0
-        ? reports.filter((r) => {
-            const haystack = `${r.name} ${r.lab}`.toLowerCase();
-            return tokens.every((t) => haystack.includes(t));
-          })
-        : reports;
-    const indexById = new Map(reports.map((r, i) => [r.id, i]));
-    const fallback = (a: Report, b: Report) =>
-      (indexById.get(a.id) ?? 0) - (indexById.get(b.id) ?? 0);
-    const sorted = [...filtered].sort((a, b) => {
-      if (lockerSort === 'lab') {
-        const cmp = a.lab.localeCompare(b.lab);
-        return cmp !== 0 ? cmp : fallback(a, b);
-      }
-      const aKey = a.uploadedAt ?? '';
-      const bKey = b.uploadedAt ?? '';
-      if (!aKey || !bKey || aKey === bKey) return fallback(a, b);
-      const cmp = aKey.localeCompare(bKey);
-      return lockerSort === 'newest' ? -cmp : cmp;
-    });
-    return sorted;
-  }, [reports, lockerQuery, lockerSort]);
+  const displayedReports = useMemo(
+    () => filterAndSortReports(reports, lockerQuery, lockerSort),
+    [reports, lockerQuery, lockerSort],
+  );
 
   /* ---- Search + status filter. Drive the marker grid inside the
    *      "See all markers" disclosure. Live at page level so opening
@@ -257,41 +240,24 @@ export default function HomePage() {
   const isFiltering =
     trimmedQuery.length > 0 || statusFilter !== 'all' || pathwayScope !== null;
 
-  const visibleMarkers = useMemo(() => {
-    const tokens = trimmedQuery.split(/\s+/).filter(Boolean);
-    return biomarkers.filter((m) => {
-      let queryHit = true;
-      if (tokens.length > 0) {
-        const haystack = [m.name, m.simpleName ?? '', m.plain, m.category]
-          .join(' ')
-          .toLowerCase();
-        queryHit = tokens.every((t) => haystack.includes(t));
-      }
-      const statusHit = statusFilter === 'all' || m.status === statusFilter;
-      const scopeHit = !scopeCategories || scopeCategories.includes(m.category);
-      return queryHit && statusHit && scopeHit;
-    });
-  }, [biomarkers, trimmedQuery, statusFilter, scopeCategories]);
+  const visibleMarkers = useMemo(
+    () =>
+      selectVisibleMarkers(
+        biomarkers,
+        trimmedQuery,
+        statusFilter,
+        scopeCategories,
+      ),
+    [biomarkers, trimmedQuery, statusFilter, scopeCategories],
+  );
 
   /** All flagged markers (critical + concern + attention), sorted
    *  critical → concern → attention. Drives the top-concern hero
    *  (index 0) and the count in the "See N more flagged" link. */
-  const flaggedMarkersAll = useMemo(() => {
-    const severityRank: Record<Biomarker['status'], number> = {
-      critical: 0,
-      concern: 1,
-      attention: 2,
-      good: 3,
-    };
-    return biomarkers
-      .filter(
-        (m) =>
-          m.status === 'critical' ||
-          m.status === 'concern' ||
-          m.status === 'attention',
-      )
-      .sort((a, b) => severityRank[a.status] - severityRank[b.status]);
-  }, [biomarkers]);
+  const flaggedMarkersAll = useMemo(
+    () => rankFlaggedMarkers(biomarkers),
+    [biomarkers],
+  );
 
   /** Markers rendered inside the disclosure body.
    *  - When the user filters: honour the filter exactly (capped at 12).
@@ -299,34 +265,24 @@ export default function HomePage() {
    *    nothing typed almost always means "what else is off?" — leading
    *    with flagged is the answer; on-track markers are a step further
    *    behind the "All markers" filter pill. */
-  const disclosedMarkers = useMemo(() => {
-    if (isFiltering) return visibleMarkers.slice(0, 12);
-    // Idle: the Top Concern zone already surfaces the first
-    // HERO_FLAG_COUNT flagged markers, so the pane leads with the REST.
-    // That removes the duplication with the hero cards AND makes the
-    // "See N more flagged →" link land on exactly those N — not the same
-    // ones over again.
-    const overflowFlagged = flaggedMarkersAll.slice(
-      HERO_FLAG_COUNT,
-      HERO_FLAG_COUNT + 12,
-    );
-    if (overflowFlagged.length > 0) return overflowFlagged;
-    // No flagged markers beyond the hero (≤HERO_FLAG_COUNT flagged): don't
-    // dead-end on an empty pane that tells the user to click "All markers"
-    // again. Lead with the on-track markers — the rest of the report they
-    // haven't seen yet — so opening "All markers" actually shows markers.
-    return biomarkers.filter((m) => m.status === 'good').slice(0, 12);
-  }, [isFiltering, visibleMarkers, flaggedMarkersAll, biomarkers]);
+  const disclosedMarkers = useMemo(
+    () =>
+      selectDisclosedMarkers({
+        isFiltering,
+        visibleMarkers,
+        flaggedMarkersAll,
+        biomarkers,
+        heroFlagCount: HERO_FLAG_COUNT,
+      }),
+    [isFiltering, visibleMarkers, flaggedMarkersAll, biomarkers],
+  );
 
   /** Trends grouped by pathway — body of the "Compare to your last
    *  report" disclosure. */
-  const trendsByPathway = useMemo(() => {
-    const withHistory = visibleMarkers.filter((m) => getTrend(m) !== null);
-    return PATHWAYS.map((p) => ({
-      ...p,
-      markers: withHistory.filter((m) => p.categories.includes(m.category)),
-    })).filter((p) => p.markers.length > 0);
-  }, [visibleMarkers]);
+  const trendsByPathway = useMemo(
+    () => groupTrendsByPathway(visibleMarkers, PATHWAYS),
+    [visibleMarkers],
+  );
 
   /** Vitals strip — one tile per pathway showing the worst status
    *  present in that pathway's markers ("1 needs care" / "1 borderline"
@@ -335,22 +291,10 @@ export default function HomePage() {
    *  re-scanning the marker grid. Filters out pathways with no markers
    *  in this report so an empty pathway doesn't render a "0 on track"
    *  tile that conveys nothing. */
-  const pathwayVitals = useMemo(() => {
-    return PATHWAYS.map((p) => {
-      const markers = biomarkers.filter((m) =>
-        p.categories.includes(m.category),
-      );
-      const critical = markers.filter((m) => m.status === 'critical').length;
-      // "concern" tile sum collapses critical + concern into one count —
-      // both surface as red tiles with see-a-doctor-priority framing.
-      // Critical preserves its semantics via the separate `critical`
-      // field so the strip can promote those tiles visually.
-      const concern =
-        critical + markers.filter((m) => m.status === 'concern').length;
-      const attention = markers.filter((m) => m.status === 'attention').length;
-      return { ...p, critical, concern, attention, total: markers.length };
-    }).filter((p) => p.total > 0);
-  }, [biomarkers]);
+  const pathwayVitals = useMemo(
+    () => computePathwayVitals(biomarkers, PATHWAYS),
+    [biomarkers],
+  );
 
   /** Explore-section tab. The deep content (all markers / trends /
    *  reports) used to be three independent collapsible drawers; opening
@@ -534,7 +478,7 @@ export default function HomePage() {
       )}
 
       {/* ZONE 1 · Headline */}
-      <Container size="wide" className="pt-5 md:pt-8 relative">
+      <Container size="wide" className="pt-8 md:pt-14 relative">
         <DashboardHeadline
           markers={ready ? biomarkers : null}
           hasReport={!!ready}
@@ -672,7 +616,7 @@ export default function HomePage() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.08, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 md:mt-8"
+          className="mt-12 md:mt-20"
         >
           <Container size="wide">
           <SectionHeading
@@ -986,34 +930,3 @@ export default function HomePage() {
 /* Local helpers                                                       */
 /* ------------------------------------------------------------------ */
 
-type Pathway = {
-  id: string;
-  name: string;
-  categories: BiomarkerCategoryId[];
-};
-
-// The Vitals Strip groups every marker into one of these pathways.
-//
-// CRITICAL INVARIANT: this list must partition ALL BiomarkerCategoryId
-// values — every category in exactly one pathway, none missing. The
-// strip's per-tile "needs care" counts are supposed to sum to the hero's
-// flagged count; when six categories (liver, kidney, blood, fertility,
-// electrolytes, inflammation) were unmapped, their flagged markers were
-// counted by the hero but dropped from every tile, so a report with
-// "12 need care" showed tiles summing to 7. HomePage.pathways.test.ts
-// asserts the partition stays complete and disjoint so this can't
-// silently regress when a new category is added to the catalog.
-//
-// Order is severity-adjacent: the "system" reads (hormonal, metabolic,
-// thyroid) lead; nutritional and the organ/blood panels follow.
-export const PATHWAYS: Pathway[] = [
-  { id: 'hormonal', name: 'Hormonal', categories: ['hormones', 'fertility'] },
-  { id: 'metabolic', name: 'Metabolic', categories: ['metabolic', 'heart'] },
-  { id: 'thyroid', name: 'Thyroid', categories: ['thyroid'] },
-  { id: 'nutritional', name: 'Nutritional', categories: ['vitamins'] },
-  { id: 'liver', name: 'Liver', categories: ['liver'] },
-  { id: 'kidney', name: 'Kidney', categories: ['kidney'] },
-  { id: 'blood', name: 'Blood', categories: ['blood'] },
-  { id: 'electrolytes', name: 'Electrolytes', categories: ['electrolytes'] },
-  { id: 'inflammation', name: 'Inflammation', categories: ['inflammation'] },
-];

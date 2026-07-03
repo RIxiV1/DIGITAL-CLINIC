@@ -1,28 +1,30 @@
 # Theming
 
-Dark is the default. Light is opt-in. The whole system runs on semantic Tailwind v4 tokens — there are zero `dark:` variants sprinkled across components.
+An explicit saved choice always wins; with no choice we honor the OS `prefers-color-scheme` and fall back to the **warm-paper light** theme (the brand's distinctive identity, and the safer default for dense clinical numbers). Both themes are first-class. The whole system runs on semantic Tailwind v4 tokens — there are zero `dark:` variants sprinkled across components.
 
 This doc explains the five principles, the no-FOUC bootstrap, and how to add a new themed surface without breaking dark mode.
 
 ---
 
-## Palette & type identity ("Ink & Clay")
+## Palette & type identity ("ForMen — Indigo & Gold on warm paper")
 
-The visual identity is **warm editorial**, not cold-tech. Colour is organised into **three deliberate lanes** — keep them separate:
+The visual identity is the **ForMen brand** (deep indigo + gold) rendered as
+**navy-and-gold on a warm paper canvas** — premium men's-apothecary / editorial-clinic, not blue on a dark-SaaS slab. The canvas decides everything: indigo on cream reads premium; the same indigo on dark charcoal reads generic. Colour is organised into deliberate lanes — keep them separate:
 
 | Lane | Tokens | Use |
 | --- | --- | --- |
-| **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — these now resolve to a **warm-stone ramp**, NOT blue | links, nav, secondary buttons, most fills |
-| **Interactive accent** (forest) | `--color-forest` + `--color-on-forest` for text on it | the primary CTA, action links, focus rings — the one colour that means "act here" |
+| **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — resolves to a **warm-stone ramp**, NOT blue | nav, secondary buttons, most fills |
+| **Brand / interactive accent** (ForMen indigo) | `--color-forest` **and** `--color-clay`, both `#2D3B8E` (light — the EXACT wordmark hex, sampled from `public/favicon.svg`) / `#97A3EA` (dark), with `--color-on-*` for text on them | the wordmark, primary CTA, action links, focus rings, landing accent phrases — the one ownable brand hue |
+| **Warm secondary** (ForMen gold) | `--color-gold-*` (`#FFB800`, desaturated for dark) | highlights, gold pills, the calm `attention` status family |
 | **Alarm** (crimson) | `--color-concern` → **`#ef4444`** (dark) | clinical warnings / flagged diagnostics only |
 
-**`--color-clay` (terracotta) is the DECORATIVE accent + the "needs-review" middle status tier** — landing accent phrases, the HowItWorks numerals, the split-meter "to-review" segment. It is *not* an interactive control. Forest, not clay, owns the interactive lane because clay (`#b5512f`) and the crimson alarm sit ~17° apart at near-identical luminance (0.159 vs 0.167), so a "click me" button and a "you might be sick" alarm collapse together under red-green colour-blindness; forest carries blue-green **and** is darker, separating from crimson on both hue and lightness. **Don't put clay back on buttons / links / focus.**
+The accent is **blue-dominant**, so the "act here" indigo separates from the crimson alarm under protanopia/deuteranopia (blue-vs-red is the safe CVD pair) — even more reliably than the old forest did. Clay and forest now resolve to the *same* indigo (the app has one brand accent + gold, not two warm accents); terracotta has retired into the brand. The clinical status colours (`good` / `attention` / `concern` / `critical`) are **unchanged** and stay label-backed, never colour-only.
 
 **Dark ladder** (warm charcoal): canvas `#0b0a09` → card `--color-surface` `#1a1816` → hero `--color-paper` `#242220` — an even ~1.12:1 step each so layers read. In dark the drop-shadows are invisible, so the **hairline carries the card edge**: `--color-line` is `rgb(231 229 228 / 0.16)` (≈1.44:1 over canvas), not a barely-there 0.10.
 
 > **The class names lie, on purpose.** `bg-indigo-600` / `text-blue-700` render *terracotta-stone*, because the brand hue was retargeted in one place (`--color-blue-*`) rather than via 380+ per-component edits. Don't "fix" them back to blue. A future rename to `--color-primary-*` is the proper cleanup.
 
-**Type:** display = **Instrument Serif** (self-hosted `@font-face` in `index.css`, files in `public/fonts/`) — used LARGE for headlines + big overview numbers via the `.font-display` utility. Body = **Inter** (self-hosted via `@fontsource/inter`, latin subset, weights 400–700). **No Google Fonts `<link>` — zero third-party font requests.** Small/clinical data numbers use **Inter `tabular-nums`**, not the serif.
+**Type:** display = **Domine** (variable serif, self-hosted `@font-face` in `index.css`, file in `public/fonts/`) — used LARGE for headlines + big overview numbers via the `.font-display` utility. Body = **Manrope** (self-hosted via `@fontsource/manrope`, latin subset). **No Google Fonts `<link>` — zero third-party font requests.** Small/clinical data numbers use `tabular-nums`, not the serif.
 
 ---
 
@@ -75,19 +77,26 @@ We use `rgb(R G B / A)` and `color-mix(in oklab, …)` throughout — no legacy 
 ## How the bootstrap works (no FOUC)
 
 The theme is stamped on `<html data-theme="...">` by a script that runs
-*before* React mounts. Without it, the page paints in light mode (the CSS
-default) then flickers to dark when React reads `localStorage`.
+*before* React mounts. Without it, the page would paint in the CSS-default
+theme and then flicker to the resolved theme once React reads
+`localStorage` / the OS preference — so the bootstrap resolves it first.
 
 > ⚠️ **This script lives in [`public/theme-init.js`](../public/theme-init.js) — an EXTERNAL file, loaded synchronously from `<head>`. It is deliberately NOT inline.** The production CSP's `script-src` in `vercel.json` allows `'self'`, `'wasm-unsafe-eval'` (for the pdfjs/Tesseract WASM), and the jsdelivr CDN — but **no `'unsafe-inline'`**, which silently blocks inline scripts. As an inline `<script>` the bootstrap never ran in prod — `data-theme` stayed unset and the deployed site loaded in **light** on fresh devices, while local dev (no CSP) looked fine. A same-origin file satisfies `'self'` with no CSP hash to maintain, and a blocking `<head>` script still runs before first paint. **Don't move it back inline.** If you edit it, it's still just one same-origin file — no CSP change needed.
 
 ```js
 // public/theme-init.js — referenced as <script src="/theme-init.js"></script>
 (function () {
-  var theme = 'dark';
+  var theme;
   try {
     var saved = localStorage.getItem('dc_theme');
-    if (saved === 'light') theme = 'light';
-  } catch (e) { /* private mode / disabled storage */ }
+    if (saved === 'light' || saved === 'dark') {
+      theme = saved; // explicit user choice always wins
+    } else {
+      theme = window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches
+          ? 'dark' : 'light';
+    }
+  } catch (e) { theme = 'light'; /* private mode / disabled storage */ }
   document.documentElement.dataset.theme = theme;
 
   var themeColor = theme === 'light' ? '#F7F4EF' : '#100E0C';
@@ -98,11 +107,11 @@ default) then flickers to dark when React reads `localStorage`.
 
 Three things this script does:
 
-1. Reads `localStorage['dc_theme']` — defaults to `'dark'` on any failure (private mode, disabled storage, parse error).
+1. Resolves the theme: an explicit `localStorage['dc_theme']` wins; otherwise it honors the OS `prefers-color-scheme` and falls back to **`'light'`** (the warm-paper identity) — including on any storage failure. `loadTheme()` in `persistence.ts` mirrors this exactly, or first paint flashes.
 2. Stamps `<html data-theme="dark">` or `<html data-theme="light">`.
 3. Syncs the `<meta name="theme-color">` tag so the mobile browser top-bar tint matches the canvas color on first paint.
 
-**`prefers-color-scheme` is deliberately not consulted.** The brand identity on first paint is dark regardless of OS preference. Users who want light explicitly opt in via Profile.
+**`prefers-color-scheme` IS honored now** (it previously wasn't). Rationale: the distinctive warm-paper look should lead the first impression, and the evidence on dense clinical data + astigmatism halation favors light; dark-preferrers still get dark via their OS setting or the Profile toggle.
 
 ---
 

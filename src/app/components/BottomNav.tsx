@@ -7,18 +7,21 @@ import type { TranslationKey } from '../i18n/translations';
 
 type ItemId = 'home' | 'healthMap' | 'quiz' | 'profile';
 
+// Tab labels are NOT stored here — they render from i18n (`t('nav.<id>')`),
+// which is the single source of truth. A `label` field used to live on each
+// item, unused and out of sync with the dictionary (it said "Health" while
+// the tab rendered "Map"); dropped so there's one place a nav word can live.
 type Item = {
   id: ItemId;
-  label: string;
   page: Page;
   Icon: React.ElementType;
 };
 
 const items: Item[] = [
-  { id: 'home', label: 'Home', page: { type: 'home' }, Icon: House },
-  { id: 'healthMap', label: 'Health', page: { type: 'healthMap' }, Icon: MapIcon },
-  { id: 'quiz', label: 'Quiz', page: { type: 'quiz' }, Icon: ClipboardList },
-  { id: 'profile', label: 'Profile', page: { type: 'profile' }, Icon: User },
+  { id: 'home', page: { type: 'home' }, Icon: House },
+  { id: 'healthMap', page: { type: 'healthMap' }, Icon: MapIcon },
+  { id: 'quiz', page: { type: 'quiz' }, Icon: ClipboardList },
+  { id: 'profile', page: { type: 'profile' }, Icon: User },
 ];
 
 function navIdFor(page: Page): ItemId {

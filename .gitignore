@@ -11,6 +11,7 @@ dist-ssr
 # slash on the PNG match limits it to project root so public/*.png assets
 # aren't caught. The committed e2e suite lives in /e2e.
 /*.png
+/visual-audit
 /ui_smoke*.js
 /tmp_*
 /test-results

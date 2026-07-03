@@ -414,7 +414,7 @@ const markerInfo: Record<string, LearnMore> = {
       'Reduce refined carbs (white rice, bread, biscuits)',
       'Omega-3 (1–2g EPA+DHA daily) — strong evidence',
       'Walk after meals',
-      'Fix sleep — sleep deprivation directly raises triglycerides',
+      'Prioritise sleep — sleep deprivation raises triglycerides',
     ],
   },
 

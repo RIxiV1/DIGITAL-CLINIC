@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { ChevronDown, ChevronRight, Download, Info } from 'lucide-react';
 import Button from '../components/Button';
@@ -11,7 +11,21 @@ import BottomNav from '../components/BottomNav';
 import StatusKey from '../components/StatusKey';
 import { Reveal } from './landing/shared';
 import { useIsMdUp } from '../utils/useMediaQuery';
-import { useNavigation, useReports } from '../AppContext';
+import { useNavigation, useQuiz, useReports } from '../AppContext';
+import {
+  markerContextNote,
+  reportProvenanceNote,
+  buildBodySystems,
+  connectedStoryHeadline,
+  healthStorySentence,
+  explainFinding,
+  explainChange,
+  type BodySystemId,
+} from '../clinical';
+import ConnectedSystems from '../components/ConnectedSystems';
+import FindingExplanation from '../components/FindingExplanation';
+import MarkerSheet from '../components/MarkerSheet';
+import ReportAboutPanel from '../components/ReportAboutPanel';
 import {
   biomarkersByCategory,
   bottomLineFor,
@@ -19,6 +33,7 @@ import {
   statusColor,
   STATUS_FILTER_OPTIONS,
   summarizeStatuses,
+  type Biomarker,
   type StatusFilterId,
 } from '../data/biomarkers';
 import { findReport } from '../data/reports';
@@ -28,6 +43,7 @@ type Filter = StatusFilterId;
 export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const { reports } = useReports();
   const { navigate } = useNavigation();
+  const { quiz } = useQuiz();
   // findReport falls back to the curated sample-reports list, so links
   // like /results/rep-001 keep working even though the user's locker
   // starts empty.
@@ -60,6 +76,39 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
   const bottomLine = useMemo(() => bottomLineFor(biomarkers), [biomarkers]);
 
+  // "How sure are you?" — the worried-human's 4th question, answered once
+  // here rather than card by card. Clean reads get a quiet affirmation;
+  // unclear photo scans get an up-front heads-up that ties to the inline
+  // per-card flags below.
+  const provenance = useMemo(
+    () => reportProvenanceNote(biomarkers),
+    [biomarkers],
+  );
+
+  // The signature "Connected Systems" model — the report's markers folded
+  // into the five men's-health systems, hormonal hub at the centre.
+  const bodySystems = useMemo(() => buildBodySystems(biomarkers), [biomarkers]);
+  const storyHeadline = useMemo(
+    () => connectedStoryHeadline(bodySystems),
+    [bodySystems],
+  );
+  const systemStory = useMemo(
+    () => healthStorySentence(bodySystems),
+    [bodySystems],
+  );
+  // The core experience: the four-question, person-first explanation.
+  const explanation = useMemo(
+    () => explainFinding(biomarkers, quiz),
+    [biomarkers, quiz],
+  );
+  // The longitudinal twin — "what changed since last time" — when this
+  // report carries history from a prior one. Leads when present.
+  const change = useMemo(() => explainChange(biomarkers, quiz), [biomarkers, quiz]);
+  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+  // Mobile marker detail opens in a focused sheet rather than expanding the
+  // whole list inline (functional audit #6).
+  const [sheetMarker, setSheetMarker] = useState<Biomarker | null>(null);
+
   const groups = useMemo(() => biomarkersByCategory(filtered), [filtered]);
   const presentCategoryIds = useMemo(
     () => new Set(biomarkers.map((m) => m.category)),
@@ -72,22 +121,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     [biomarkers],
   );
 
-  /** Per-category expansion. Default-expanded: every NEEDS-CARE category
-   *  (any critical or concern marker). Right after a scan the user wants
-   *  to see all the actionable values at once, not expand each flagged
-   *  section one by one — opening only the single most-pressing one (the
-   *  prior behavior) read as "why is everything still collapsed?". The
-   *  "attention" (keep-an-eye) and healthy categories stay collapsed so a
-   *  47-marker report still opens tidy — their headers show status +
-   *  counts and expand on intent. Local state per visit; resets on
-   *  navigation to another report (pageKey remount). */
+  /** Per-category expansion. Everything starts COLLAPSED — the calm read.
+   *  The verdict, the one-thing explanation, and the Health Map already
+   *  surface what matters up top; the full marker list is reference detail,
+   *  there on a tap, not a wall the user has to scroll past. Collapsed
+   *  headers still show status + counts, so nothing flagged is hidden — it's
+   *  just not shouting. (A stressed user shouldn't land in a 47-row dump.)
+   *  Local state per visit; resets on navigation (pageKey remount). */
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(
-    () =>
-      new Set(
-        biomarkers
-          .filter((m) => m.status === 'critical' || m.status === 'concern')
-          .map((m) => m.category),
-      ),
+    () => new Set(),
   );
   const toggleCategory = (id: string) => {
     setExpandedCategoryIds((prev) => {
@@ -105,6 +147,33 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   const filtersAreNarrowing = filter !== 'all' || activeCategory !== 'all';
   const isCategoryOpen = (id: string) =>
     filtersAreNarrowing || expandedCategoryIds.has(id);
+
+  // The systems map as navigation: tapping a system opens its categories
+  // and scrolls to the first present one — "the story drives navigation"
+  // instead of leaving the user to scroll-hunt for the section.
+  const handleSelectSystem = useCallback(
+    (id: BodySystemId) => {
+      const sys = bodySystems.find((s) => s.id === id);
+      if (!sys) return;
+      setExpandedCategoryIds((prev) => {
+        const next = new Set(prev);
+        sys.categories.forEach((c) => next.add(c));
+        return next;
+      });
+      const firstPresent = sys.categories.find((c) =>
+        presentCategoryIds.has(c),
+      );
+      if (firstPresent) setScrollTarget(`system-cat-${firstPresent}`);
+    },
+    [bodySystems, presentCategoryIds],
+  );
+  useEffect(() => {
+    if (!scrollTarget) return;
+    document
+      .getElementById(scrollTarget)
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setScrollTarget(null);
+  }, [scrollTarget]);
 
   // Ref-based dedup so a double-tap on the download button doesn't
   // produce two PDFs while the lazy chunk is still resolving.
@@ -200,6 +269,18 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 {bottomLine}
               </p>
 
+              {/* Orienting line — relax (or get the right urgency) before
+                  reading a word, plus an honest reading-time estimate. */}
+              <p className="mt-3 text-caption text-ink-soft">
+                {summary.critical > 0
+                  ? 'One result needs attention today — start with the flagged items.'
+                  : 'Nothing here needs same-day attention.'}
+                <span className="text-muted">
+                  {' '}· about {Math.max(2, Math.round(biomarkers.length * 0.25))}{' '}
+                  min to read
+                </span>
+              </p>
+
               {/* Status-count signal. Kept the inline dot+number+label
                   pattern (integrates with the gold hero's text-indigo-900
                   treatment) but dropped the "N on track" branch and
@@ -242,6 +323,22 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 </div>
               )}
 
+              {/* Data-provenance line — "how sure are you?" answered once.
+                  Quiet for a clean read; amber-tinted when some photo
+                  scans need a double-check (mirrors the per-card flag
+                  colour below). */}
+              {provenance && (
+                <p
+                  className={`mt-4 text-caption leading-snug ${
+                    provenance.tone === 'flagged'
+                      ? 'text-attention-ink font-medium'
+                      : 'text-ink-soft'
+                  }`}
+                >
+                  {provenance.text}
+                </p>
+              )}
+
               <div className="mt-5 flex flex-wrap items-center gap-2 no-print">
                 <Button
                   variant="gold"
@@ -272,6 +369,36 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           shipped twice. Now we mount exactly one tree based on the
           `useIsMdUp` viewport check (the BottomNav pattern), so the
           invisible variant doesn't cost DOM + event-listener overhead. */}
+      {/* ONE explanation, not two. A returning user gets the journey ("what
+          changed since last time"); a first-timer gets the current-state
+          read. Showing both stacked two four-beat blocks before the user even
+          reached a marker — too long. Pick the one that fits. */}
+      {(change ?? explanation) && (
+        <Container size="wide" className="mt-10 md:mt-14">
+          <FindingExplanation
+            data={(change ?? explanation)!}
+            eyebrow={change ? 'Since your last test' : undefined}
+          />
+        </Container>
+      )}
+
+      {/* Signature moment — "your body as one connected system". Leads the
+          body of the report, right under the Bottom Line. Built on the same
+          markers, it reframes the wall of values as one story before the
+          user scrolls into the per-marker detail. (Home is the eventual
+          stage for this; it's the other agent's lane right now, so it lives
+          on the report first.) */}
+      {biomarkers.length > 0 && (
+        <Container size="wide" className="mt-12 md:mt-20">
+          <ConnectedSystems
+            systems={bodySystems}
+            headline={storyHeadline}
+            story={systemStory}
+            onSelectSystem={handleSelectSystem}
+          />
+        </Container>
+      )}
+
       {!isMdUp && deepDives.length > 0 && (
         <Container size="wide" className="mt-6 no-print">
           <div className="font-sans text-caption uppercase tracking-eyebrow text-indigo-700 font-bold">
@@ -420,7 +547,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                       good: markers.filter((m) => m.status === 'good').length,
                     };
                     return (
-                      <div key={category.id}>
+                      <div key={category.id} id={`system-cat-${category.id}`}>
                         <Card padded={false}>
                           <button
                             type="button"
@@ -508,14 +635,18 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                                 <BiomarkerBar
                                   key={m.id}
                                   marker={m}
+                                  compact={!isMdUp}
+                                  contextNote={markerContextNote(m, quiz)}
                                   onClick={
-                                    m.problemId
-                                      ? () =>
-                                          navigate({
-                                            type: 'problem',
-                                            problemId: m.problemId!,
-                                          })
-                                      : undefined
+                                    !isMdUp
+                                      ? () => setSheetMarker(m)
+                                      : m.problemId
+                                        ? () =>
+                                            navigate({
+                                              type: 'problem',
+                                              problemId: m.problemId!,
+                                            })
+                                        : undefined
                                   }
                                 />
                               ))}
@@ -550,6 +681,8 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 results.
               </p>
             </div>
+
+            <ReportAboutPanel hasCritical={summary.critical > 0} />
           </main>
 
           {/* RIGHT — Sticky sidebar (filters + deep dives). Mounted only
@@ -680,6 +813,22 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
       </Container>
 
       <BottomNav />
+
+      {/* Mobile marker detail — focused sheet instead of inline scroll. */}
+      <MarkerSheet
+        marker={sheetMarker}
+        contextNote={sheetMarker ? markerContextNote(sheetMarker, quiz) : null}
+        onClose={() => setSheetMarker(null)}
+        onOpenProblem={
+          sheetMarker?.problemId
+            ? () => {
+                const problemId = sheetMarker.problemId!;
+                setSheetMarker(null);
+                navigate({ type: 'problem', problemId });
+              }
+            : undefined
+        }
+      />
     </div>
   );
 }

@@ -41,9 +41,9 @@ const testInfo: Record<string, LearnMore> = {
     measures:
       'Long-term blood sugar (HbA1c), insulin levels, how well your body listens to insulin (HOMA-IR), cholesterol and fats, and a growth-hormone marker (IGF-1). Catches problems years before a standard sugar test would.',
     importance:
-      'When your body stops listening to insulin, your testosterone drops too. It’s one of the biggest hidden causes of low energy and low sex drive in men today — and you can catch it years before it becomes diabetes. The earlier you spot it, the easier it is to reverse.',
+      'When your body stops listening to insulin, your testosterone drops too. It’s one of the biggest hidden causes of low energy and low sex drive in men today — and you can catch it years before it becomes diabetes. The earlier you spot it, the easier it is to turn around.',
     hormonalImpact:
-      'Sugar control and hormone health aren’t separate problems. Belly fat actively converts your testosterone into estrogen, so the more you carry, the lower your T runs. Fixing your insulin often raises testosterone more than any hormone treatment.',
+      'Sugar control and hormone health aren’t separate problems. Belly fat actively converts your testosterone into estrogen, so the more you carry, the lower your T runs. Improving your insulin sensitivity often raises testosterone — sometimes more than a supplement would.',
     improve: [
       'Walk for 10 minutes after every meal — the single biggest lever',
       'Strength training 2× a week — muscle absorbs sugar instead of leaving it in your blood',

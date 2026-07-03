@@ -5,6 +5,13 @@ import Button from './Button';
 import type { LearnMore } from '../data/markerInfo';
 import type { BiomarkerStatus } from '../data/biomarkers';
 import { useModalA11y } from '../utils/useModalA11y';
+import {
+  evidenceForRecommendation,
+  EVIDENCE_TIERS,
+  DECISION_PRINCIPLE,
+  certaintyOfAction,
+  type EvidenceLevel,
+} from '../clinical';
 
 type Props = {
   open: boolean;
@@ -53,14 +60,9 @@ export default function LearnMoreModal({
   // not buried under three paragraphs of education.
   const isFlagged =
     status === 'attention' || status === 'concern' || status === 'critical';
-  const nextStep =
-    status === 'critical'
-      ? 'Worth prompt attention — see a doctor soon and bring this result.'
-      : status === 'concern'
-        ? 'Worth acting on now. A re-check in about 90 days shows whether it’s moving.'
-        : status === 'attention'
-          ? 'Not urgent — keep an eye on it. A re-check in ~90 days confirms the trend.'
-          : '';
+  // Q4 of the First-Impression Contract — radiate certainty about the
+  // ACTION, not the diagnosis (certaintyOfAction).
+  const next = certaintyOfAction({ status: status ?? 'good' });
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const cardRef = useRef<HTMLDivElement | null>(null);
 
@@ -123,12 +125,31 @@ export default function LearnMoreModal({
             <div className="flex-1 overflow-y-auto px-6 py-5">
               {isFlagged && (
                 <Section eyebrow="What to do now">
-                  {nextStep && (
-                    <p className="text-body-sm leading-relaxed text-ink font-medium mb-3">
-                      {nextStep}
+                  {/* The action, with a confidence chip ON THE ACTION — "we
+                      may not be sure what this means, but we're sure what to
+                      do." The chip is status-neutral indigo, so it reads as
+                      confidence-in-advice, not a health verdict. */}
+                  <div className="mb-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-body-sm font-semibold text-ink">
+                        {next.action}
+                      </span>
+                      <span className="inline-flex items-center rounded-full border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-micro font-semibold text-indigo-700">
+                        High confidence
+                      </span>
+                    </div>
+                    <p className="mt-1 text-caption leading-relaxed text-ink-soft">
+                      {next.detail}
                     </p>
-                  )}
+                  </div>
                   <ImproveList items={info.improve} />
+                  {/* Decision aid (Persona 1 — the core gym user): answers
+                      "so should I stop X?" with the only safe, correct
+                      principle — don't decide off one marker — instead of
+                      marker-specific instructions we can't responsibly give. */}
+                  <p className="mt-3 text-caption leading-snug text-ink-soft border-l-2 border-l-indigo-300 pl-3">
+                    {DECISION_PRINCIPLE}
+                  </p>
                 </Section>
               )}
 
@@ -176,18 +197,57 @@ export default function LearnMoreModal({
   );
 }
 
+// Subtle, status-neutral evidence styling — deliberately NOT the
+// green/amber/red health-status palette, so an evidence grade can't be
+// misread as a health verdict. The tier label carries the meaning; colour
+// only nudges weight.
+const TIER_STYLE: Record<EvidenceLevel, string> = {
+  strong: 'text-indigo-700 bg-indigo-50 border-indigo-200',
+  moderate: 'text-ink-soft bg-canvas border-line',
+  emerging: 'text-muted bg-canvas/60 border-line/70',
+};
+
 function ImproveList({ items }: { items: string[] }) {
+  const anyGraded = items.some((line) => evidenceForRecommendation(line));
   return (
-    <ul className="grid gap-2">
-      {items.map((line) => (
-        <li key={line} className="flex items-start gap-2.5">
-          <CheckCircle2 size={15} className="text-indigo-600 shrink-0 mt-0.5" />
-          <span className="text-body-sm leading-relaxed text-ink-soft">
-            {line}
-          </span>
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="grid gap-2">
+        {items.map((line) => {
+          const ev = evidenceForRecommendation(line);
+          const tier = ev ? EVIDENCE_TIERS[ev.level] : null;
+          return (
+            <li key={line} className="flex items-start gap-2.5">
+              <CheckCircle2
+                size={15}
+                className="text-indigo-600 shrink-0 mt-0.5"
+              />
+              <span className="text-body-sm leading-relaxed text-ink-soft">
+                {line}
+                {ev && tier && (
+                  <span
+                    className={`ml-2 align-middle inline-flex items-center px-1.5 py-0.5 rounded-full border text-micro font-semibold whitespace-nowrap ${TIER_STYLE[ev.level]}`}
+                    title={`${tier.meaning} Supports ${ev.supports}. Source: ${ev.source.label}`}
+                    aria-label={`Evidence: ${tier.label}. ${tier.meaning} Supports ${ev.supports}.`}
+                  >
+                    {tier.label}
+                  </span>
+                )}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+      {/* Tier legend — defines the grades inline so the meaning never
+          depends on hover (which doesn't exist on touch). Shown only when
+          something on this list is actually graded. */}
+      {anyGraded && (
+        <p className="mt-3 text-micro text-muted leading-snug">
+          <span className="font-semibold text-ink-soft">Evidence grades:</span>{' '}
+          Strong (trials &amp; guidelines) · Moderate (probably helps) ·
+          Emerging (early or mixed). Based on GRADE certainty.
+        </p>
+      )}
+    </>
   );
 }
 
