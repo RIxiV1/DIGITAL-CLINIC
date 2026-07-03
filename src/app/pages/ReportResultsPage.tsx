@@ -121,22 +121,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     [biomarkers],
   );
 
-  /** Per-category expansion. Default-expanded: every NEEDS-CARE category
-   *  (any critical or concern marker). Right after a scan the user wants
-   *  to see all the actionable values at once, not expand each flagged
-   *  section one by one — opening only the single most-pressing one (the
-   *  prior behavior) read as "why is everything still collapsed?". The
-   *  "attention" (keep-an-eye) and healthy categories stay collapsed so a
-   *  47-marker report still opens tidy — their headers show status +
-   *  counts and expand on intent. Local state per visit; resets on
-   *  navigation to another report (pageKey remount). */
+  /** Per-category expansion. Everything starts COLLAPSED — the calm read.
+   *  The verdict, the one-thing explanation, and the Health Map already
+   *  surface what matters up top; the full marker list is reference detail,
+   *  there on a tap, not a wall the user has to scroll past. Collapsed
+   *  headers still show status + counts, so nothing flagged is hidden — it's
+   *  just not shouting. (A stressed user shouldn't land in a 47-row dump.)
+   *  Local state per visit; resets on navigation (pageKey remount). */
   const [expandedCategoryIds, setExpandedCategoryIds] = useState<Set<string>>(
-    () =>
-      new Set(
-        biomarkers
-          .filter((m) => m.status === 'critical' || m.status === 'concern')
-          .map((m) => m.category),
-      ),
+    () => new Set(),
   );
   const toggleCategory = (id: string) => {
     setExpandedCategoryIds((prev) => {
