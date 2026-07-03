@@ -376,20 +376,16 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           shipped twice. Now we mount exactly one tree based on the
           `useIsMdUp` viewport check (the BottomNav pattern), so the
           invisible variant doesn't cost DOM + event-listener overhead. */}
-      {/* The journey first, for a returning user — "what changed since last
-          time" — then the current-state read. Both in the same calm voice. */}
-      {change && (
+      {/* ONE explanation, not two. A returning user gets the journey ("what
+          changed since last time"); a first-timer gets the current-state
+          read. Showing both stacked two four-beat blocks before the user even
+          reached a marker — too long. Pick the one that fits. */}
+      {(change ?? explanation) && (
         <Container size="wide" className="mt-10 md:mt-14">
-          <FindingExplanation data={change} eyebrow="Since your last test" />
-        </Container>
-      )}
-
-      {/* The core experience — the four-question, person-first read. Comes
-          right after the one-line Bottom Line: the quick verdict, then the
-          human explanation, before any diagram or marker list. */}
-      {explanation && (
-        <Container size="wide" className="mt-10 md:mt-14">
-          <FindingExplanation data={explanation} />
+          <FindingExplanation
+            data={(change ?? explanation)!}
+            eyebrow={change ? 'Since your last test' : undefined}
+          />
         </Container>
       )}
 
