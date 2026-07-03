@@ -1,8 +1,4 @@
-import {
-  pickHeadlineMarker,
-  summarizeStatuses,
-  type Biomarker,
-} from '../data/biomarkers';
+import { type Biomarker } from '../data/biomarkers';
 import type { QuizAnswers } from '../contexts/types';
 import { certaintyOfAction } from './certaintyOfAction';
 import { buildBodySystems } from './bodySystems';
@@ -63,19 +59,30 @@ export function explainFinding(
   quiz: QuizAnswers,
 ): FindingExplanation | null {
   if (markers.length === 0) return null;
-  const summary = summarizeStatuses(markers);
-  const lead =
-    pickHeadlineMarker(markers) ??
-    markers.find((m) => m.status !== 'good') ??
-    null;
+  // Lead with the most-pressing FLAGGED marker (worst status). "Needs a look"
+  // must describe something genuinely flagged — never the most trend-
+  // newsworthy marker, which can be perfectly healthy.
+  const STATUS_RANK: Record<string, number> = {
+    critical: 3,
+    concern: 2,
+    attention: 1,
+  };
+  const flagged = markers.filter((m) => m.status !== 'good');
+  const lead = flagged.length
+    ? flagged.reduce((worst, m) =>
+        (STATUS_RANK[m.status] ?? 0) > (STATUS_RANK[worst.status] ?? 0)
+          ? m
+          : worst,
+      )
+    : null;
 
   // ── All clear ──────────────────────────────────────────────────────
-  if (!lead || (summary.needCare === 0 && summary.attention === 0)) {
+  if (!lead) {
     return {
       tone: 'clear',
-      opener: 'The short version: this is a good one.',
+      opener: 'This is a reassuring one — nothing needs attention right now.',
       beats: [
-        { q: 'The short version', body: 'Nothing here is asking for attention.' },
+        { q: 'Overall', body: 'Nothing here is asking for attention.' },
         {
           q: 'What it can’t tell us',
           body: 'A test is a snapshot — reassuring, not a guarantee.',
@@ -115,8 +122,8 @@ export function explainFinding(
   return {
     tone: critical ? 'urgent' : 'calm',
     opener: critical
-      ? 'The short version: one result needs a doctor today.'
-      : 'The short version — and it’s not an emergency.',
+      ? 'One result here needs a doctor today.'
+      : 'Nothing here is an emergency — here’s what’s worth your attention.',
     beats: [
       { q: 'What you’re feeling', body: q1 },
       { q: 'What it suggests', body: q2 },
