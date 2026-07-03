@@ -29,10 +29,10 @@ describe('explainFinding', () => {
     const e = explainFinding([mk('testosterone', 'concern', 'hormones')], baseQuiz);
     expect(e?.tone).toBe('calm');
     expect(e?.beats.map((b) => b.q)).toEqual([
-      'What you’re probably experiencing',
-      'What your blood test suggests',
-      'What this doesn’t tell us',
-      'What I’d do next',
+      'What you’re feeling',
+      'What it suggests',
+      'What it can’t tell us',
+      'What to do',
     ]);
   });
 
@@ -41,14 +41,14 @@ describe('explainFinding', () => {
       [mk('testosterone', 'concern', 'hormones')],
       { ...baseQuiz, symptoms: ['low-energy', 'low-libido'] },
     );
-    expect(e?.beats[0].body).toMatch(/you told us/i);
+    expect(e?.beats[0].body).toMatch(/you mentioned/i);
     expect(e?.beats[0].body).toMatch(/low energy and low sex drive/);
   });
 
   it('Q1 never invents symptoms when we have none (general framing)', () => {
     const e = explainFinding([mk('testosterone', 'concern', 'hormones')], baseQuiz);
-    expect(e?.beats[0].body).not.toMatch(/you told us/i);
-    expect(e?.beats[0].body).toMatch(/lived experience/i);
+    expect(e?.beats[0].body).not.toMatch(/you mentioned/i);
+    expect(e?.beats[0].body).toMatch(/often felt/i);
   });
 
   it('weaves same-system related findings as "one story", not separate problems', () => {
@@ -68,8 +68,8 @@ describe('explainFinding', () => {
   it('SAFETY: a critical finding flips to urgency — never soothed', () => {
     const e = explainFinding([mk('potassium', 'critical', 'electrolytes')], baseQuiz);
     expect(e?.tone).toBe('urgent');
-    expect(e?.opener).toMatch(/today|not to wait/i);
-    expect(e?.opener).not.toMatch(/no reason to panic|nothing here/i);
+    expect(e?.opener).toMatch(/today/i);
+    expect(e?.opener).not.toMatch(/no reason to panic|not an emergency/i);
     expect(e?.beats[3].body).toMatch(/doctor|promptly|today/i);
   });
 

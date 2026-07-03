@@ -73,21 +73,14 @@ export function explainFinding(
   if (!lead || (summary.needCare === 0 && summary.attention === 0)) {
     return {
       tone: 'clear',
-      opener:
-        'If I were sitting next to you with this report, here’s what I’d say. Honestly? It’s a good one.',
+      opener: 'The short version: this is a good one.',
       beats: [
+        { q: 'The short version', body: 'Nothing here is asking for attention.' },
         {
-          q: 'The short version',
-          body: 'Across everything we looked at, nothing is asking for attention right now. That’s a genuinely good place to be.',
+          q: 'What it can’t tell us',
+          body: 'A test is a snapshot — reassuring, not a guarantee.',
         },
-        {
-          q: 'What this doesn’t tell us',
-          body: 'A blood test is a snapshot, not the whole story — it can’t see how you sleep, train, or feel. So this is reassuring, not a guarantee.',
-        },
-        {
-          q: 'What I’d do next',
-          body: 'Keep doing what you’re doing, and re-test in 6–12 months so you can watch your own trend.',
-        },
+        { q: 'What to do', body: 'Keep it up; re-test in 6–12 months.' },
       ],
     };
   }
@@ -108,38 +101,32 @@ export function explainFinding(
   const reported = (quiz.symptoms ?? [])
     .map((id) => SYMPTOM_PHRASES[id])
     .filter(Boolean);
-  const q1 = reported.length
-    ? `You told us you’ve been dealing with ${listEnglish(reported)}. That’s the place to start — not the lab sheet.`
-    : `Low energy, low drive, slower recovery — the kind of thing men usually feel before they ever see a number like this. Your lived experience is where we start, not the lab sheet.`;
-
-  // Q2 — the finding, woven with the honest same-system related markers.
   const relNames = related.map((m) => m.name);
+  const q1 = reported.length
+    ? `You mentioned ${listEnglish(reported)}.`
+    : 'Often felt as low energy, drive, or slower recovery.';
   const q2 = related.length
-    ? `${lead.plain} And it rarely travels alone — ${listEnglish(relNames)} ${
-        related.length > 1 ? 'are' : 'is'
-      } pointing the same way. ${
-        related.length > 1 ? 'They’re' : 'It’s'
-      } usually part of one story, not separate problems.`
-    : lead.plain;
-
-  // Q4 — one confident next step.
+    ? `${lead.name} needs a look — and ${listEnglish(relNames)} too. Likely one story.`
+    : `${lead.name} needs a look.`;
   const next = certaintyOfAction(lead);
 
+  // One short line per question. The four-question framework, terse — a
+  // worried person doesn't read paragraphs.
   return {
     tone: critical ? 'urgent' : 'calm',
     opener: critical
-      ? 'If I were sitting next to you with this report, I’d want you to act on this today. It’s not a reason to spiral — it’s a reason not to wait.'
-      : 'If I were sitting next to you with this report, here’s what I’d say. Nothing here is a reason to panic — there are a couple of things worth following up on, and a clear first step.',
+      ? 'The short version: one result needs a doctor today.'
+      : 'The short version — and it’s not an emergency.',
     beats: [
-      { q: 'What you’re probably experiencing', body: q1 },
-      { q: 'What your blood test suggests', body: q2 },
+      { q: 'What you’re feeling', body: q1 },
+      { q: 'What it suggests', body: q2 },
       {
-        q: 'What this doesn’t tell us',
+        q: 'What it can’t tell us',
         body: critical
-          ? 'It can’t tell us the cause — but a result this far out of range is itself the reason to be seen quickly, before reading anything more into it.'
-          : 'One blood draw can’t tell us why, and a single reading isn’t a verdict — levels like this naturally vary and often look different on a re-test. That’s exactly why a doctor confirms before any long-term decision.',
+          ? 'Not the cause — but reason enough to be seen quickly.'
+          : 'One test can’t say why; a re-test confirms the trend.',
       },
-      { q: 'What I’d do next', body: `${next.action}. ${next.detail}` },
+      { q: 'What to do', body: `${next.action}.` },
     ],
   };
 }

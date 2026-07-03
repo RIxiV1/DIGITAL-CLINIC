@@ -59,40 +59,34 @@ export function explainChange(
   }
 
   const moved = improved.length
-    ? `Since your last test, ${listEnglish(improved.map((m) => m.name))} ${
-        improved.length > 1 ? 'have' : 'has'
-      } moved the right way.`
-    : `Since your last test, the overall picture is holding steady.`;
-
+    ? `${listEnglish(improved.map((m) => m.name))} moved the right way.`
+    : 'Steady since last time.';
   const watching = watch.length
-    ? `Still worth keeping an eye on: ${listEnglish(watch.map((m) => m.name))}.`
-    : `Nothing has slipped since last time.`;
-
-  // Q3 — co-occurrence, NEVER causation.
+    ? `Keep an eye on ${listEnglish(watch.map((m) => m.name))}.`
+    : 'Nothing slipped.';
+  // Q3 — co-occurrence, NEVER causation. Terse.
   const doesntTell =
     improved.length >= 2
-      ? `${listEnglish(improved.slice(0, 2).map((m) => m.name))} improved in the same window. Markers like these sometimes move together — but this can’t tell us that one caused the other, or what changed either. The direction is encouraging; the cause is a question for your doctor.`
-      : `Two readings show a direction, not a reason — they still can’t tell us why something moved, only that it did.`;
+      ? `${listEnglish(improved.slice(0, 2).map((m) => m.name))} moved together — but this can’t tell us why, or that one caused the other.`
+      : 'A direction, not a reason — it can’t tell us why.';
 
   const lead = stillFlagged[0] ?? declined[0] ?? null;
   const action = lead ? certaintyOfAction(lead) : null;
   const next =
     critical && action
-      ? `${action.action}. ${action.detail}`
-      : action
-        ? `Keep doing what’s working, and ${action.action.toLowerCase()} — a third reading will confirm whether the trend holds.`
-        : `Keep doing what’s working, and re-test on your usual schedule to confirm the trend holds.`;
+      ? `${action.action}.`
+      : 'Keep it up; a third reading confirms the trend.';
 
   return {
     tone: critical ? 'urgent' : 'calm',
     opener: critical
-      ? 'Here’s what changed since your last test — and one result now needs attention today, regardless of the trend.'
-      : 'Here’s what changed since your last test. The trend matters more than any single number.',
+      ? 'One result now needs a doctor today — regardless of the trend.'
+      : 'What changed since your last test. The trend matters more than any number.',
     beats: [
-      { q: 'What’s moved since last time', body: moved },
-      { q: 'What’s still worth watching', body: watching },
-      { q: 'What this doesn’t tell us', body: doesntTell },
-      { q: 'What I’d do next', body: next },
+      { q: 'What improved', body: moved },
+      { q: 'Still watching', body: watching },
+      { q: 'What it can’t tell us', body: doesntTell },
+      { q: 'What to do', body: next },
     ],
   };
 }

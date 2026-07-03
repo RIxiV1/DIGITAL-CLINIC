@@ -45,10 +45,10 @@ describe('explainChange', () => {
       quiz,
     );
     expect(e?.beats.map((b) => b.q)).toEqual([
-      'What’s moved since last time',
-      'What’s still worth watching',
-      'What this doesn’t tell us',
-      'What I’d do next',
+      'What improved',
+      'Still watching',
+      'What it can’t tell us',
+      'What to do',
     ]);
     expect(e?.beats[0].body).toMatch(/moved the right way/i);
   });
@@ -62,7 +62,7 @@ describe('explainChange', () => {
       quiz,
     );
     const q3 = e!.beats[2].body;
-    expect(q3).toMatch(/same window|move together/i);
+    expect(q3).toMatch(/moved together|move together|same window/i);
     // Never a positive causal claim.
     expect(q3).not.toMatch(/because (you|your|it)|caused by|raised your|led to/i);
     expect(q3).toMatch(/can’t tell us|question for your doctor/i);
