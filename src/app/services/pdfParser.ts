@@ -1793,6 +1793,11 @@ export type PdfParseResult = {
    *  text-layer path (no OCR ran). When low (≤ OCR_LOW_CONFIDENCE_
    *  THRESHOLD) the UI warns that the read may be unreliable. */
   ocrConfidence?: number;
+  /** Per-marker provenance (biomarker id → verbatim source row +
+   *  validation flags). Powers the "why do we believe this?" inspector.
+   *  Combined with the report-level `source`/`ocrConfidence` above to give
+   *  a full, honest chain. Undefined only on the empty/failure result. */
+  provenance?: Map<string, MarkerProvenance>;
 };
 
 const EMPTY_RESULT: PdfParseResult = {
@@ -1876,10 +1881,12 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // straight to OCR. Scanned PDFs hit this path.
     if (totalCharCount < MIN_USABLE_TEXT_LENGTH) {
       const ocr = await runPdfOcr(pdf);
-      const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
+      const { markers: ocrBiomarkers, provenance } =
+        extractBiomarkersWithProvenance(ocr.text);
       return {
         biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
         source: 'pdf-ocr',
+        provenance,
         rawText: rawTextForDisplay(ocr.text),
         unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
         ocrPagesAttempted: ocr.pagesAttempted,
@@ -1918,10 +1925,14 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     const winner = candidates[0];
 
     if (winner.biomarkers.length > 0) {
+      // Re-run on the winning text to collect provenance; markers are
+      // identical to the count above (same text, same catalog).
+      const { provenance } = extractBiomarkersWithProvenance(winner.text);
       return {
         biomarkers: winner.biomarkers,
         source: 'pdf-text',
         strategy: winner.name,
+        provenance,
         rawText: winner.text,
         unrecognizedRows: findUnrecognizedRows(winner.text, winner.biomarkers),
       };
@@ -1931,10 +1942,12 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // into-PDF reports with a thin text layer of metadata sometimes
     // hit this path.
     const ocr = await runPdfOcr(pdf);
-    const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
+    const { markers: ocrBiomarkers, provenance } =
+      extractBiomarkersWithProvenance(ocr.text);
     return {
       biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
       source: 'pdf-ocr',
+      provenance,
       rawText: ocr.text,
       unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
       ocrPagesAttempted: ocr.pagesAttempted,
@@ -1950,10 +1963,12 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
 
 async function parseImage(file: File): Promise<PdfParseResult> {
   const { text, confidence } = await runImageOcr(file);
-  const biomarkers = extractBiomarkersFromText(text);
+  const { markers: biomarkers, provenance } =
+    extractBiomarkersWithProvenance(text);
   return {
     biomarkers: tagOcrConfidence(biomarkers, confidence),
     source: 'image-ocr',
+    provenance,
     rawText: text,
     unrecognizedRows: findUnrecognizedRows(text, biomarkers),
     ocrConfidence: confidence,
