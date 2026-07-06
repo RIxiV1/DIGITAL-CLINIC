@@ -1260,11 +1260,18 @@ function extractMarkerValue(
  * Biomarker array (with derived status/copy) for every template that
  * matched.
  */
-export function extractBiomarkersFromText(text: string): Biomarker[] {
+type ExtractHit = { marker: Biomarker; start: number; end: number };
+
+/**
+ * Run the whole catalog against `text` and return the surviving hits WITH
+ * their text spans (after specificity suppression). Shared by the plain
+ * extractor and the provenance-aware one so both see identical results.
+ */
+function collectHits(text: string): { normalized: string; hits: ExtractHit[] } {
   const normalized = normalize(text);
   // Collect every template match WITH its text span, so we can suppress
   // less-specific matches below.
-  const hits: { marker: Biomarker; start: number; end: number }[] = [];
+  const raw: ExtractHit[] = [];
   for (const template of biomarkerCatalog) {
     // biomarkerCatalog contains each template exactly once — the prior
     // `seen` Set/dedup was dead code that suggested an enforced
@@ -1278,7 +1285,7 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
       typeof extracted.labRefMax === 'number'
         ? { min: extracted.labRefMin, max: extracted.labRefMax }
         : undefined;
-    hits.push({
+    raw.push({
       marker: {
         ...markerFromTemplate(template, extracted.value, labRef),
         originalValue: extracted.originalValue,
@@ -1296,19 +1303,73 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
   // substring match, and the longer one is the real (more specific)
   // marker. Genuine distinct markers sit on separate rows with non-
   // overlapping spans, so they're untouched. Catalog order preserved.
-  const found = hits
-    .filter(
-      (h) =>
-        !hits.some(
-          (g) =>
-            g !== h &&
-            g.end - g.start > h.end - h.start &&
-            h.start >= g.start &&
-            h.end <= g.end,
-        ),
-    )
-    .map((h) => h.marker);
-  return deriveComputedMarkers(found);
+  const hits = raw.filter(
+    (h) =>
+      !raw.some(
+        (g) =>
+          g !== h &&
+          g.end - g.start > h.end - h.start &&
+          h.start >= g.start &&
+          h.end <= g.end,
+      ),
+  );
+  return { normalized, hits };
+}
+
+export function extractBiomarkersFromText(text: string): Biomarker[] {
+  return deriveComputedMarkers(collectHits(text).hits.map((h) => h.marker));
+}
+
+/**
+ * Per-marker provenance — the honest "why do we believe this?" data.
+ * Report-level source + OCR confidence already live on PdfParseResult;
+ * this is the piece only the parser can produce: the exact row it read and
+ * what it validated. Every field is read off the real match — nothing here
+ * is fabricated, which is the entire point of a trust feature. Derived
+ * markers (ratios) have no source row, so they get no entry.
+ */
+export type MarkerProvenance = {
+  /** The lab-report line the value was read from, verbatim. */
+  originalRow: string;
+  validations: {
+    catalogMatch: boolean;
+    unitConverted: boolean;
+    rangeValidated: boolean;
+  };
+};
+
+/**
+ * Like extractBiomarkersFromText, but also returns a markerId → provenance
+ * map for the directly-extracted markers.
+ */
+export function extractBiomarkersWithProvenance(text: string): {
+  markers: Biomarker[];
+  provenance: Map<string, MarkerProvenance>;
+} {
+  const { normalized, hits } = collectHits(text);
+  const markers = deriveComputedMarkers(hits.map((h) => h.marker));
+  const provenance = new Map<string, MarkerProvenance>();
+  for (const h of hits) {
+    provenance.set(h.marker.id, {
+      originalRow: enclosingLine(normalized, h.start, h.end),
+      validations: {
+        catalogMatch: true,
+        unitConverted: h.marker.originalUnit !== undefined,
+        rangeValidated:
+          h.marker.labRefMin !== undefined && h.marker.labRefMax !== undefined,
+      },
+    });
+  }
+  return { markers, provenance };
+}
+
+/** The full text line containing [start, end), trimmed — more meaningful to
+ *  a reader than the bare matched span. */
+function enclosingLine(text: string, start: number, end: number): string {
+  const from = text.lastIndexOf('\n', start - 1) + 1;
+  let to = text.indexOf('\n', end);
+  if (to === -1) to = text.length;
+  return text.slice(from, to).trim();
 }
 
 /**

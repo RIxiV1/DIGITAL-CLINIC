@@ -21,6 +21,7 @@ import { describe, it, expect } from 'vitest';
 import {
   classifyOutOfScope,
   extractBiomarkersFromText,
+  extractBiomarkersWithProvenance,
   findUnrecognizedRows,
   __testInternals,
 } from './pdfParser';
@@ -1082,6 +1083,60 @@ describe('extractBiomarkersFromText — adversarial fuzz', () => {
     ]) {
       expect(extractBiomarkersFromText(junk)).toHaveLength(0);
     }
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Provenance layer — the honest "why do we believe this?" data.       */
+/* Every field must be read off the real match; nothing fabricated.    */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersWithProvenance', () => {
+  it('returns exactly the same markers as the plain extractor', () => {
+    const text = 'Fasting Glucose 92 70-99 mg/dL\nHemoglobin 14.5 g/dL';
+    const plain = extractBiomarkersFromText(text).map((m) => m.id);
+    const { markers } = extractBiomarkersWithProvenance(text);
+    expect(markers.map((m) => m.id)).toEqual(plain);
+  });
+
+  it('captures the verbatim source row and real validations per marker', () => {
+    const { provenance } = extractBiomarkersWithProvenance(
+      'Fasting Glucose 92 70-99 mg/dL',
+    );
+    const p = provenance.get('glucose');
+    expect(p?.originalRow).toContain('92');
+    expect(p?.originalRow).toContain('70-99');
+    expect(p?.validations.catalogMatch).toBe(true);
+    expect(p?.validations.rangeValidated).toBe(true);
+  });
+
+  it('flags unitConverted only when the printed unit was rescaled', () => {
+    // thou/cumm → /µL is a real rescale; plain mg/dL is not.
+    const rescaled = extractBiomarkersWithProvenance(
+      'Platelet Count 245 150-450 thou/cumm',
+    ).provenance.get('platelets');
+    expect(rescaled?.validations.unitConverted).toBe(true);
+
+    const asIs = extractBiomarkersWithProvenance(
+      'Fasting Glucose 92 70-99 mg/dL',
+    ).provenance.get('glucose');
+    expect(asIs?.validations.unitConverted).toBe(false);
+  });
+
+  it('marks rangeValidated false when no lab range was printed', () => {
+    const p = extractBiomarkersWithProvenance(
+      'Fasting Glucose 92 mg/dL',
+    ).provenance.get('glucose');
+    expect(p?.validations.rangeValidated).toBe(false);
+  });
+
+  it('never fabricates provenance for a rejected value', () => {
+    // negative → rejected up front → no marker, so no provenance entry.
+    const { markers, provenance } = extractBiomarkersWithProvenance(
+      'Creatinine -1.2 mg/dL',
+    );
+    expect(markers.find((m) => m.id === 'creatinine')).toBeUndefined();
+    expect(provenance.has('creatinine')).toBe(false);
   });
 });
 
