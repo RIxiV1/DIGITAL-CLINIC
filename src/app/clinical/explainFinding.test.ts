@@ -79,3 +79,46 @@ describe('explainFinding', () => {
     expect(e?.beats.some((b) => /not a guarantee|snapshot/i.test(b.body))).toBe(true);
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Narrative stability contract:                                        */
+/*   equivalent clinical interpretation → equivalent narrative.         */
+/* The story is status-driven, so nothing below should change a word    */
+/* unless a threshold is actually crossed. These lock the behavioural   */
+/* contract as the narrative code evolves.                              */
+/* ------------------------------------------------------------------ */
+
+describe('explainFinding — narrative stability', () => {
+  it('a value change within the same status band changes nothing', () => {
+    const at = (value: number) =>
+      explainFinding([mk('hdl', 'concern', 'heart', { name: 'HDL', value })], {
+        ...baseQuiz,
+        symptoms: ['low-energy'],
+      });
+    // 55 → 56 stays 'concern'; the narrative must be byte-identical.
+    expect(at(55)).toEqual(at(56));
+  });
+
+  it('reordering the input markers changes nothing (deterministic lead + related)', () => {
+    // ApoB and LDL TIE on status — the classic case where a naive
+    // first-wins reduce would let row order pick the lead.
+    const markers = [
+      mk('ldl', 'concern', 'heart', { name: 'LDL' }),
+      mk('apob', 'concern', 'heart', { name: 'ApoB' }),
+      mk('hdl', 'attention', 'heart', { name: 'HDL' }),
+    ];
+    expect(explainFinding([...markers].reverse(), baseQuiz)).toEqual(
+      explainFinding(markers, baseQuiz),
+    );
+  });
+
+  it('adding an unrelated, normal biomarker changes nothing', () => {
+    const core = [
+      mk('testosterone', 'concern', 'hormones', { name: 'Total Testosterone' }),
+    ];
+    const withExtra = [...core, mk('ldl', 'good', 'heart', { name: 'LDL' })];
+    expect(explainFinding(withExtra, baseQuiz)).toEqual(
+      explainFinding(core, baseQuiz),
+    );
+  });
+});

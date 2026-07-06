@@ -1217,8 +1217,15 @@ function extractMarkerValue(
     // the catalog's canonical units.
     const labRefMinNum = labRefMinStr ? parseFloat(labRefMinStr) : NaN;
     const labRefMaxNum = labRefMaxStr ? parseFloat(labRefMaxStr) : NaN;
+    // A printed range is only usable if min < max. A swapped or degenerate
+    // range ("99 - 70", or a mis-parse that inverts the bounds) is garbage —
+    // and because the lab range DRIVES status downstream, trusting it would
+    // classify a value as simultaneously below-min and above-max. Discard it
+    // and fall back to the catalog's canonical band instead.
     const labRef =
-      Number.isFinite(labRefMinNum) && Number.isFinite(labRefMaxNum)
+      Number.isFinite(labRefMinNum) &&
+      Number.isFinite(labRefMaxNum) &&
+      labRefMinNum < labRefMaxNum
         ? {
             min:
               scale !== 1

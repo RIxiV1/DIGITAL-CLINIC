@@ -69,11 +69,16 @@ export function explainFinding(
   };
   const flagged = markers.filter((m) => m.status !== 'good');
   const lead = flagged.length
-    ? flagged.reduce((worst, m) =>
-        (STATUS_RANK[m.status] ?? 0) > (STATUS_RANK[worst.status] ?? 0)
-          ? m
-          : worst,
-      )
+    ? flagged.reduce((worst, m) => {
+        const rw = STATUS_RANK[worst.status] ?? 0;
+        const rm = STATUS_RANK[m.status] ?? 0;
+        if (rm > rw) return m;
+        // Deterministic tiebreak by id: two equally-severe findings must
+        // not let input row-order decide the lead — equivalent reports
+        // owe the reader an equivalent narrative.
+        if (rm === rw && m.id < worst.id) return m;
+        return worst;
+      })
     : null;
 
   // ── All clear ──────────────────────────────────────────────────────
@@ -97,12 +102,16 @@ export function explainFinding(
   const leadSystem = systems.find((s) => s.categories.includes(lead.category));
   // Honest "related" = other flagged/attention findings in the SAME system —
   // they genuinely co-occur. Never a cross-organ causal claim.
-  const related = markers.filter(
-    (m) =>
-      m.id !== lead.id &&
-      m.status !== 'good' &&
-      !!leadSystem?.categories.includes(m.category),
-  );
+  const related = markers
+    .filter(
+      (m) =>
+        m.id !== lead.id &&
+        m.status !== 'good' &&
+        !!leadSystem?.categories.includes(m.category),
+    )
+    // Stable, input-order-independent ordering so the "one story" sentence
+    // reads identically no matter how the parser emitted the rows.
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 
   // Q1 — from what THEY told us; general (never invented) when we have none.
   const reported = (quiz.symptoms ?? [])
