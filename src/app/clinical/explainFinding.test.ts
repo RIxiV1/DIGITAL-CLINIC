@@ -51,6 +51,31 @@ describe('explainFinding', () => {
     expect(e?.beats[0].body).toMatch(/often felt/i);
   });
 
+  it('renders every reported symptom as its human phrase in Q1', () => {
+    // User-facing health copy — an empty or wrong phrase is a real UX bug,
+    // so assert the whole id → phrase mapping (also kills the display-string
+    // mutants mutation testing surfaced).
+    const cases: ReadonlyArray<[string, string]> = [
+      ['low-energy', 'low energy'],
+      ['brain-fog', 'brain fog'],
+      ['poor-sleep', 'poor sleep'],
+      ['low-libido', 'low sex drive'],
+      ['difficulty-in-bed', 'difficulty in bed'],
+      ['fertility-concerns', 'fertility worries'],
+      ['hair-loss', 'hair loss'],
+      ['belly-fat', 'stubborn belly fat'],
+      ['low-mood', 'low mood'],
+      ['stress', 'stress'],
+    ];
+    for (const [id, phrase] of cases) {
+      const e = explainFinding([mk('testosterone', 'concern', 'hormones')], {
+        ...baseQuiz,
+        symptoms: [id],
+      });
+      expect(e?.beats[0].body, `symptom "${id}"`).toContain(phrase);
+    }
+  });
+
   it('weaves same-system related findings as "one story", not separate problems', () => {
     const e = explainFinding(
       [
