@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ChevronDown, ChevronRight, Download, Info } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -23,7 +23,6 @@ import {
   type BodySystemId,
 } from '../clinical';
 import ConnectedSystems from '../components/ConnectedSystems';
-import HealthMapMorph from '../components/HealthMapMorph';
 import FindingExplanation from '../components/FindingExplanation';
 import MarkerSheet from '../components/MarkerSheet';
 import ReportAboutPanel from '../components/ReportAboutPanel';
@@ -97,13 +96,6 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     () => healthStorySentence(bodySystems),
     [bodySystems],
   );
-  // Gate the inline morph so it plays as a title sequence when the
-  // Connected Systems section scrolls into view — once.
-  const morphRef = useRef<HTMLDivElement>(null);
-  const morphInView = useInView(morphRef, { once: true, amount: 0.4 });
-  // Once the morph finishes it's replaced by the real map — so there's
-  // only ever ONE Health Map on the page, never the morph AND the map.
-  const [morphDone, setMorphDone] = useState(false);
   // The core experience: the four-question, person-first explanation.
   const explanation = useMemo(
     () => explainFinding(biomarkers, quiz),
@@ -407,34 +399,18 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           on the report first.) */}
       {biomarkers.length > 0 && (
         <Container size="wide" className="mt-12 md:mt-20">
-          {/* Signature morph → map. ONE map at a time: the compact morph
-              plays as a title sequence when the section scrolls into view,
-              then SWAPS to the real Connected Systems map on completion —
-              it's a transition INTO the map, not a second map stacked
-              above it. The placeholder reserves height so the swap doesn't
-              jump the page. Under reduced-motion the morph mounts, fires
-              onComplete immediately, and the real map shows at once. */}
-          <div ref={morphRef}>
-            {morphDone ? (
-              <ConnectedSystems
-                systems={bodySystems}
-                headline={storyHeadline}
-                story={systemStory}
-                onSelectSystem={handleSelectSystem}
-              />
-            ) : (
-              <div className="min-h-[240px] grid place-items-center">
-                {morphInView && (
-                  <HealthMapMorph
-                    systems={bodySystems}
-                    variant="inline"
-                    onComplete={() => setMorphDone(true)}
-                    className="w-full max-w-sm"
-                  />
-                )}
-              </div>
-            )}
-          </div>
+          {/* The real, interactive Connected Systems map. The signature
+              report→map MORPH deliberately lives ONLY on the Health Map
+              page arrival (first-visit cinematic) — replaying it mid-scroll
+              here gated the content the user was scrolling toward and
+              diluted the signature. The earned interaction on the report is
+              tap-a-node → scroll + glow, not an entrance animation. */}
+          <ConnectedSystems
+            systems={bodySystems}
+            headline={storyHeadline}
+            story={systemStory}
+            onSelectSystem={handleSelectSystem}
+          />
         </Container>
       )}
 
