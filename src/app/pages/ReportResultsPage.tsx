@@ -101,6 +101,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   // Connected Systems section scrolls into view — once.
   const morphRef = useRef<HTMLDivElement>(null);
   const morphInView = useInView(morphRef, { once: true, amount: 0.4 });
+  // Once the morph finishes it's replaced by the real map — so there's
+  // only ever ONE Health Map on the page, never the morph AND the map.
+  const [morphDone, setMorphDone] = useState(false);
   // The core experience: the four-question, person-first explanation.
   const explanation = useMemo(
     () => explainFinding(biomarkers, quiz),
@@ -404,28 +407,34 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           on the report first.) */}
       {biomarkers.length > 0 && (
         <Container size="wide" className="mt-12 md:mt-20">
-          {/* Signature morph — the same report the user has been reading
-              folds away and their real systems rise out of it, leading
-              into the Connected Systems map below. Compact 'inline'
-              variant; mounts (and so plays) only once it scrolls into
-              view, so it's a title sequence for the section, not a
-              page-load flourish. Skipped entirely under reduced-motion
-              (the map is always rendered just below regardless). */}
-          <div ref={morphRef} className="min-h-[220px] grid place-items-center">
-            {morphInView && (
-              <HealthMapMorph
+          {/* Signature morph → map. ONE map at a time: the compact morph
+              plays as a title sequence when the section scrolls into view,
+              then SWAPS to the real Connected Systems map on completion —
+              it's a transition INTO the map, not a second map stacked
+              above it. The placeholder reserves height so the swap doesn't
+              jump the page. Under reduced-motion the morph mounts, fires
+              onComplete immediately, and the real map shows at once. */}
+          <div ref={morphRef}>
+            {morphDone ? (
+              <ConnectedSystems
                 systems={bodySystems}
-                variant="inline"
-                className="w-full max-w-sm"
+                headline={storyHeadline}
+                story={systemStory}
+                onSelectSystem={handleSelectSystem}
               />
+            ) : (
+              <div className="min-h-[240px] grid place-items-center">
+                {morphInView && (
+                  <HealthMapMorph
+                    systems={bodySystems}
+                    variant="inline"
+                    onComplete={() => setMorphDone(true)}
+                    className="w-full max-w-sm"
+                  />
+                )}
+              </div>
             )}
           </div>
-          <ConnectedSystems
-            systems={bodySystems}
-            headline={storyHeadline}
-            story={systemStory}
-            onSelectSystem={handleSelectSystem}
-          />
         </Container>
       )}
 
