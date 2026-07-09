@@ -157,9 +157,23 @@ export default function ConfirmExtractedValuesView({
             <Check size={11} strokeWidth={3} /> Extraction complete
           </Pill>
           <h1 className="font-display text-display-md lg:text-display-lg leading-[1.05] mt-3 text-balance text-ink">
-            We found{' '}
-            <span className="text-indigo-700">{biomarkers.length}</span>{' '}
-            {biomarkers.length === 1 ? 'value' : 'values'} in your report.
+            {unrecognizedRows && unrecognizedRows.length > 0 ? (
+              <>
+                We read{' '}
+                <span className="text-indigo-700">
+                  {biomarkers.length + unrecognizedRows.length}
+                </span>{' '}
+                results — and interpret{' '}
+                <span className="text-indigo-700">{biomarkers.length}</span> of
+                them.
+              </>
+            ) : (
+              <>
+                We found{' '}
+                <span className="text-indigo-700">{biomarkers.length}</span>{' '}
+                {biomarkers.length === 1 ? 'value' : 'values'} in your report.
+              </>
+            )}
           </h1>
           <p className="mt-3 text-body-sm lg:text-body text-ink-soft text-pretty max-w-xl">
             Check each number against your report — and tap any value to fix it
@@ -239,9 +253,14 @@ export default function ConfirmExtractedValuesView({
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="font-display text-body-sm leading-tight">
-                    {counts.critical === 1
-                      ? 'One reading is in same-day-attention range'
-                      : `${counts.critical} readings are in same-day-attention range`}
+                    {(() => {
+                      const names = biomarkers
+                        .filter((m) => m.status === 'critical')
+                        .map((m) => m.name);
+                      return names.length === 1
+                        ? `One reading needs same-day attention: ${names[0]}`
+                        : `${names.length} readings need same-day attention: ${names.join(', ')}`;
+                    })()}
                   </div>
                   <p className="mt-1 text-caption text-white/85 leading-relaxed">
                     These values are far enough outside the healthy range that
