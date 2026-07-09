@@ -169,9 +169,10 @@ export default function ConfirmExtractedValuesView({
               </>
             ) : (
               <>
-                We found{' '}
+                We interpreted{' '}
                 <span className="text-indigo-700">{biomarkers.length}</span>{' '}
-                {biomarkers.length === 1 ? 'value' : 'values'} in your report.
+                {biomarkers.length === 1 ? 'result' : 'results'} from your
+                report.
               </>
             )}
           </h1>
@@ -474,18 +475,19 @@ export default function ConfirmExtractedValuesView({
               about the marker grid above; the rows we couldn't map are
               informational (the difference between "your parser missed
               things" and "your lab uses markers we don't cover yet").
-              Wrapped in `<details>` so the row list is collapsed by
-              default — the header still shows the count, the body
-              expands on intent. Mirrors the raw-text disclosure below. */}
+              Open by DEFAULT: seeing that the parser read these too (it
+              didn't miss them) is what builds trust — a user who reads
+              "interpreted 7" needs to see the parser recognised the rest.
+              Mirrors the raw-text disclosure below. */}
           {unrecognizedRows && unrecognizedRows.length > 0 && (
             <Card padded={false} className="overflow-hidden border-amber-200/70">
-              <details className="group">
+              <details className="group" open>
                 <summary className="cursor-pointer list-none px-5 pt-4 pb-3 bg-amber-50/40 flex items-center gap-2 hover:bg-amber-50/60 transition-colors">
                   <span aria-hidden role="img" className="text-body leading-none">
-                    🔍
+                    ✓
                   </span>
                   <div className="font-display text-body-sm leading-tight">
-                    We saw these rows but couldn’t map them
+                    We also read these results
                   </div>
                   <Pill tone="neutral" size="sm" className="ml-auto">
                     {unrecognizedRows.length}
@@ -498,10 +500,10 @@ export default function ConfirmExtractedValuesView({
                 </summary>
                 <div className="px-5 py-3 border-t border-amber-100">
                   <p className="text-caption text-ink-soft leading-relaxed mb-2">
-                    Your report mentioned these values, but they aren’t in our
-                    catalog yet. Nothing was discarded — they just won’t appear
-                    in the dashboard. If any of these look important to you, let
-                    us know and we’ll add them.
+                    Your report mentioned these too — the parser read them, we
+                    just don’t interpret them clinically yet, so they won’t
+                    appear in your dashboard. Nothing was missed. If any look
+                    important to you, let us know and we’ll add them.
                   </p>
                   <ul className="text-caption font-mono text-ink-soft space-y-1">
                     {unrecognizedRows.map((row, i) => (

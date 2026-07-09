@@ -1,13 +1,10 @@
 import { useState } from 'react';
-import {
-  AlertTriangle,
-  ChevronDown,
-  Pencil,
-  RotateCcw,
-  Sparkles,
-} from 'lucide-react';
+import { ChevronDown, Pencil, RotateCcw, Sparkles } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
+import ClinicalSpot, {
+  type ClinicalSpotName,
+} from '../../components/ClinicalSpot';
 import Container from '../../components/Container';
 import Logo from '../../components/Logo';
 import type { FailureState } from './types';
@@ -66,14 +63,21 @@ export default function ParseFailedView({
   //   is just outside what the product supports.
   // - no-matches: catch-all for "we read it but found nothing useful"
   //   when the out-of-scope classifier isn't confident.
-  const copy = (() => {
+  const copy: {
+    kicker: string;
+    title: string;
+    detail: string;
+    spot: ClinicalSpotName;
+  } = (() => {
     switch (failure.reason) {
       case 'parser-error':
         return {
+          kicker: 'Nothing was lost',
           title: 'We couldn’t open this file.',
           detail:
             failure.errorMessage ??
-            'The file may be corrupted, password-protected, or in an unexpected format.',
+            'The file may be corrupted, password-protected, or in an unexpected format. Your report is safe on your device — nothing was sent anywhere.',
+          spot: 'damaged',
         };
       case 'no-file':
         // "no-file" can mean the upload was genuinely empty (refresh mid-
@@ -81,24 +85,30 @@ export default function ParseFailedView({
         // readable results — so we can't assume "re-upload fixes it". Be
         // honest about both, and say plainly what we DON'T read.
         return {
+          kicker: 'Let’s try that again',
           title: 'We couldn’t read any results from this.',
           detail:
             'Two things cause this: the upload didn’t finish, or the file isn’t a blood test with values. We read lab results — a marker, a number and a unit, like “Testosterone 280 ng/dL”. Screening checklists, appointment schedules, and imaging aren’t something we parse. Try uploading again, or a different file.',
+          spot: 'blank',
         };
       case 'out-of-scope':
         // Exact string. Keep it intact — backend / analytics / future
         // automated handlers should be able to string-match on it.
         return {
+          kicker: 'A different kind of report',
           title: 'This report is outside what we cover.',
           detail:
             'Error: The uploaded document contains testing (e.g., infectious disease panels or localized physical exams) that is not related to general metabolic biomarkers or the HPA axis ecosystem. We cannot analyze this report.',
+          spot: 'off-scope',
         };
       case 'no-matches':
       default:
         return {
+          kicker: 'We read every line',
           title: 'We read the file, but didn’t recognise any lab values.',
           detail:
             'Either the report’s layout is outside what our parser supports yet, or the file is something other than a lab report. We deliberately don’t make up values to fill in — you’d see numbers that weren’t in your report.',
+          spot: 'searching',
         };
     }
   })();
@@ -114,59 +124,59 @@ export default function ParseFailedView({
         className="flex-1 flex flex-col items-center justify-center pb-16"
       >
         <Card padded={false} className="w-full overflow-hidden">
+          {/* Calm, illustrated error head. The spot illustration reads
+              the state BEFORE the headline does; the tint is warm paper,
+              not alarm-red, because most failures here are "this file
+              isn't a lab report" — not an emergency. The reassuring
+              kicker ("Nothing was lost") lands first. role=alert +
+              aria-live=polite keeps it announced without shouting. */}
           <div
             role="alert"
-            aria-live="assertive"
-            className="p-6 border-b border-concern/20 bg-concern-soft/60"
+            aria-live="polite"
+            className="px-6 pt-8 pb-6 sm:px-8 border-b border-line/70 bg-canvas/40 flex flex-col items-center text-center"
           >
-            <div className="flex items-start gap-3">
-              <div className="grid place-items-center w-11 h-11 rounded-2xl bg-concern/15 text-concern shrink-0">
-                <AlertTriangle size={20} />
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-micro font-bold uppercase tracking-eyebrow text-concern">
-                  Parsing failed
-                </div>
-                <h1 className="font-display text-display-md leading-tight text-ink mt-1">
-                  {copy.title}
-                </h1>
-                <p className="mt-2 text-caption leading-relaxed text-ink-soft">
-                  {copy.detail}
-                </p>
-                <div className="mt-3 rounded-[10px] bg-surface border border-line/70 px-3 py-2 text-caption text-muted break-all">
-                  <span className="font-bold uppercase tracking-label text-micro text-muted block mb-0.5">
-                    File
-                  </span>
-                  {failure.fileName}
-                </div>
-                {/* OCR partial-failure callout. Without this, a user
-                    whose 3-page PDF had 2 pages time out reads "we
-                    didn't recognise any lab values" and blames their
-                    report — when actually the parser only saw 1/3 of
-                    it. Calling it out turns blame into "try again /
-                    upload pages individually". */}
-                {failure.ocrPagesAttempted &&
-                  failure.ocrPagesSkipped !== undefined &&
-                  failure.ocrPagesSkipped > 0 && (
-                    <div className="mt-3 rounded-[10px] bg-attention-soft/60 border border-attention/30 px-3 py-2 text-caption text-ink-soft">
-                      <span className="font-bold uppercase tracking-label text-micro text-attention block mb-0.5">
-                        Partial OCR
-                      </span>
-                      {failure.ocrPagesSkipped} of {failure.ocrPagesAttempted}{' '}
-                      page{failure.ocrPagesAttempted === 1 ? '' : 's'} timed out
-                      before we could read{' '}
-                      {failure.ocrPagesAttempted === 1 ? 'it' : 'them'}. The
-                      remaining page
-                      {failure.ocrPagesAttempted - failure.ocrPagesSkipped === 1
-                        ? ''
-                        : 's'}{' '}
-                      may not have had the values you were expecting. Retrying —
-                      or cropping the relevant section into a clearer photo —
-                      usually helps.
-                    </div>
-                  )}
-              </div>
+            <ClinicalSpot name={copy.spot} size={120} className="mb-4" />
+            <div className="text-micro font-bold uppercase tracking-eyebrow text-gold-700">
+              {copy.kicker}
             </div>
+            <h1 className="font-display text-display-md leading-tight text-ink mt-2 text-balance">
+              {copy.title}
+            </h1>
+            <p className="mt-2 text-caption leading-relaxed text-ink-soft max-w-md">
+              {copy.detail}
+            </p>
+            <div className="mt-4 inline-block text-left rounded-[10px] bg-surface border border-line/70 px-3 py-2 text-caption text-muted break-all max-w-full">
+              <span className="font-bold uppercase tracking-label text-micro text-muted block mb-0.5">
+                File
+              </span>
+              {failure.fileName}
+            </div>
+            {/* OCR partial-failure callout. Without this, a user
+                whose 3-page PDF had 2 pages time out reads "we
+                didn't recognise any lab values" and blames their
+                report — when actually the parser only saw 1/3 of
+                it. Calling it out turns blame into "try again /
+                upload pages individually". */}
+            {failure.ocrPagesAttempted &&
+              failure.ocrPagesSkipped !== undefined &&
+              failure.ocrPagesSkipped > 0 && (
+                <div className="mt-3 text-left rounded-[10px] bg-attention-soft/60 border border-attention/30 px-3 py-2 text-caption text-ink-soft max-w-md">
+                  <span className="font-bold uppercase tracking-label text-micro text-attention block mb-0.5">
+                    Partial read
+                  </span>
+                  {failure.ocrPagesSkipped} of {failure.ocrPagesAttempted}{' '}
+                  page{failure.ocrPagesAttempted === 1 ? '' : 's'} timed out
+                  before we could read{' '}
+                  {failure.ocrPagesAttempted === 1 ? 'it' : 'them'}. The
+                  remaining page
+                  {failure.ocrPagesAttempted - failure.ocrPagesSkipped === 1
+                    ? ''
+                    : 's'}{' '}
+                  may not have had the values you were expecting. Retrying —
+                  or cropping the relevant section into a clearer photo —
+                  usually helps.
+                </div>
+              )}
           </div>
 
           <div className="p-5 grid gap-2.5">

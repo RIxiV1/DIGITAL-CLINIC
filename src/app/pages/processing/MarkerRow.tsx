@@ -79,7 +79,7 @@ export default function MarkerRow({
             {marker.name}
           </div>
           <div className="text-caption text-muted mt-0.5">
-            Reference {marker.min}–{marker.max}
+            Normal {marker.min}–{marker.max}
             {marker.unit ? ` ${marker.unit}` : ''}
           </div>
           {/* Mini range bar — three-zone gradient with a pin showing
