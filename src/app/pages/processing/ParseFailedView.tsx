@@ -76,10 +76,14 @@ export default function ParseFailedView({
             'The file may be corrupted, password-protected, or in an unexpected format.',
         };
       case 'no-file':
+        // "no-file" can mean the upload was genuinely empty (refresh mid-
+        // flow) OR the file's bytes were lost after a document that had no
+        // readable results — so we can't assume "re-upload fixes it". Be
+        // honest about both, and say plainly what we DON'T read.
         return {
-          title: 'There was nothing to parse.',
+          title: 'We couldn’t read any results from this.',
           detail:
-            'It looks like the upload didn’t carry through — try uploading the file again from the Upload page.',
+            'Two things cause this: the upload didn’t finish, or the file isn’t a blood test with values. We read lab results — a marker, a number and a unit, like “Testosterone 280 ng/dL”. Screening checklists, appointment schedules, and imaging aren’t something we parse. Try uploading again, or a different file.',
         };
       case 'out-of-scope':
         // Exact string. Keep it intact — backend / analytics / future
