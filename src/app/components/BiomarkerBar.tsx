@@ -390,8 +390,16 @@ export default function BiomarkerBar({
         aria-valuenow={marker.value}
         aria-valuetext={`${marker.value} ${marker.unit} — ${tier.label}`}
       >
+        {/* On a HEALTHY marker the red/amber alarm zones recede to 60%
+            so the eye isn't taxed by a full-strength three-zone gradient
+            fifteen times over — the flagged bars keep full contrast and
+            carry the weight. The value pin + boundary ticks (siblings,
+            not children) stay crisp, so the reading is never dimmed.
+            Hierarchy AND less anxiety on the markers that are fine. */}
         <div
-          className="h-2.5 w-full rounded-full overflow-hidden relative"
+          className={`h-2.5 w-full rounded-full overflow-hidden relative ${
+            marker.status === 'good' ? 'opacity-60' : ''
+          }`}
           style={{ background: zoneGradient }}
           aria-hidden
         >
