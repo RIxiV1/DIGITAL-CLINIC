@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Check, ChevronRight, TrendingDown, TrendingUp, Upload } from 'lucide-react';
 import Button from '../components/Button';
 import Container from '../components/Container';
@@ -19,6 +19,10 @@ import {
   getPrimaryReport,
   getSampleReportForDashboard,
 } from '../data/reports';
+import { buildBodySystems } from '../clinical/bodySystems';
+import HealthMapMorph from '../components/HealthMapMorph';
+
+const HEALTHMAP_INTRO_SEEN = 'fm_healthmap_intro_seen';
 
 /**
  * Health Map — the single, calm "whole body at a glance" overview, built
@@ -177,6 +181,30 @@ export default function HealthMapPage() {
   // Encouraging-but-honest headline keyed off the worst status AND count.
   const headline = healthMapHeadline(summary);
 
+  // The real five systems, for the signature morph intro.
+  const bodySystems = useMemo(() => buildBodySystems(biomarkers), [biomarkers]);
+  // Cinematic intro: plays the report→map morph the FIRST time a user
+  // opens this page with a real report, then never again (localStorage).
+  // Skipped under reduced-motion so we don't flash an overlay that
+  // instantly dismisses.
+  const [showIntro, setShowIntro] = useState(() => {
+    try {
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)
+        return false;
+      return localStorage.getItem(HEALTHMAP_INTRO_SEEN) !== '1';
+    } catch {
+      return false;
+    }
+  });
+  const dismissIntro = () => {
+    setShowIntro(false);
+    try {
+      localStorage.setItem(HEALTHMAP_INTRO_SEEN, '1');
+    } catch {
+      /* private mode / storage disabled — just don't persist */
+    }
+  };
+
   /* ---- Empty state: no parsed report yet. ---- */
   if (!ready || biomarkers.length === 0) {
     // Empty state as a calm readiness checklist, NOT a cartoon: a firm
@@ -262,6 +290,28 @@ export default function HealthMapPage() {
 
   return (
     <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
+      {/* Signature first-visit intro: the report the user just read folds
+          away and their real systems rise into the map. Full-bleed over
+          the page for the ~4s sequence, then dismisses (persisted). Tap
+          anywhere to skip. */}
+      {showIntro && bodySystems.length > 0 && (
+        <div
+          className="fixed inset-0 z-50 bg-canvas grid place-items-center px-6 cursor-pointer"
+          onClick={dismissIntro}
+          role="presentation"
+        >
+          <HealthMapMorph
+            systems={bodySystems}
+            variant="cinematic"
+            onComplete={dismissIntro}
+            className="w-full max-w-md"
+          />
+          <span className="fixed bottom-8 left-0 right-0 text-center text-caption uppercase tracking-label font-bold text-muted">
+            Tap to skip
+          </span>
+        </div>
+      )}
+
       <Header variant="page" title="Health Map" />
 
       {/* HERO — the score you come back to grow, plus movement since last

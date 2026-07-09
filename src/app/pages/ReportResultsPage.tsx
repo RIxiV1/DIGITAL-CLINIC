@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, useInView } from 'framer-motion';
 import { ChevronDown, ChevronRight, Download, Info } from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
@@ -23,6 +23,7 @@ import {
   type BodySystemId,
 } from '../clinical';
 import ConnectedSystems from '../components/ConnectedSystems';
+import HealthMapMorph from '../components/HealthMapMorph';
 import FindingExplanation from '../components/FindingExplanation';
 import MarkerSheet from '../components/MarkerSheet';
 import ReportAboutPanel from '../components/ReportAboutPanel';
@@ -96,6 +97,10 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     () => healthStorySentence(bodySystems),
     [bodySystems],
   );
+  // Gate the inline morph so it plays as a title sequence when the
+  // Connected Systems section scrolls into view — once.
+  const morphRef = useRef<HTMLDivElement>(null);
+  const morphInView = useInView(morphRef, { once: true, amount: 0.4 });
   // The core experience: the four-question, person-first explanation.
   const explanation = useMemo(
     () => explainFinding(biomarkers, quiz),
@@ -390,6 +395,22 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           on the report first.) */}
       {biomarkers.length > 0 && (
         <Container size="wide" className="mt-12 md:mt-20">
+          {/* Signature morph — the same report the user has been reading
+              folds away and their real systems rise out of it, leading
+              into the Connected Systems map below. Compact 'inline'
+              variant; mounts (and so plays) only once it scrolls into
+              view, so it's a title sequence for the section, not a
+              page-load flourish. Skipped entirely under reduced-motion
+              (the map is always rendered just below regardless). */}
+          <div ref={morphRef} className="min-h-[220px] grid place-items-center">
+            {morphInView && (
+              <HealthMapMorph
+                systems={bodySystems}
+                variant="inline"
+                className="w-full max-w-sm"
+              />
+            )}
+          </div>
           <ConnectedSystems
             systems={bodySystems}
             headline={storyHeadline}
