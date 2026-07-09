@@ -440,15 +440,50 @@ export async function parseWithAi(
     throw new AiParseError('AI parser cancelled', undefined);
   }
 
-  const response = await fetch('/api/parse-image', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      imageBase64: base64,
-      mimeType: scaled.type || 'image/jpeg',
-    }),
-    signal,
-  });
+  // Deadline guard. Without this a missing or unresponsive endpoint
+  // leaves the "Trying AI parser…" screen spinning forever — most
+  // visibly on a local `vite dev` build, where `/api/parse-image` (a
+  // deployed serverless function) has no handler and the POST never
+  // resolves. We abort our OWN controller on timeout (never the
+  // caller's), so the cascade doesn't mislabel a timeout as a user
+  // cancel. Gemini cold-starts occasionally take ~15s, so the ceiling
+  // is generous.
+  const TIMEOUT_MS = 45_000;
+  const controller = new AbortController();
+  let timedOut = false;
+  const forwardAbort = () => controller.abort();
+  if (signal) signal.addEventListener('abort', forwardAbort, { once: true });
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, TIMEOUT_MS);
+
+  let response: Response;
+  try {
+    response = await fetch('/api/parse-image', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        imageBase64: base64,
+        mimeType: scaled.type || 'image/jpeg',
+      }),
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (timedOut) {
+      throw new AiParseError(
+        'The AI reader didn’t respond in time. It runs on our server, so it isn’t available on a local build — enter values manually or try a different file.',
+      );
+    }
+    if (signal?.aborted) throw new AiParseError('AI parser cancelled');
+    // Genuine network failure (offline, connection refused, DNS).
+    throw new AiParseError(
+      'Couldn’t reach the AI reader. Check your connection, or enter values manually.',
+    );
+  } finally {
+    clearTimeout(timer);
+    if (signal) signal.removeEventListener('abort', forwardAbort);
+  }
 
   if (!response.ok) {
     const errBody = await response.text().catch(() => '');
@@ -473,7 +508,18 @@ export async function parseWithAi(
     throw new AiParseError(message, response.status);
   }
 
-  const body = (await response.json()) as ParseImageResponseShape;
+  // A 200 that isn't JSON means we hit something other than the real
+  // endpoint — most commonly a dev server answering `/api/*` with the
+  // SPA's index.html. Turn the cryptic "Unexpected token '<'" into a
+  // message that points at the actual cause.
+  let body: ParseImageResponseShape;
+  try {
+    body = (await response.json()) as ParseImageResponseShape;
+  } catch {
+    throw new AiParseError(
+      'The AI reader isn’t available here (the server returned a page, not data). This step needs the deployed build — enter values manually or try a different file.',
+    );
+  }
   if (!body || !Array.isArray(body.biomarkers)) {
     throw new AiParseError('AI parser returned an unexpected shape');
   }
