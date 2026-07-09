@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import Card from '../components/Card';
+import ClinicalSpot from '../components/ClinicalSpot';
 import Container from '../components/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
@@ -558,9 +559,12 @@ export default function HomePage() {
           mirrors what the user sees in each state. */}
       {!ready && reports.every((r) => r.status !== 'ready') && (
         <Container size="wide" className="mt-6 md:mt-8">
-          {/* Typographic empty state — no stock cartoon. The oversized
-              editorial serif carries the moment; structure + type do the
-              work an illustration used to. */}
+          {/* The empty archive as the protagonist folder — the same
+              paper vocabulary as every other state, waiting for its
+              first report. NOT a stock cartoon (the reason type carried
+              this moment before): it's the product's own object, small,
+              with the editorial serif still the anchor below it. */}
+          <ClinicalSpot name="empty-tray" size={104} className="mb-5" />
           <div className="text-micro uppercase tracking-[0.2em] font-semibold text-muted">
             What you’ll see
           </div>

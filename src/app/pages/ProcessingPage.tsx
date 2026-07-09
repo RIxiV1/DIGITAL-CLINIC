@@ -23,6 +23,7 @@ import { sanitizeFilename } from '../utils/sanitizeFilename';
 // Extracted view components + shared state shapes. This page used to be a
 // ~2,000-line monolith; the views now live in ./processing/*.
 import type { ConfirmState, FailureState } from './processing/types';
+import ClinicalSpot from '../components/ClinicalSpot';
 import { useTypewriter } from './processing/useTypewriter';
 import AiCascadeView from './processing/AiCascadeView';
 import ParseFailedView from './processing/ParseFailedView';
@@ -623,34 +624,13 @@ export default function ProcessingPage() {
         size="narrow"
         className="flex-1 flex flex-col items-center justify-center text-center pb-16"
       >
-        {/* Pipeline manifest — replaces the floating stock illustration
-            (and its blur-glow, itself a generated-app tell). A dense mono
-            read-out of WHERE the parse runs; the live step list + progress
-            strip carry the motion below. */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="w-full max-w-sm"
-        >
-          <div className="text-micro uppercase tracking-widest font-bold text-muted mb-2 font-mono">
-            pipeline
-          </div>
-          <dl className="font-mono text-caption border border-line rounded-md divide-y divide-line text-left">
-            {[
-              ['engine', 'pdf.js · tesseract'],
-              ['location', 'on-device'],
-              ['network', 'none'],
-            ].map(([k, v]) => (
-              <div key={k} className="flex justify-between gap-3 px-3 py-1.5">
-                <dt className="text-muted lowercase tracking-wide">{k}</dt>
-                <dd className="text-ink-soft lowercase tracking-wide">{v}</dd>
-              </div>
-            ))}
-          </dl>
-        </motion.div>
+        {/* The protagonist: the same sheet of paper the user just
+            uploaded, now under the scanner. It leads the screen so the
+            person SEES what's happening before reading it — and it's the
+            same object they'll follow into confirm, report, Health Map. */}
+        <ClinicalSpot name="scanning" size={132} className="mb-1" />
 
-        <h1 className="font-display text-display-md leading-tight mt-7 text-balance max-w-[22rem]">
+        <h1 className="font-display text-display-md leading-tight mt-6 text-balance max-w-[22rem]">
           Reading your report carefully.
         </h1>
         <p
@@ -664,6 +644,30 @@ export default function ProcessingPage() {
             <span className="inline-block w-[1px] h-[1em] -mb-[0.1em] ml-0.5 bg-clay motion-safe:animate-pulse" />
           )}
         </p>
+
+        {/* On-device manifest — the "how", kept as a quiet trust detail
+            below the narration (was the hero before the scanner spot).
+            engine / on-device / network:none is the answer to "why not
+            just use ChatGPT?". */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+          className="w-full max-w-sm mt-6"
+        >
+          <dl className="font-mono text-caption border border-line rounded-md divide-y divide-line text-left">
+            {[
+              ['engine', 'pdf.js · tesseract'],
+              ['location', 'on-device'],
+              ['network', 'none'],
+            ].map(([k, v]) => (
+              <div key={k} className="flex justify-between gap-3 px-3 py-1.5">
+                <dt className="text-muted lowercase tracking-wide">{k}</dt>
+                <dd className="text-ink-soft lowercase tracking-wide">{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </motion.div>
 
         {/* Overall progress strip */}
         <div className="mt-7 w-full max-w-sm">
