@@ -448,7 +448,14 @@ export async function parseWithAi(
   // caller's), so the cascade doesn't mislabel a timeout as a user
   // cancel. Gemini cold-starts occasionally take ~15s, so the ceiling
   // is generous.
-  const TIMEOUT_MS = 45_000;
+  // On a local build `/api/parse-image` usually has no handler (plain
+  // `vite dev`), so the POST hangs — fail fast (8s) instead of making the
+  // developer wait the full production ceiling. `vercel dev` answers well
+  // within 8s, so it still works there.
+  const isLocalDev =
+    typeof window !== 'undefined' &&
+    /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
+  const TIMEOUT_MS = isLocalDev ? 8_000 : 45_000;
   const controller = new AbortController();
   let timedOut = false;
   const forwardAbort = () => controller.abort();
@@ -472,7 +479,9 @@ export async function parseWithAi(
   } catch (err) {
     if (timedOut) {
       throw new AiParseError(
-        'The AI reader didn’t respond in time. It runs on our server, so it isn’t available on a local build — enter values manually or try a different file.',
+        isLocalDev
+          ? 'The AI reader isn’t available on a local build (no server running). Enter values manually or try a different file.'
+          : 'The AI reader took too long to respond. Try again, or enter values manually.',
       );
     }
     if (signal?.aborted) throw new AiParseError('AI parser cancelled');

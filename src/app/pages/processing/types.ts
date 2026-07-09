@@ -8,7 +8,12 @@ import type { Biomarker } from '../../data/biomarkers';
  */
 
 export type FailureState = {
-  reason: NonNullable<ParsedReport['failureReason']>;
+  /** The parser's own reasons, plus one UI-level reason the parser never
+   *  emits: 'not-lab-content' — the image OCR'd readable text but it had
+   *  no numbers, so it can't be a lab report (a name, a screenshot, a
+   *  selfie). Detected in ProcessingPage, not the parser, so it lives
+   *  here rather than in ParsedReport['failureReason']. */
+  reason: NonNullable<ParsedReport['failureReason']> | 'not-lab-content';
   errorMessage?: string;
   fileName: string;
   /** OCR partial-failure diagnostic. When the parser failed AND some

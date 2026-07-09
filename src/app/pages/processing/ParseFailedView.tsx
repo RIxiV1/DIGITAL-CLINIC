@@ -101,6 +101,17 @@ export default function ParseFailedView({
             'Error: The uploaded document contains testing (e.g., infectious disease panels or localized physical exams) that is not related to general metabolic biomarkers or the HPA axis ecosystem. We cannot analyze this report.',
           spot: 'off-scope',
         };
+      case 'not-lab-content':
+        // We read text but found no numbers — so this is a photo, a
+        // screenshot, or a document, not a blood test. Say that plainly
+        // and warmly; never make the user feel they did it wrong.
+        return {
+          kicker: 'This one isn’t a lab report',
+          title: 'We read this, but it isn’t a blood test.',
+          detail:
+            'We could read the text, but there were no lab values in it — a blood test is a marker, a number and a unit, like “Testosterone 280 ng/dL.” This looks more like a photo, a screenshot, or a document. Upload a lab report as a PDF or a clear photo, or enter values manually.',
+          spot: 'searching',
+        };
       case 'no-matches':
       default:
         return {

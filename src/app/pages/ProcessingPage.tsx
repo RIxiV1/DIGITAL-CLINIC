@@ -297,6 +297,28 @@ export default function ProcessingPage() {
       removeReport(processingId);
       const reason = result.failureReason ?? 'no-matches';
       const isImage = !!file && /^image\//.test(file.type || '');
+      // "You pasted a name / a screenshot / a selfie." If OCR read a
+      // meaningful amount of text but that text has essentially no
+      // numbers, it CAN'T be a lab report (a panel is marker + value +
+      // unit). Cascading to the AI parser here is pointless — it can't
+      // invent values that aren't in the image — and it leaves the user
+      // with a technical "AI reader" error for what is really "this
+      // isn't a lab report." Catch it up front with a specific message.
+      // Guard on readable length so a totally-empty OCR (a genuine read
+      // failure that AI vision MIGHT recover) still cascades as before.
+      const rawText = result.rawText ?? '';
+      const digitCount = (rawText.match(/\d/g) ?? []).length;
+      const readableButNoNumbers =
+        isImage && rawText.trim().length >= 12 && digitCount <= 1;
+      if (readableButNoNumbers) {
+        setFailure({
+          reason: 'not-lab-content',
+          fileName,
+          rawText,
+          file: file ?? undefined,
+        });
+        return;
+      }
       // Cascade is image-only — the AI parser endpoint accepts JPEG /
       // PNG / WebP only. Sending a PDF here would round-trip a 400
       // from the server, so PDFs never cascade regardless of reason.
