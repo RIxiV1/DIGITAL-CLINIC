@@ -172,12 +172,21 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     },
     [bodySystems, presentCategoryIds],
   );
+  // The system section that should glow once, right after the map scrolls
+  // to it — the visual "the map pointed me here" handoff.
+  const [glowCategoryId, setGlowCategoryId] = useState<string | null>(null);
   useEffect(() => {
     if (!scrollTarget) return;
     document
       .getElementById(scrollTarget)
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // scrollTarget is `system-cat-<categoryId>` — pull the category id back
+    // out so the destination section can bloom once on arrival.
+    const catId = scrollTarget.replace(/^system-cat-/, '');
+    setGlowCategoryId(catId);
     setScrollTarget(null);
+    const t = window.setTimeout(() => setGlowCategoryId(null), 1700);
+    return () => clearTimeout(t);
   }, [scrollTarget]);
 
   // Ref-based dedup so a double-tap on the download button doesn't
@@ -568,7 +577,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                       good: markers.filter((m) => m.status === 'good').length,
                     };
                     return (
-                      <div key={category.id} id={`system-cat-${category.id}`}>
+                      <div
+                        key={category.id}
+                        id={`system-cat-${category.id}`}
+                        className={
+                          glowCategoryId === category.id
+                            ? 'marker-focus-glow rounded-[20px]'
+                            : undefined
+                        }
+                      >
                         <Card padded={false}>
                           <button
                             type="button"
