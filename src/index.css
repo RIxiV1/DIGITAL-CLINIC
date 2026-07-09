@@ -234,9 +234,9 @@
    * Naming convention:
    *   micro         — 10px uppercase tracking-wide labels, badges
    *   caption       — 12px captions, footnotes, dense meta
-   *   body-sm       — 14px small / compact body
-   *   body          — 15px default body, UI text
-   *   body-lg       — 17px lead paragraphs, emphasised body
+   *   body-sm       — 15px small / compact body
+   *   body          — 16px default body, UI text
+   *   body-lg       — 18px lead paragraphs, emphasised body
    *   display-md    — 24px card + section titles
    *   display-lg    — 32px page titles
    *   display-xl    — 56px landing hero
@@ -245,9 +245,13 @@
    * works the way users expect. */
   --text-micro: 0.625rem; /* 10px */
   --text-caption: 0.75rem; /* 12px */
-  --text-body-sm: 0.875rem; /* 14px */
-  --text-body: 0.9375rem; /* 15px */
-  --text-body-lg: 1.0625rem; /* 17px */
+  /* Reading tiers bumped +1px for legibility — medical products get read
+   * by older eyes too, and 16px default body also clears the iOS input-
+   * zoom threshold. Label/meta tiers (micro, caption) and the display
+   * scale are unchanged, so the hierarchy holds. */
+  --text-body-sm: 0.9375rem; /* 15px */
+  --text-body: 1rem; /* 16px */
+  --text-body-lg: 1.125rem; /* 18px */
   --text-display-md: 1.5rem; /* 24px */
   --text-display-lg: 2rem; /* 32px */
   --text-display-xl: 3.5rem; /* 56px */
@@ -880,7 +884,7 @@ input[type='number']::-webkit-outer-spin-button {
 /* iOS Safari auto-zooms whenever a focused input/select/textarea has a
  * computed font-size below 16px. The visual zoom often doesn't restore
  * cleanly, leaving the page stuck at the zoomed level until the user
- * pinches out. Our design tokens put body inputs at 14px (text-body-sm /
+ * pinches out. Our design tokens put body inputs at 15px (text-body-sm /
  * text-caption), so without this override every text field on the
  * Manual-Entry, search, and onboarding flows triggers the iOS zoom.
  *
