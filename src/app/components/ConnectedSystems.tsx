@@ -81,7 +81,9 @@ const RANK: Record<SystemStatus, number> = {
 };
 
 // Spokes on a circle around the hub (50,50). Diagonal start (an X, not a +).
-const R = 34;
+// R=40 pushes the corner nodes far enough out that they clear the hub circle
+// on a narrow phone — at R=34 the fixed-px hub + node boxes overlapped.
+const R = 40;
 const ANGLES = [-45, 45, 135, 225];
 const pointAt = (angle: number) => ({
   x: 50 + R * Math.cos((angle * Math.PI) / 180),
@@ -209,7 +211,7 @@ export default function ConnectedSystems({
           className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
         >
           <div
-            className={`grid place-items-center w-32 h-32 sm:w-40 sm:h-40 rounded-full border-2 text-center shadow-soft px-3 ${
+            className={`grid place-items-center w-24 h-24 sm:w-36 sm:h-36 rounded-full border-2 text-center shadow-soft px-2 sm:px-3 ${
               hubUnmeasured ? 'border-line bg-canvas/40' : STATUS[hub.status].ring
             } ${leadId === hub.id ? 'ring-2 ring-indigo-400/70' : ''}`}
           >
@@ -251,7 +253,7 @@ export default function ConnectedSystems({
               animate={{ opacity: dim ? 0.4 : 1, scale: isLead && !dim ? 1.05 : 1 }}
               transition={{ type: 'spring', stiffness: 320, damping: 24, delay: 0.65 + i * 0.12 }}
               style={{ left: `${p.x}%`, top: `${p.y}%` }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-[116px] sm:w-[132px] rounded-2xl border px-2.5 py-2 text-center transition-transform ${st.ring} ${
+              className={`absolute -translate-x-1/2 -translate-y-1/2 w-[100px] sm:w-[128px] rounded-2xl border px-2 py-1.5 sm:px-2.5 sm:py-2 text-center transition-transform ${st.ring} ${
                 isSel ? 'ring-2 ring-indigo-400/70' : ''
               } ${isLead ? 'shadow-pop ring-2 ring-indigo-400/60' : ''} ${
                 clickable
