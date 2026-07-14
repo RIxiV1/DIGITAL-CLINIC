@@ -1217,8 +1217,15 @@ function extractMarkerValue(
     // the catalog's canonical units.
     const labRefMinNum = labRefMinStr ? parseFloat(labRefMinStr) : NaN;
     const labRefMaxNum = labRefMaxStr ? parseFloat(labRefMaxStr) : NaN;
+    // A printed range is only usable if min < max. A swapped or degenerate
+    // range ("99 - 70", or a mis-parse that inverts the bounds) is garbage —
+    // and because the lab range DRIVES status downstream, trusting it would
+    // classify a value as simultaneously below-min and above-max. Discard it
+    // and fall back to the catalog's canonical band instead.
     const labRef =
-      Number.isFinite(labRefMinNum) && Number.isFinite(labRefMaxNum)
+      Number.isFinite(labRefMinNum) &&
+      Number.isFinite(labRefMaxNum) &&
+      labRefMinNum < labRefMaxNum
         ? {
             min:
               scale !== 1
@@ -1253,11 +1260,18 @@ function extractMarkerValue(
  * Biomarker array (with derived status/copy) for every template that
  * matched.
  */
-export function extractBiomarkersFromText(text: string): Biomarker[] {
+type ExtractHit = { marker: Biomarker; start: number; end: number };
+
+/**
+ * Run the whole catalog against `text` and return the surviving hits WITH
+ * their text spans (after specificity suppression). Shared by the plain
+ * extractor and the provenance-aware one so both see identical results.
+ */
+function collectHits(text: string): { normalized: string; hits: ExtractHit[] } {
   const normalized = normalize(text);
   // Collect every template match WITH its text span, so we can suppress
   // less-specific matches below.
-  const hits: { marker: Biomarker; start: number; end: number }[] = [];
+  const raw: ExtractHit[] = [];
   for (const template of biomarkerCatalog) {
     // biomarkerCatalog contains each template exactly once — the prior
     // `seen` Set/dedup was dead code that suggested an enforced
@@ -1271,7 +1285,7 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
       typeof extracted.labRefMax === 'number'
         ? { min: extracted.labRefMin, max: extracted.labRefMax }
         : undefined;
-    hits.push({
+    raw.push({
       marker: {
         ...markerFromTemplate(template, extracted.value, labRef),
         originalValue: extracted.originalValue,
@@ -1289,19 +1303,73 @@ export function extractBiomarkersFromText(text: string): Biomarker[] {
   // substring match, and the longer one is the real (more specific)
   // marker. Genuine distinct markers sit on separate rows with non-
   // overlapping spans, so they're untouched. Catalog order preserved.
-  const found = hits
-    .filter(
-      (h) =>
-        !hits.some(
-          (g) =>
-            g !== h &&
-            g.end - g.start > h.end - h.start &&
-            h.start >= g.start &&
-            h.end <= g.end,
-        ),
-    )
-    .map((h) => h.marker);
-  return deriveComputedMarkers(found);
+  const hits = raw.filter(
+    (h) =>
+      !raw.some(
+        (g) =>
+          g !== h &&
+          g.end - g.start > h.end - h.start &&
+          h.start >= g.start &&
+          h.end <= g.end,
+      ),
+  );
+  return { normalized, hits };
+}
+
+export function extractBiomarkersFromText(text: string): Biomarker[] {
+  return deriveComputedMarkers(collectHits(text).hits.map((h) => h.marker));
+}
+
+/**
+ * Per-marker provenance — the honest "why do we believe this?" data.
+ * Report-level source + OCR confidence already live on PdfParseResult;
+ * this is the piece only the parser can produce: the exact row it read and
+ * what it validated. Every field is read off the real match — nothing here
+ * is fabricated, which is the entire point of a trust feature. Derived
+ * markers (ratios) have no source row, so they get no entry.
+ */
+export type MarkerProvenance = {
+  /** The lab-report line the value was read from, verbatim. */
+  originalRow: string;
+  validations: {
+    catalogMatch: boolean;
+    unitConverted: boolean;
+    rangeValidated: boolean;
+  };
+};
+
+/**
+ * Like extractBiomarkersFromText, but also returns a markerId → provenance
+ * map for the directly-extracted markers.
+ */
+export function extractBiomarkersWithProvenance(text: string): {
+  markers: Biomarker[];
+  provenance: Map<string, MarkerProvenance>;
+} {
+  const { normalized, hits } = collectHits(text);
+  const markers = deriveComputedMarkers(hits.map((h) => h.marker));
+  const provenance = new Map<string, MarkerProvenance>();
+  for (const h of hits) {
+    provenance.set(h.marker.id, {
+      originalRow: enclosingLine(normalized, h.start, h.end),
+      validations: {
+        catalogMatch: true,
+        unitConverted: h.marker.originalUnit !== undefined,
+        rangeValidated:
+          h.marker.labRefMin !== undefined && h.marker.labRefMax !== undefined,
+      },
+    });
+  }
+  return { markers, provenance };
+}
+
+/** The full text line containing [start, end), trimmed — more meaningful to
+ *  a reader than the bare matched span. */
+function enclosingLine(text: string, start: number, end: number): string {
+  const from = text.lastIndexOf('\n', start - 1) + 1;
+  let to = text.indexOf('\n', end);
+  if (to === -1) to = text.length;
+  return text.slice(from, to).trim();
 }
 
 /**
@@ -1763,6 +1831,11 @@ export type PdfParseResult = {
    *  text-layer path (no OCR ran). When low (≤ OCR_LOW_CONFIDENCE_
    *  THRESHOLD) the UI warns that the read may be unreliable. */
   ocrConfidence?: number;
+  /** Per-marker provenance (biomarker id → verbatim source row +
+   *  validation flags). Powers the "why do we believe this?" inspector.
+   *  Combined with the report-level `source`/`ocrConfidence` above to give
+   *  a full, honest chain. Undefined only on the empty/failure result. */
+  provenance?: Map<string, MarkerProvenance>;
 };
 
 const EMPTY_RESULT: PdfParseResult = {
@@ -1846,10 +1919,12 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // straight to OCR. Scanned PDFs hit this path.
     if (totalCharCount < MIN_USABLE_TEXT_LENGTH) {
       const ocr = await runPdfOcr(pdf);
-      const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
+      const { markers: ocrBiomarkers, provenance } =
+        extractBiomarkersWithProvenance(ocr.text);
       return {
         biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
         source: 'pdf-ocr',
+        provenance,
         rawText: rawTextForDisplay(ocr.text),
         unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
         ocrPagesAttempted: ocr.pagesAttempted,
@@ -1888,10 +1963,14 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     const winner = candidates[0];
 
     if (winner.biomarkers.length > 0) {
+      // Re-run on the winning text to collect provenance; markers are
+      // identical to the count above (same text, same catalog).
+      const { provenance } = extractBiomarkersWithProvenance(winner.text);
       return {
         biomarkers: winner.biomarkers,
         source: 'pdf-text',
         strategy: winner.name,
+        provenance,
         rawText: winner.text,
         unrecognizedRows: findUnrecognizedRows(winner.text, winner.biomarkers),
       };
@@ -1901,10 +1980,12 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // into-PDF reports with a thin text layer of metadata sometimes
     // hit this path.
     const ocr = await runPdfOcr(pdf);
-    const ocrBiomarkers = extractBiomarkersFromText(ocr.text);
+    const { markers: ocrBiomarkers, provenance } =
+      extractBiomarkersWithProvenance(ocr.text);
     return {
       biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
       source: 'pdf-ocr',
+      provenance,
       rawText: ocr.text,
       unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
       ocrPagesAttempted: ocr.pagesAttempted,
@@ -1920,10 +2001,12 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
 
 async function parseImage(file: File): Promise<PdfParseResult> {
   const { text, confidence } = await runImageOcr(file);
-  const biomarkers = extractBiomarkersFromText(text);
+  const { markers: biomarkers, provenance } =
+    extractBiomarkersWithProvenance(text);
   return {
     biomarkers: tagOcrConfidence(biomarkers, confidence),
     source: 'image-ocr',
+    provenance,
     rawText: text,
     unrecognizedRows: findUnrecognizedRows(text, biomarkers),
     ocrConfidence: confidence,

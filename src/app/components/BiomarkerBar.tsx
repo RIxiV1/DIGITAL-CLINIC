@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import { statusColor, type Biomarker } from '../data/biomarkers';
 import { markerTrendNote } from '../clinical';
+import { ProvenanceInspector } from './ProvenanceInspector';
 
 type Props = {
   marker: Biomarker;
@@ -554,6 +555,7 @@ export default function BiomarkerBar({
               report, not estimated.
             </p>
           )}
+          <ProvenanceInspector marker={marker} />
           {/* Context-aware note — ties this marker to what the user told
               us in the quiz (a disclosed condition, their training load).
               A left border + "Based on your answers" label marks it as

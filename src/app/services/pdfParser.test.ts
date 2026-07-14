@@ -21,6 +21,7 @@ import { describe, it, expect } from 'vitest';
 import {
   classifyOutOfScope,
   extractBiomarkersFromText,
+  extractBiomarkersWithProvenance,
   findUnrecognizedRows,
   __testInternals,
 } from './pdfParser';
@@ -392,6 +393,28 @@ describe('extractBiomarkersFromText — reference-range trap', () => {
     expect(p?.value).toBe(245000);
     expect(p?.labRefMin).toBe(150000);
     expect(p?.labRefMax).toBe(450000);
+  });
+
+  it('discards a swapped reference range (min ≥ max) and falls back to catalog', () => {
+    // A garbled print or mis-parse can invert the bounds ("99 - 70"). Because
+    // the lab range drives status downstream, a swapped range must NOT be
+    // trusted — it's dropped so the catalog's canonical band classifies the
+    // value. The value itself must still parse cleanly.
+    const text = 'Fasting Glucose 92 99-70 mg/dL';
+    const g = extractBiomarkersFromText(text).find((m) => m.id === 'glucose');
+    expect(g?.value).toBe(92);
+    expect(g?.labRefMin).toBeUndefined();
+    expect(g?.labRefMax).toBeUndefined();
+  });
+
+  it('discards a degenerate zero-width range (min === max)', () => {
+    // "70-70" carries no band information and would make every comparison
+    // ambiguous; treat it as no printed range.
+    const text = 'Fasting Glucose 92 70-70 mg/dL';
+    const g = extractBiomarkersFromText(text).find((m) => m.id === 'glucose');
+    expect(g?.value).toBe(92);
+    expect(g?.labRefMin).toBeUndefined();
+    expect(g?.labRefMax).toBeUndefined();
   });
 });
 
@@ -991,6 +1014,129 @@ describe('extractBiomarkersFromText — dedup', () => {
     expect(glucoseHits).toHaveLength(1);
     // First match wins — 95, not 92.
     expect(glucoseHits[0].value).toBe(95);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Adversarial fuzz — invariants that must hold for ANY input.         */
+/* A parser that faces phone photos and OCR must never crash, never    */
+/* surface a NaN/Infinity/negative, and never trust a swapped range.   */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — adversarial fuzz', () => {
+  // Deterministic PRNG so a failure is reproducible (no Math.random flake).
+  function makeRng(seed: number) {
+    let s = seed >>> 0;
+    return () => {
+      s = (s + 0x6d2b79f5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  const pick = (r: () => number, arr: string[]) =>
+    arr[Math.floor(r() * arr.length)];
+
+  const NAMES = [
+    'Glucose', 'Hemoglobin', 'LDL', 'HDL', 'TSH', 'Creatinine', 'Ferritin',
+    'Platelet Count', 'Total WBC Count', 'Sodium', 'Potassium',
+    'Triglycerides', 'HbA1c', 'ALT', 'Vitamin D',
+  ];
+  // Valid numbers, negatives, overflow, letter-O-for-zero, comma noise,
+  // scientific notation (→ Infinity trap), non-numeric, empty.
+  const NUMS = [
+    '92', '-12', '999999', '0', '5O', 'ABC', 'NaN', '1e999', '5,,7',
+    '13.5', '-1.2', '117', '', '  ',
+  ];
+  const RANGES = ['', '70-99', '99-70', '70-70', '13.5-17.5', 'ABC-DEF'];
+  const UNITS = ['mg/dL', 'g/dL', '%', 'mmol/L', 'ng/mL', '/cumm', '', '!!!'];
+
+  it('holds its invariants across 800 adversarial rows', () => {
+    const r = makeRng(0xc0ffee);
+    for (let i = 0; i < 800; i++) {
+      const row = `${pick(r, NAMES)} ${pick(r, NUMS)} ${pick(r, RANGES)} ${pick(r, UNITS)}`;
+      let markers: ReturnType<typeof extractBiomarkersFromText> = [];
+      expect(() => {
+        markers = extractBiomarkersFromText(row);
+      }).not.toThrow();
+      for (const m of markers) {
+        // never a NaN or Infinity (the "1e999" overflow trap)
+        expect(Number.isFinite(m.value)).toBe(true);
+        // biomarkers are physically non-negative
+        expect(m.value).toBeGreaterThanOrEqual(0);
+        // a surviving printed range is always well-formed (swapped-range guard)
+        if (m.labRefMin !== undefined && m.labRefMax !== undefined) {
+          expect(m.labRefMin).toBeLessThan(m.labRefMax);
+        }
+      }
+    }
+  }, 20000); // generous timeout: full-catalog parse × N is CPU-heavy under CI contention
+
+  it('invents nothing from text with no marker+number pair', () => {
+    for (const junk of [
+      'random words here',
+      '#### %%%% !!!!',
+      'Creatinine',
+      'Glucose',
+      '',
+      '   \n\t  ',
+    ]) {
+      expect(extractBiomarkersFromText(junk)).toHaveLength(0);
+    }
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Provenance layer — the honest "why do we believe this?" data.       */
+/* Every field must be read off the real match; nothing fabricated.    */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersWithProvenance', () => {
+  it('returns exactly the same markers as the plain extractor', () => {
+    const text = 'Fasting Glucose 92 70-99 mg/dL\nHemoglobin 14.5 g/dL';
+    const plain = extractBiomarkersFromText(text).map((m) => m.id);
+    const { markers } = extractBiomarkersWithProvenance(text);
+    expect(markers.map((m) => m.id)).toEqual(plain);
+  });
+
+  it('captures the verbatim source row and real validations per marker', () => {
+    const { provenance } = extractBiomarkersWithProvenance(
+      'Fasting Glucose 92 70-99 mg/dL',
+    );
+    const p = provenance.get('glucose');
+    expect(p?.originalRow).toContain('92');
+    expect(p?.originalRow).toContain('70-99');
+    expect(p?.validations.catalogMatch).toBe(true);
+    expect(p?.validations.rangeValidated).toBe(true);
+  });
+
+  it('flags unitConverted only when the printed unit was rescaled', () => {
+    // thou/cumm → /µL is a real rescale; plain mg/dL is not.
+    const rescaled = extractBiomarkersWithProvenance(
+      'Platelet Count 245 150-450 thou/cumm',
+    ).provenance.get('platelets');
+    expect(rescaled?.validations.unitConverted).toBe(true);
+
+    const asIs = extractBiomarkersWithProvenance(
+      'Fasting Glucose 92 70-99 mg/dL',
+    ).provenance.get('glucose');
+    expect(asIs?.validations.unitConverted).toBe(false);
+  });
+
+  it('marks rangeValidated false when no lab range was printed', () => {
+    const p = extractBiomarkersWithProvenance(
+      'Fasting Glucose 92 mg/dL',
+    ).provenance.get('glucose');
+    expect(p?.validations.rangeValidated).toBe(false);
+  });
+
+  it('never fabricates provenance for a rejected value', () => {
+    // negative → rejected up front → no marker, so no provenance entry.
+    const { markers, provenance } = extractBiomarkersWithProvenance(
+      'Creatinine -1.2 mg/dL',
+    );
+    expect(markers.find((m) => m.id === 'creatinine')).toBeUndefined();
+    expect(provenance.has('creatinine')).toBe(false);
   });
 });
 

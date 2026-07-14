@@ -51,6 +51,31 @@ describe('explainFinding', () => {
     expect(e?.beats[0].body).toMatch(/often felt/i);
   });
 
+  it('renders every reported symptom as its human phrase in Q1', () => {
+    // User-facing health copy — an empty or wrong phrase is a real UX bug,
+    // so assert the whole id → phrase mapping (also kills the display-string
+    // mutants mutation testing surfaced).
+    const cases: ReadonlyArray<[string, string]> = [
+      ['low-energy', 'low energy'],
+      ['brain-fog', 'brain fog'],
+      ['poor-sleep', 'poor sleep'],
+      ['low-libido', 'low sex drive'],
+      ['difficulty-in-bed', 'difficulty in bed'],
+      ['fertility-concerns', 'fertility worries'],
+      ['hair-loss', 'hair loss'],
+      ['belly-fat', 'stubborn belly fat'],
+      ['low-mood', 'low mood'],
+      ['stress', 'stress'],
+    ];
+    for (const [id, phrase] of cases) {
+      const e = explainFinding([mk('testosterone', 'concern', 'hormones')], {
+        ...baseQuiz,
+        symptoms: [id],
+      });
+      expect(e?.beats[0].body, `symptom "${id}"`).toContain(phrase);
+    }
+  });
+
   it('weaves same-system related findings as "one story", not separate problems', () => {
     const e = explainFinding(
       [
@@ -77,5 +102,48 @@ describe('explainFinding', () => {
     const e = explainFinding([mk('hdl', 'good', 'heart')], baseQuiz);
     expect(e?.tone).toBe('clear');
     expect(e?.beats.some((b) => /not a guarantee|snapshot/i.test(b.body))).toBe(true);
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Narrative stability contract:                                        */
+/*   equivalent clinical interpretation → equivalent narrative.         */
+/* The story is status-driven, so nothing below should change a word    */
+/* unless a threshold is actually crossed. These lock the behavioural   */
+/* contract as the narrative code evolves.                              */
+/* ------------------------------------------------------------------ */
+
+describe('explainFinding — narrative stability', () => {
+  it('a value change within the same status band changes nothing', () => {
+    const at = (value: number) =>
+      explainFinding([mk('hdl', 'concern', 'heart', { name: 'HDL', value })], {
+        ...baseQuiz,
+        symptoms: ['low-energy'],
+      });
+    // 55 → 56 stays 'concern'; the narrative must be byte-identical.
+    expect(at(55)).toEqual(at(56));
+  });
+
+  it('reordering the input markers changes nothing (deterministic lead + related)', () => {
+    // ApoB and LDL TIE on status — the classic case where a naive
+    // first-wins reduce would let row order pick the lead.
+    const markers = [
+      mk('ldl', 'concern', 'heart', { name: 'LDL' }),
+      mk('apob', 'concern', 'heart', { name: 'ApoB' }),
+      mk('hdl', 'attention', 'heart', { name: 'HDL' }),
+    ];
+    expect(explainFinding([...markers].reverse(), baseQuiz)).toEqual(
+      explainFinding(markers, baseQuiz),
+    );
+  });
+
+  it('adding an unrelated, normal biomarker changes nothing', () => {
+    const core = [
+      mk('testosterone', 'concern', 'hormones', { name: 'Total Testosterone' }),
+    ];
+    const withExtra = [...core, mk('ldl', 'good', 'heart', { name: 'LDL' })];
+    expect(explainFinding(withExtra, baseQuiz)).toEqual(
+      explainFinding(core, baseQuiz),
+    );
   });
 });
