@@ -62,6 +62,11 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
   // biomarker list when the report isn't found, then render the "not found"
   // view below. This keeps hook order stable across renders.
   const biomarkers = report?.biomarkers ?? [];
+  // Status filtering only earns its screen space on a dense report. On a
+  // short panel (a lipid or thyroid check) the collapse-by-default category
+  // cards are enough — a row of filter pills there reads as admin chrome,
+  // not part of the narrative. Threshold: keep it hidden until ~9+ markers.
+  const showStatusFilter = biomarkers.length > 8;
 
   const filtered = useMemo(() => {
     return biomarkers.filter((m) => {
@@ -493,28 +498,30 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 ~25 lines of duplicate affordance gone. Desktop keeps
                 the category list in the sticky sidebar where space is
                 cheap. */}
-            <div className="md:hidden no-print">
-              <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
-                <div className="flex gap-2 w-max">
-                  {STATUS_FILTER_OPTIONS.map((f) => {
-                    const active = filter === f.id;
-                    return (
-                      <button
-                        key={f.id}
-                        onClick={() => setFilter(f.id)}
-                        className={`px-4 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
-                          active
-                            ? 'bg-indigo-600 text-on-primary shadow-soft'
-                            : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
-                        }`}
-                      >
-                        {f.label}
-                      </button>
-                    );
-                  })}
+            {showStatusFilter && (
+              <div className="md:hidden no-print">
+                <div className="overflow-x-auto scrollbar-none -mx-5 px-5">
+                  <div className="flex gap-2 w-max">
+                    {STATUS_FILTER_OPTIONS.map((f) => {
+                      const active = filter === f.id;
+                      return (
+                        <button
+                          key={f.id}
+                          onClick={() => setFilter(f.id)}
+                          className={`px-4 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
+                            active
+                              ? 'bg-indigo-600 text-on-primary shadow-soft'
+                              : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
+                          }`}
+                        >
+                          {f.label}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {groups.length === 0 ? (
               <Card className="text-center !py-10 mt-4 md:mt-0">
@@ -718,44 +725,40 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             <aside className="md:col-span-4 no-print">
               <div className="sticky top-24 grid gap-5">
                 <Card padded={false} className="overflow-hidden">
-                  <div className="px-5 pt-5 pb-3 border-b border-line">
-                    <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
-                      Filter
-                    </div>
-                    <div className="font-display text-body mt-1">
-                      Refine view
-                    </div>
-                  </div>
-                  {/* Horizontal-wrap pill row. The previous treatment
-                    here was a vertical stack of rounded-xl buttons with
-                    left-aligned labels — a control vocabulary used
-                    nowhere else in the app. Switched to the same
-                    rounded-full pills as the mobile filter strip and
-                    the dashboard's "See all markers" filter, so the
-                    chooser metaphor is one-and-the-same across every
-                    surface. Reduces the cognitive context-switch when
-                    a tablet user rotates between portrait and
-                    landscape and watches the controls jump from one
-                    layout to another. */}
-                  <div className="p-4 flex flex-wrap gap-1.5">
-                    {STATUS_FILTER_OPTIONS.map((f) => {
-                      const active = filter === f.id;
-                      return (
-                        <button
-                          key={f.id}
-                          onClick={() => setFilter(f.id)}
-                          aria-pressed={active}
-                          className={`inline-flex items-center px-3 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
-                            active
-                              ? 'bg-indigo-600 text-on-primary shadow-soft'
-                              : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
-                          }`}
-                        >
-                          {f.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {/* Status filter — only on a dense report (see
+                      showStatusFilter). On a short panel it read as admin
+                      chrome; the Categories chooser below is enough. */}
+                  {showStatusFilter && (
+                    <>
+                      <div className="px-5 pt-5 pb-3 border-b border-line">
+                        <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
+                          Filter
+                        </div>
+                        <div className="font-display text-body mt-1">
+                          Refine view
+                        </div>
+                      </div>
+                      <div className="p-4 flex flex-wrap gap-1.5">
+                        {STATUS_FILTER_OPTIONS.map((f) => {
+                          const active = filter === f.id;
+                          return (
+                            <button
+                              key={f.id}
+                              onClick={() => setFilter(f.id)}
+                              aria-pressed={active}
+                              className={`inline-flex items-center px-3 min-h-12 rounded-full text-caption font-semibold whitespace-nowrap transition-colors ${
+                                active
+                                  ? 'bg-indigo-600 text-on-primary shadow-soft'
+                                  : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
+                              }`}
+                            >
+                              {f.label}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                   <div className="px-5 pt-4 pb-3 border-t border-line">
                     <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
                       Categories
