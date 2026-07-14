@@ -126,6 +126,22 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
     [biomarkers],
   );
 
+  // The single most-pressing flagged marker — powers the closing "what
+  // now" step so the page ends on a concrete action, not a stop.
+  const topFlagged = useMemo(() => {
+    const rank: Record<string, number> = {
+      critical: 3,
+      concern: 2,
+      attention: 1,
+    };
+    const flagged = biomarkers.filter((m) => m.status !== 'good');
+    return flagged.length
+      ? flagged.reduce((worst, m) =>
+          (rank[m.status] ?? 0) > (rank[worst.status] ?? 0) ? m : worst,
+        )
+      : null;
+  }, [biomarkers]);
+
   /** Per-category expansion. Everything starts COLLAPSED — the calm read.
    *  The verdict, the one-thing explanation, and the Health Map already
    *  surface what matters up top; the full marker list is reference detail,
@@ -695,6 +711,67 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 two positionally useful spots. A third button buys no
                 capability — it only adds a competing CTA below the
                 action items. */}
+
+            {/* Destination — a clear ending so the page has a sense of
+                completion, not just a stop. It answers "what do I do now?"
+                with one concrete next action, and gives the (deliberately
+                demoted) PDF its real home: a summary to take to a doctor
+                is a closing action, never a headline. Reduced-motion and
+                print skip nothing here — it's static content. */}
+            <Card className="mt-8 bg-indigo-50/60 border-indigo-100 no-print">
+              <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700">
+                What now
+              </div>
+              {topFlagged ? (
+                <>
+                  <h2 className="font-display text-display-md leading-tight mt-1.5 text-balance">
+                    Start with {topFlagged.name}.
+                  </h2>
+                  <p className="mt-2 text-body-sm text-ink-soft max-w-xl">
+                    It’s the one result worth a closer look. Open it to see
+                    what it means and what to do — then take a summary to your
+                    doctor to talk it through.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h2 className="font-display text-display-md leading-tight mt-1.5 text-balance">
+                    You’re all set.
+                  </h2>
+                  <p className="mt-2 text-body-sm text-ink-soft max-w-xl">
+                    Everything we read is in range. Keep the basics dialled in,
+                    re-test in 6–12 months, and save a copy for your records.
+                  </p>
+                </>
+              )}
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                {topFlagged && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    trailing={<ChevronRight size={15} />}
+                    onClick={() =>
+                      topFlagged.problemId
+                        ? navigate({
+                            type: 'problem',
+                            problemId: topFlagged.problemId,
+                          })
+                        : setSheetMarker(topFlagged)
+                    }
+                  >
+                    Review {topFlagged.name}
+                  </Button>
+                )}
+                <Button
+                  variant={topFlagged ? 'secondary' : 'primary'}
+                  size="sm"
+                  leading={<Download size={14} />}
+                  onClick={handleDownload}
+                >
+                  Save a summary for your doctor
+                </Button>
+              </div>
+            </Card>
 
             {/* "Not a diagnosis" footnote. This block used to sit at
                 the TOP of the marker zone, blocking the data on every
