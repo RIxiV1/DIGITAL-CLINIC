@@ -503,21 +503,18 @@ a,
    * scrollbars stay bright on the dark canvas. */
   color-scheme: dark;
 
-  /* ─── Canvas + surface ladder ──────────────────────────────────
-   * Three warm ink-charcoal tones from page floor to hero. NOT pure
-   * black — the warm charcoal floor keeps the gamma curve away from
-   * OLED black-smearing during scroll, and is neutral (not blue) so the
-   * warm bronze hero spotlight + paper tones read as one family rather
-   * than fighting a cold navy baseline. "Ink & Clay" ladder:
-   *   canvas  #0b0a09  L 0.0031   floor
-   *   surface #1a1816  L 0.0093   card  (canvas↔surface ≈ 1.12:1)
-   *   paper   #242220  L 0.0162   hero  (surface↔paper   ≈ 1.12:1)
-   * Surface was lifted from #161514 (L 0.0076): the old canvas↔surface
-   * step measured only 1.085:1 — below the just-noticeable threshold, so
-   * card fills had no perceptible edge on low-DPI screens. An even ~1.12:1
-   * ladder + the strengthened hairline below now carry depth together. */
-  --color-canvas: #0b0a09;
-  --color-surface: #1a1816;
+  /* ─── INSTRUMENT — the dark identity ───────────────────────────
+   * A medical-readout world: a cool instrument-NAVY ground (not the old
+   * warm charcoal), periwinkle brand, amber signal, coral alarm — the
+   * WHOOP/Oura lane, deliberately premium and un-beige. Every contrast +
+   * colour-blind guard from the warm dark is preserved (near-white ink on
+   * navy = AAA; dark ink on the pastel fills; periwinkle-vs-coral separates
+   * under protanopia/deuteranopia). Ladder floor→card→hero:
+   *   canvas  #0f1320   floor
+   *   surface #191f30   card  (~1.12:1 step, a perceptible edge)
+   *   paper   #212a44   hero  (the lifted focal panel) */
+  --color-canvas: #0f1320;
+  --color-surface: #191f30;
 
   /* ─── Line / border ────────────────────────────────────────────
    * Low-alpha white so a border scales with whatever surface tone
@@ -526,16 +523,16 @@ a,
    * (≈1.44:1 over canvas, up from a barely-there 1.22): in dark the
    * shadow tokens are near-invisible, so the border IS the card edge
    * and has to actually read on a cheap panel in daylight. */
-  --color-line: rgb(231 229 228 / 0.16);
-  --color-line-strong: rgb(231 229 228 / 0.26);
+  --color-line: rgb(206 214 238 / 0.15);
+  --color-line-strong: rgb(206 214 238 / 0.26);
 
   /* ─── Text hierarchy ───────────────────────────────────────────
    * Opacity-based on white. 92/78/55 lands at APCA Lc 92/82/68 on
    * canvas — AAA / AAA / AA. Slightly less than pure white kills
    * the haloing effect that #FFFFFF gets on AMOLED. */
-  --color-ink: #e7e5e4;
-  --color-ink-soft: #c4bfb9;
-  --color-muted: #8c857e;
+  --color-ink: #e9ebf4;
+  --color-ink-soft: #b8bed0;
+  --color-muted: #878ea4;
 
   /* ─── Primary / Clinical Blue, dark-tuned ──────────────────────
    * The blue scale inverts: 50 (lightest in light) becomes a deep
@@ -546,16 +543,16 @@ a,
    * crucial part for the contrast principle: `text-white` on
    * `bg-primary-600` would fail at ~2.3:1; `text-on-primary` (which
    * the dark theme re-binds to deep navy below) hits 8:1 instead. */
-  --color-blue-50: #1c1a18;
-  --color-blue-100: #242220;
-  --color-blue-200: #34302c;
-  --color-blue-300: #4a443e;
-  --color-blue-400: #7c746c;
-  --color-blue-500: #9c938a;
-  --color-blue-600: #bdb4aa;
-  --color-blue-700: #d6cec5;
-  --color-blue-800: #e7e1d9;
-  --color-blue-900: #f2ede6;
+  --color-blue-50: #191f30;
+  --color-blue-100: #212a44;
+  --color-blue-200: #2d3654;
+  --color-blue-300: #3f4a6d;
+  --color-blue-400: #6f78a1;
+  --color-blue-500: #8d95b7;
+  --color-blue-600: #aeb5d0;
+  --color-blue-700: #cdd2e2;
+  --color-blue-800: #dfe2ed;
+  --color-blue-900: #eef0f7;
 
   /* `--color-indigo-*` and `--color-primary-*` legacy/role aliases
    * inherit via `var(--color-blue-*)` from the @theme block — no
@@ -565,15 +562,15 @@ a,
    * Brand gold #FFB800 at full saturation blasts on a dark canvas
    * and pulls the eye away from data. ~25% saturation drop, slight
    * amber shift for warmth. */
-  --color-gold-50: #2a1f0a;
-  --color-gold-100: #3d2d0e;
-  --color-gold-200: #5c4416;
-  --color-gold-300: #856426;
-  --color-gold-400: #b0883c;
-  --color-gold-500: #d6a656;
-  --color-gold-600: #e6be7c;
-  --color-gold-700: #f1d2a2;
-  --color-gold-800: #f8e5c7;
+  --color-gold-50: #2a2109;
+  --color-gold-100: #3a2f0d;
+  --color-gold-200: #574316;
+  --color-gold-300: #806026;
+  --color-gold-400: #b18b3c;
+  --color-gold-500: #e0a94f;
+  --color-gold-600: #f0b44e;
+  --color-gold-700: #f4c877;
+  --color-gold-800: #f9e0ae;
 
   /* ─── Mint accent ──────────────────────────────────────────────*/
   --color-mint-50: #0e2418;
@@ -587,14 +584,14 @@ a,
    * lighter + warmer than both the ink-charcoal canvas and the slate
    * card surface, so it reads as the focal panel rather than blending
    * into the ladder. Keeps the owned palette intact across themes. */
-  --color-paper: #242220;
-  --color-paper-ink: #ece9e4;
-  --color-paper-soft: #a8a29c;
-  --color-paper-line: rgb(231 229 228 / 0.14);
-  --color-clay: #97a3ea; /* ForMen indigo #2D3B8E, lifted for the dark charcoal */
-  --color-forest: #97a3ea; /* ForMen indigo #2D3B8E, lifted for the dark charcoal */
-  --color-on-clay: #1c1917;
-  --color-on-forest: #1c1917;
+  --color-paper: #212a44;
+  --color-paper-ink: #e9ebf4;
+  --color-paper-soft: #9aa1b6;
+  --color-paper-line: rgb(206 214 238 / 0.14);
+  --color-clay: #8fa2f2; /* ForMen indigo #2D3B8E, lifted to periwinkle on navy */
+  --color-forest: #8fa2f2; /* ForMen indigo #2D3B8E, lifted to periwinkle on navy */
+  --color-on-clay: #0f1320;
+  --color-on-forest: #0f1320;
 
   /* ─── Status fills — DE-ESCALATED for AMOLED ───────────────────
    * Rose / warm-amber / emerald pastels instead of pure red/amber/
@@ -602,12 +599,12 @@ a,
    * amber row" but without the chromatic vibration. Paired with the
    * flipped `--color-on-status` below, badges hit AA on these
    * pastels with dark text. */
-  --color-good: #5fcb95;
-  --color-good-soft: rgb(95 203 149 / 0.1);
-  --color-attention: #d9a765;
-  --color-attention-soft: rgb(217 167 101 / 0.1);
-  --color-concern: #ef4444;
-  --color-concern-soft: rgb(239 68 68 / 0.12);
+  --color-good: #5fd39a;
+  --color-good-soft: rgb(95 211 154 / 0.12);
+  --color-attention: #f0b44e;
+  --color-attention-soft: rgb(240 180 78 / 0.12);
+  --color-concern: #ff7a6b;
+  --color-concern-soft: rgb(255 122 107 / 0.14);
 
   /* In dark mode, the *-ink tokens (used by Pill chips for the colored
    * text on a tinted `*-soft` background) flip from the AA-darker
@@ -620,15 +617,15 @@ a,
   /* Lighter crimson for TEXT on the dark concern-soft ground (the vivid
    * #ef4444 fill is a touch low-contrast as small text); the fill itself
    * stays #ef4444 for badges/edges. */
-  --color-concern-ink: #f87171;
+  --color-concern-ink: #ff9184;
 
   /* ─── ON-COLOR TOKENS — the principal contrast pair ────────────
    * Flipped to deep navy because the matching dynamic fills above
    * are now pastels. `text-on-primary` on `bg-primary-600` (pastel
    * blue): ~8:1. `text-on-status` on `bg-concern` (pastel rose):
    * ~5.5:1. Both meet AA; the first meets AAA. */
-  --color-on-primary: #0b0a09;
-  --color-on-status: #0b0a09;
+  --color-on-primary: #0f1320;
+  --color-on-status: #0f1320;
 
   /* ─── Shadow ladder — inset + deep ─────────────────────────────
    * External shadows are darker than the canvas they sit on, so
@@ -643,7 +640,7 @@ a,
   --shadow-clinical-lg:
     inset 0 1px 0 rgb(255 255 255 / 0.05), 0 8px 24px rgb(0 0 0 / 0.6);
   --shadow-blue:
-    0 0 0 1px rgb(221 152 112 / 0.3), 0 6px 24px rgb(221 152 112 / 0.16);
+    0 0 0 1px rgb(143 162 242 / 0.32), 0 6px 24px rgb(143 162 242 / 0.18);
   --shadow-indigo: var(--shadow-blue);
 
   /* Match the active theme on native UA chrome. */
@@ -707,7 +704,7 @@ a,
  * dark, nearly invisible against canvas. Force a visible dark
  * selection. */
 :root[data-theme='dark'] ::selection {
-  background: rgb(221 152 112 / 0.4);
+  background: rgb(143 162 242 / 0.34);
   color: rgb(255 255 255 / 0.98);
 }
 
