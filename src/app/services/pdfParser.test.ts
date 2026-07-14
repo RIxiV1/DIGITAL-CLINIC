@@ -1536,6 +1536,28 @@ describe('classifyOutOfScope', () => {
     expect(classifyOutOfScope(text)).toBe('imaging');
   });
 
+  it('flags a urine routine / urinalysis (urine category)', () => {
+    const text = `
+      URINE ROUTINE EXAMINATION
+      Colour: Pale Yellow
+      Specific Gravity: 1.015
+      pH: 6.0
+      Protein: Nil
+      Pus Cells: 2-3 /hpf
+      Epithelial Cells: 1-2 /hpf
+    `;
+    expect(classifyOutOfScope(text)).toBe('urine');
+  });
+
+  it('does not flag a blood panel that mentions urine output once', () => {
+    const text = `
+      Testosterone 512 ng/dL
+      Creatinine 0.9 mg/dL
+      Note: patient reported normal urine output.
+    `;
+    expect(classifyOutOfScope(text)).toBeNull();
+  });
+
   it('avoids substring traps — "ent" inside "patient" must not trigger', () => {
     // The 'ent' / 'ear' / 'nose' single words are NOT in the keyword
     // set (only multi-word headers + diagnostic terms are), but this

@@ -102,6 +102,22 @@ const FIXTURES: Fixture[] = [
       absent: ['sperm-total-count'], // "Total Count" must not match a CBC
     },
   },
+  {
+    name: 'UK thyroid panel — SI units (pmol/L)',
+    note: 'Free T3/T4 in pmol/L were dropped entirely until altUnits added',
+    text: [
+      'TSH 2.10 mIU/L (0.27 - 4.20)',
+      'Free T4 15.5 pmol/L (12.0 - 22.0)',
+      'Free T3 4.8 pmol/L (3.1 - 6.8)',
+    ].join('\n'),
+    expect: {
+      values: {
+        tsh: 2.1,
+        'free-t4': [1.15, 1.26], // 15.5 pmol/L × 0.0777 = 1.204 ng/dL
+        'free-t3': [3.05, 3.2], // 4.8 pmol/L × 0.651 = 3.125 pg/mL
+      },
+    },
+  },
 ];
 
 describe('real-report extraction corpus', () => {

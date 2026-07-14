@@ -172,7 +172,7 @@ export type ParsedReport = {
    *  CBC bundled with a viral panel. The confirm step uses this to
    *  show a "we ignored these sections" note so the unrecognized-rows
    *  panel doesn't make a deliberate skip look like a parser miss. */
-  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam';
+  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam' | 'urine';
   /** OCR diagnostic — populated when the parser used Tesseract on a
    *  PDF. Lets the confirm view warn the user when some pages couldn't
    *  be read, so a partial extraction doesn't masquerade as complete. */
@@ -222,7 +222,7 @@ export async function parseUploadedReport(
         biomarkers: Biomarker[];
         rawText: string;
         unrecognizedRows: string[];
-        ignoredCategory: 'viral' | 'imaging' | 'physical-exam' | null;
+        ignoredCategory: 'viral' | 'imaging' | 'physical-exam' | 'urine' | null;
         ocrPagesAttempted?: number;
         ocrPagesSkipped?: number;
         ocrConfidence?: number;
@@ -265,15 +265,36 @@ export async function parseUploadedReport(
               // where a polite "Dengue: not tested" no-row boilerplate
               // shouldn't drive a misleading "we ignored that section"
               // banner.
-              return {
-                biomarkers: r.biomarkers,
-                rawText: r.rawText,
-                unrecognizedRows: r.unrecognizedRows,
-                ignoredCategory: classifyOutOfScope(r.rawText, 'strict'),
-                ocrPagesAttempted: r.ocrPagesAttempted,
-                ocrPagesSkipped: r.ocrPagesSkipped,
-                ocrConfidence: r.ocrConfidence,
-              };
+              const ignoredCategory = classifyOutOfScope(r.rawText, 'strict');
+              // A urinalysis collides with our BLOOD catalog via shared
+              // labels — a urine "pH" matches the semen-pH alias, urine
+              // "glucose/protein" match the serum markers. When the doc
+              // reads as urine, drop those false positives so a urine
+              // report never surfaces a phantom fertility/metabolic
+              // reading. If nothing survives, fall through to the
+              // out-of-scope failure so the user gets a clear reason.
+              const markers =
+                ignoredCategory === 'urine'
+                  ? r.biomarkers.filter(
+                      (m) =>
+                        m.category !== 'fertility' &&
+                        m.category !== 'metabolic' &&
+                        m.category !== 'liver',
+                    )
+                  : r.biomarkers;
+              if (markers.length > 0) {
+                return {
+                  biomarkers: markers,
+                  rawText: r.rawText,
+                  unrecognizedRows: r.unrecognizedRows,
+                  ignoredCategory,
+                  ocrPagesAttempted: r.ocrPagesAttempted,
+                  ocrPagesSkipped: r.ocrPagesSkipped,
+                  ocrConfidence: r.ocrConfidence,
+                };
+              }
+              // Every match was a urine false-positive → treat as a pure
+              // urine report and fall through to the out-of-scope branch.
             }
             // Zero matches AND the text reads as a viral/imaging/dental
             // report → use the out-of-scope reason so the failure view

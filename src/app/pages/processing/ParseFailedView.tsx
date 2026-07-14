@@ -282,7 +282,7 @@ export default function ParseFailedView({
           <div className="px-5 pb-5 -mt-1">
             <p className="text-caption text-muted leading-relaxed">
               {failure.reason === 'out-of-scope'
-                ? 'Your file looks like a viral panel, imaging report, or clinical exam — those aren’t something we interpret. If part of it has metabolic, hormone, or vitamin values, type them in via “Enter values manually”.'
+                ? 'Your file looks like a viral panel, imaging report, urine/urinalysis, or clinical exam — those aren’t something we interpret (we read blood markers). If part of it has metabolic, hormone, or vitamin values, type them in via “Enter values manually”.'
                 : 'Our parser currently recognises hormone, metabolic, heart, thyroid, vitamin, liver, kidney, blood, electrolyte, inflammation, and fertility markers from text-layer PDFs and clear photos. Older scanned PDFs or non-standard lab layouts may not parse — we don’t guess.'}
             </p>
           </div>

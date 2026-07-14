@@ -964,6 +964,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Free T3', 'FT3', 'Free Triiodothyronine'],
     unit: 'pg/mL',
     unitAliases: ['pg/ml'],
+    // SI: UK/EU labs report Free T3 in pmol/L. FT3 (MW 650.98):
+    // 1 pmol/L = 0.651 pg/mL. Without this a UK thyroid panel dropped
+    // FT3 entirely (its pmol/L value fell outside the pg/mL band).
+    altUnits: [{ units: ['pmol/L', 'pmol/l'], toCanonical: 0.651 }],
     min: 2.3,
     max: 4.2,
     category: 'thyroid',
@@ -978,6 +982,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Free T4', 'FT4', 'Free Thyroxine'],
     unit: 'ng/dL',
     unitAliases: ['ng/dl'],
+    // SI: UK/EU labs report Free T4 in pmol/L (typical 12–22). FT4
+    // (MW 776.87): 1 pmol/L = 0.0777 ng/dL. Without this a UK thyroid
+    // panel matched only TSH and dropped FT4.
+    altUnits: [{ units: ['pmol/L', 'pmol/l'], toCanonical: 0.0777 }],
     min: 0.8,
     max: 1.8,
     category: 'thyroid',

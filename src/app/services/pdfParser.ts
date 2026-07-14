@@ -1454,7 +1454,11 @@ export const __testInternals = {
 /* doesn't trigger — only documents that are dominantly out-of-scope.  */
 /* ------------------------------------------------------------------ */
 
-export type OutOfScopeCategory = 'viral' | 'imaging' | 'physical-exam';
+export type OutOfScopeCategory =
+  | 'viral'
+  | 'imaging'
+  | 'physical-exam'
+  | 'urine';
 
 /**
  * Per-category keyword sets, with a "definitive" subset that's specific
@@ -1609,6 +1613,40 @@ const OUT_OF_SCOPE: Record<OutOfScopeCategory, OutOfScopeKeywordSet> = {
       'fundus examination',
       'periodontal',
       'caries',
+    ],
+  },
+  // Urinalysis / urine routine. We read BLOOD markers; a urine report's
+  // values are a different specimen (a urine pH / glucose / protein is not
+  // the serum one), and its bare "pH" collides with the semen-pH alias —
+  // so a urinalysis must be caught here, not parsed. Terms are urine-
+  // exclusive; the 2+ gate (or one definitive) keeps a blood panel that
+  // happens to say "urine" once from tripping.
+  urine: {
+    keywords: [
+      'urine routine',
+      'routine urine',
+      'urine analysis',
+      'urinalysis',
+      'urine microscopy',
+      'urine r/e',
+      'pus cells',
+      'epithelial cells',
+      'epithelial cell',
+      'urobilinogen',
+      'specific gravity',
+      'leucocyte esterase',
+      'leukocyte esterase',
+      'nitrite',
+      'ketone bodies',
+      'urinary',
+    ],
+    definitive: [
+      'urinalysis',
+      'urine routine',
+      'urine microscopy',
+      'urine r/e',
+      'pus cells',
+      'urobilinogen',
     ],
   },
 };
