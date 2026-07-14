@@ -537,7 +537,7 @@ function MarkerInputRow({
           {template.name}
         </label>
         <div className="text-caption text-muted mt-0.5">
-          Reference {template.min}–{template.max}
+          Normal {template.min}–{template.max}
           {template.unit ? ` ${template.unit}` : ''}
         </div>
         {oorHint && (
