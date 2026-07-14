@@ -80,57 +80,6 @@ const RANK: Record<SystemStatus, number> = {
   critical: 3,
 };
 
-// Spokes on a circle around the hub (50,50). Diagonal start (an X, not a +).
-// R pushes the corner nodes out so they clear the hub circle on a narrow
-// phone. Paired with the SHORT_LABEL single-line names + the "Start here"
-// OVERLAY badge below, so a lead corner node can't grow tall enough (label
-// wrap + inline badge) to collide with the hub the way it used to.
-const R = 42;
-const ANGLES = [-45, 45, 135, 225];
-
-// Single-line node names — the full labels ("Recovery & Vitality", "Energy &
-// Metabolic") wrap to two lines, making the boxes tall enough to crash into
-// the hub. The tap panel + story still use the full, warmer names.
-const SHORT_LABEL: Record<BodySystemId, string> = {
-  hormonal: 'Hormones',
-  metabolic: 'Metabolic',
-  heart: 'Heart',
-  vitality: 'Vitality',
-  filtration: 'Filtration',
-};
-const pointAt = (angle: number) => ({
-  x: 50 + R * Math.cos((angle * Math.PI) / 180),
-  y: 50 + R * Math.sin((angle * Math.PI) / 180),
-});
-
-// A gently bowed connector reads more organic than a ruler-straight line.
-// Alternating bow direction keeps the web from looking machine-perfect.
-// The line STARTS at the hub's edge (HUB_EDGE units out), not dead-centre —
-// so the four connectors radiate cleanly from the hub circle instead of
-// crossing through it in a messy X.
-const HUB_EDGE = 15;
-function curvePath(angle: number, sign: number): string {
-  const end = pointAt(angle);
-  const a = (angle * Math.PI) / 180;
-  const sx = 50 + HUB_EDGE * Math.cos(a);
-  const sy = 50 + HUB_EDGE * Math.sin(a);
-  const mx = (sx + end.x) / 2;
-  const my = (sy + end.y) / 2;
-  const dx = end.x - sx;
-  const dy = end.y - sy;
-  const len = Math.hypot(dx, dy) || 1;
-  const off = 6 * sign;
-  const cx = mx + (-dy / len) * off;
-  const cy = my + (dx / len) * off;
-  return `M ${sx} ${sy} Q ${cx} ${cy} ${end.x} ${end.y}`;
-}
-
-function lineStyle(status: SystemStatus): { cls: string; w: number } {
-  if (status === 'critical') return { cls: 'stroke-concern/60', w: 1.6 };
-  if (status === 'concern') return { cls: 'stroke-concern/55', w: 1.3 };
-  return { cls: 'stroke-ink/12', w: 0.7 };
-}
-
 // Three colour families exist app-wide (green / amber / red); concern and
 // critical share red, distinguished by the node's own label.
 const LEGEND: { dot: string; label: string }[] = [
@@ -148,12 +97,11 @@ export default function ConnectedSystems({
   showLegend,
 }: Props) {
   const hub = systems.find((s) => s.hub);
-  const spokes = systems.filter((s) => !s.hub).slice(0, ANGLES.length);
   const [selectedId, setSelectedId] = useState<BodySystemId | null>(null);
   if (!hub) return null;
 
   const hubUnmeasured = hub.status === 'unmeasured';
-  const selected = spokes.find((s) => s.id === selectedId) ?? null;
+  const selected = systems.find((s) => s.id === selectedId) ?? null;
 
   // The single most-pressing system — "start here" — so priority is visible
   // before reading, instead of four equal-weight nodes. Null when all calm.
@@ -168,6 +116,11 @@ export default function ConnectedSystems({
         )
       : null;
   const leadId = lead && lead.status !== 'good' ? lead.id : null;
+
+  // Worst-first, unmeasured last — the reading order for a scannable list.
+  const orderedSystems = [...systems].sort(
+    (a, b) => RANK[b.status] - RANK[a.status] || b.flaggedCount - a.flaggedCount,
+  );
 
   const nodeSub = (s: BodySystem) => s.topFlaggedMarker ?? STATUS[s.status].caption;
 
@@ -192,125 +145,70 @@ export default function ConnectedSystems({
         </motion.p>
       )}
 
-      <div className="relative mx-auto mt-6 aspect-square w-full max-w-[380px] sm:max-w-[480px]">
-        <svg
-          viewBox="0 0 100 100"
-          className="absolute inset-0 h-full w-full overflow-visible"
-          aria-hidden
-        >
-          {spokes.map((s, i) => {
-            const isSel = s.id === selectedId;
-            const base = lineStyle(s.status);
-            const cls = isSel
-              ? 'stroke-indigo-500/80'
-              : selectedId
-                ? 'stroke-ink/8'
-                : base.cls;
-            const w = isSel ? 2 : base.w;
-            return (
-              <motion.path
-                key={s.id}
-                d={curvePath(ANGLES[i], i % 2 === 0 ? 1 : -1)}
-                fill="none"
-                className={cls}
-                strokeWidth={w}
-                strokeLinecap="round"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={{ pathLength: 1, opacity: 1 }}
-                transition={{ duration: 0.7, ease: 'easeOut', delay: 0.55 + i * 0.12 }}
-              />
-            );
-          })}
-        </svg>
-
-        {/* Hub — the hormonal axis everything is regulated from. */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.85 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 320, damping: 24, delay: 0.5 }}
-          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-10"
-        >
-          <div
-            className={`grid place-items-center w-24 h-24 sm:w-36 sm:h-36 rounded-full border-2 text-center shadow-soft px-2 sm:px-3 ${
-              hubUnmeasured ? 'border-line bg-canvas/40' : STATUS[hub.status].ring
-            } ${leadId === hub.id ? 'ring-2 ring-indigo-400/70' : ''}`}
-          >
-            <div>
-              {leadId === hub.id && (
-                <div className="text-[9px] font-bold uppercase tracking-widest text-indigo-700 mb-0.5">
-                  Start here
-                </div>
-              )}
-              <div className="font-display text-body sm:text-body-lg leading-tight text-ink">
-                {SHORT_LABEL[hub.id] ?? hub.label}
-              </div>
-              <div className="mt-1 text-micro leading-snug text-ink-soft">
-                {hubUnmeasured ? 'Not measured here' : nodeSub(hub)}
-                {!hubUnmeasured && hub.flaggedCount > 1
-                  ? ` +${hub.flaggedCount - 1}`
-                  : ''}
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Spokes. Tap teaches the connection; the lead system stands out. */}
-        {spokes.map((s, i) => {
-          const p = pointAt(ANGLES[i]);
+      {/* Systems, worst-first — a robust list that reads instantly on any
+          phone. It replaced a hub-and-spoke SVG that kept colliding on narrow
+          screens and added little the list doesn't: the same "by system"
+          mental model, priority (Start here), status, and the driving marker,
+          with none of the fragility. Tap → the system's markers (report) or
+          the taught connection (landing). */}
+      <div className="mt-6 grid gap-2">
+        {orderedSystems.map((s) => {
           const st = STATUS[s.status];
-          // Tappable to TEACH (select → highlight + cited reason) whenever
-          // the system has markers — even with no onSelectSystem (the landing
-          // demo has nowhere to navigate, but the connection should still
-          // teach). Navigation ("View N markers") stays gated on onSelectSystem.
-          const clickable = s.markerCount > 0;
-          const isSel = s.id === selectedId;
           const isLead = s.id === leadId;
-          const dim = selectedId && !isSel;
-          // Systems with no markers in this report recede — smaller, softer,
-          // dashed — so the map reads as "here's what we know" rather than
-          // "mostly empty". They fill in (and grow to full weight) as more
-          // panels are added.
+          const isSel = s.id === selectedId;
           const isUnmeasured = s.status === 'unmeasured';
+          const clickable = s.markerCount > 0;
           return (
             <motion.button
               key={s.id}
               type="button"
               disabled={!clickable}
-              onClick={() => setSelectedId(isSel ? null : s.id)}
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{
-                opacity: dim ? 0.4 : isUnmeasured ? 0.5 : 1,
-                scale: isUnmeasured ? 0.86 : isLead && !dim ? 1.05 : 1,
-              }}
-              transition={{ type: 'spring', stiffness: 320, damping: 24, delay: 0.65 + i * 0.12 }}
-              style={{ left: `${p.x}%`, top: `${p.y}%` }}
-              className={`absolute -translate-x-1/2 -translate-y-1/2 w-[100px] sm:w-[128px] rounded-2xl border px-2 py-1.5 sm:px-2.5 sm:py-2 text-center transition-transform ${st.ring} ${
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: isUnmeasured ? 0.65 : 1, y: 0 }}
+              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              onClick={() =>
+                onSelectSystem && clickable
+                  ? onSelectSystem(s.id)
+                  : setSelectedId(isSel ? null : s.id)
+              }
+              aria-current={isSel ? 'true' : undefined}
+              className={`w-full flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-colors ${st.ring} ${
                 isUnmeasured ? 'border-dashed' : ''
-              } ${isSel ? 'ring-2 ring-indigo-400/70' : ''} ${
-                isLead ? 'shadow-pop ring-2 ring-indigo-400/60' : ''
-              } ${
+              } ${isSel || isLead ? 'ring-2 ring-indigo-400/60' : ''} ${
                 clickable
-                  ? 'cursor-pointer hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60'
+                  ? 'cursor-pointer hover:border-indigo-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60'
                   : 'cursor-default'
               }`}
             >
-              {isLead && (
-                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap rounded-full bg-indigo-600 px-2 py-[3px] text-[8px] font-bold uppercase tracking-widest text-on-primary shadow-soft">
-                  Start here
-                </div>
-              )}
-              <div className="text-caption font-semibold leading-tight text-ink">
-                {SHORT_LABEL[s.id] ?? s.label}
-              </div>
-              <div className="mt-1 inline-flex items-center justify-center gap-1 text-micro text-ink-soft">
-                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot}`} />
-                <span className="truncate max-w-[72px]">{nodeSub(s)}</span>
-                {s.flaggedCount > 1 && (
-                  <span className="shrink-0 font-semibold text-ink-soft/80">
-                    +{s.flaggedCount - 1}
+              <span
+                className={`w-2.5 h-2.5 rounded-full shrink-0 ${st.dot}`}
+                aria-hidden
+              />
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="font-display text-body leading-tight text-ink truncate">
+                    {s.label}
                   </span>
-                )}
+                  {isLead && (
+                    <span className="shrink-0 rounded-full bg-indigo-600 px-1.5 py-[2px] text-[8px] font-bold uppercase tracking-widest text-on-primary">
+                      Start here
+                    </span>
+                  )}
+                </div>
+                <div className="mt-0.5 text-caption text-ink-soft truncate">
+                  {isUnmeasured ? 'Not measured yet' : nodeSub(s)}
+                  {!isUnmeasured && s.flaggedCount > 1
+                    ? ` · +${s.flaggedCount - 1} more`
+                    : ''}
+                </div>
               </div>
+              {clickable && (
+                <ChevronRight
+                  size={17}
+                  className="text-muted shrink-0"
+                  aria-hidden
+                />
+              )}
             </motion.button>
           );
         })}
@@ -375,8 +273,8 @@ export default function ConnectedSystems({
         >
           <p className="text-micro text-muted leading-snug">
             {hubUnmeasured
-              ? 'Hormones would sit at the centre — today’s map is based on the systems you measured. Tap a system to see how it connects.'
-              : 'Hormones sit at the centre because testosterone influences every other system. Tap a system to see how it connects.'}
+              ? 'Your body works as one connected system, tied together by your hormones. This is what today’s report measured — tap a system to open it.'
+              : 'Your body works as one connected system, tied together by your hormones. Tap a system to open its markers.'}
           </p>
           {story && (
             <p className="text-body-sm leading-relaxed text-ink-soft text-balance">
