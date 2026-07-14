@@ -65,6 +65,17 @@ export default function ReportResultsPage({
   // like /results/rep-001 keep working even though the user's locker
   // starts empty.
   const report = findReport(reports, reportId);
+  // Ready reports in the user's locker (newest first) — powers the quick
+  // switcher so moving between reports is one tap from inside a report,
+  // instead of back → Home → Reports tab → tap.
+  const readyReports = useMemo(
+    () =>
+      reports
+        .filter((r) => r.status === 'ready')
+        // ISO date strings sort chronologically; newest first.
+        .sort((a, b) => (b.uploadedAt ?? '').localeCompare(a.uploadedAt ?? '')),
+    [reports],
+  );
   // Single source of truth for the md+ layout switch. Mirrors the
   // BottomNav pattern: viewport-class branches mount different DOM
   // subtrees, instead of shipping both and hiding one with `md:hidden`
@@ -309,6 +320,36 @@ export default function ReportResultsPage({
       {/* ===== OVERVIEW — the calm "am I okay?" layer (default) ===== */}
       {!isDetails && (
         <>
+      {/* Report switcher — one tap between your reports, so you never have
+          to go back out to the locker. Only when there's more than one. */}
+      {readyReports.length > 1 && (
+        <Container size="wide" className="pt-4 no-print">
+          <div className="flex gap-2 overflow-x-auto scrollbar-none -mx-5 px-5 pb-0.5">
+            {readyReports.map((r) => {
+              const active = r.id === reportId;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() =>
+                    active
+                      ? undefined
+                      : navigate({ type: 'results', reportId: r.id })
+                  }
+                  aria-current={active ? 'true' : undefined}
+                  className={`shrink-0 inline-flex items-center min-h-11 px-4 rounded-full text-caption font-semibold whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 ${
+                    active
+                      ? 'bg-indigo-600 text-on-primary shadow-soft'
+                      : 'bg-surface border border-line text-ink-soft hover:border-indigo-300'
+                  }`}
+                >
+                  {r.uploadedOn}
+                </button>
+              );
+            })}
+          </div>
+        </Container>
+      )}
       {/* The Bottom Line — full-width hero */}
       <Container size="wide" className="pt-5 md:pt-8">
         <motion.div
