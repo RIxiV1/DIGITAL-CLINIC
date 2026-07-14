@@ -81,10 +81,23 @@ const RANK: Record<SystemStatus, number> = {
 };
 
 // Spokes on a circle around the hub (50,50). Diagonal start (an X, not a +).
-// R=40 pushes the corner nodes far enough out that they clear the hub circle
-// on a narrow phone — at R=34 the fixed-px hub + node boxes overlapped.
-const R = 40;
+// R pushes the corner nodes out so they clear the hub circle on a narrow
+// phone. Paired with the SHORT_LABEL single-line names + the "Start here"
+// OVERLAY badge below, so a lead corner node can't grow tall enough (label
+// wrap + inline badge) to collide with the hub the way it used to.
+const R = 42;
 const ANGLES = [-45, 45, 135, 225];
+
+// Single-line node names — the full labels ("Recovery & Vitality", "Energy &
+// Metabolic") wrap to two lines, making the boxes tall enough to crash into
+// the hub. The tap panel + story still use the full, warmer names.
+const SHORT_LABEL: Record<BodySystemId, string> = {
+  hormonal: 'Hormones',
+  metabolic: 'Metabolic',
+  heart: 'Heart',
+  vitality: 'Vitality',
+  filtration: 'Filtration',
+};
 const pointAt = (angle: number) => ({
   x: 50 + R * Math.cos((angle * Math.PI) / 180),
   y: 50 + R * Math.sin((angle * Math.PI) / 180),
@@ -229,7 +242,7 @@ export default function ConnectedSystems({
                 </div>
               )}
               <div className="font-display text-body sm:text-body-lg leading-tight text-ink">
-                {hub.label}
+                {SHORT_LABEL[hub.id] ?? hub.label}
               </div>
               <div className="mt-1 text-micro leading-snug text-ink-soft">
                 {hubUnmeasured ? 'Not measured here' : nodeSub(hub)}
@@ -282,12 +295,12 @@ export default function ConnectedSystems({
               }`}
             >
               {isLead && (
-                <div className="text-[9px] font-bold uppercase tracking-widest text-indigo-700 mb-0.5">
+                <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap rounded-full bg-indigo-600 px-2 py-[3px] text-[8px] font-bold uppercase tracking-widest text-on-primary shadow-soft">
                   Start here
                 </div>
               )}
               <div className="text-caption font-semibold leading-tight text-ink">
-                {s.label}
+                {SHORT_LABEL[s.id] ?? s.label}
               </div>
               <div className="mt-1 inline-flex items-center justify-center gap-1 text-micro text-ink-soft">
                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot}`} />
