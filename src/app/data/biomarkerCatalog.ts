@@ -1040,7 +1040,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'band',
     simpleName: 'How much iron your blood can carry',
     plain:
-      'High TIBC often signals iron deficiency; low TIBC can point to inflammation or chronic disease.',
+      'High TIBC can go with iron deficiency; low TIBC with inflammation or a long-term illness. Read it alongside your other iron markers.',
   },
 
   /* ---- Additional Liver ---------------------------------------- */
@@ -1534,7 +1534,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'band',
     simpleName: 'Average hemoglobin per red cell',
     plain:
-      'Low MCH often signals iron deficiency; high MCH suggests B12 / folate issues.',
+      'Low MCH can go with iron deficiency, high MCH with low B12 or folate. On its own it doesn’t pin down the cause — it’s read alongside your other red-cell markers.',
   },
   {
     id: 'mchc',
@@ -1942,7 +1942,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'band',
     simpleName: 'Front-line bacterial fighters',
     plain:
-      'High % often signals bacterial infection or stress. Very low % can mean viral illness or marrow suppression.',
+      'Your first responders to infection. A high share can go with a bacterial infection or stress; a very low share with a viral illness.',
   },
   {
     id: 'lymphocytes',
@@ -1957,7 +1957,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'band',
     simpleName: 'Viral / antibody-immunity cells',
     plain:
-      'High % often suggests viral infection or chronic immune activation. Low % can point to acute stress, steroids, or HIV.',
+      'Behind your longer-term immunity. A high share can go with a viral infection; a low share with stress or some medicines.',
   },
   {
     id: 'monocytes',
@@ -1972,7 +1972,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'band',
     simpleName: 'Tissue cleanup + chronic-immunity cells',
     plain:
-      'Elevated monocytes can signal chronic inflammation, certain infections, or recovery from acute illness.',
+      'Your clean-up crew. Higher numbers can go with ongoing inflammation, an infection, or bouncing back from an illness.',
   },
   {
     id: 'eosinophils',
@@ -1987,7 +1987,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'band',
     simpleName: 'Allergy + parasite cells',
     plain:
-      'Elevated eosinophils usually suggest allergy, asthma, or parasitic infection. Common in Indian populations from intestinal parasites.',
+      'Allergy and parasite responders. Higher numbers can go with allergies, asthma, some medicines, or a parasite — it depends on the wider picture.',
   },
   {
     id: 'basophils',
@@ -2002,7 +2002,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     direction: 'band',
     simpleName: 'Rare allergic-response cells',
     plain:
-      'Usually <2% in a healthy sample. Persistent elevation can suggest allergic disorders or certain chronic conditions.',
+      'The rarest of your white cells. A small number is normal; a lasting rise can go with allergies or some longer-term conditions.',
   },
   {
     id: 'anc',

@@ -710,11 +710,11 @@ export function bottomLineFor(markers: Biomarker[] = sampleBiomarkers) {
     line =
       'Across the board — you’re in great shape. Keep the basics dialled in and re-test in 6 months.';
   } else if (summary.concern === 0) {
-    line = `Mostly excellent — ${summary.good} markers on track. The ${summary.attention} flagged as “needs attention” are simple lifestyle nudges, not red flags.`;
+    line = `Mostly excellent — ${summary.good} markers on track. The ${summary.attention} to keep an eye on are usually minor — worth a mention at your next check-up, not red flags.`;
   } else if (summary.concern === 1) {
     line = `One result deserves follow-up: ${concerns[0]}. Everything else is on track or close to it — a focused plan, with your doctor, is a sensible next step.`;
   } else {
-    line = `Two things to focus on: ${concerns.slice(0, 2).join(' and ')}. Both usually respond to the same set of habits — sleep, movement, and a couple of nutrient swaps.`;
+    line = `Two to look at: ${concerns.slice(0, 2).join(' and ')}. They often move together and can have a few different causes — worth a quick chat with your doctor, who might repeat the test or check a couple of related things.`;
   }
   return line;
 }

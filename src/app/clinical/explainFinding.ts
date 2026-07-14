@@ -131,7 +131,7 @@ export function explainFinding(
         q: 'What it can’t tell us',
         body: critical
           ? 'Not the cause — but reason enough to be seen quickly.'
-          : 'One test can’t say why; a re-test confirms the trend.',
+          : 'One test can’t tell you why on its own — your doctor might repeat it or check a couple of related things.',
       },
       { q: 'What to do', body: `${next.action}.` },
     ],
