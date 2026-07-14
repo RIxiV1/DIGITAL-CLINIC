@@ -122,6 +122,13 @@ export default function ProcessingPage() {
    *  triggering a re-render. Replaced on every cascade entry; aborted
    *  on every cascade exit (success, failure, cancel, unmount). */
   const aiCascadeAbortRef = useRef<AbortController | null>(null);
+  // The Gemini fallback (/api/parse-image) is a deployed serverless function
+  // — absent on a local `vite dev` build, where the POST just hangs. Detect
+  // that so we skip the AUTO-cascade there and land on the manual failure
+  // card instead of a doomed "Trying AI parser…" spinner.
+  const aiEndpointUnavailable =
+    typeof window !== 'undefined' &&
+    /^(localhost|127\.0\.0\.1|\[::1\])$/.test(window.location.hostname);
 
   // StrictMode in dev double-mounts every effect. We track which
   // processingId we've *already started* parsing for, so the second
@@ -252,7 +259,12 @@ export default function ProcessingPage() {
           isImage &&
           result.ocrConfidence !== undefined &&
           result.ocrConfidence <= OCR_LOW_CONFIDENCE_THRESHOLD;
-        if (lowConfidenceImage && file && loadAiAutoFallbackSetting()) {
+        if (
+          lowConfidenceImage &&
+          file &&
+          loadAiAutoFallbackSetting() &&
+          !aiEndpointUnavailable
+        ) {
           clearPendingConfirm();
           removeReport(processingId);
           setAiCascadeFile(file);
@@ -354,7 +366,10 @@ export default function ProcessingPage() {
       // nothing, we drop through to the failure card anyway.
       const isCascadeReason = reason !== 'no-file';
       const shouldCascade =
-        isImage && isCascadeReason && loadAiAutoFallbackSetting();
+        isImage &&
+        isCascadeReason &&
+        loadAiAutoFallbackSetting() &&
+        !aiEndpointUnavailable;
       if (shouldCascade && file) {
         // Don't paint the failure card — kick straight into the AI
         // cascade. The setAiCascadeFile state drives a new render
@@ -599,7 +614,22 @@ export default function ProcessingPage() {
   }, [aiCascadeFile]);
 
   const cancelAiCascade = () => {
+    // Escape INSTANTLY. Don't wait for the aborted fetch to unwind (on a
+    // local build /api/parse-image can be wedged with no response), or the
+    // "Cancel" button appears dead. Transition to the failure card now and
+    // abort in the background; the effect cleanup aborts too.
+    const file = aiCascadeFile;
     aiCascadeAbortRef.current?.abort();
+    setAiCascadeFile(null);
+    if (file) {
+      setFailure({
+        reason: 'no-matches',
+        errorMessage:
+          'AI parser cancelled. You can enter values manually or try a different file.',
+        fileName: file.name || 'My lab report',
+        file,
+      });
+    }
   };
 
   /* ================================================================ */
