@@ -92,17 +92,24 @@ const pointAt = (angle: number) => ({
 
 // A gently bowed connector reads more organic than a ruler-straight line.
 // Alternating bow direction keeps the web from looking machine-perfect.
+// The line STARTS at the hub's edge (HUB_EDGE units out), not dead-centre —
+// so the four connectors radiate cleanly from the hub circle instead of
+// crossing through it in a messy X.
+const HUB_EDGE = 15;
 function curvePath(angle: number, sign: number): string {
-  const p = pointAt(angle);
-  const mx = (50 + p.x) / 2;
-  const my = (50 + p.y) / 2;
-  const dx = p.x - 50;
-  const dy = p.y - 50;
+  const end = pointAt(angle);
+  const a = (angle * Math.PI) / 180;
+  const sx = 50 + HUB_EDGE * Math.cos(a);
+  const sy = 50 + HUB_EDGE * Math.sin(a);
+  const mx = (sx + end.x) / 2;
+  const my = (sy + end.y) / 2;
+  const dx = end.x - sx;
+  const dy = end.y - sy;
   const len = Math.hypot(dx, dy) || 1;
   const off = 6 * sign;
   const cx = mx + (-dy / len) * off;
   const cy = my + (dx / len) * off;
-  return `M 50 50 Q ${cx} ${cy} ${p.x} ${p.y}`;
+  return `M ${sx} ${sy} Q ${cx} ${cy} ${end.x} ${end.y}`;
 }
 
 function lineStyle(status: SystemStatus): { cls: string; w: number } {
@@ -221,11 +228,14 @@ export default function ConnectedSystems({
                   Start here
                 </div>
               )}
-              <div className="font-display text-body-lg leading-tight text-ink">
+              <div className="font-display text-body sm:text-body-lg leading-tight text-ink">
                 {hub.label}
               </div>
               <div className="mt-1 text-micro leading-snug text-ink-soft">
                 {hubUnmeasured ? 'Not measured here' : nodeSub(hub)}
+                {!hubUnmeasured && hub.flaggedCount > 1
+                  ? ` +${hub.flaggedCount - 1}`
+                  : ''}
               </div>
             </div>
           </div>
@@ -269,9 +279,14 @@ export default function ConnectedSystems({
               <div className="text-caption font-semibold leading-tight text-ink">
                 {s.label}
               </div>
-              <div className="mt-1 inline-flex items-center gap-1 text-micro text-ink-soft">
-                <span className={`w-1.5 h-1.5 rounded-full ${st.dot}`} />
-                <span className="truncate max-w-[88px]">{nodeSub(s)}</span>
+              <div className="mt-1 inline-flex items-center justify-center gap-1 text-micro text-ink-soft">
+                <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${st.dot}`} />
+                <span className="truncate max-w-[72px]">{nodeSub(s)}</span>
+                {s.flaggedCount > 1 && (
+                  <span className="shrink-0 font-semibold text-ink-soft/80">
+                    +{s.flaggedCount - 1}
+                  </span>
+                )}
               </div>
             </motion.button>
           );
@@ -300,8 +315,17 @@ export default function ConnectedSystems({
         >
           <div className="text-caption font-semibold text-ink">
             {selected.label}
-            {selected.topFlaggedMarker ? ` · ${selected.topFlaggedMarker}` : ''}
           </div>
+          {selected.flaggedMarkers.length > 0 && (
+            <div className="mt-0.5 text-caption text-ink-soft">
+              <span className="font-medium text-ink-soft">
+                {selected.flaggedMarkers.length === 1
+                  ? 'Flagged here:'
+                  : `${selected.flaggedMarkers.length} flagged here:`}
+              </span>{' '}
+              {selected.flaggedMarkers.join(', ')}
+            </div>
+          )}
           {selected.link && (
             <p className="mt-1 text-caption leading-snug text-ink-soft">
               <span className="font-medium text-ink-soft">Why it connects:</span>{' '}

@@ -91,6 +91,11 @@ export type BodySystem = {
    *  flagged — lets the map say what's DRIVING a system ("LDL Cholesterol")
    *  instead of a monotone "Worth a look". Undefined when nothing's flagged. */
   topFlaggedMarker?: string;
+  /** Every needs-care (concern + critical) marker in this system, worst-first
+   *  — so the map can show that TWO markers drive a system (a node "+1", the
+   *  tap panel "MCH, MCHC"), not just the first one. Empty when nothing's
+   *  flagged. */
+  flaggedMarkers: string[];
   link?: string;
 };
 
@@ -120,10 +125,12 @@ export function buildBodySystems(markers: Biomarker[]): BodySystem[] {
     const flagged = inSystem.filter(
       (m) => m.status === 'concern' || m.status === 'critical',
     );
-    // The single worst marker names what's driving the system.
-    const topFlaggedMarker = flagged
+    // Needs-care markers, worst-first — the first names what's driving the
+    // system; the rest let the map show it isn't the only one.
+    const flaggedMarkers = flagged
       .slice()
-      .sort((a, b) => STATUS_RANK[b.status] - STATUS_RANK[a.status])[0]?.name;
+      .sort((a, b) => STATUS_RANK[b.status] - STATUS_RANK[a.status])
+      .map((m) => m.name);
     return {
       id: def.id,
       label: def.label,
@@ -132,7 +139,8 @@ export function buildBodySystems(markers: Biomarker[]): BodySystem[] {
       markerCount: inSystem.length,
       flaggedCount: flagged.length,
       categories: def.categories,
-      topFlaggedMarker,
+      topFlaggedMarker: flaggedMarkers[0],
+      flaggedMarkers,
       link: def.link,
     };
   });
