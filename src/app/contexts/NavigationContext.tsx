@@ -152,7 +152,10 @@ export function pageEquals(a: Page | null | undefined, b: Page): boolean {
   if (!a) return false;
   if (a.type !== b.type) return false;
   if (a.type === 'results' && b.type === 'results') {
-    return a.reportId === b.reportId;
+    // `view` distinguishes the Overview from the Detailed Results layer —
+    // without it, navigating between them counts as "same page" and the
+    // URL/render never updates.
+    return a.reportId === b.reportId && a.view === b.view;
   }
   if (a.type === 'problem' && b.type === 'problem') {
     return a.problemId === b.problemId;
