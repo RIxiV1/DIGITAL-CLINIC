@@ -159,6 +159,22 @@ export default function ReportResultsPage({
       : null;
   }, [biomarkers]);
 
+  // The open marker's same-SYSTEM companions (the Health Map system it
+  // belongs to, minus itself) — shown in the sheet as "connected markers"
+  // so a reading is never seen in isolation. Same-system co-occurrence,
+  // never a fabricated causal claim (mirrors explainFinding's honesty rail).
+  const sheetRelated = useMemo(() => {
+    if (!sheetMarker) return null;
+    const sys = bodySystems.find((s) =>
+      s.categories.includes(sheetMarker.category),
+    );
+    if (!sys) return null;
+    const markers = biomarkers.filter(
+      (m) => m.id !== sheetMarker.id && sys.categories.includes(m.category),
+    );
+    return markers.length ? { markers, systemLabel: sys.label } : null;
+  }, [sheetMarker, bodySystems, biomarkers]);
+
   /** Per-category expansion. Everything starts COLLAPSED — the calm read.
    *  The verdict, the one-thing explanation, and the Health Map already
    *  surface what matters up top; the full marker list is reference detail,
@@ -993,6 +1009,8 @@ export default function ReportResultsPage({
       <MarkerSheet
         marker={sheetMarker}
         contextNote={sheetMarker ? markerContextNote(sheetMarker, quiz) : null}
+        related={sheetRelated}
+        onSelectRelated={setSheetMarker}
         onClose={() => setSheetMarker(null)}
         onOpenProblem={
           sheetMarker?.problemId

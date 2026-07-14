@@ -2,7 +2,7 @@ import { useId, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronRight, X } from 'lucide-react';
 import BiomarkerBar from './BiomarkerBar';
-import { type Biomarker } from '../data/biomarkers';
+import { statusColor, type Biomarker } from '../data/biomarkers';
 import { useModalA11y } from '../utils/useModalA11y';
 
 /**
@@ -22,6 +22,12 @@ import { useModalA11y } from '../utils/useModalA11y';
 type Props = {
   marker: Biomarker | null;
   contextNote?: string | null;
+  /** Same-SYSTEM markers (the Health Map system this marker belongs to),
+   *  excluding this one — "which other markers are part of the same story".
+   *  Tapping one swaps the sheet to it, so a user can walk a system without
+   *  closing and re-opening. Null/empty hides the section. */
+  related?: { markers: Biomarker[]; systemLabel: string } | null;
+  onSelectRelated?: (m: Biomarker) => void;
   /** Jump to the full action plan (problem page), when the marker has one. */
   onOpenProblem?: () => void;
   onClose: () => void;
@@ -30,6 +36,8 @@ type Props = {
 export default function MarkerSheet({
   marker,
   contextNote,
+  related,
+  onSelectRelated,
   onOpenProblem,
   onClose,
 }: Props) {
@@ -89,6 +97,52 @@ export default function MarkerSheet({
             {/* Scrollable body — the one-and-only marker-detail renderer. */}
             <div className="flex-1 overflow-y-auto px-2 py-2">
               <BiomarkerBar marker={marker} contextNote={contextNote} />
+
+              {/* Connected markers — the same-system story. Answers "which
+                  other markers are part of this?" and reinforces the Health
+                  Map's "your body, connected" model. Each is a tap target
+                  that swaps the sheet, so a user can walk a whole system. */}
+              {related && related.markers.length > 0 && onSelectRelated && (
+                <div className="mt-1 px-3 pb-2">
+                  <div className="text-micro font-bold uppercase tracking-label text-indigo-700">
+                    Connected markers
+                  </div>
+                  <p className="mt-1 text-caption text-muted leading-snug">
+                    Others in your {related.systemLabel} system — they’re read
+                    together, not in isolation.
+                  </p>
+                  <div className="mt-2.5 grid gap-1.5">
+                    {related.markers.map((m) => {
+                      const c = statusColor(m.status);
+                      return (
+                        <button
+                          key={m.id}
+                          type="button"
+                          onClick={() => onSelectRelated(m)}
+                          className="w-full flex items-center gap-3 rounded-xl border border-line bg-surface px-3.5 min-h-12 text-left hover:border-indigo-300 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                        >
+                          <span
+                            className={`w-2 h-2 rounded-full shrink-0 ${c.dot}`}
+                            aria-hidden
+                          />
+                          <span className="flex-1 min-w-0 text-body-sm font-semibold text-ink truncate">
+                            {m.name}
+                          </span>
+                          <span className="text-caption text-muted tabular-nums shrink-0">
+                            {m.value.toLocaleString('en-IN')}
+                            {m.unit ? ` ${m.unit}` : ''}
+                          </span>
+                          <ChevronRight
+                            size={15}
+                            className="text-muted shrink-0"
+                            aria-hidden
+                          />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Footer: jump to the full action plan when there is one. */}
