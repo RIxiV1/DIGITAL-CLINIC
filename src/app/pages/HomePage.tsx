@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   CalendarClock,
   ChevronRight,
+  Info,
   Upload,
   X,
 } from 'lucide-react';
@@ -523,13 +524,11 @@ export default function HomePage() {
             role="status"
             className="flex items-start gap-3 rounded-2xl bg-surface border border-line px-4 py-3"
           >
-            <span
+            <Info
+              size={18}
+              className="shrink-0 mt-0.5 text-indigo-600"
               aria-hidden
-              role="img"
-              className="text-body-lg leading-none mt-0.5"
-            >
-              ℹ️
-            </span>
+            />
             <div className="flex-1 min-w-0 text-caption leading-relaxed text-ink">
               <div className="font-semibold text-ink">
                 Some older trend points may be missing

@@ -1,11 +1,14 @@
 import { useMemo, useState } from 'react';
 import {
+  AlertTriangle,
   ArrowRight,
   Check,
   ChevronDown,
   ChevronUp,
   FileText,
+  Info,
   RotateCcw,
+  Siren,
 } from 'lucide-react';
 import Button from '../../components/Button';
 import Card from '../../components/Card';
@@ -249,9 +252,7 @@ export default function ConfirmExtractedValuesView({
           {counts.critical > 0 && (
             <Card padded={false} className="overflow-hidden border-concern">
               <div className="px-5 py-4 bg-concern text-on-status flex items-start gap-3">
-                <span aria-hidden role="img" className="text-body-lg leading-none">
-                  🚨
-                </span>
+                <Siren size={20} className="shrink-0 mt-0.5" aria-hidden />
                 <div className="flex-1 min-w-0">
                   <div className="font-display text-body-sm leading-tight">
                     {(() => {
@@ -281,9 +282,7 @@ export default function ConfirmExtractedValuesView({
           {semenStandardMismatch && (
             <Card padded={false} className="overflow-hidden border-indigo-200/70">
               <div className="px-5 py-4 bg-indigo-50/60 flex items-start gap-3">
-                <span aria-hidden role="img" className="text-body-lg leading-none">
-                  ℹ️
-                </span>
+                <Info size={19} className="shrink-0 mt-0.5 text-indigo-600" aria-hidden />
                 <div className="flex-1 min-w-0">
                   <div className="font-display text-body-sm leading-tight">
                     Your report uses WHO 2010 reference ranges
@@ -310,13 +309,11 @@ export default function ConfirmExtractedValuesView({
             ocrPagesSkipped > 0 && (
               <Card padded={false} className="overflow-hidden border-attention/30">
                 <div className="px-5 py-4 bg-attention-soft/50 flex items-start gap-3">
-                  <span
+                  <AlertTriangle
+                    size={19}
+                    className="shrink-0 mt-0.5 text-attention"
                     aria-hidden
-                    role="img"
-                    className="text-body-lg leading-none"
-                  >
-                    ⚠️
-                  </span>
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="font-display text-body-sm leading-tight">
                       Some pages couldn’t be read
@@ -343,13 +340,11 @@ export default function ConfirmExtractedValuesView({
             ocrConfidence <= OCR_LOW_CONFIDENCE_THRESHOLD && (
               <Card padded={false} className="overflow-hidden border-attention/30">
                 <div className="px-5 py-4 bg-attention-soft/50 flex items-start gap-3">
-                  <span
+                  <AlertTriangle
+                    size={19}
+                    className="shrink-0 mt-0.5 text-attention"
                     aria-hidden
-                    role="img"
-                    className="text-body-lg leading-none"
-                  >
-                    ⚠️
-                  </span>
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="font-display text-body-sm leading-tight">
                       Please double-check these values
@@ -443,10 +438,8 @@ export default function ConfirmExtractedValuesView({
               we deliberately don't analyze those sections. */}
           {ignoredCategory && (
             <Card padded={false} className="overflow-hidden border-indigo-200/70">
-              <div className="px-5 pt-4 pb-3 border-b border-indigo-100 bg-indigo-50/40 flex items-center gap-2">
-                <span aria-hidden role="img" className="text-body leading-none">
-                  ℹ️
-                </span>
+              <div className="px-5 pt-4 pb-3 border-b border-indigo-100 bg-indigo-50/40 flex items-center gap-2.5">
+                <Info size={17} className="shrink-0 text-indigo-600" aria-hidden />
                 <div className="font-display text-body-sm leading-tight">
                   We ignored some sections of this report
                 </div>
@@ -484,9 +477,9 @@ export default function ConfirmExtractedValuesView({
           {unrecognizedRows && unrecognizedRows.length > 0 && (
             <Card padded={false} className="overflow-hidden border-amber-200/70">
               <details className="group" open>
-                <summary className="cursor-pointer list-none px-5 pt-4 pb-3 bg-amber-50/40 flex items-center gap-2 hover:bg-amber-50/60 transition-colors">
-                  <span aria-hidden role="img" className="text-body leading-none">
-                    ✓
+                <summary className="cursor-pointer list-none px-5 pt-4 pb-3 bg-amber-50/40 flex items-center gap-2.5 hover:bg-amber-50/60 transition-colors">
+                  <span className="grid place-items-center w-5 h-5 rounded-full bg-good/15 text-good-ink shrink-0">
+                    <Check size={13} strokeWidth={3} aria-hidden />
                   </span>
                   <div className="font-display text-body-sm leading-tight">
                     We also read these results
