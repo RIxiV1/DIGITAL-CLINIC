@@ -350,7 +350,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
 
               <div className="mt-5 flex flex-wrap items-center gap-2 no-print">
                 <Button
-                  variant="gold"
+                  variant="secondary"
                   size="sm"
                   leading={<Download size={14} />}
                   onClick={handleDownload}
@@ -398,7 +398,7 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
           stage for this; it's the other agent's lane right now, so it lives
           on the report first.) */}
       {biomarkers.length > 0 && (
-        <Container size="wide" className="mt-12 md:mt-20">
+        <Container size="wide" className="mt-8 md:mt-12">
           {/* The real, interactive Connected Systems map. The signature
               report→map MORPH deliberately lives ONLY on the Health Map
               page arrival (first-visit cinematic) — replaying it mid-scroll

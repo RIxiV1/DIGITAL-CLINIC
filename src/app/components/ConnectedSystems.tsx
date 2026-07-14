@@ -170,7 +170,7 @@ export default function ConnectedSystems({
         </motion.p>
       )}
 
-      <div className="relative mx-auto mt-8 aspect-square w-full max-w-[440px] sm:max-w-[560px]">
+      <div className="relative mx-auto mt-6 aspect-square w-full max-w-[380px] sm:max-w-[480px]">
         <svg
           viewBox="0 0 100 100"
           className="absolute inset-0 h-full w-full overflow-visible"

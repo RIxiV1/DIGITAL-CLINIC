@@ -712,7 +712,7 @@ export function bottomLineFor(markers: Biomarker[] = sampleBiomarkers) {
   } else if (summary.concern === 0) {
     line = `Mostly excellent — ${summary.good} markers on track. The ${summary.attention} flagged as “needs attention” are simple lifestyle nudges, not red flags.`;
   } else if (summary.concern === 1) {
-    line = `One thing to act on: ${concerns[0]}. Everything else is on track or close to it — a focused plan, with your doctor, is a sensible next step.`;
+    line = `One result deserves follow-up: ${concerns[0]}. Everything else is on track or close to it — a focused plan, with your doctor, is a sensible next step.`;
   } else {
     line = `Two things to focus on: ${concerns.slice(0, 2).join(' and ')}. Both usually respond to the same set of habits — sleep, movement, and a couple of nutrient swaps.`;
   }
