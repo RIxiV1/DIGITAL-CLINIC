@@ -253,6 +253,11 @@ export default function ConnectedSystems({
           const isSel = s.id === selectedId;
           const isLead = s.id === leadId;
           const dim = selectedId && !isSel;
+          // Systems with no markers in this report recede — smaller, softer,
+          // dashed — so the map reads as "here's what we know" rather than
+          // "mostly empty". They fill in (and grow to full weight) as more
+          // panels are added.
+          const isUnmeasured = s.status === 'unmeasured';
           return (
             <motion.button
               key={s.id}
@@ -260,12 +265,17 @@ export default function ConnectedSystems({
               disabled={!clickable}
               onClick={() => setSelectedId(isSel ? null : s.id)}
               initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: dim ? 0.4 : 1, scale: isLead && !dim ? 1.05 : 1 }}
+              animate={{
+                opacity: dim ? 0.4 : isUnmeasured ? 0.5 : 1,
+                scale: isUnmeasured ? 0.86 : isLead && !dim ? 1.05 : 1,
+              }}
               transition={{ type: 'spring', stiffness: 320, damping: 24, delay: 0.65 + i * 0.12 }}
               style={{ left: `${p.x}%`, top: `${p.y}%` }}
               className={`absolute -translate-x-1/2 -translate-y-1/2 w-[100px] sm:w-[128px] rounded-2xl border px-2 py-1.5 sm:px-2.5 sm:py-2 text-center transition-transform ${st.ring} ${
-                isSel ? 'ring-2 ring-indigo-400/70' : ''
-              } ${isLead ? 'shadow-pop ring-2 ring-indigo-400/60' : ''} ${
+                isUnmeasured ? 'border-dashed' : ''
+              } ${isSel ? 'ring-2 ring-indigo-400/70' : ''} ${
+                isLead ? 'shadow-pop ring-2 ring-indigo-400/60' : ''
+              } ${
                 clickable
                   ? 'cursor-pointer hover:scale-[1.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60'
                   : 'cursor-default'
@@ -358,6 +368,16 @@ export default function ConnectedSystems({
           {story && (
             <p className="text-body-sm leading-relaxed text-ink-soft text-balance">
               {story}
+            </p>
+          )}
+          {/* Completeness cue — turns a sparse map into a sense of progress.
+              Only when at least one but not every system is measured. */}
+          {measured.length > 0 && measured.length < systems.length && (
+            <p className="!mt-3 inline-flex items-center gap-1.5 text-micro font-semibold text-indigo-700">
+              <span className="tabular-nums">
+                {measured.length} of {systems.length}
+              </span>{' '}
+              systems mapped — each report you add fills in more.
             </p>
           )}
         </motion.div>
