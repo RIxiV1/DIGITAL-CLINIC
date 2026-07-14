@@ -10,39 +10,29 @@
  * CSP hash to maintain. Keep it dependency-free and loaded synchronously
  * in <head> so it executes before paint.
  *
- * Default: an explicit saved choice always wins; otherwise honor the OS
- * `prefers-color-scheme` and fall back to the warm-paper LIGHT theme.
- * Light is the brand's distinctive ("warm paper clinic-chart") identity —
- * so it leads the first impression — and it's the safer default for the
- * dense numeric/clinical data this app shows (research: dark mode's
- * eye-comfort edge isn't supported, and light-on-dark causes halation for
- * the large minority with astigmatism). Dark-preferrers still get it via
- * their OS setting or the Profile toggle. Must match loadTheme() in
- * persistence.ts exactly, or first paint will flash.
+ * Default: an explicit saved choice always wins; otherwise ForMen opens in
+ * the INSTRUMENT dark world — the deliberate, distinctive brand identity
+ * (cool instrument-navy, periwinkle, coral/amber readouts). Light warm-paper
+ * stays one tap away via the Profile toggle for anyone who prefers it (it
+ * also avoids the light-on-dark halation astigmatic readers can get). Must
+ * match loadTheme() in persistence.ts exactly, or first paint will flash.
  */
 (function () {
   var theme;
   try {
     var saved = localStorage.getItem('dc_theme');
-    if (saved === 'light' || saved === 'dark') {
-      theme = saved; // explicit user choice always wins
-    } else {
-      theme =
-        window.matchMedia &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-          ? 'dark'
-          : 'light';
-    }
+    // Explicit user choice always wins; otherwise default to Instrument dark.
+    theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
   } catch (e) {
-    /* Private mode / quota / disabled storage → the warm-paper identity. */
-    theme = 'light';
+    /* Private mode / quota / disabled storage → the Instrument default. */
+    theme = 'dark';
   }
   document.documentElement.dataset.theme = theme;
 
   /* Keep the mobile-browser top-bar tint in sync with the canvas.
      Mirrors `--color-canvas` from the [data-theme] blocks in index.css;
      ProfilePage's toggle does the same flip on each runtime switch. */
-  var themeColor = theme === 'light' ? '#F7F4EF' : '#100E0C';
+  var themeColor = theme === 'light' ? '#F7F4EF' : '#0F1320';
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', themeColor);
 })();

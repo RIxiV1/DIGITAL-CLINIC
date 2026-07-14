@@ -242,19 +242,19 @@ describe('theme — bare-string format shared with the bootstrap', () => {
     vi.unstubAllGlobals();
   });
 
-  it('with no explicit choice, honors the OS preference', () => {
+  it('with no explicit choice, defaults to Instrument dark (regardless of OS)', () => {
     localStorage.removeItem('dc_theme');
     vi.stubGlobal('matchMedia', (q: string) => ({ matches: q.includes('dark') }));
-    expect(loadTheme()).toBe('dark'); // OS prefers dark
-    vi.stubGlobal('matchMedia', () => ({ matches: false }));
-    expect(loadTheme()).toBe('light'); // OS prefers light / no preference
+    expect(loadTheme()).toBe('dark');
+    vi.stubGlobal('matchMedia', () => ({ matches: false })); // OS = light
+    expect(loadTheme()).toBe('dark'); // still Instrument dark by default
     vi.unstubAllGlobals();
   });
 
-  it('ignores a garbage value → warm-paper light default (no explicit choice)', () => {
+  it('ignores a garbage value → Instrument dark default (no explicit choice)', () => {
     localStorage.setItem('dc_theme', 'garbage');
     vi.stubGlobal('matchMedia', () => ({ matches: false }));
-    expect(loadTheme()).toBe('light');
+    expect(loadTheme()).toBe('dark');
     vi.unstubAllGlobals();
   });
 });
