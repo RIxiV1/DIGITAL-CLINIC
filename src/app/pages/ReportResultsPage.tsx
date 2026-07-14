@@ -320,7 +320,6 @@ export default function ReportResultsPage({
             raised
             className="bg-surface border border-line/70 text-ink relative overflow-hidden !p-5 sm:!p-6 lg:!p-8"
           >
-            <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
             {/* Single-column layout. The 1/3 column on the right used
                 to carry three display-md count tiles (good / attention
                 / concern) — that's three large numbers competing with

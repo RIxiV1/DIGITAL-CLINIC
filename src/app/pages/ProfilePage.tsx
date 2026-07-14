@@ -134,9 +134,6 @@ export default function ProfilePage() {
                 raised
                 className="bg-surface border border-line/70 text-ink !p-6 relative overflow-hidden"
               >
-                <div className="absolute -top-14 -right-14 w-44 h-44 rounded-full bg-indigo-500/15 blur-3xl pointer-events-none" />
-                <div className="absolute -bottom-20 -left-10 w-44 h-44 rounded-full bg-gold-500/10 blur-3xl pointer-events-none" />
-
                 <div className="relative">
                   <div className="flex items-center gap-4">
                     <div className="flex-1 min-w-0">
