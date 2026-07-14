@@ -297,27 +297,44 @@ export default function ProcessingPage() {
       removeReport(processingId);
       const reason = result.failureReason ?? 'no-matches';
       const isImage = !!file && /^image\//.test(file.type || '');
-      // "You pasted a name / a screenshot / a selfie." If OCR read a
-      // meaningful amount of text but that text has essentially no
-      // numbers, it CAN'T be a lab report (a panel is marker + value +
-      // unit). Cascading to the AI parser here is pointless — it can't
-      // invent values that aren't in the image — and it leaves the user
-      // with a technical "AI reader" error for what is really "this
-      // isn't a lab report." Catch it up front with a specific message.
-      // Guard on readable length so a totally-empty OCR (a genuine read
-      // failure that AI vision MIGHT recover) still cascades as before.
+      // Turn the catch-all "no-matches" into a SPECIFIC reason using what
+      // the parser actually saw, so the user learns why — blank vs a
+      // document vs an unsupported lab layout. We only refine 'no-matches'
+      // (the vague one). 'parser-error' (threw) and 'no-file' (empty) have
+      // their own precise copy, and 'out-of-scope' already positively
+      // identified a viral/imaging panel — none get reclassified.
       const rawText = result.rawText ?? '';
+      const trimmedLen = rawText.trim().length;
       const digitCount = (rawText.match(/\d/g) ?? []).length;
-      const readableButNoNumbers =
-        isImage && rawText.trim().length >= 12 && digitCount <= 1;
-      if (readableButNoNumbers) {
-        setFailure({
-          reason: 'not-lab-content',
-          fileName,
-          rawText,
-          file: file ?? undefined,
-        });
-        return;
+      // Value-shaped rows the reconstruction found but couldn't map — the
+      // key signal. Zero of them = the file has no lab-value structure at
+      // all (a form, a name, a blank page); some of them = a real panel
+      // whose markers/layout we don't recognise yet.
+      const valueRows = result.unrecognizedRows ?? [];
+      if (reason === 'no-matches') {
+        // (A) Nothing readable — a blank page, or a scanned PDF/photo too
+        //     dark or low-res to read.
+        if (trimmedLen < 10) {
+          setFailure({ reason: 'blank', fileName, rawText, file: file ?? undefined });
+          return;
+        }
+        // (B) We read text, but there are NO lab-value rows and almost no
+        //     numbers — a document, not a blood test (the project report,
+        //     a name, a screenshot). AI can't invent values that aren't
+        //     there, so skip the cascade and say so plainly.
+        if (valueRows.length === 0 && digitCount <= 3) {
+          setFailure({
+            reason: 'not-lab-content',
+            fileName,
+            rawText,
+            file: file ?? undefined,
+          });
+          return;
+        }
+        // (C) else → there ARE numbers / value-shaped rows but none matched
+        //     the catalog: an unsupported layout. For images the AI parser
+        //     may read a layout Tesseract couldn't, so the cascade below
+        //     still applies; otherwise it lands on the no-matches card.
       }
       // Cascade is image-only — the AI parser endpoint accepts JPEG /
       // PNG / WebP only. Sending a PDF here would round-trip a 400

@@ -101,10 +101,20 @@ export default function ParseFailedView({
             'Error: The uploaded document contains testing (e.g., infectious disease panels or localized physical exams) that is not related to general metabolic biomarkers or the HPA axis ecosystem. We cannot analyze this report.',
           spot: 'off-scope',
         };
+      case 'blank':
+        // Nothing readable came out — a blank page, or a scan/photo too
+        // dark, blurry, or low-resolution for the text to be read.
+        return {
+          kicker: 'Nothing to read',
+          title: 'This looks blank.',
+          detail:
+            'We couldn’t read anything from this file. If it’s a photo, it may be too dark, blurry, or low-resolution — a clear, well-lit shot of the whole page usually fixes it. If it’s a PDF, it may be a scan with no text layer.',
+          spot: 'blank',
+        };
       case 'not-lab-content':
-        // We read text but found no numbers — so this is a photo, a
-        // screenshot, or a document, not a blood test. Say that plainly
-        // and warmly; never make the user feel they did it wrong.
+        // We read text but found no lab-value rows — a photo, a screenshot,
+        // or a document, not a blood test. Say that plainly and warmly;
+        // never make the user feel they did it wrong.
         return {
           kicker: 'This one isn’t a lab report',
           title: 'We read this, but it isn’t a blood test.',
@@ -116,9 +126,9 @@ export default function ParseFailedView({
       default:
         return {
           kicker: 'We read every line',
-          title: 'We read the file, but didn’t recognise any lab values.',
+          title: 'We found values, but couldn’t match them to markers.',
           detail:
-            'Either the report’s layout is outside what our parser supports yet, or the file is something other than a lab report. We deliberately don’t make up values to fill in — you’d see numbers that weren’t in your report.',
+            'We read some numbers, but none lined up with the markers we recognise — so it’s likely a lab layout we don’t support yet. We deliberately don’t guess: better to say we couldn’t read it than to show you a value that wasn’t in your report.',
           spot: 'searching',
         };
     }
