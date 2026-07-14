@@ -109,7 +109,9 @@ function PageHost() {
       node = <ManualEntryPage />;
       break;
     case 'results':
-      node = <ReportResultsPage reportId={page.reportId} />;
+      node = (
+        <ReportResultsPage reportId={page.reportId} view={page.view} />
+      );
       break;
     case 'problem':
       node = <ProblemDetailPage problemId={page.problemId} />;

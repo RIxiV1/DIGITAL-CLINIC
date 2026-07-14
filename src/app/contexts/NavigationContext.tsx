@@ -72,7 +72,9 @@ export function pageToPath(page: Page): string {
     case 'privacy':
       return '/privacy';
     case 'results':
-      return `/reports/${encodeURIComponent(page.reportId)}`;
+      return page.view === 'details'
+        ? `/reports/${encodeURIComponent(page.reportId)}/markers`
+        : `/reports/${encodeURIComponent(page.reportId)}`;
     case 'problem':
       return `/topics/${encodeURIComponent(page.problemId)}`;
     default:
@@ -125,6 +127,14 @@ export function pathToPage(pathname: string): Page {
 
   // Parameterised routes — keyword case-insensitive (`/i`), param case
   // preserved by matching against `trimmed` rather than `keyword`.
+  const reportDetailsMatch = trimmed.match(/^\/reports\/([^/]+)\/markers$/i);
+  if (reportDetailsMatch) {
+    return {
+      type: 'results',
+      reportId: decodeURIComponent(reportDetailsMatch[1]),
+      view: 'details',
+    };
+  }
   const reportMatch = trimmed.match(/^\/reports\/([^/]+)$/i);
   if (reportMatch) {
     return { type: 'results', reportId: decodeURIComponent(reportMatch[1]) };

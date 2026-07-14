@@ -13,7 +13,10 @@ export type Page =
   | { type: 'upload' }
   | { type: 'processing' }
   | { type: 'manualEntry' }
-  | { type: 'results'; reportId: string }
+  // `view: 'details'` is the full marker explorer at /reports/:id/markers;
+  // the default (undefined) is the calm Overview. Same page — the URL just
+  // selects which layer of the progressive-disclosure the report shows.
+  | { type: 'results'; reportId: string; view?: 'details' }
   | { type: 'problem'; problemId: string }
   | { type: 'profile' }
   | { type: 'privacy' };

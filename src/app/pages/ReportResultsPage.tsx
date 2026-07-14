@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ChevronDown, ChevronRight, Download, Info } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Info,
+} from 'lucide-react';
 import Button from '../components/Button';
 import Card from '../components/Card';
 import Container from '../components/Container';
@@ -40,9 +46,20 @@ import { findReport } from '../data/reports';
 
 type Filter = StatusFilterId;
 
-export default function ReportResultsPage({ reportId }: { reportId: string }) {
+export default function ReportResultsPage({
+  reportId,
+  view,
+}: {
+  reportId: string;
+  view?: 'details';
+}) {
   const { reports } = useReports();
   const { navigate } = useNavigation();
+  // Progressive disclosure: the calm Overview (default) vs. the full marker
+  // explorer ('details' → /reports/:id/markers). Same component; the URL
+  // picks the layer. Same page-key means no remount between them, so a tap
+  // on a Health Map system can deep-scroll into the details view.
+  const isDetails = view === 'details';
   const { quiz } = useQuiz();
   // findReport falls back to the curated sample-reports list, so links
   // like /results/rep-001 keep working even though the user's locker
@@ -185,8 +202,15 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         presentCategoryIds.has(c),
       );
       if (firstPresent) setScrollTarget(`system-cat-${firstPresent}`);
+      // From the Overview, tapping a system on the Health Map is a
+      // navigation into the detail — go to the markers view (the scroll
+      // target + expansion above persist across the mode switch, so the
+      // details view lands already scrolled to that system and glowing).
+      if (!isDetails) {
+        navigate({ type: 'results', reportId, view: 'details' });
+      }
     },
-    [bodySystems, presentCategoryIds],
+    [bodySystems, presentCategoryIds, isDetails, navigate, reportId],
   );
   // The system section that should glow once, right after the map scrolls
   // to it — the visual "the map pointed me here" handoff.
@@ -266,6 +290,9 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         }
       />
 
+      {/* ===== OVERVIEW — the calm "am I okay?" layer (default) ===== */}
+      {!isDetails && (
+        <>
       {/* The Bottom Line — full-width hero */}
       <Container size="wide" className="pt-5 md:pt-8">
         <motion.div
@@ -482,8 +509,112 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
         </Container>
       )}
 
+      {/* Bridge to the full data — the single calm handoff from
+          "understand" to "inspect". 95% of readers never need to scroll
+          every marker; this is the door for those who do. */}
+      <Container size="wide" className="mt-8">
+        <button
+          type="button"
+          onClick={() =>
+            navigate({ type: 'results', reportId, view: 'details' })
+          }
+          className="w-full flex items-center justify-between gap-3 rounded-2xl border border-line bg-surface px-5 py-4 text-left shadow-soft hover:border-indigo-300 transition-colors no-print"
+        >
+          <div className="min-w-0">
+            <div className="font-display text-body-lg leading-tight text-ink">
+              View all {biomarkers.length} results
+            </div>
+            <div className="text-caption text-muted mt-0.5">
+              Every marker we read, grouped by category.
+            </div>
+          </div>
+          <ChevronRight size={20} className="text-indigo-700 shrink-0" />
+        </button>
+      </Container>
+
+      {/* Destination — the "what now" close. Lives here (out of the marker
+          explorer) so the Overview ends on one clear next action. */}
+      <Container size="wide" className="mt-6">
+        <Card className="bg-indigo-50/60 border-indigo-100 no-print">
+          <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700">
+            What now
+          </div>
+          {topFlagged ? (
+            <>
+              <h2 className="font-display text-display-md leading-tight mt-1.5 text-balance">
+                Start with {topFlagged.name}.
+              </h2>
+              <p className="mt-2 text-body-sm text-ink-soft max-w-xl">
+                It’s the one result worth a closer look. Open it to see what it
+                means and what to do — then take a summary to your doctor to
+                talk it through.
+              </p>
+            </>
+          ) : (
+            <>
+              <h2 className="font-display text-display-md leading-tight mt-1.5 text-balance">
+                You’re all set.
+              </h2>
+              <p className="mt-2 text-body-sm text-ink-soft max-w-xl">
+                Everything we read is in range. Keep the basics dialled in,
+                re-test in 6–12 months, and save a copy for your records.
+              </p>
+            </>
+          )}
+          <div className="mt-4 flex flex-wrap gap-2.5">
+            {topFlagged && (
+              <Button
+                variant="primary"
+                size="sm"
+                trailing={<ChevronRight size={15} />}
+                onClick={() =>
+                  topFlagged.problemId
+                    ? navigate({
+                        type: 'problem',
+                        problemId: topFlagged.problemId,
+                      })
+                    : setSheetMarker(topFlagged)
+                }
+              >
+                Review {topFlagged.name}
+              </Button>
+            )}
+            <Button
+              variant={topFlagged ? 'secondary' : 'primary'}
+              size="sm"
+              leading={<Download size={14} />}
+              onClick={handleDownload}
+            >
+              Save a summary for your doctor
+            </Button>
+          </div>
+        </Card>
+      </Container>
+        </>
+      )}
+
+      {/* ===== DETAILED RESULTS — the "inspect the data" layer ===== */}
+      {isDetails && (
+        <>
+      <Container size="wide" className="pt-4 md:pt-6">
+        <button
+          type="button"
+          onClick={() => navigate({ type: 'results', reportId })}
+          className="inline-flex items-center gap-1 -ml-1 px-1 min-h-11 text-caption font-semibold text-indigo-700 hover:text-indigo-900 no-print"
+        >
+          <ChevronLeft size={16} /> Back to overview
+        </button>
+        <h1 className="font-display text-display-md leading-tight mt-1 text-balance">
+          All results
+        </h1>
+        <p className="text-caption text-muted mt-1">
+          {biomarkers.length} markers we read, grouped by category. Tap any one
+          for the detail.
+        </p>
+      </Container>
+
       {/* Body: 2-col on md — left biomarkers, right sticky filters + deep dives */}
-      <Container size="wide" className="mt-6 md:mt-10">
+      <Container size="wide" className="mt-6 md:mt-8">
         {/* Colour key — this page is the most status-dense surface, so the
             green/amber/red language is defined right where the markers are. */}
         <StatusKey className="mb-4" />
@@ -712,67 +843,6 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
                 capability — it only adds a competing CTA below the
                 action items. */}
 
-            {/* Destination — a clear ending so the page has a sense of
-                completion, not just a stop. It answers "what do I do now?"
-                with one concrete next action, and gives the (deliberately
-                demoted) PDF its real home: a summary to take to a doctor
-                is a closing action, never a headline. Reduced-motion and
-                print skip nothing here — it's static content. */}
-            <Card className="mt-8 bg-indigo-50/60 border-indigo-100 no-print">
-              <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700">
-                What now
-              </div>
-              {topFlagged ? (
-                <>
-                  <h2 className="font-display text-display-md leading-tight mt-1.5 text-balance">
-                    Start with {topFlagged.name}.
-                  </h2>
-                  <p className="mt-2 text-body-sm text-ink-soft max-w-xl">
-                    It’s the one result worth a closer look. Open it to see
-                    what it means and what to do — then take a summary to your
-                    doctor to talk it through.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <h2 className="font-display text-display-md leading-tight mt-1.5 text-balance">
-                    You’re all set.
-                  </h2>
-                  <p className="mt-2 text-body-sm text-ink-soft max-w-xl">
-                    Everything we read is in range. Keep the basics dialled in,
-                    re-test in 6–12 months, and save a copy for your records.
-                  </p>
-                </>
-              )}
-              <div className="mt-4 flex flex-wrap gap-2.5">
-                {topFlagged && (
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    trailing={<ChevronRight size={15} />}
-                    onClick={() =>
-                      topFlagged.problemId
-                        ? navigate({
-                            type: 'problem',
-                            problemId: topFlagged.problemId,
-                          })
-                        : setSheetMarker(topFlagged)
-                    }
-                  >
-                    Review {topFlagged.name}
-                  </Button>
-                )}
-                <Button
-                  variant={topFlagged ? 'secondary' : 'primary'}
-                  size="sm"
-                  leading={<Download size={14} />}
-                  onClick={handleDownload}
-                >
-                  Save a summary for your doctor
-                </Button>
-              </div>
-            </Card>
-
             {/* "Not a diagnosis" footnote. This block used to sit at
                 the TOP of the marker zone, blocking the data on every
                 visit. Moved here so it reads as a closing footnote
@@ -914,6 +984,8 @@ export default function ReportResultsPage({ reportId }: { reportId: string }) {
             under the Bottom Line — action items come before reference
             data in the read order. */}
       </Container>
+        </>
+      )}
 
       <BottomNav />
 
