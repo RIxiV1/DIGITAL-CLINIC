@@ -290,11 +290,20 @@ export default function BiomarkerBar({
       : 'var(--color-concern-soft, #FEE2E2)';
   const midZone = 'var(--color-good-soft, #DCFCE7)';
 
+  // Direction cue: when the value is OUTSIDE the range, mute the extreme it
+  // is NOT at down to a faint neutral, so the vivid alarm colour matches the
+  // real direction. Colouring both ends the same red couldn't tell "you're
+  // high" from "you're low" at a glance — the fix the both-ends-red problem
+  // needed. In-range markers keep both boundary tints (nothing to disambiguate).
+  const MUTED_END = 'var(--color-line)';
+  const lowFill = isAbove ? MUTED_END : lowZone;
+  const highFill = isBelow ? MUTED_END : highZone;
+
   const zoneGradient =
     `linear-gradient(to right, ` +
-    `${lowZone} 0%, ${lowZone} ${SEGMENT_PCT}%, ` +
+    `${lowFill} 0%, ${lowFill} ${SEGMENT_PCT}%, ` +
     `${midZone} ${SEGMENT_PCT}%, ${midZone} ${SEGMENT_PCT * 2}%, ` +
-    `${highZone} ${SEGMENT_PCT * 2}%, ${highZone} 100%)`;
+    `${highFill} ${SEGMENT_PCT * 2}%, ${highFill} 100%)`;
 
   // Padding ramp on the card body. The old `p-5` (20px all sides)
   // ate ~40px of horizontal real estate on a 360px-wide phone, which
