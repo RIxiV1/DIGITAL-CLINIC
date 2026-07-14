@@ -211,6 +211,20 @@ export default function BiomarkerBar({
   // reads naturally without special-casing.
   const trendNote = markerTrendNote(marker);
 
+  // Exact distance past the healthy range — the one concrete "why is this
+  // flagged" fact the detail view was missing. Only computed when the value
+  // is genuinely OUTSIDE [min, max] (an attention marker sitting inside the
+  // range but past its optimal sub-band has no "below/above" delta to show).
+  const isBelow = marker.value < marker.min;
+  const isAbove = marker.value > marker.max;
+  const offBy = isBelow
+    ? marker.min - marker.value
+    : isAbove
+      ? marker.value - marker.max
+      : 0;
+  // Trim to sensible precision: sub-unit deltas keep 2 dp, larger ones 1.
+  const offByLabel = Number(offBy.toFixed(offBy > 0 && offBy < 1 ? 2 : 1));
+
   // Healthy-zone boundaries are always at the segment edges, regardless
   // of the absolute clinical scale. That's the entire point of the
   // piecewise mapping — the bar's geometry is constant across markers.
@@ -516,6 +530,21 @@ export default function BiomarkerBar({
           <p className="mt-1.5 text-caption leading-relaxed text-ink-soft">
             {marker.plain}
           </p>
+          {/* The concrete delta — answers "why is this flagged?" in one
+              scannable line, straight from the reading. Only when the value
+              is actually outside the healthy range. */}
+          {(isBelow || isAbove) && (
+            <p className="mt-2 text-caption leading-relaxed text-ink-soft">
+              <span className="font-semibold text-ink">
+                This reading is {offByLabel}
+                {marker.unit ? ` ${marker.unit}` : ''}{' '}
+                {isBelow ? 'below' : 'above'}
+              </span>{' '}
+              the normal range ({marker.min}–{marker.max}
+              {marker.unit ? ` ${marker.unit}` : ''}) — read directly from your
+              report, not estimated.
+            </p>
+          )}
           {/* Context-aware note — ties this marker to what the user told
               us in the quiz (a disclosed condition, their training load).
               A left border + "Based on your answers" label marks it as
