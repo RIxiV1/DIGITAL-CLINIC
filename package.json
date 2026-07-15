@@ -14,7 +14,10 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "vendor:ocr": "node scripts/vendor-ocr-assets.mjs",
+    "predev": "npm run vendor:ocr",
+    "prebuild": "npm run vendor:ocr"
   },
   "dependencies": {
     "@fontsource/manrope": "^5.2.8",
@@ -32,6 +35,7 @@
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.0.0",
+    "@tesseract.js-data/eng": "^1.0.0",
     "@testing-library/react": "^16.3.2",
     "@types/node": "^25.9.1",
     "@types/react": "^18.3.12",

@@ -111,6 +111,34 @@ const OCR_PAGE_TIMEOUT_MS = 45_000;
  *  toggle has one knob to flip. */
 const OCR_LANG = 'eng';
 
+/**
+ * Same-origin paths for the Tesseract runtime, overriding the library's
+ * defaults — which point at cdn.jsdelivr.net for all three.
+ *
+ * Without these, the browser downloads and EXECUTES a worker script from a
+ * third party, inside our origin, while the user's lab report sits in
+ * memory. That was our largest attack surface (a jsdelivr compromise or DNS
+ * hijack would run arbitrary code with access to the report, and a worker
+ * script can't carry an SRI hash), it put a silent asterisk on the "never
+ * leaves your device" promise (the CDN sees the user's IP and that they're
+ * parsing a health document), and it broke OCR entirely offline or on the
+ * ISP/corporate networks that block jsdelivr — which matters for an
+ * India-first product.
+ *
+ * The files are copied out of node_modules into public/ by
+ * scripts/vendor-ocr-assets.mjs (wired to prebuild/predev), so they stay in
+ * lockstep with the installed package versions. Because these paths are
+ * same-origin, vercel.json's CSP can keep script-src at 'self'.
+ *
+ * `corePath` and `langPath` are DIRECTORIES: tesseract.js appends the
+ * SIMD-appropriate core filename and `<lang>.traineddata.gz` itself.
+ */
+const OCR_WORKER_OPTIONS = {
+  workerPath: '/tesseract/worker.min.js',
+  corePath: '/tesseract/core',
+  langPath: '/tesseract/tessdata',
+} as const;
+
 /** Worker-init timeout. Tesseract pulls ~12MB of eng.traineddata on
  *  first use; on a flaky mobile network this can stall indefinitely
  *  with no signal to the UI. 60s is generous enough for slow 3G but
@@ -189,7 +217,9 @@ export async function prewarmOcr(): Promise<void> {
   try {
     const createWorker = await loadTesseract();
     const worker = await withTimeout(
-      createWorker(OCR_LANG),
+      // `undefined` oem keeps the library default (OEM.LSTM_ONLY), which is
+      // what the vendored core + traineddata variants are chosen to match.
+      createWorker(OCR_LANG, undefined, OCR_WORKER_OPTIONS),
       OCR_WORKER_INIT_TIMEOUT_MS,
       'OCR prewarm',
     );
@@ -727,7 +757,9 @@ async function runImageOcr(
 ): Promise<{ text: string; confidence: number }> {
   const createWorker = await loadTesseract();
   const worker = await withTimeout(
-    createWorker(OCR_LANG),
+    // `undefined` oem keeps the library default (OEM.LSTM_ONLY), which is
+    // what the vendored core + traineddata variants are chosen to match.
+    createWorker(OCR_LANG, undefined, OCR_WORKER_OPTIONS),
     OCR_WORKER_INIT_TIMEOUT_MS,
     'OCR worker init',
   );
@@ -796,7 +828,9 @@ async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
   // clear "couldn't download the OCR engine" message rather than the
   // UI stalling at the last visible stage forever.
   const worker = await withTimeout(
-    createWorker(OCR_LANG),
+    // `undefined` oem keeps the library default (OEM.LSTM_ONLY), which is
+    // what the vendored core + traineddata variants are chosen to match.
+    createWorker(OCR_LANG, undefined, OCR_WORKER_OPTIONS),
     OCR_WORKER_INIT_TIMEOUT_MS,
     'OCR worker init',
   );
@@ -1879,11 +1913,17 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
 
   // Acquire the document with cMapUrl for CID-keyed fonts common in
   // Indian-lab PDFs (Thyrocare / SRL / etc. subset fonts).
+  //
+  // Served from our own origin (copied out of pdfjs-dist by
+  // scripts/vendor-ocr-assets.mjs) rather than a CDN. Parsing a report
+  // should never make a third-party request — it would hand out the user's
+  // IP and the fact that they're reading a lab PDF, and it would fail on
+  // networks that block the CDN. Same reasoning as OCR_WORKER_OPTIONS.
   let pdf: PdfDoc;
   try {
     pdf = await pdfjsLib.getDocument({
       data: buffer,
-      cMapUrl: `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/cmaps/`,
+      cMapUrl: '/cmaps/',
       cMapPacked: true,
     }).promise;
   } catch (err) {
