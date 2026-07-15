@@ -67,8 +67,26 @@ const allowedOriginEntries = (
     entry,
   ): { kind: 'literal'; value: string } | { kind: 'regex'; value: RegExp } => {
     if (entry.startsWith('re:')) {
+      const pattern = entry.slice(3);
+      // Require anchors. An unanchored pattern is a substring match, so
+      // `re:vercel\.app` would also allow `https://evilvercel.app` — the
+      // gate would look configured while being wide open. Fail closed
+      // (literal, which can never equal an Origin) and say why, rather
+      // than silently honouring a pattern that means something broader
+      // than the operator intended.
+      if (!pattern.startsWith('^') || !pattern.endsWith('$')) {
+        // eslint-disable-next-line no-console
+        console.error(
+          'parse-image: unanchored regex in ALLOWED_ORIGINS:',
+          entry,
+          '— must start with ^ and end with $ (an unanchored pattern' +
+            ' substring-matches and would allow look-alike hosts).' +
+            ' Rejecting this entry.',
+        );
+        return { kind: 'literal', value: entry };
+      }
       try {
-        return { kind: 'regex', value: new RegExp(entry.slice(3)) };
+        return { kind: 'regex', value: new RegExp(pattern) };
       } catch {
         // A malformed pattern would otherwise open-fail to "always
         // reject" silently. Log + fall back to literal so misconfig
@@ -449,7 +467,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .replace(/\s+/g, ' ')
       .trim()
       .slice(0, 120);
-    console.error('parse-image: unhandled error', name, rawMessage);
+    // Log the SANITISED message, not the raw one: Vercel log retention is
+    // an unaudited surface, and the upstream errors this catches are the
+    // very ones the comment above flags as sometimes echoing prompts. The
+    // sanitiser is already computed — there's no reason to keep the raw
+    // string anywhere.
+    console.error('parse-image: unhandled error', name, sanitised);
     // The sanitiser already strips URLs/keys/base64, but a message
     // fragment is still attacker-visible surface in prod. Return the
     // hint only off-production (preview/dev) where it aids debugging;
