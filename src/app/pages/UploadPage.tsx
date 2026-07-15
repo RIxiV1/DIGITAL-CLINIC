@@ -406,7 +406,11 @@ export default function UploadPage() {
                   ['formats', 'pdf · jpg · png'],
                   ['parsing', 'on-device'],
                   ['storage', 'this browser'],
-                  ['network', 'none'],
+                  // 'none' would be a lie the moment the AI fallback runs.
+                  // This table's authority comes from being literally true —
+                  // it sits next to the privacy promise, so an overclaim here
+                  // discredits everything around it.
+                  ['network', 'none unless you ask'],
                 ].map(([k, v]) => (
                   <div key={k} className="flex justify-between gap-3 px-3 py-1.5">
                     <dt className="text-muted lowercase tracking-wide">{k}</dt>
