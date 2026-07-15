@@ -496,15 +496,30 @@ export default function BiomarkerBar({
        *    2. Tighten letter-spacing on mobile (`tracking-wide` not
        *       `tracking-widest`) so the labels can't push the page
        *       wider than viewport. */}
+      {/*  The long labels MUST agree with the zone colours computed above, or
+       *  the word contradicts the bar. "Critical low / Critical high" was
+       *  hard-coded, so a man with high testosterone, HDL, eGFR or vitamin D
+       *  (14 markers are direction:'up') read "CRITICAL HIGH" over an end the
+       *  bar itself shaded mild amber — and an LDL of 60 read "CRITICAL LOW"
+       *  over amber too. "Critical" is reserved for the end the colour calls
+       *  `concern`; the merely-notable end says "Very". This is the exact
+       *  failure the comprehension literature names: a display can say
+       *  out-of-range while leaving "is high bad HERE?" unanswered. Short
+       *  mobile labels stay neutral Low/High — the colour carries direction
+       *  there, and there isn't width for more. */}
       <div className="mt-2 flex justify-between text-micro font-semibold uppercase tracking-wide sm:tracking-widest text-muted gap-2">
         <span className="truncate">
           <span className="sm:hidden">Low</span>
-          <span className="hidden sm:inline">Critical low</span>
+          <span className="hidden sm:inline">
+            {direction === 'down' ? 'Very low' : 'Critical low'}
+          </span>
         </span>
         <span className="text-good truncate">Healthy</span>
         <span className="truncate text-right">
           <span className="sm:hidden">High</span>
-          <span className="hidden sm:inline">Critical high</span>
+          <span className="hidden sm:inline">
+            {direction === 'up' ? 'Very high' : 'Critical high'}
+          </span>
         </span>
       </div>
 
