@@ -160,10 +160,11 @@ const CONTENT: Record<LegalKind, Doc> = {
     updated: 'May 2026',
     sections: [
       {
-        heading: 'Nothing leaves your device',
+        heading: 'Your report is read on your device',
         paragraphs: [
-          'Everything you enter — quiz answers, uploaded lab reports, the markers we extract — stays in your browser. There is no server, no cloud sync, and no telemetry. We do not have a database of users because we do not run one.',
-          'The parser (PDF text + OCR) runs entirely in your browser using WebAssembly. Your lab reports are never uploaded anywhere.',
+          'Everything you enter — quiz answers, uploaded lab reports, the markers we extract — stays in your browser. There is no cloud sync and no telemetry. We do not have a database of users because we do not run one.',
+          'The parser (PDF text + OCR) runs entirely in your browser using WebAssembly. By default, your lab report is never uploaded anywhere.',
+          'The one exception is the AI parser. If on-device OCR cannot read a photo, you can choose to send that single image to Google Gemini for a second attempt. It never runs unless you ask for it, it is disclosed at the point of use, and it is the only path where your data leaves your device. It currently uses Gemini’s free tier, which can use submitted data to improve Google’s products. We would rather tell you that than claim an absolute we cannot honour.',
         ],
       },
       {

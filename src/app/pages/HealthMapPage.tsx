@@ -280,7 +280,7 @@ export default function HealthMapPage() {
 
           {/* Footer line — plain, reassuring, India-privacy relevant. */}
           <div className="mt-10 font-mono text-[10px] uppercase tracking-widest text-muted">
-            Runs on your phone · nothing is uploaded
+            Runs on your phone · nothing stored on our servers
           </div>
         </Container>
         <BottomNav />

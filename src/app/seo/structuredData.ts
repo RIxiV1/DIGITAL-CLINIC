@@ -26,9 +26,9 @@ const SITE_URL = 'https://digital-clinic-formen.vercel.app';
 
 const DESCRIPTION =
   "Men's hormonal health, explained. Upload a blood report and get a " +
-  'plain-language read of what each marker means — parsed entirely on ' +
-  'your device, no account, nothing uploaded. A screening aid, not a ' +
-  'diagnosis.';
+  'plain-language read of what each marker means — parsed on your ' +
+  'device, no account, nothing stored on our servers. A screening aid, ' +
+  'not a diagnosis.';
 
 function buildGraph() {
   return {

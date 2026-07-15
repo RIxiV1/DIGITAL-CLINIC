@@ -280,10 +280,11 @@ export default function UploadPage() {
           <ShieldCheck size={18} className="text-indigo-700 shrink-0 mt-0.5" />
           <p className="text-caption leading-relaxed text-indigo-900">
             <span className="font-semibold">
-              Your report never leaves your device.
+              Your report is read on your device.
             </span>{' '}
-            It’s read right here in your browser — nothing is uploaded to a
-            server, and there’s no account. The file stays on your phone.
+            It’s read right here in your browser — no account, nothing uploaded
+            to us, and the file stays on your phone. If a photo turns out too
+            blurry to read, we’ll ask before anything is sent anywhere.
           </p>
         </div>
         <div

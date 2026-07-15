@@ -46,8 +46,8 @@ export default function Privacy() {
           <Reveal>
             <SectionHeader
               eyebrow="Your privacy"
-              title="Your report never leaves your device."
-              subtitle="No account to create, no file to upload to us. The whole thing runs in your browser — because a lab report is nobody else's business."
+              title="Your report is read on your device, not on our servers."
+              subtitle="No account to create, nothing uploaded to us. The whole thing runs in your browser — because a lab report is nobody else's business. The one exception: if a photo is too blurry to read, you can choose to send it to Google's AI. It never happens unless you ask."
             />
           </Reveal>
           <Reveal delay={0.1}>

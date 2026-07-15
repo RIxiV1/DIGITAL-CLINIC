@@ -54,6 +54,6 @@ const ITEMS = [
   },
   {
     title: 'Anonymous by default. Your data, your device.',
-    body: 'No email needed. Nothing leaves your browser. Delete everything in one tap from Profile.',
+    body: 'No email needed. Your report is read in your browser, not uploaded to us. Delete everything in one tap from Profile.',
   },
 ];
