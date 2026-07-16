@@ -212,7 +212,33 @@ async function extractedMarkers(page: Page, jpeg: Buffer, kind: string) {
   // and must be reported as such — throwing here would surface a real
   // regression as an opaque timeout instead of a number.
   await cats.first().waitFor({ state: 'visible', timeout: 30_000 }).catch(() => {});
-  for (const btn of await cats.all()) await btn.click().catch(() => {});
+
+  // Expand every category. Three details, all learned the hard way:
+  //
+  //  - The button TOGGLES, and the initial state depends on the DATA:
+  //    ConfirmExtractedValuesView auto-opens any category holding a
+  //    concern/critical marker and collapses the rest. Clicking blindly
+  //    therefore CLOSES exactly the categories that matter most. Read
+  //    aria-expanded and only open what's shut.
+  //  - scrollIntoViewIfNeeded: on a phone viewport the lower categories sit
+  //    under the sticky "Looks right" bar and the click gets intercepted.
+  //  - no .catch(): swallowing a failed click is precisely the bug this
+  //    suite exists to catch — a failure with no voice. It cost 3 of 8
+  //    markers here and read as a parser regression for a whole debug cycle.
+  const count = await cats.count();
+  for (let i = 0; i < count; i++) {
+    const btn = cats.nth(i);
+    await btn.scrollIntoViewIfNeeded();
+    if ((await btn.getAttribute('aria-expanded')) !== 'true') await btn.click();
+  }
+  // Assert the scrape actually opened everything, so a scraping failure can
+  // never again masquerade as a low OCR score.
+  for (let i = 0; i < count; i++) {
+    expect(
+      await cats.nth(i).getAttribute('aria-expanded'),
+      `category ${i} never opened — the score below would be a lie`,
+    ).toBe('true');
+  }
   const inputs = page.locator('input[type=number]');
   await inputs.first().waitFor({ state: 'attached', timeout: 15_000 }).catch(() => {});
 

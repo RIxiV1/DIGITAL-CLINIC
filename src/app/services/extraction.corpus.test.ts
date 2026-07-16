@@ -28,6 +28,10 @@ type Expectation = {
   values: Record<string, number | [number, number]>;
   /** marker ids that must NOT appear (false-positive guards) */
   absent?: string[];
+  /** marker id → the lab's OWN printed range, as we should have read it
+   *  (already converted to canonical units). `null` asserts we correctly
+   *  captured NO range — e.g. a one-sided "<0.3", which isn't one. */
+  labRange?: Record<string, [number, number] | null>;
 };
 
 type Fixture = { name: string; note: string; text: string; expect: Expectation };
@@ -78,6 +82,16 @@ const FIXTURES: Fixture[] = [
         ast: 33,
         alt: 25,
         hba1c: 5.2,
+      },
+      // Ranges printed in SI must be converted with the same factor as the
+      // value, or we'd grade a mg/dL number against a mmol/L band. Urea is
+      // the case that proves it: 7.1 mmol/L is NORMAL against the lab's own
+      // 3.0-10.0, but graded against our urea band it came back 'concern' —
+      // a false alarm on a healthy man, caused purely by not reading the row.
+      labRange: {
+        sodium: [135, 145],
+        bun: [18.02, 60.06], // 3.0-10.0 mmol/L x 6.006
+        creatinine: [0.4976, 1.244], // 44-110 umol/L / 88.42
       },
     },
   },
@@ -189,6 +203,19 @@ const FIXTURES: Fixture[] = [
         vldl: 20,
         'non-hdl': 70,
       },
+      // The lab's OWN range, read off the row. This is the layout every real
+      // report uses (value, unit, THEN range) and the one we used to miss
+      // entirely — so we silently graded against our catalog band instead of
+      // what the lab actually said. Bilirubin Direct pins the other side:
+      // "<0.3" is one-sided, not a range, and must stay uncaptured.
+      labRange: {
+        creatinine: [0.7, 1.3],
+        ast: [15, 40],
+        alt: [10, 49],
+        bun: [13, 43],
+        'total-protein': [5.7, 8.2],
+        'direct-bilirubin': null,
+      },
     },
   },
   {
@@ -212,6 +239,31 @@ const FIXTURES: Fixture[] = [
     ].join('\n'),
     expect: {
       values: { 'total-protein': 7.2, albumin: 4.0 },
+    },
+  },
+  {
+    name: 'OCR-mangled RANGE must not invent a false flag',
+    note: 'a misread range drove a normal platelet count to concern once we started trusting ranges',
+    // A real photo turned platelet "1.5 - 4.5" (lakh) into "15-45", which
+    // lakh-scales to 1.5M-4.5M. Once the printed range began DRIVING status,
+    // that dragged a perfectly normal 250k count to 'concern' — a false alarm
+    // invented purely by trusting a corrupt range. The value sits an order of
+    // magnitude below its own range, so the RANGE is the misread: drop it,
+    // grade on the catalog band. `labRange: {platelets: null}` pins that we
+    // captured no range here.
+    text: ['PLATELET COUNT 2.50 Lakh/cumm ~~ 15-45'].join('\n'),
+    expect: {
+      values: { platelets: 250000 },
+      labRange: { platelets: null },
+    },
+  },
+  {
+    name: 'a genuinely LOW value keeps its printed range and its flag',
+    note: 'the counterweight — the range guard must not suppress real out-of-range results',
+    text: ['PLATELET COUNT 0.40 Lakh/cumm 1.5 - 4.5'].join('\n'),
+    expect: {
+      values: { platelets: 40000 },
+      labRange: { platelets: [150000, 450000] },
     },
   },
   {
@@ -285,6 +337,24 @@ describe('real-report extraction corpus', () => {
       for (const id of fx.expect.absent ?? []) {
         it(`does not falsely surface ${id}`, () => {
           expect(byId.has(id)).toBe(false);
+        });
+      }
+
+      const markerById = new Map(
+        extractBiomarkersFromText(fx.text).map((m) => [m.id, m]),
+      );
+      for (const [id, range] of Object.entries(fx.expect.labRange ?? {})) {
+        it(`reads the lab's own printed range for ${id}`, () => {
+          const m = markerById.get(id);
+          expect(m, `${id} should be extracted`).toBeDefined();
+          if (range === null) {
+            expect(m!.labRefMin, `${id}: should NOT have captured a range`).toBeUndefined();
+            return;
+          }
+          expect(m!.labRefMin, `${id}: lab range was not captured at all`).toBeDefined();
+          // Converted alongside the value, so compare loosely.
+          expect(m!.labRefMin!).toBeCloseTo(range[0], 1);
+          expect(m!.labRefMax!).toBeCloseTo(range[1], 1);
         });
       }
     });

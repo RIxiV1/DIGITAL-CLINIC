@@ -1248,6 +1248,27 @@ function extractMarkerValue(
     '(\\d+(?:\\.\\d+)?)\\s*(?:[-–—]|to)\\s*(\\d+(?:\\.\\d+)?)';
   const tail = `[^\\d\\n]{0,30}?(?:${refRangeBody}[^\\d\\n]{0,30}?)?`;
 
+  // The SAME range, but sitting AFTER the unit — which is where real labs
+  // actually print it:
+  //
+  //     Creatinine 1.00 mg/dL 0.70 - 1.30      <- Dr Lal PathLabs, and the
+  //     Sodium 141 mmol/L (135-145)               Innoquest corpus fixture
+  //
+  // `tail` above only looks BEFORE the unit, so on those layouts — i.e. on
+  // essentially every real report — labRefMin/Max came back undefined and we
+  // silently graded against our own catalog band instead of the lab's. That
+  // is exactly the trust break the ref-range capture was built to close
+  // ("lab said normal, app says concern"): the mechanism shipped, and never
+  // fired on the format that mattered. A normal UK urea of 7.1 mmol/L
+  // (printed range 3.0-10.0) came back 'concern' against our band.
+  //
+  // Safe by construction: `[^\d\n]` cannot cross a newline, so this can only
+  // ever read the rest of the marker's own row — never the next marker's
+  // value. One-sided ranges ("<0.3", ">59") still match nothing and are
+  // correctly skipped, because refRangeBody demands a dash between two
+  // numbers.
+  const tailAfterUnit = `(?:[^\\d\\n]{0,30}?${refRangeBody})?`;
+
   // normalizeMu on the catalog side mirrors the call inside normalize()
   // for the input text — without both sides agreeing on µ vs μ, units
   // that differ only in code point silently fail to match.
@@ -1312,20 +1333,24 @@ function extractMarkerValue(
     const rb = '(?![A-Za-z])';
     const pattern = skipUnit
       ? `${lb}${aliasEsc}${rb}${between}${numPattern}(?!\\w)`
-      : `${lb}${aliasEsc}${rb}${between}${numPattern}${tail}${unitGate}`;
+      : `${lb}${aliasEsc}${rb}${between}${numPattern}${tail}${unitGate}${tailAfterUnit}`;
     const m = text.match(aliasRegex(pattern));
     if (!m) continue;
     const raw = parseFloat(m[1]);
     if (Number.isNaN(raw)) continue;
     // Capture group layout depends on whether skipUnit branched off.
     //   skipUnit=true:  m[1]=value (no other groups)
-    //   skipUnit=false: m[1]=value, m[2]=refMin?, m[3]=refMax?, m[4]=unit
-    // refMin/refMax exist only when the lab printed a ref-range
-    // matching the strict `\d+(.\d+)? sep \d+(.\d+)?` shape; otherwise
-    // they're undefined (the tail's outer `(?:...)?` was skipped).
+    //   skipUnit=false: m[1]=value, m[2]=refMin?, m[3]=refMax?, m[4]=unit,
+    //                   m[5]=refMin?, m[6]=refMax?  (the post-unit range)
+    // Each ref-range pair exists only when the lab printed one matching the
+    // strict `\d+(.\d+)? sep \d+(.\d+)?` shape in that position; otherwise
+    // that pair's outer `(?:...)?` was skipped and both are undefined.
+    // Only ONE of the two pairs can be populated — they describe the same
+    // slot on opposite sides of the unit — so pre-unit wins and post-unit is
+    // the fallback.
     const printedUnit = !skipUnit && m[4] ? m[4] : '';
-    const labRefMinStr = !skipUnit && m[2] ? m[2] : '';
-    const labRefMaxStr = !skipUnit && m[3] ? m[3] : '';
+    const labRefMinStr = !skipUnit ? (m[2] ?? m[5] ?? '') : '';
+    const labRefMaxStr = !skipUnit ? (m[3] ?? m[6] ?? '') : '';
     // Reconcile the lab's printed unit against the catalog's canonical
     // unit. Only do the reconciliation when we actually captured a
     // printed unit token (non-skipUnit path). When skipUnit is true,
@@ -1386,26 +1411,60 @@ function extractMarkerValue(
     // the catalog's canonical units.
     const labRefMinNum = labRefMinStr ? parseFloat(labRefMinStr) : NaN;
     const labRefMaxNum = labRefMaxStr ? parseFloat(labRefMaxStr) : NaN;
-    // A printed range is only usable if min < max. A swapped or degenerate
-    // range ("99 - 70", or a mis-parse that inverts the bounds) is garbage —
-    // and because the lab range DRIVES status downstream, trusting it would
-    // classify a value as simultaneously below-min and above-max. Discard it
-    // and fall back to the catalog's canonical band instead.
-    const labRef =
+    // A printed range is trustworthy only if (a) min < max, and (b) the
+    // value it sits beside is actually near it. (b) is the important one now
+    // that the lab range DRIVES status: OCR readily mangles a range —
+    // "1.5 - 4.5" came back "15-45" off a real photo — and after lakh
+    // scaling that made a normal platelet count read 'concern', a false
+    // alarm invented purely by trusting a corrupt range. A lab does not
+    // print a value 10x outside the range it prints next to it, so when that
+    // happens the RANGE is the misread, not the value: discard it and grade
+    // on the catalog band. The window is generous (0.5x-2x the bounds) so a
+    // genuinely out-of-range result — the whole point of flagging — is kept;
+    // only a range the value can't plausibly belong to is rejected.
+    const scaledRefMin =
+      scale !== 1
+        ? parseFloat((labRefMinNum * scale).toPrecision(12))
+        : labRefMinNum;
+    const scaledRefMax =
+      scale !== 1
+        ? parseFloat((labRefMaxNum * scale).toPrecision(12))
+        : labRefMaxNum;
+    // Two guards, because the lab range now DRIVES status and a mis-OCR'd
+    // range invents false flags:
+    //
+    //  1. Physically plausible: the scaled range must sit inside the marker's
+    //     own physical bounds. Catches a range mangled into a different
+    //     magnitude.
+    //  2. The value must plausibly BELONG to its range. A lab never prints a
+    //     result an order of magnitude outside the range beside it, so when
+    //     that happens the range is the misread, not the value. This is the
+    //     one that catches platelet "1.5 - 4.5" -> "15-45": after lakh
+    //     scaling the value is 250k and the range is 1.5M-4.5M — both
+    //     physically possible, but the value sits far below its own range, so
+    //     the range is untrustworthy. Compared in scaled space (both sides
+    //     converted) with a generous window, so a genuinely out-of-range
+    //     result — the whole reason to flag — is still kept.
+    // The value must plausibly belong to its range, tested by MAGNITUDE not
+    // span: a span-based window can't tell glucose 250 (a true high, 2.5x its
+    // 70-100 range) from a platelet 250k mis-paired with a 1.5M-4.5M range
+    // (a 6x UNDER-shoot), because their spans differ wildly. A ratio can.
+    // Genuine pathology rarely runs past ~5x the reference bound; a range the
+    // value sits >5x outside was almost certainly mis-read, so we drop it and
+    // grade on the catalog band. Guard against a zero bound before dividing.
+    const belowOk = scaledRefMin <= 0 ? true : v >= scaledRefMin / 5;
+    const aboveOk = scaledRefMax <= 0 ? true : v <= scaledRefMax * 5;
+    const valueBelongs = belowOk && aboveOk;
+    const rangeTrustworthy =
       Number.isFinite(labRefMinNum) &&
       Number.isFinite(labRefMaxNum) &&
-      labRefMinNum < labRefMaxNum
-        ? {
-            min:
-              scale !== 1
-                ? parseFloat((labRefMinNum * scale).toPrecision(12))
-                : labRefMinNum,
-            max:
-              scale !== 1
-                ? parseFloat((labRefMaxNum * scale).toPrecision(12))
-                : labRefMaxNum,
-          }
-        : undefined;
+      labRefMinNum < labRefMaxNum &&
+      scaledRefMin >= physMin &&
+      scaledRefMax <= physMax &&
+      valueBelongs;
+    const labRef = rangeTrustworthy
+      ? { min: scaledRefMin, max: scaledRefMax }
+      : undefined;
     return {
       value: v,
       // Unit reconciliation receipt: when we rescaled the printed number
