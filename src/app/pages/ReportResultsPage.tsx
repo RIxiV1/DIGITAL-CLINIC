@@ -16,7 +16,7 @@ import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
 import StatusKey from '../components/StatusKey';
 import { Reveal } from './landing/shared';
-import { useIsMdUp } from '../utils/useMediaQuery';
+import { useIsMdUp } from '../hooks/useMediaQuery';
 import { useNavigation, useQuiz, useReports } from '../AppContext';
 import {
   markerContextNote,

@@ -2,7 +2,7 @@ import { useId, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Trash2 } from 'lucide-react';
 import Button from '../../components/Button';
-import { useModalA11y } from '../../utils/useModalA11y';
+import { useModalA11y } from '../../hooks/useModalA11y';
 import type { Report } from '../../data/reports';
 
 /* ------------------------------------------------------------------ */

@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Database, Download, Trash2, X } from 'lucide-react';
 import Button from './Button';
-import { useModalA11y } from '../utils/useModalA11y';
+import { useModalA11y } from '../hooks/useModalA11y';
 import {
   exportAllData,
   getStorageStats,

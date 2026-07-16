@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import Logo from './Logo';
 import { useDiscreet, useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
-import { useIsMdUp } from '../utils/useMediaQuery';
+import { useIsMdUp } from '../hooks/useMediaQuery';
 
 type Props = {
   variant?: 'home' | 'page';

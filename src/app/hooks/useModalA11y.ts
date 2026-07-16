@@ -1,5 +1,5 @@
 import { useEffect, useRef, type RefObject } from 'react';
-import { acquireBodyScrollLock } from './bodyScrollLock';
+import { acquireBodyScrollLock } from '../utils/bodyScrollLock';
 
 /**
  * Selector matching anything keyboard-focusable. Identical to the

@@ -2,7 +2,7 @@ import { House, ClipboardList, User, Map as MapIcon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useLanguage, useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
-import { useIsMdUp } from '../utils/useMediaQuery';
+import { useIsMdUp } from '../hooks/useMediaQuery';
 import type { TranslationKey } from '../i18n/translations';
 
 type ItemId = 'home' | 'healthMap' | 'quiz' | 'profile';

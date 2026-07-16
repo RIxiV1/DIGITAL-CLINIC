@@ -14,7 +14,7 @@ import {
   statusColor,
   type Biomarker,
 } from '../data/biomarkers';
-import { useCountUp } from '../utils/useCountUp';
+import { useCountUp } from '../hooks/useCountUp';
 import { piecewisePosition, SEGMENT_PCT } from './BiomarkerBar';
 
 type Props = {

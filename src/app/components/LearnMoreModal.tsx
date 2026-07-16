@@ -4,7 +4,7 @@ import { CheckCircle2, X } from 'lucide-react';
 import Button from './Button';
 import type { LearnMore } from '../data/markerInfo';
 import type { BiomarkerStatus } from '../data/biomarkers';
-import { useModalA11y } from '../utils/useModalA11y';
+import { useModalA11y } from '../hooks/useModalA11y';
 import {
   evidenceForRecommendation,
   EVIDENCE_TIERS,

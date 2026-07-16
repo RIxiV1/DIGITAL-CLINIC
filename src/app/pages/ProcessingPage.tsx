@@ -24,7 +24,7 @@ import { sanitizeFilename } from '../utils/sanitizeFilename';
 // ~2,000-line monolith; the views now live in ./processing/*.
 import type { ConfirmState, FailureState } from './processing/types';
 import ClinicalSpot from '../components/ClinicalSpot';
-import { useTypewriter } from './processing/useTypewriter';
+import { useTypewriter } from '../hooks/useTypewriter';
 import AiCascadeView from './processing/AiCascadeView';
 import ParseFailedView from './processing/ParseFailedView';
 import ConfirmExtractedValuesView from './processing/ConfirmExtractedValuesView';

@@ -20,7 +20,7 @@ import {
   totalQuizSteps,
   type QuizStep,
 } from '../data/quiz';
-import { useModalA11y } from '../utils/useModalA11y';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 type Field = 'age' | 'activity' | 'priorities' | 'symptoms' | 'comorbidities';
 

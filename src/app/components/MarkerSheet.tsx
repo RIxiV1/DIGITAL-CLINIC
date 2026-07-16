@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronRight, X } from 'lucide-react';
 import BiomarkerBar from './BiomarkerBar';
 import { statusColor, type Biomarker } from '../data/biomarkers';
-import { useModalA11y } from '../utils/useModalA11y';
+import { useModalA11y } from '../hooks/useModalA11y';
 
 /**
  * Mobile marker detail as a focused slide-up sheet (functional audit #6).
