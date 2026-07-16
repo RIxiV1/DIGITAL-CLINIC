@@ -1606,11 +1606,37 @@ export function findUnrecognizedRows(
   // scan. The truncation is invisible to the user since the function
   // returns at most 10 rows anyway.
   const normalized = normalize(text).slice(0, UNKNOWN_ROW_INPUT_CAP);
+
+  // Index each extracted reading under EVERY unit spelling the lab could
+  // have printed it in — not just our canonical one.
+  //
+  // The rows below carry the LAB's spelling and scale; `m.unit` carries
+  // ours. Comparing them directly meant a reading we got perfectly right
+  // was reported to the user as one we'd failed on. It hit almost every
+  // Indian panel: labs print electrolytes as "mEq/L" while our canonical is
+  // "mmol/L", and eGFR as "mL/min/1.73m2" against our "mL/min". On Dr Lal
+  // PathLabs' own specimen, 4 of the 7 rows we announced as uninterpreted —
+  // sodium, potassium, chloride, eGFR — had all been read correctly. The
+  // headline ("we read 51, interpreted 41") was the app understating itself.
+  //
+  // The catalog already knew every one of those spellings; this just asks it.
   const extractedByUnit = new Map<string, Set<number>>();
+  const register = (unit: string, value: number) => {
+    const key = (unit || '').toLowerCase();
+    if (!extractedByUnit.has(key)) extractedByUnit.set(key, new Set());
+    extractedByUnit.get(key)!.add(value);
+  };
   for (const m of extracted) {
-    const unit = (m.unit || '').toLowerCase();
-    if (!extractedByUnit.has(unit)) extractedByUnit.set(unit, new Set());
-    extractedByUnit.get(unit)!.add(m.value);
+    register(m.unit || '', m.value);
+    // Same reading, other spellings of the same-scale unit (mEq/L ≡ mmol/L).
+    const template = biomarkerCatalog.find((t) => t.id === m.id);
+    for (const u of template?.unitAliases ?? []) register(u, m.value);
+    // Rescaled reads (SI altUnits, lakh/thou prefixes) differ in BOTH unit
+    // and number, so the canonical pair can never match the printed row.
+    // The reconciliation receipt holds exactly what was printed.
+    if (m.originalUnit !== undefined && m.originalValue !== undefined) {
+      register(m.originalUnit, m.originalValue);
+    }
   }
 
   const seen = new Set<string>();
