@@ -108,28 +108,29 @@ const DEGRADE: Record<string, string> = {
 /**
  * Floors — one below the measured score, so a real regression fails and
  * recogniser jitter doesn't. "before" is the pipeline as it stood before the
- * upscale + grayscale + unsharp + second-pass work (it binarized, and did
- * nothing else).
+ * upscale + grayscale + unsharp + second-pass + OCR-tolerant-unit work (it
+ * binarized, and did nothing else).
  *
  *              before   now   floor
  *   clean         7      8      7
  *   shadow        6      7      6
- *   tinted        7      7      6    <- must hold WITHOUT binarization
+ *   tinted        7      8      7    <- must hold WITHOUT binarization
  *   blur          7      8      7
- *   lowres        0      6      4    <- the second pass earns this
- *   realistic     0      7      6    <- the unsharp earns this
+ *   lowres        0      6      5    <- the second pass earns this
+ *   realistic     0      8      7    <- the unsharp + unit gate earn this
  *
  * lowres and realistic are the ones that matter: both read NOTHING before.
- * If either drops back toward zero, someone has undone the two-pass or the
- * unsharp, and this test is the only thing that will say so.
+ * If either drops back toward zero, someone has undone the two-pass, the
+ * unsharp, or the unit tolerance — and this test is the only thing that will
+ * say so.
  */
 const FLOOR: Record<string, number> = {
   clean: 7,
   shadow: 6,
-  tinted: 6,
+  tinted: 7,
   blur: 7,
-  lowres: 4,
-  realistic: 6,
+  lowres: 5,
+  realistic: 7,
 };
 
 const PAGE = `
@@ -221,6 +222,13 @@ async function extractedMarkers(page: Page, jpeg: Buffer, kind: string) {
       value: (el as HTMLInputElement).value,
     })),
   );
+  if (process.env.OCR_DUMP) {
+    const dis = page.getByText(/show what we read from the file/i).first();
+    if (await dis.count()) await dis.click().catch(() => {});
+    const t = await page.evaluate(() => document.body.innerText);
+    const i = t.search(/show what we read/i);
+    console.log(`\n===== RAW OCR [${kind}] =====\n${t.slice(i, i + 800)}\n=====`);
+  }
 
   return Object.entries(EXPECT)
     .filter(([, { label, value }]) =>

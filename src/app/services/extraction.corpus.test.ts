@@ -103,6 +103,36 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'OCR-mangled units — c→e, m→rn',
+    note: 'a perfectly-read marker was dropped over one wrong letter in its unit',
+    // Straight off the OCR bench: a realistic phone photo produced
+    // "WBC COUNT 7800 /eumm 4000 - 11000" — name and value read perfectly,
+    // unit misread by a single character — and the marker vanished, because
+    // the matcher requires a known unit token as its false-positive guard.
+    // c→e and m→rn are the two most common Tesseract confusions there are,
+    // so this was silently costing markers on every photo.
+    text: [
+      'WBC COUNT 7800 /eumm 4000 - 11000',
+      'HAEMOGLOBIN 14.2 g/dL 13.0 - 17.0',
+      'TRIGLYCERIDES 150 rng/dL 0 - 150',
+    ].join('\n'),
+    expect: {
+      values: { wbc: 7800, hb: 14.2, tg: 150 },
+    },
+  },
+  {
+    name: 'Unit gate still guards against a bare number',
+    note: 'the tolerance must not become "any number after the name wins"',
+    // The counterweight to the fixture above. The unit gate is what stops
+    // "WBC COUNT" binding to a page number or a date, so tolerance of a
+    // MISREAD unit must not collapse into accepting NO unit.
+    text: ['WBC COUNT 7800', 'Page 2 of 3'].join('\n'),
+    expect: {
+      values: {},
+      absent: ['wbc'],
+    },
+  },
+  {
     name: 'UK thyroid panel — SI units (pmol/L)',
     note: 'Free T3/T4 in pmol/L were dropped entirely until altUnits added',
     text: [

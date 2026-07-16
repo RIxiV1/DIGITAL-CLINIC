@@ -636,23 +636,23 @@ const OCR_MAX_WIDTH = 3200;
  *  shadow, dim-light and 3° skew all scored 7-8/8 untouched. Softness was,
  *  and every handheld photo is slightly soft.
  *
- *  Swept on the bench, everything else fixed (markers found, out of 8):
+ *  Swept on the bench with a single pass, everything else fixed (markers
+ *  found, out of 8):
  *
  *      amount   low-res   realistic
  *        0         6          0
- *        0.4       5          0
- *        0.6       4          3
- *        0.8       1          6
- *        1.1       1          7
+ *        0.4       5          0        <- intermediate rows measured before
+ *        0.6       4          3           the OCR-tolerant unit gate landed;
+ *        0.8       1          6           the shape is what matters, and it
+ *        1.1       1          8           did not change. Endpoints re-checked.
  *
  *  The trade is monotonic and there is no winner: sharpening rescues soft
  *  captures and destroys under-sampled ones (it amplifies the interpolation
- *  ringing a downscale-then-upscale leaves behind). 0.6 and 1.1 tie on total
- *  score while failing on opposite inputs.
+ *  ringing a downscale-then-upscale leaves behind).
  *
  *  So this is not a compromise value — it is one end of a deliberate pair.
  *  parseImage runs a second pass at amount 0 when the first read looks poor,
- *  which recovers low-res (1 → 6) without giving up realistic (7). Tune this
+ *  which recovers low-res (1 → 6) without giving up realistic (8). Tune this
  *  for soft photos; the other end is handled by the retry, not by backing
  *  off here. Kept restrained anyway: heavy sharpening haloes, and digits
  *  grow phantom strokes. */
@@ -733,10 +733,10 @@ function boxBlurGray(
  *                        before    now
  *   clean                   7        8
  *   shadow                  6        7
- *   tinted template         7        7   <- the bug it was added for
+ *   tinted template         7        8   <- the bug it was added for
  *   blur                    7        8
  *   low-res                 0        6
- *   realistic phone photo   0        7
+ *   realistic phone photo   0        8
  *
  * A normal handheld photo read NOTHING. 712 unit tests passed either way.
  *
@@ -855,6 +855,11 @@ async function runImageOcr(
     // missing. PSM 6 trusts that the whole page is one block and reads
     // it left-to-right, top-to-bottom — closer to how a human scans
     // a lab table.
+    // Tried and measured to do nothing here, so deliberately absent:
+    // `user_defined_dpi: '300'` (we upscale to ~A4@300dpi, so Tesseract's own
+    // estimate is already right) and `preserve_interword_spaces: '1'` (the
+    // usual advice for tables — the matcher is line-oriented and doesn't care
+    // about intra-line spacing). Both scored an identical 43/48 on the bench.
     await worker.setParameters({ tessedit_pageseg_mode: '6' as never });
     const preprocessed = await preprocessImageForOcr(file, unsharpAmount);
     const result = await withTimeout(
@@ -998,6 +1003,52 @@ function tagOcrConfidence(
 
 function escapeRegex(input: string): string {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/**
+ * Tesseract letter confusions that survive into a unit token.
+ *
+ * Only the ones that actually bite here. `c`↔`e` was caught on the OCR bench:
+ * a "realistic" phone photo read `WBC COUNT 7800 /eumm` — name and value
+ * perfect, unit off by one letter — and the marker was silently dropped
+ * because the unit gate didn't match. `m`↔`rn` is the other classic (two
+ * narrow strokes fusing), and the digit/letter pairs are the standard
+ * lookalikes that hit `mg/dL`, `g/dL` and `mmol/L`.
+ *
+ * Deliberately NOT a general fuzzy match: no edit distance, no dropped
+ * characters, no `u`↔`v`. The unit gate is the matcher's false-positive
+ * guard — it's what stops "WBC COUNT" binding to a page number — so it has
+ * to keep demanding a unit-SHAPED token. This only forgives a misread
+ * character in one, which is a much smaller loosening than it looks: every
+ * expansion below still has to sit exactly where a unit belongs, right
+ * after the value and its optional reference range.
+ */
+const OCR_UNIT_CONFUSIONS: Record<string, string> = {
+  c: '[ce]',
+  e: '[ec]',
+  m: '(?:m|rn)',
+  l: '[l1i]',
+  i: '[il1]',
+  o: '[o0]',
+  '0': '[0o]',
+  '1': '[1li]',
+};
+
+/**
+ * Build an OCR-tolerant regex fragment for one unit token.
+ *
+ * Escapes per character rather than escaping the whole string first — the
+ * substitutions have to be able to see each original character, and
+ * escapeRegex would have already inserted backslashes to trip over.
+ * Matching is case-insensitive at the call site, so the classes only list
+ * lower case.
+ */
+function ocrTolerantUnit(unit: string): string {
+  let out = '';
+  for (const ch of unit) {
+    out += OCR_UNIT_CONFUSIONS[ch.toLowerCase()] ?? escapeRegex(ch);
+  }
+  return out;
 }
 
 /**
@@ -1208,7 +1259,7 @@ function extractMarkerValue(
   const unitTokens = template.unit
     ? [template.unit, ...(template.unitAliases ?? []), ...altUnitTokens]
         .filter((u) => u.length > 0)
-        .map((u) => escapeRegex(normalizeMu(u)))
+        .map((u) => ocrTolerantUnit(normalizeMu(u)))
     : [];
   // Capture the matched unit token so we can apply unitMultiplier
   // reconciliation when the lab prints in a different magnitude than
@@ -2145,16 +2196,17 @@ async function ocrAttempt(
  * first read comes back poor.
  *
  * Why two passes: sharpening and NOT sharpening fail on opposite inputs, and
- * measurably so (markers found, out of 8, on the degradation bench):
+ * measurably so (markers found out of 8, e2e/ocr-robustness.spec.ts):
  *
- *                       sharpened   plain
- *   realistic photo        7/8       0/8    <- soft; needs the sharpening
- *   low-res / recompressed 1/8       6/8    <- ringing; sharpening wrecks it
+ *                       sharpened   plain    two-pass
+ *   realistic photo        8/8       0/8       8/8    <- soft; needs sharpening
+ *   low-res / recompressed 1/8       6/8       6/8    <- ringing; sharpening wrecks it
  *
  * No single setting wins — the sweep is monotonic, so every amount that
  * rescues one abandons the other. Both inputs are common here: `realistic`
  * is any handheld photo, `low-res` is a report forwarded through WhatsApp,
- * which is how a great many Indian users receive theirs.
+ * which is how a great many Indian users receive theirs. Running both takes
+ * the better column from each.
  *
  * So we spend a second pass instead of a compromise. Cost is bounded: the
  * retry only runs when the first read already looks bad — which is precisely
