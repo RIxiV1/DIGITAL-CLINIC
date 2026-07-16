@@ -1161,7 +1161,18 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'total-protein',
     name: 'Total Protein',
-    aliases: ['Total Protein', 'Protein Total', 'Total Serum Protein'],
+    // 'Protein, Total' — the comma form — was missing while every sibling
+    // that inverts this way already had it ('Cholesterol, Total',
+    // 'Bilirubin, Total', 'Testosterone, Total'). Caught on Dr Lal PathLabs'
+    // own published specimen (E001, protein electrophoresis), which prints
+    // 'Protein, Total' while their SWASTHFIT panel prints 'Total Protein' —
+    // the same lab uses both, so the comma alone was losing the marker.
+    aliases: [
+      'Total Protein',
+      'Protein, Total',
+      'Protein Total',
+      'Total Serum Protein',
+    ],
     unit: 'g/dL',
     unitAliases: ['g/dl', 'gm/dL'],
     min: 6,

@@ -103,6 +103,118 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'Dr Lal PathLabs — SWASTHFIT SUPER 4 (real template)',
+    note: 'first fixture from a genuine Indian lab PDF, not a hand-typed one',
+    // Lifted verbatim from Lal PathLabs' own published specimen report
+    // (cdn1.lalpathlabs.com/live/reports/WM17S.pdf — patient literally named
+    // "DUMMY", so no real person's data is in this repo), as our own text
+    // reconstruction renders it.
+    //
+    // Worth its length, because a real template does things a hand-written
+    // fixture never thinks of:
+    //   - a "(Method)" line after EVERY row, several carrying bare years —
+    //     "(CKD EPI Equation 2021)", "(KDIGO Guideline 2012)" — sitting right
+    //     where a value would be. Prime false-positive bait.
+    //   - section headers ("LIPID SCREEN, SERUM") between rows.
+    //   - qualitative rows with no number ("GFR Category G1").
+    //   - one-sided reference ranges (<200.00, >40.00) rather than a-b.
+    //   - names our aliases have to actually cover: "AST (SGOT)", "GGTP",
+    //     "Cholesterol, Total", "LDL Cholesterol, Calculated".
+    //   - BOTH "Urea 40.00" and "Urea Nitrogen Blood 18.68" on one report —
+    //     the same chemistry on two scales, 2.14x apart (see the bun template
+    //     note in the catalog).
+    text: [
+      'SWASTHFIT SUPER 4',
+      'LIVER & KIDNEY PANEL, SERUM',
+      'Creatinine 1.00 mg/dL 0.70 - 1.30',
+      '(Modified Jaffe,Kinetic)',
+      'GFR Estimated 107 mL/min/1.73m2 >59',
+      '(CKD EPI Equation 2021)',
+      'GFR Category G1',
+      '(KDIGO Guideline 2012)',
+      'Urea 40.00 mg/dL 13.00 - 43.00',
+      '(Urease UV)',
+      'Uric Acid 7.00 mg/dL 3.50 - 7.20',
+      '(Uricase)',
+      'AST (SGOT) 30.0 U/L 15.00 - 40.00',
+      '(IFCC without P5P)',
+      'ALT (SGPT) 40.0 U/L 10.00 - 49.00',
+      '(IFCC without P5P)',
+      'GGTP 50.0 U/L 0 - 73',
+      '(IFCC)',
+      'Alkaline Phosphatase (ALP) 100.00 U/L 30.00 - 120.00',
+      '(IFCC-AMP)',
+      'Bilirubin Total 1.00 mg/dL 0.30 - 1.20',
+      '(Oxidation)',
+      'Bilirubin Direct 0.20 mg/dL <0.3',
+      '(Oxidation)',
+      'Total Protein 8.00 g/dL 5.70 - 8.20',
+      '(Biuret)',
+      'Albumin 4.00 g/dL 3.20 - 4.80',
+      '(BCG)',
+      'Calcium, Total 9.00 mg/dL 8.70 - 10.40',
+      'LIPID SCREEN, SERUM',
+      'Cholesterol, Total 100.00 mg/dL <200.00',
+      '(CHO-POD)',
+      'Triglycerides 100.00 mg/dL <150.00',
+      '(GPO-POD)',
+      'HDL Cholesterol 30.00 mg/dL >40.00',
+      '(Enz Immunoinhibition)',
+      'LDL Cholesterol, Calculated 50.00 mg/dL <100.00',
+      '(Calculated)',
+      'VLDL Cholesterol,Calculated 20.00 mg/dL <30.00',
+      '(Calculated)',
+      'Non-HDL Cholesterol 70 mg/dL <130',
+      '(Calculated)',
+    ].join('\n'),
+    expect: {
+      values: {
+        creatinine: 1.0,
+        egfr: 107,
+        bun: 40, // "Urea", graded off the lab's printed range — see catalog
+        'uric-acid': 7.0,
+        ast: 30,
+        alt: 40,
+        ggt: 50,
+        alp: 100,
+        'total-bilirubin': 1.0,
+        'direct-bilirubin': 0.2,
+        'total-protein': 8.0,
+        albumin: 4.0,
+        calcium: 9.0,
+        'total-chol': 100,
+        tg: 100,
+        hdl: 30,
+        ldl: 50,
+        vldl: 20,
+        'non-hdl': 70,
+      },
+    },
+  },
+  {
+    name: 'Dr Lal PathLabs — protein electrophoresis (real template)',
+    note: "'Protein, Total' (comma form) was unmatched — same lab, other word order",
+    // From Lal PathLabs' published specimen E001. Two things worth pinning:
+    //   1. 'Protein, Total' matches now. Their SWASTHFIT panel prints 'Total
+    //      Protein', this one inverts it — one lab, both forms.
+    //   2. The globulin fractions must NOT be invented as markers. They're a
+    //      real part of this report and deliberately outside the catalog;
+    //      surfacing them would mean showing a number we can't interpret.
+    text: [
+      'PROTEIN ELECTROPHORESIS, SERUM',
+      '(Capillary Electrophoresis)',
+      'Protein, Total 7.20 g/dL 6.40 - 8.30',
+      'Albumin 4.00 g/dL 3.60 - 5.50',
+      'Alpha 1 globulin 0.30 g/dL 0.20 - 0.40',
+      'Alpha 2 globulin 0.80 g/dL 0.50 - 1.00',
+      'Beta 1 globulin 0.90 g/dL 0.50 - 1.10',
+      'Gamma globulin 1.10 g/dL 0.70 - 1.60',
+    ].join('\n'),
+    expect: {
+      values: { 'total-protein': 7.2, albumin: 4.0 },
+    },
+  },
+  {
     name: 'OCR-mangled units — c→e, m→rn',
     note: 'a perfectly-read marker was dropped over one wrong letter in its unit',
     // Straight off the OCR bench: a realistic phone photo produced
