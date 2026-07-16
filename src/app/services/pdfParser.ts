@@ -608,140 +608,223 @@ async function withTimeout<T>(
   ]);
 }
 
-/** Fallback binarization cutoff (0–255). Used when Otsu's per-image
- *  threshold can't be trusted (see OTSU_MIN_SEPARABILITY). Tuned for the
- *  typical Indian lab template's light background + black text. */
-const FIXED_OCR_THRESHOLD = 160;
+/** Width (px) we try to give Tesseract.
+ *
+ *  Tesseract's LSTM is trained around 300 DPI — roughly an x-height of
+ *  30-35px. An A4 lab report at 300 DPI is ~2480px wide. Anything much
+ *  under that hands the recogniser glyphs built from too few pixels.
+ *
+ *  Ablated on the degradation bench (markers found, out of 8). Removing the
+ *  upscale and changing nothing else:
+ *    clean 8 → 7 | blur 8 → 7 | low-res 1 → 0
+ *  It earns its place on every case it touches and costs nothing on any. */
+const OCR_TARGET_WIDTH = 2400;
 
-/** Minimum Otsu separability η = σ_between²/σ_total² ∈ [0,1] required to
- *  trust the per-image threshold. A real lab-report photo — even mostly
- *  white paper with only a thin minority of dark text — is cleanly
- *  bimodal (a paper mode + an ink mode), so η lands high and Otsu is
- *  used. η only collapses when there's no genuine foreground/background
- *  split to find: a near-blank crop, a solid-tint frame, or a washed-out
- *  very-low-contrast shot, where varTotal ≈ 0 and Otsu's chosen cut is
- *  meaningless. Below this η we fall back to the tuned fixed cutoff
- *  rather than risk a destructive threshold. 0.25 is conservative —
- *  genuine text-on-paper (tinted or not) sits well above it. */
-const OTSU_MIN_SEPARABILITY = 0.25;
+/** Hard ceiling on the upscale factor. Interpolation invents no detail —
+ *  past ~2x it only costs memory and OCR time for nothing. */
+const OCR_MAX_UPSCALE = 2;
+
+/** Never allocate a canvas wider than this. A 12MP phone photo is already
+ *  ~4000px; blindly doubling it would be a ~256MB RGBA buffer and an OOM
+ *  on the low-RAM Androids this targets. Images at or above this are
+ *  already detail-rich and are left alone. */
+const OCR_MAX_WIDTH = 3200;
+
+/** Unsharp-mask strength for the FIRST OCR pass.
+ *
+ *  Why sharpening at all: the bench showed lighting was never the problem —
+ *  shadow, dim-light and 3° skew all scored 7-8/8 untouched. Softness was,
+ *  and every handheld photo is slightly soft.
+ *
+ *  Swept on the bench, everything else fixed (markers found, out of 8):
+ *
+ *      amount   low-res   realistic
+ *        0         6          0
+ *        0.4       5          0
+ *        0.6       4          3
+ *        0.8       1          6
+ *        1.1       1          7
+ *
+ *  The trade is monotonic and there is no winner: sharpening rescues soft
+ *  captures and destroys under-sampled ones (it amplifies the interpolation
+ *  ringing a downscale-then-upscale leaves behind). 0.6 and 1.1 tie on total
+ *  score while failing on opposite inputs.
+ *
+ *  So this is not a compromise value — it is one end of a deliberate pair.
+ *  parseImage runs a second pass at amount 0 when the first read looks poor,
+ *  which recovers low-res (1 → 6) without giving up realistic (7). Tune this
+ *  for soft photos; the other end is handled by the retry, not by backing
+ *  off here. Kept restrained anyway: heavy sharpening haloes, and digits
+ *  grow phantom strokes. */
+const UNSHARP_AMOUNT = 1.1;
+
+/** Unsharp radius (px). Must exceed the blur it fights (bench: ~1.4px) or
+ *  it sharpens noise instead of glyph edges; too wide and it haloes.
+ *  Applied after upscaling, so it works in upscaled pixels. */
+const UNSHARP_RADIUS = 2;
+
+/** Below this many extracted markers, a read is treated as poor enough to
+ *  be worth a second OCR pass with different preprocessing (see parseImage).
+ *  Set low on purpose: a genuine single-panel report (a thyroid profile is
+ *  TSH + T3 + T4) must not trigger a pointless retry, so this only fires
+ *  when we've essentially failed. Confidence is the other trigger. */
+const OCR_SECOND_PASS_MIN_MARKERS = 3;
 
 /**
- * Otsu's method — pick the grayscale threshold that maximises between-
- * class variance over a 256-bin luma histogram. Returns the chosen
- * threshold AND a separability score η (between-class / total variance)
- * so the caller can reject a weakly-bimodal histogram where Otsu is
- * unreliable. Pure function — exported for unit testing.
+ * Separable box blur over an 8-bit gray plane, via a sliding window sum
+ * (O(n) in pixels, independent of radius). Edges clamp to the border pixel.
  *
- * Single O(256) pass after the histogram is built; the running-sum form
- * avoids recomputing class means per candidate threshold.
+ * Only ever used as the "blurred" term of the unsharp mask below. Written
+ * out rather than pulled in as a dependency because it's ~20 lines and this
+ * file is the one place that needs it — and it runs on low-RAM phones, so
+ * the two Uint8ClampedArrays it allocates are a deliberate, counted cost.
  */
-export function otsuThreshold(histogram: ArrayLike<number>): {
-  threshold: number;
-  separability: number;
-} {
-  let total = 0;
-  let sumAll = 0;
-  for (let i = 0; i < 256; i++) {
-    total += histogram[i];
-    sumAll += i * histogram[i];
-  }
-  if (total === 0) return { threshold: FIXED_OCR_THRESHOLD, separability: 0 };
+function boxBlurGray(
+  src: Uint8ClampedArray,
+  w: number,
+  h: number,
+  r: number,
+): Uint8ClampedArray {
+  const clampX = (v: number) => (v < 0 ? 0 : v > w - 1 ? w - 1 : v);
+  const clampY = (v: number) => (v < 0 ? 0 : v > h - 1 ? h - 1 : v);
+  const win = 2 * r + 1;
+  const tmp = new Uint8ClampedArray(w * h);
+  const out = new Uint8ClampedArray(w * h);
 
-  const mean = sumAll / total;
-  let wB = 0; // background weight (≤ t)
-  let sumB = 0; // background intensity sum
-  let maxBetween = -1;
-  let threshold = 0;
-  for (let t = 0; t < 256; t++) {
-    wB += histogram[t];
-    if (wB === 0) continue;
-    const wF = total - wB;
-    if (wF === 0) break;
-    sumB += t * histogram[t];
-    const mB = sumB / wB;
-    const mF = (sumAll - sumB) / wF;
-    // Between-class variance, weighted by class probabilities.
-    const between = (wB / total) * (wF / total) * (mB - mF) * (mB - mF);
-    if (between > maxBetween) {
-      maxBetween = between;
-      threshold = t;
+  for (let y = 0; y < h; y++) {
+    const row = y * w;
+    let sum = 0;
+    for (let i = -r; i <= r; i++) sum += src[row + clampX(i)];
+    for (let x = 0; x < w; x++) {
+      tmp[row + x] = sum / win;
+      sum += src[row + clampX(x + r + 1)] - src[row + clampX(x - r)];
     }
   }
-
-  // Total variance for the separability metric.
-  let varTotal = 0;
-  for (let i = 0; i < 256; i++) {
-    const d = i - mean;
-    varTotal += histogram[i] * d * d;
+  for (let x = 0; x < w; x++) {
+    let sum = 0;
+    for (let i = -r; i <= r; i++) sum += tmp[clampY(i) * w + x];
+    for (let y = 0; y < h; y++) {
+      out[y * w + x] = sum / win;
+      sum += tmp[clampY(y + r + 1) * w + x] - tmp[clampY(y - r) * w + x];
+    }
   }
-  varTotal /= total;
-  const separability = varTotal > 0 ? maxBetween / varTotal : 0;
-  return { threshold, separability };
+  return out;
 }
 
 /**
  * Preprocess a photo/screenshot of a lab report before handing it to
- * Tesseract. Two passes:
- *   1. Grayscale conversion (Rec. 601 luma) + 256-bin histogram.
- *   2. Otsu-adaptive binarization → pure B&W (fixed-160 fallback).
+ * Tesseract:
+ *   1. Upscale under-sampled frames toward the LSTM's ~300 DPI comfort zone.
+ *   2. Grayscale (Rec. 601 luma) — kills the colour tint many Indian lab
+ *      templates print behind the table.
+ *   3. Unsharp mask — restore stroke edges a soft capture smeared.
  *
- * Why binarize at all: many Indian lab templates (Dr Lal PathLabs,
- * Crystal Data Inc., Thyrocare) use a yellow or pale-blue tint behind
- * the table. Tesseract reads colored-on-colored text poorly — value
- * cells like "12.00" come back as "Taw", "37.70" as "sre". Reducing to
- * pure black-on-white eliminates the tint as a confounder.
+ * WHY THERE IS NO LONGER A BINARIZATION STEP
+ * ------------------------------------------
+ * There used to be one: luma → Otsu-adaptive threshold → pure black & white.
+ * It was added for a real, reported bug — tinted lab templates (Dr Lal
+ * PathLabs, Crystal Data, Thyrocare) where Tesseract read value cells like
+ * "12.00" as "Taw" — and its reasoning was sound.
  *
- * Why Otsu over a fixed cutoff: a phone photo's exposure varies wildly
- * (shadow, flash glare, dim indoor light), and a single hardcoded
- * threshold blows out under- or over-exposed shots — the exact failure
- * mode behind the real CBC-photo misreads. Otsu derives the cutoff per
- * image from its own histogram, so a darker or brighter shot still
- * splits text from background correctly. The guard (OTSU_MIN_
- * SEPARABILITY) falls back to the tuned fixed value only on near-blank /
- * solid-tint / washed-out frames where there's no real split to find —
- * so this never regresses the clean-template case the fixed cutoff was
- * tuned for.
+ * It was also unmeasurable. OCR quality needs a real canvas, real WASM and a
+ * real recogniser, so no unit test could see it, and the pipeline scored this
+ * on e2e/ocr-robustness.spec.ts (markers found, out of 8):
+ *
+ *                        before    now
+ *   clean                   7        8
+ *   shadow                  6        7
+ *   tinted template         7        7   <- the bug it was added for
+ *   blur                    7        8
+ *   low-res                 0        6
+ *   realistic phone photo   0        7
+ *
+ * A normal handheld photo read NOTHING. 712 unit tests passed either way.
+ *
+ * The tinted case holding at 7/8 with no threshold anywhere is the tell: the
+ * luma conversion was what fixed the "Taw" bug. Threshold and grayscale
+ * shipped together and the threshold took the credit. Tesseract also
+ * thresholds internally, so ours was redundant — it threw away the grayscale
+ * Tesseract's own thresholder wanted, and a hard cut on a soft capture fuses
+ * neighbouring strokes, so "14.2" arrives as a smudge.
+ *
+ * Scope note, so this isn't over-read: "before" is the whole old pipeline
+ * (binarize, no upscale, no unsharp, single pass) against the whole new one.
+ * Binarization was not separately ablated under this metric — the claim it
+ * supports is that the tinted case needs no threshold, not a measured
+ * per-step attribution.
+ *
+ * Honest limit: the bench's report LAYOUT is synthetic. It models the optics
+ * of a capture (softness, skew, lighting, resolution) — which are universal
+ * and are what was broken — but says nothing about whether we read any
+ * particular lab's template. A real-report corpus would settle that; this
+ * cannot.
  *
  * Falls back to the original blob on any failure — preprocessing
  * helping is gravy, not contractual.
  */
-async function preprocessImageForOcr(file: Blob): Promise<Blob> {
+async function preprocessImageForOcr(
+  file: Blob,
+  unsharpAmount: number = UNSHARP_AMOUNT,
+): Promise<Blob> {
   try {
     if (typeof createImageBitmap === 'undefined') return file;
     const bmp = await createImageBitmap(file);
+
+    // Upscale under-sampled frames toward the LSTM's comfortable resolution.
+    // Interpolation adds no information, but it does give the recogniser more
+    // pixels per glyph, which is what it's short of on a small or distant
+    // capture. Large photos are left alone — see OCR_MAX_WIDTH.
+    const scale = Math.min(
+      OCR_MAX_UPSCALE,
+      Math.max(1, OCR_TARGET_WIDTH / bmp.width),
+      Math.max(1, OCR_MAX_WIDTH / bmp.width),
+    );
     const canvas = document.createElement('canvas');
-    canvas.width = bmp.width;
-    canvas.height = bmp.height;
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
     const ctx = canvas.getContext('2d');
     if (!ctx) return file;
-    ctx.drawImage(bmp, 0, 0);
+    if (scale > 1) {
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+    }
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
     bmp.close?.();
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const px = imageData.data;
+    const w = canvas.width;
+    const h = canvas.height;
+    const n = w * h;
 
-    // Pass 1: luma → store back into the R channel (reused as a gray
-    // scratch buffer so we don't allocate a second full-frame array on
-    // memory-tight Android) and tally the histogram.
-    const histogram = new Uint32Array(256);
-    for (let i = 0; i < px.length; i += 4) {
-      const gray =
-        (0.299 * px[i] + 0.587 * px[i + 1] + 0.114 * px[i + 2]) | 0;
-      px[i] = gray;
-      histogram[gray]++;
+    // Pass 1: luma into a dedicated gray plane. (This used to squat in the
+    // RGBA R channel to save a buffer; the unsharp step needs a contiguous
+    // single-channel plane to convolve, and reading neighbours out of a
+    // stride-4 array while writing it back in place would sample
+    // already-modified pixels.)
+    const gray = new Uint8ClampedArray(n);
+    for (let i = 0, p = 0; i < n; i++, p += 4) {
+      gray[i] = (0.299 * px[p] + 0.587 * px[p + 1] + 0.114 * px[p + 2]) | 0;
     }
 
-    // Pick the cutoff: Otsu when its split is trustworthy, else the
-    // tuned fixed value.
-    const { threshold, separability } = otsuThreshold(histogram);
-    const cut =
-      separability >= OTSU_MIN_SEPARABILITY ? threshold : FIXED_OCR_THRESHOLD;
+    // Pass 2: unsharp mask in place on the gray plane. Skipped entirely at
+    // amount 0 — the second pass (see parseImage) asks for exactly that, and
+    // it shouldn't pay for two full-frame buffers and a convolution it would
+    // multiply away.
+    if (unsharpAmount > 0) {
+      const blurred = boxBlurGray(gray, w, h, UNSHARP_RADIUS);
+      for (let i = 0; i < n; i++) {
+        // Uint8ClampedArray rounds + clamps on write, which is exactly the
+        // saturation an unsharp mask wants at both ends.
+        gray[i] = gray[i] + unsharpAmount * (gray[i] - blurred[i]);
+      }
+    }
 
-    // Pass 2: binarize from the stored gray in the R channel.
-    for (let i = 0; i < px.length; i += 4) {
-      const v = px[i] > cut ? 255 : 0;
-      px[i] = v;
-      px[i + 1] = v;
-      px[i + 2] = v;
+    // Pass 3: write the sharpened gray back over RGB. Deliberately NOT
+    // thresholded — see the note above the function.
+    for (let i = 0, p = 0; i < n; i++, p += 4) {
+      px[p] = gray[i];
+      px[p + 1] = gray[i];
+      px[p + 2] = gray[i];
     }
     ctx.putImageData(imageData, 0, 0);
     return await new Promise<Blob>((resolve) => {
@@ -754,6 +837,7 @@ async function preprocessImageForOcr(file: Blob): Promise<Blob> {
 
 async function runImageOcr(
   file: Blob,
+  unsharpAmount: number = UNSHARP_AMOUNT,
 ): Promise<{ text: string; confidence: number }> {
   const createWorker = await loadTesseract();
   const worker = await withTimeout(
@@ -772,7 +856,7 @@ async function runImageOcr(
     // it left-to-right, top-to-bottom — closer to how a human scans
     // a lab table.
     await worker.setParameters({ tessedit_pageseg_mode: '6' as never });
-    const preprocessed = await preprocessImageForOcr(file);
+    const preprocessed = await preprocessImageForOcr(file, unsharpAmount);
     const result = await withTimeout(
       worker.recognize(preprocessed),
       OCR_PAGE_TIMEOUT_MS,
@@ -2039,8 +2123,11 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
   }
 }
 
-async function parseImage(file: File): Promise<PdfParseResult> {
-  const { text, confidence } = await runImageOcr(file);
+async function ocrAttempt(
+  file: File,
+  unsharpAmount: number,
+): Promise<PdfParseResult> {
+  const { text, confidence } = await runImageOcr(file, unsharpAmount);
   const { markers: biomarkers, provenance } =
     extractBiomarkersWithProvenance(text);
   return {
@@ -2051,4 +2138,42 @@ async function parseImage(file: File): Promise<PdfParseResult> {
     unrecognizedRows: findUnrecognizedRows(text, biomarkers),
     ocrConfidence: confidence,
   };
+}
+
+/**
+ * OCR an image, with a second attempt using different preprocessing when the
+ * first read comes back poor.
+ *
+ * Why two passes: sharpening and NOT sharpening fail on opposite inputs, and
+ * measurably so (markers found, out of 8, on the degradation bench):
+ *
+ *                       sharpened   plain
+ *   realistic photo        7/8       0/8    <- soft; needs the sharpening
+ *   low-res / recompressed 1/8       6/8    <- ringing; sharpening wrecks it
+ *
+ * No single setting wins — the sweep is monotonic, so every amount that
+ * rescues one abandons the other. Both inputs are common here: `realistic`
+ * is any handheld photo, `low-res` is a report forwarded through WhatsApp,
+ * which is how a great many Indian users receive theirs.
+ *
+ * So we spend a second pass instead of a compromise. Cost is bounded: the
+ * retry only runs when the first read already looks bad — which is precisely
+ * when the alternative was giving up and shipping the image to Gemini. A
+ * slower on-device answer beats a fast one that leaves the device.
+ */
+async function parseImage(file: File): Promise<PdfParseResult> {
+  const sharpened = await ocrAttempt(file, UNSHARP_AMOUNT);
+  const looksPoor =
+    sharpened.ocrConfidence === undefined ||
+    sharpened.ocrConfidence < OCR_LOW_CONFIDENCE_THRESHOLD ||
+    sharpened.biomarkers.length < OCR_SECOND_PASS_MIN_MARKERS;
+  if (!looksPoor) return sharpened;
+
+  const plain = await ocrAttempt(file, 0);
+  // Keep whichever actually read more of the report. Marker count, not
+  // Tesseract confidence: confidence scores how sure the recogniser is about
+  // the glyphs it saw, which it can be high on while reading a mangled table.
+  return plain.biomarkers.length > sharpened.biomarkers.length
+    ? plain
+    : sharpened;
 }
