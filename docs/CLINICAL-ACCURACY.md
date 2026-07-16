@@ -119,6 +119,48 @@ Everything else in the audited set (51 of the graded markers checked clean, plus
 
 ---
 
+## Clinical sign-off checklist (before real patients)
+
+This is the honest gap between "the engineering is sound" and "a clinician has
+approved what we tell people." Everything below is a **clinical judgement**, not
+a code change — a doctor should approve or correct each item. It is written to be
+actionable in about an hour. Nothing here is silent: each item is a value that
+currently grades as `concern` ("discuss with your doctor") when it *might* warrant
+`critical` ("speak to a doctor promptly"), i.e. possible **under**-escalation.
+
+**Why these aren't already set:** every critical threshold in the catalog fires
+regardless of the lab's printed range, so an over-aggressive one manufactures a
+same-day panic on a healthy person. Under-escalation and over-escalation are both
+harms; picking the cutoff is a clinician's call. The structural failures (values
+being *deleted* before they could be graded — see the ceiling audit in
+[`emergencyEscalation.test.ts`](../src/app/clinical/emergencyEscalation.test.ts))
+have been fixed; these remaining ones are threshold *judgements*.
+
+Already done and pinned by test: emergency escalation for K⁺, Na⁺, Hb, glucose,
+creatinine, platelets, WBC, Ca²⁺, AST, ALT, and — mirroring the reviewed TSH
+storm/myxedema thresholds — **Free T4** (`criticalLow 0.3`, `criticalHigh 5.0`
+ng/dL; confirm these two numbers).
+
+**Needs a clinician to decide `criticalLow`/`criticalHigh` (or confirm "leave as concern"):**
+
+| Marker | Band | The same-day scenario | Suggested cutoff to confirm/reject |
+|---|---|---|---|
+| **Cortisol (AM)** | 6.2–19.4 µg/dL | Adrenal insufficiency / crisis. Genuinely uncovered — no other marker catches it. | `criticalLow` ~3 µg/dL (Endocrine Society: AM cortisol <3 strongly suggests adrenal insufficiency) |
+| **Free T3** | 2.3–4.2 pg/mL | T3 toxicosis. Partly covered by TSH + Free T4 now. | `criticalHigh` ~2× ULN? or leave — TSH/FT4 catch the storm |
+| **Total T3 / T4** | 80–200 / 4.5–12 | Thyroid emergency, but totals move with binding proteins → less reliable alone | Likely leave as concern; confirm |
+| **ALP** | 44–147 U/L | Very high = biliary obstruction/malignancy, but rarely *same-day* off the number alone | Likely leave as concern; confirm |
+| **GGT** | 9–48 U/L | Marker of the cause, not itself an emergency | Likely leave as concern; confirm |
+| **Iron** | 65–175 µg/dL | Acute iron toxicity (ingestion), not a routine-panel emergency | Likely leave as concern; confirm |
+| **Albumin** | 3.5–5 g/dL | Severe hypoalbuminaemia matters but isn't same-day off the number | Likely leave as concern; confirm |
+
+**Also for the same reviewer, one pass each:**
+
+- **The 5 unevidenced labs.** The upload screen names Thyrocare, Dr Lal PathLabs, SRL, Metropolis, Apollo, Healthians as "labs we read fluently." Only **Dr Lal PathLabs** is evidenced (real published specimen, in the corpus). Either evidence the other five with a real report each (drop into `extraction.corpus.test.ts`) or soften the claim.
+- **Indirect bilirubin** — genuine catalog gap (we carry total + direct).
+- **The direct/analog vs calculated Free-T assay ambiguity** — already caveated in copy; confirm the caveat wording is enough.
+
+---
+
 ## Where to change things
 
 | You want to… | Edit | Then |

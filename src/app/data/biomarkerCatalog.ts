@@ -1057,6 +1057,16 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     altUnits: [{ units: ['pmol/L', 'pmol/l'], toCanonical: 0.0777 }],
     min: 0.8,
     max: 1.8,
+    // Critical thresholds MIRROR the already-reviewed TSH decision (TSH
+    // criticalLow 0.01 = storm, criticalHigh 50 = myxedema) so a thyroid
+    // emergency still escalates when TSH is absent from the report or was
+    // misread. Deliberately conservative — overt hyperthyroidism (FT4 ~2-4)
+    // stays 'concern'; only clearly-severe values trip 'critical', so common
+    // thyroid disease isn't over-alarmed. FT4 >5 ng/dL (≈3x ULN) is florid
+    // thyrotoxicosis territory; <0.3 is severe hypothyroidism.
+    // NOTE FOR CLINICAL REVIEW: confirm these two cutoffs (5.0 / 0.3 ng/dL).
+    criticalLow: 0.3,
+    criticalHigh: 5,
     // Thyroid storm reaches 5-10 ng/dL. Fallback ceiling was 7 — inside
     // the range, so the most florid thyrotoxicosis was the most likely to
     // be binned.

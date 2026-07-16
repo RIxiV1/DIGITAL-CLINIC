@@ -54,6 +54,19 @@ const EMERGENCIES: {
   { label: 'hypercalcaemia', row: 'Calcium, Total 15.00 mg/dL 8.70 - 10.40', atLeast: 'critical' },
   { label: 'acute hepatocellular injury (ALT)', row: 'ALT (SGPT) 1200 U/L 10.00 - 49.00', atLeast: 'critical' },
   { label: 'acute hepatocellular injury (AST)', row: 'AST (SGOT) 900 U/L 15.00 - 40.00', atLeast: 'critical' },
+  // Thyroid emergency via free T4 when TSH is absent/misread — mirrors the
+  // already-reviewed TSH storm/myxedema thresholds.
+  { label: 'thyroid storm (Free T4)', row: 'Free T4 7.5 ng/dL 0.8 - 1.8', atLeast: 'critical' },
+  { label: 'severe hypothyroidism (Free T4)', row: 'Free T4 0.1 ng/dL 0.8 - 1.8', atLeast: 'critical' },
+];
+
+/** The counterweight to over-escalation: values that are abnormal but NOT
+ *  same-day, and must stay 'concern' so 'critical' keeps its meaning. If one
+ *  of these trips 'critical', a threshold was set too aggressively. */
+const MUST_NOT_OVER_ESCALATE: { label: string; row: string }[] = [
+  { label: 'overt hyperthyroidism, not storm', row: 'Free T4 3.0 ng/dL 0.8 - 1.8' },
+  { label: 'mildly high glucose', row: 'GLUCOSE FASTING 130 mg/dL 70 - 100' },
+  { label: 'borderline-high LDL', row: 'LDL CHOLESTEROL 145 mg/dL 0 - 100' },
 ];
 
 /**
@@ -107,6 +120,20 @@ describe('a value that needs same-day care is never called routine', () => {
           `${label}: advice was "${action.action}" — must convey same-day urgency`,
         ).toBe(true);
       }
+    });
+  }
+});
+
+describe('abnormal-but-not-urgent stays concern, so critical keeps its weight', () => {
+  for (const { label, row } of MUST_NOT_OVER_ESCALATE) {
+    it(`${label} does not over-escalate to critical`, () => {
+      const m = extractBiomarkersFromText(row)[0];
+      expect(m, `${label}: not extracted`).toBeDefined();
+      expect(
+        m.status,
+        `${label}: graded 'critical' — a threshold is set too aggressively, ` +
+          `which erodes the meaning of the same-day tier`,
+      ).not.toBe('critical');
     });
   }
 });
