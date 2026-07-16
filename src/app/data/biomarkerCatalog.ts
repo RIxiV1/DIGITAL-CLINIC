@@ -163,6 +163,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     altUnits: [{ units: ['pmol/L', 'pmol/l'], toCanonical: 0.27238 }],
     min: 11,
     max: 44,
+    // Men's E2 climbs into the hundreds with aromatase excess, obesity,
+    // cirrhosis or an oestrogen-secreting tumour — the causes of the
+    // gynaecomastia this panel exists to explain. Fallback ceiling was 209.
+    physicalMin: 0,
+    physicalMax: 1000,
     category: 'hormones',
     direction: 'band',
     simpleName: 'Estrogen (yes, men have it too)',
@@ -280,6 +285,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['uIU/mL', 'mIU/L', 'µIU/ml'],
     min: 2,
     max: 25,
+    // Severe insulin resistance runs fasting insulin 50-150 uIU/mL, an
+    // insulinoma far higher; the fallback ceiling of 140 clipped exactly the
+    // metabolic pictures worth catching. HOMA-IR is derived FROM insulin, so
+    // a clipped insulin silently removes the derived marker too.
+    physicalMin: 0,
+    physicalMax: 1000,
     optimalMin: 2,
     optimalMax: 8,
     optimalSource: {
@@ -862,6 +873,19 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'SHBG binds testosterone, making it inactive. Too high reduces usable testosterone; too low can mean metabolic issues.',
   },
   {
+    // LH and FSH are the DISCRIMINATOR for low testosterone, and the reason
+    // they are on this panel at all:
+    //   high LH/FSH + low T -> primary (the testes have failed)
+    //   low  LH/FSH + low T -> secondary (the pituitary isn't signalling)
+    // It is the next question any doctor asks, and the two answers lead to
+    // completely different places.
+    //
+    // Primary hypogonadism runs LH 15-50 and FSH 20-90; Klinefelter's,
+    // castrate-range and post-chemotherapy failure go higher still. The
+    // 5×-span fallback ceilings sat at 43 and 67 — inside that range. So on
+    // the reports where the answer was most obvious, we deleted it, and the
+    // man saw low testosterone with no explanation next to it. Same failure
+    // as prolactin: the clearer the finding, the more likely we binned it.
     id: 'lh',
     name: 'LH',
     aliases: ['LH', 'Luteinizing Hormone', 'Luteinising Hormone'],
@@ -869,6 +893,8 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['mIU/ml', 'IU/L'],
     min: 1.7,
     max: 8.6,
+    physicalMin: 0,
+    physicalMax: 200,
     category: 'hormones',
     direction: 'band',
     simpleName: 'Testes-stimulating signal from the pituitary',
@@ -887,6 +913,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['mIU/ml', 'IU/L'],
     min: 1.5,
     max: 12.4,
+    // See the note above LH — same axis, same reasoning. Primary testicular
+    // failure drives FSH to 30-90+; the fallback ceiling was 67.
+    physicalMin: 0,
+    physicalMax: 200,
     category: 'hormones',
     direction: 'band',
     simpleName: 'Sperm-production signal from the pituitary',
@@ -935,6 +965,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['ug/dL', 'mcg/dL', 'µg/dl'],
     min: 6.2,
     max: 19.4,
+    // Cushing's, acute stress and exogenous steroid push AM cortisol past
+    // 50 ug/dL; adrenal crisis is the mirror. Fallback ceiling was 85.
+    physicalMin: 0,
+    physicalMax: 200,
     category: 'hormones',
     direction: 'band',
     simpleName: 'Your stress hormone, measured in the morning',
@@ -967,6 +1001,9 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['ng/dl'],
     min: 80,
     max: 200,
+    // Thyroid storm: total T3 400-800 ng/dL. Fallback: 800.
+    physicalMin: 0,
+    physicalMax: 1500,
     category: 'thyroid',
     direction: 'band',
     simpleName: 'Active thyroid hormone (total)',
@@ -999,6 +1036,9 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     altUnits: [{ units: ['pmol/L', 'pmol/l'], toCanonical: 0.651 }],
     min: 2.3,
     max: 4.2,
+    // T3 toxicosis / thyroid storm reaches 20-30 pg/mL. Fallback: 14.
+    physicalMin: 0,
+    physicalMax: 50,
     category: 'thyroid',
     direction: 'band',
     simpleName: 'Biologically active T3',
@@ -1017,6 +1057,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     altUnits: [{ units: ['pmol/L', 'pmol/l'], toCanonical: 0.0777 }],
     min: 0.8,
     max: 1.8,
+    // Thyroid storm reaches 5-10 ng/dL. Fallback ceiling was 7 — inside
+    // the range, so the most florid thyrotoxicosis was the most likely to
+    // be binned.
+    physicalMin: 0,
+    physicalMax: 20,
     category: 'thyroid',
     direction: 'band',
     simpleName: 'Biologically active T4',

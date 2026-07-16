@@ -984,17 +984,26 @@ describe('extractBiomarkersFromText — physical bounds', () => {
   });
 
   it('falls back to 5x-span heuristic when no physical bounds set', () => {
-    // Pick a template that doesn't have physicalMin/Max set yet
-    // (Estradiol: min 11 max 44, span 33, 5x = 165 → ceiling = 209).
-    const tooHigh = 'Estradiol 500 pg/mL';
+    // Needs a template that genuinely still rides the fallback. MCV is a red
+    // cell INDEX — a ratio with a hard physiological ceiling (severe
+    // macrocytosis tops out around 130 fL), so the 5×-span cap at 200 is
+    // correct for it and it should never need explicit bounds.
+    //   MCV: min 80, max 100, span 20, 5× = 100 → ceiling 200.
+    //
+    // This used to use Estradiol, which was a bad choice for the same reason
+    // it was a real bug: E2 in men genuinely reaches the hundreds with
+    // aromatase excess or an oestrogen-secreting tumour, so the fallback
+    // ceiling of 209 was BINNING true readings. Estradiol now declares
+    // explicit bounds; see clinical/emergencyEscalation.test.ts.
+    const tooHigh = 'MCV 500 fL';
     expect(
-      extractBiomarkersFromText(tooHigh).find((m) => m.id === 'estradiol'),
+      extractBiomarkersFromText(tooHigh).find((m) => m.id === 'mcv'),
     ).toBeUndefined();
-    const inRange = 'Estradiol 150 pg/mL';
+    // Real macrocytosis (B12/folate deficiency, alcohol) — must survive.
+    const inRange = 'MCV 120 fL';
     expect(
-      extractBiomarkersFromText(inRange).find((m) => m.id === 'estradiol')
-        ?.value,
-    ).toBe(150);
+      extractBiomarkersFromText(inRange).find((m) => m.id === 'mcv')?.value,
+    ).toBe(120);
   });
 });
 

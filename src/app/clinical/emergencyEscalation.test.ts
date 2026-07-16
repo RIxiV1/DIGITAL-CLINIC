@@ -56,10 +56,29 @@ const EMERGENCIES: {
   { label: 'acute hepatocellular injury (AST)', row: 'AST (SGOT) 900 U/L 15.00 - 40.00', atLeast: 'critical' },
 ];
 
-/** Not same-day, but must still SURVIVE extraction and read as abnormal —
- *  these are the ones the physical ceiling used to delete outright. */
+/**
+ * Not same-day, but must still SURVIVE extraction and read as abnormal.
+ *
+ * These are the ones the physical ceiling deleted outright — and the list is
+ * deliberately heavy on the hormonal axis, because that is what this app is
+ * FOR. LH and FSH are the discriminator for low testosterone (high = the
+ * testes have failed, low = the pituitary isn't signalling); prolactin and
+ * oestradiol are its treatable causes. Every one of them had a fallback
+ * ceiling sitting inside the range where the finding is obvious, so the
+ * clearer the answer, the more certainly we binned it — and the man saw his
+ * low testosterone with nothing beside it to explain why.
+ */
 const MUST_NOT_VANISH: { label: string; row: string; id: string }[] = [
   { label: 'macroprolactinoma', row: 'Prolactin 1500 ng/mL 4.0 - 15.2', id: 'prolactin' },
+  { label: 'primary hypogonadism (LH)', row: 'LH 62.0 mIU/mL 1.7 - 8.6', id: 'lh' },
+  { label: 'testicular failure (FSH)', row: 'FSH 88.0 mIU/mL 1.5 - 12.4', id: 'fsh' },
+  { label: 'oestrogen excess (E2)', row: 'Estradiol 320 pg/mL 11 - 44', id: 'estradiol' },
+  // Bare "Insulin" is deliberately not an alias (too ambiguous) — labs print
+  // the fasting qualifier, so the fixture has to as well.
+  { label: 'severe insulin resistance', row: 'Fasting Insulin 180 uIU/mL 2 - 25', id: 'insulin' },
+  { label: 'T3 toxicosis', row: 'Free T3 28.0 pg/mL 2.3 - 4.2', id: 'free-t3' },
+  { label: 'thyroid storm (Free T4)', row: 'Free T4 9.5 ng/dL 0.8 - 1.8', id: 'free-t4' },
+  { label: "Cushing's (AM cortisol)", row: 'Cortisol 62.0 ug/dL 6.2 - 19.4', id: 'cortisol-am' },
   { label: 'cholestasis (ALP)', row: 'Alkaline Phosphatase (ALP) 1800 U/L 30.00 - 120.00', id: 'alp' },
   { label: 'alcoholic hepatitis (GGT)', row: 'GGTP 1200 U/L 0 - 73', id: 'ggt' },
   { label: 'acute hepatitis (ALT)', row: 'ALT (SGPT) 3000 U/L 10.00 - 49.00', id: 'alt' },
