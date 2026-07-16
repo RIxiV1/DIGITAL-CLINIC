@@ -1,9 +1,9 @@
 import { useState, type FormEvent } from 'react';
 import { Lock, ShieldAlert } from 'lucide-react';
 import { useReports } from '../AppContext';
-import Button from './Button';
-import Container from './Container';
-import Logo from './Logo';
+import Button from './ui/Button';
+import Container from './ui/Container';
+import Logo from './ui/Logo';
 
 /**
  * Full-screen unlock gate. Rendered instead of the app whenever a data

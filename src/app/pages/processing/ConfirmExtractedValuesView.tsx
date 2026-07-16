@@ -10,11 +10,11 @@ import {
   RotateCcw,
   Siren,
 } from 'lucide-react';
-import Button from '../../components/Button';
-import Card from '../../components/Card';
-import Container from '../../components/Container';
-import Logo from '../../components/Logo';
-import Pill from '../../components/Pill';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Container from '../../components/ui/Container';
+import Logo from '../../components/ui/Logo';
+import Pill from '../../components/ui/Pill';
 import StickyBottomBar from '../../components/StickyBottomBar';
 import {
   categories as biomarkerCategories,

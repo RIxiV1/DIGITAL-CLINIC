@@ -8,9 +8,9 @@ import {
   Info,
   Lightbulb,
 } from 'lucide-react';
-import Button from '../components/Button';
-import Card from '../components/Card';
-import Container from '../components/Container';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Container from '../components/ui/Container';
 import Header from '../components/Header';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';

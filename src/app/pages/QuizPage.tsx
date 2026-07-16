@@ -8,9 +8,9 @@ import {
   ShieldCheck,
   X,
 } from 'lucide-react';
-import Button from '../components/Button';
-import Container from '../components/Container';
-import Logo from '../components/Logo';
+import Button from '../components/ui/Button';
+import Container from '../components/ui/Container';
+import Logo from '../components/ui/Logo';
 import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useQuiz, type QuizAnswers } from '../AppContext';
 import {

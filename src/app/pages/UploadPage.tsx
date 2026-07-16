@@ -10,8 +10,8 @@ import {
   ShieldCheck,
   UploadCloud,
 } from 'lucide-react';
-import Button from '../components/Button';
-import Container from '../components/Container';
+import Button from '../components/ui/Button';
+import Container from '../components/ui/Container';
 import Header from '../components/Header';
 import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useReports } from '../AppContext';

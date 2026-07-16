@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Lock } from 'lucide-react';
 import { useReports } from '../AppContext';
-import Button from './Button';
+import Button from './ui/Button';
 
 /**
  * Profile row for the opt-in at-rest data lock. Off by default. Setting a

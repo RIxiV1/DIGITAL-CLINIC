@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { ArrowRight, ChevronRight, Check } from 'lucide-react';
-import Button from '../../components/Button';
+import Button from '../../components/ui/Button';
 import ConnectedSystems from '../../components/ConnectedSystems';
 import { buildBodySystems, healthStorySentence } from '../../clinical';
 import { sampleBiomarkers } from '../../data/biomarkers';

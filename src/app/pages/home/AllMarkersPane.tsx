@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
-import Card from '../../components/Card';
+import Card from '../../components/ui/Card';
 import MarkerAttentionCard from '../../components/MarkerAttentionCard';
 import {
   STATUS_FILTER_OPTIONS,

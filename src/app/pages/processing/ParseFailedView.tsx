@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { ChevronDown, Pencil, RotateCcw, Sparkles } from 'lucide-react';
-import Button from '../../components/Button';
-import Card from '../../components/Card';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
 import ClinicalSpot, {
   type ClinicalSpotName,
 } from '../../components/ClinicalSpot';
-import Container from '../../components/Container';
-import Logo from '../../components/Logo';
+import Container from '../../components/ui/Container';
+import Logo from '../../components/ui/Logo';
 import type { FailureState } from './types';
 
 /* ================================================================== */

@@ -1,7 +1,7 @@
 import { useId, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Trash2 } from 'lucide-react';
-import Button from '../../components/Button';
+import Button from '../../components/ui/Button';
 import { useModalA11y } from '../../hooks/useModalA11y';
 import type { Report } from '../../data/reports';
 

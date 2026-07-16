@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Lock } from 'lucide-react';
-import Logo from './Logo';
+import Logo from './ui/Logo';
 import { useDiscreet } from '../AppContext';
 
 /**

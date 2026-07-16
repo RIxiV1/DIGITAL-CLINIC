@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, ChevronRight, FlaskConical, Lock } from 'lucide-react';
-import Button from '../../components/Button';
+import Button from '../../components/ui/Button';
 import {
   sampleBiomarkers,
   statusColor,

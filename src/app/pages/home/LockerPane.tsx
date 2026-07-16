@@ -1,9 +1,9 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { FileText, Plus, Search, Trash2, X } from 'lucide-react';
-import Button from '../../components/Button';
-import Card from '../../components/Card';
-import Pill from '../../components/Pill';
-import StatusBadge from '../../components/StatusBadge';
+import Button from '../../components/ui/Button';
+import Card from '../../components/ui/Card';
+import Pill from '../../components/ui/Pill';
+import StatusBadge from '../../components/ui/StatusBadge';
 import { badgeFor, type Report } from '../../data/reports';
 import type { LockerSort } from './types';
 

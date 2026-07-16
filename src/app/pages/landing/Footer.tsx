@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FlaskConical, Lock } from 'lucide-react';
-import Logo from '../../components/Logo';
+import Logo from '../../components/ui/Logo';
 import LegalModal, { type LegalKind } from '../../components/LegalModal';
 
 /** Footer link/button — min-h-11 gives every entry a 44px touch target

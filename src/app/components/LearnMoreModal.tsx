@@ -1,7 +1,7 @@
 import { useId, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { CheckCircle2, X } from 'lucide-react';
-import Button from './Button';
+import Button from './ui/Button';
 import type { LearnMore } from '../data/markerInfo';
 import type { BiomarkerStatus } from '../data/biomarkers';
 import { useModalA11y } from '../hooks/useModalA11y';

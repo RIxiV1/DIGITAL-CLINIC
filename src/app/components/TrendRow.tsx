@@ -7,7 +7,7 @@ import {
   getTrendTone,
   type Biomarker,
 } from '../data/biomarkers';
-import Sparkline from './Sparkline';
+import Sparkline from './ui/Sparkline';
 
 type Props = {
   marker: Biomarker;

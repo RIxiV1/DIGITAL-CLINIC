@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { Check, ShieldCheck } from 'lucide-react';
-import Container from '../components/Container';
-import Logo from '../components/Logo';
+import Container from '../components/ui/Container';
+import Logo from '../components/ui/Logo';
 import { useNavigation, useReports } from '../AppContext';
 import {
   consumePendingUpload,

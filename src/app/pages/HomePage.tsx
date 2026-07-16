@@ -15,9 +15,9 @@ import {
   Upload,
   X,
 } from 'lucide-react';
-import Card from '../components/Card';
+import Card from '../components/ui/Card';
 import ClinicalSpot from '../components/ClinicalSpot';
-import Container from '../components/Container';
+import Container from '../components/ui/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import DashboardHeadline from '../components/DashboardHeadline';

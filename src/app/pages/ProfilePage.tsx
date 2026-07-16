@@ -13,12 +13,12 @@ import {
   Pencil,
   ShieldCheck,
 } from 'lucide-react';
-import Button from '../components/Button';
-import Card from '../components/Card';
-import Container from '../components/Container';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Container from '../components/ui/Container';
 import DataLockSetting from '../components/DataLockSetting';
 import Header from '../components/Header';
-import Pill from '../components/Pill';
+import Pill from '../components/ui/Pill';
 import BottomNav from '../components/BottomNav';
 import DataPanelModal from '../components/DataPanelModal';
 import {

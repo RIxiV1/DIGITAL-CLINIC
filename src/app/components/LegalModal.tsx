@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
-import Button from './Button';
+import Button from './ui/Button';
 import { acquireBodyScrollLock } from '../utils/bodyScrollLock';
 
 export type LegalKind = 'privacy' | 'terms' | 'about' | 'contact';

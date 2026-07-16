@@ -1,5 +1,5 @@
 import { ShieldCheck } from 'lucide-react';
-import Container from '../components/Container';
+import Container from '../components/ui/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 

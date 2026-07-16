@@ -1,10 +1,10 @@
 import { useDeferredValue, useMemo, useState } from 'react';
 import { AlertTriangle, ArrowRight, Pencil, Search, X } from 'lucide-react';
-import Button from '../components/Button';
-import Card from '../components/Card';
-import Container from '../components/Container';
+import Button from '../components/ui/Button';
+import Card from '../components/ui/Card';
+import Container from '../components/ui/Container';
 import Header from '../components/Header';
-import Pill from '../components/Pill';
+import Pill from '../components/ui/Pill';
 import StickyBottomBar from '../components/StickyBottomBar';
 import { useNavigation, useReports } from '../AppContext';
 import {

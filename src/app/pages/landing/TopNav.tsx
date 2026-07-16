@@ -1,5 +1,5 @@
 import { ArrowRight, House } from 'lucide-react';
-import Logo from '../../components/Logo';
+import Logo from '../../components/ui/Logo';
 
 export default function TopNav({
   onStart,

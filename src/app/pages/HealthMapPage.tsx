@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Check, ChevronRight, TrendingDown, TrendingUp, Upload } from 'lucide-react';
-import Button from '../components/Button';
-import Container from '../components/Container';
+import Button from '../components/ui/Button';
+import Container from '../components/ui/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import StatusKey from '../components/StatusKey';

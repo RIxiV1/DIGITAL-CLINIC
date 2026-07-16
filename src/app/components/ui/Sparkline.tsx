@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { useId } from 'react';
-import type { Biomarker } from '../data/biomarkers';
+import type { Biomarker } from '../../data/biomarkers';
 
 type Props = {
   marker: Biomarker;

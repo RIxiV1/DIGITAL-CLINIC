@@ -1,5 +1,5 @@
 import { Download, Lock, Microscope } from 'lucide-react';
-import Logo from '../../components/Logo';
+import Logo from '../../components/ui/Logo';
 import { Reveal, SectionHeader } from './shared';
 
 // What you actually walk away with — re-cut from the old lucide icon-card

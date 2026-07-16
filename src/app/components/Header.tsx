@@ -1,6 +1,6 @@
 import { ArrowLeft, EyeOff } from 'lucide-react';
 import type { ReactNode } from 'react';
-import Logo from './Logo';
+import Logo from './ui/Logo';
 import { useDiscreet, useNavigation, type Page } from '../AppContext';
 import { assertNever } from '../utils/assertNever';
 import { useIsMdUp } from '../hooks/useMediaQuery';

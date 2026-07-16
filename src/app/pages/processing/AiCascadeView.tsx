@@ -1,8 +1,8 @@
 import { motion } from 'framer-motion';
 import { Sparkles } from 'lucide-react';
-import Button from '../../components/Button';
-import Container from '../../components/Container';
-import Logo from '../../components/Logo';
+import Button from '../../components/ui/Button';
+import Container from '../../components/ui/Container';
+import Logo from '../../components/ui/Logo';
 import { AI_PARSER_PRIVACY_COPY } from '../../services/aiParser';
 
 /* ================================================================== */

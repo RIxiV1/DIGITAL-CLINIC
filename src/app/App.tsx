@@ -4,7 +4,7 @@ import { AppProvider, useNavigation, useReports, type Page } from './AppContext'
 import ErrorBoundary from './components/ErrorBoundary';
 import PrivacyScreen from './components/PrivacyScreen';
 import UnlockGate from './components/UnlockGate';
-import { PageSkeleton } from './components/Skeleton';
+import { PageSkeleton } from './components/ui/Skeleton';
 import LandingPage from './pages/LandingPage';
 import { assertNever } from './utils/assertNever';
 import { lazyWithReload } from './utils/lazyWithReload';
