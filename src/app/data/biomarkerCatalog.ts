@@ -591,6 +591,21 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       url: 'https://www.acpjournals.org/doi/10.7326/0003-4819-137-1-200207020-00006',
       audience: 'adult men',
     },
+    // Critical: ≥300 suggests acute hepatocellular injury (viral hepatitis
+    // flare, drug toxicity, ischaemic hepatitis) — the same cliff AST sets,
+    // for the same reason. ALT is the MORE liver-specific of the pair (AST
+    // also comes from muscle and heart), so it having no critical threshold
+    // while AST had one was backwards: AST 350 said "speak to a doctor
+    // promptly" while ALT 1200 said "discuss it at your appointment".
+    criticalHigh: 300,
+    // ALT genuinely reaches the thousands in acute hepatocellular injury.
+    // The 5×-span fallback capped this at ~301 and BINNED anything above —
+    // so the most dangerous ALT a report can carry was silently dropped and
+    // the user saw no ALT at all. AST already sets 10000 and its own note
+    // says "pair with ALT for confirmation", which we were making
+    // impossible. Matched to AST.
+    physicalMin: 0,
+    physicalMax: 10000,
     category: 'liver',
     direction: 'down',
     simpleName: 'A liver enzyme',
@@ -886,6 +901,20 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['ng/ml'],
     min: 4,
     max: 15.2,
+    // The most important ceiling in this file for THIS app.
+    //
+    // A prolactin-secreting pituitary adenoma is the classic treatable cause
+    // of the exact picture we exist to explain: low testosterone, low libido,
+    // erectile dysfunction, gynaecomastia. >100 ng/mL is near-diagnostic of a
+    // prolactinoma and a macroadenoma routinely runs 200-2000+.
+    //
+    // The 5×-span fallback put the ceiling at ~71 — BELOW every prolactinoma
+    // that exists. So on a report where high prolactin was the answer to the
+    // low testosterone printed beside it, we deleted the prolactin and showed
+    // the man his low T with nothing to explain it. The one thing this app
+    // most needed to surface was the one thing it structurally could not.
+    physicalMin: 0,
+    physicalMax: 10000,
     category: 'hormones',
     direction: 'down',
     simpleName: 'When high in men, suppresses testosterone',
@@ -1086,6 +1115,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['u/L', 'IU/L'],
     min: 44,
     max: 147,
+    // Biliary obstruction and Paget's disease push ALP into the thousands;
+    // the 5×-span fallback capped it at ~662 and binned them. Same failure
+    // as ALT — the more urgent the reading, the more likely we deleted it.
+    physicalMin: 0,
+    physicalMax: 5000,
     category: 'liver',
     direction: 'band',
     simpleName: 'A liver/bone enzyme',
@@ -1100,6 +1134,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['u/L', 'IU/L'],
     min: 9,
     max: 48,
+    // Alcoholic hepatitis and biliary obstruction reach 1000-3000 U/L. The
+    // 5×-span fallback capped GGT at ~243 — and GGT is the marker most often
+    // reached for when alcohol is the question, so binning the high end
+    // removed the answer precisely when it was the point.
+    physicalMin: 0,
+    physicalMax: 5000,
     category: 'liver',
     direction: 'down',
     simpleName: 'A liver enzyme sensitive to alcohol',
