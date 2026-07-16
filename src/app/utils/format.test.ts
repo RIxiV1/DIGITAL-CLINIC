@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatDate, formatBytes } from './uiUtils';
+import { formatDate, formatBytes } from './format';
 
 describe('formatDate', () => {
   it('returns an em-dash for null/undefined/empty', () => {

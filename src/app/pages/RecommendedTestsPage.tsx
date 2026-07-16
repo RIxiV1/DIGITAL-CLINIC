@@ -28,7 +28,7 @@ import {
   type RiskAssessment,
   type RiskSystemResult,
 } from '../contexts/QuizContext';
-import { recommendTestsFor, type RecommendedTest } from '../data/tests';
+import { recommendTestsFor, type RecommendedTest } from '../data/testRecommender';
 import { getMarkerInfo } from '../data/markerInfo';
 import { getTestInfo } from '../data/testInfo';
 

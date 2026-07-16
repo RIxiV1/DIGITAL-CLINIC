@@ -9,7 +9,7 @@ import {
   wipeAllData,
 } from '../utils/persistence';
 import { clearPendingUpload } from '../services/api';
-import { formatBytes, formatDate } from '../utils/uiUtils';
+import { formatBytes, formatDate } from '../utils/format';
 
 type Props = {
   open: boolean;

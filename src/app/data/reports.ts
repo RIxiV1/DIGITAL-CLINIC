@@ -5,7 +5,7 @@ import {
   type BiomarkerReading,
 } from './biomarkers';
 import type { ReportBadge } from '../components/ui/StatusBadge';
-import { formatDate } from '../utils/uiUtils';
+import { formatDate } from '../utils/format';
 
 type ReportStatus = 'processing' | 'ready';
 

@@ -13,7 +13,7 @@
 
 import { type Biomarker } from '../data/biomarkers';
 import { makeReportId, type Report } from '../data/reports';
-import { formatDate } from '../utils/uiUtils';
+import { formatDate } from '../utils/format';
 import { sanitizeFilename } from '../utils/sanitizeFilename';
 import { classifyOutOfScope, parsePdfFile } from './pdfParser';
 
