@@ -63,32 +63,70 @@ classification. Being consumer-facing is not a lighter-touch category here.
 > — *same source*
 
 The "not a device" list is purely **functional** — storage, billing, encryption,
-LIS. Unlike the US (general-wellness carve-out) or a soft reading of "wellness
-app", India's list gives no shelter for a tool that interprets. A triage/screening
-tool is explicitly given as an example of something that *is* a device.
+LIS. India's list gives no shelter for a tool that interprets. A triage/screening
+tool is explicitly given as an example of something that *is* a device. (A grep of
+the full guidance PDF for "wellness" returned **zero** hits.)
 
-### 5. Telemedicine — the one place ForMen is on the SAFE side
+### 5. A SECOND, independent hook — and this one is binding law, not draft
 
-> "5.4 Technology platforms based on Artificial Intelligence/Machine Learning
-> are not allowed to counsel the patients or prescribe any medicines ... Only a
-> RMP is entitled to counsel or prescribe."
+> "Standalone software, which are not incorporated into the medical device
+> itself and provide an analysis based on the results from the analyser, shall be
+> classified in to the same [IVD] category as the [analyser]."
+> — *MDR 2017, First Schedule, Part II, clause 1(d)* (verified verbatim)
+
+This matters because everything above rests on the **draft** 2025 software
+guidance. This clause is in the **already-operative Medical Devices Rules 2017**.
+Software that analyses a lab analyser's output is pulled into the same IVD class as
+the analyser — independently of the draft guidance. So the SaMD conclusion does
+not depend on a draft that could still change wording.
+
+### 6. Telemedicine — ForMen is OUTSIDE its scope (a point in your favour)
+
+> "The guidelines are meant for RMPs under the IMC Act 1956 ... telemedicine is
+> ... clinical service delivered by a Registered Medical Practitioner." … "3.7.4
+> Technology platforms based on AI/ML are not allowed to counsel the patients or
+> prescribe."
 > — *Telemedicine Practice Guidelines 2020 (MoHFW)*
 
-The line is **counselling / prescribing**. ForMen says "discuss with your doctor"
-and never names a drug or dose — it stays on the safe side of this one. Keep it
-that way: never output a treatment, dose, or drug name.
+The TPG 2020 bind **Registered Medical Practitioners**; a standalone tool with no
+RMP and no teleconsultation falls **outside their scope entirely** — so they
+don't govern ForMen. The separate §3.7.4 bar on AI counselling/prescribing is the
+line to never cross: ForMen says "discuss with your doctor" and never names a drug
+or dose. Keep it that way — never output a treatment, dose, or drug name.
+
+### 7. Global contrast — there is no market to escape to
+
+Both other major regimes reach the **same** "regulated medical device" conclusion,
+so a future non-India launch does not dodge the issue:
+
+- **EU (MDR / MDCG 2019-11):** "software should be qualified ... depending on its
+  intended purpose ... regardless of its location." Software that *processes,
+  analyses, creates or modifies medical information for a medical purpose* is
+  MDSW — a lab-interpretation tool lands **Class IIa or higher**. A disclaimer
+  "may not be sufficient" to remove that status.
+- **US (FDA CDS / 21st Century Cures §520(o)(1)(E)):** the Non-Device CDS
+  exclusion requires the software be for **healthcare professionals**. "Software
+  functions that support or provide recommendations to **patients or caregivers**
+  ... meet the definition of a device." A patient-facing tool is a device and
+  **cannot** use the exclusion.
+
+India is not an outlier. All three anchor status to **function and intended use**,
+which is why (finding 2) the only changes that move the needle are functional, not
+cosmetic.
 
 ---
 
 ## Decisions the user must make (brief the lawyer with these exact questions)
 
-1. **Is ForMen SaMD as currently worded?** Given findings 1-4, assume "likely
-   yes" until a lawyer says otherwise. Ask: *what is the minimum change to
-   intended-use wording/claims that would keep it out of the SaMD definition — or
-   is registration unavoidable given the interpretation function?*
+1. **Is ForMen SaMD as currently worded?** Given findings 1-5, assume "likely
+   yes" until a lawyer says otherwise — and note two independent hooks (the draft
+   software guidance AND the binding MDR-2017 IVD clause). Ask: *what is the
+   minimum change to intended-use wording/claims that would keep it out of the
+   SaMD definition — or is registration unavoidable given the interpretation
+   function?*
 2. **If it is a device, what class (A/B/C/D) and what licence (MD-5 vs MD-9,
-   QMS, predicate)?** UNRESOLVED by this research — the classification-rule and
-   licensing agents errored out. This is a direct lawyer question.
+   QMS, predicate)?** Not pinned by this research (partly, the IVD-analyser hook
+   suggests it inherits the analyser's class). A direct lawyer question.
 3. **DPDP Act 2023 + the Gemini transfer.** UNRESOLVED. The on-device/no-server
    design plausibly minimises data-fiduciary exposure, but the opt-in image
    send to Google's **free** Gemini tier (which may train on the data) is the one
@@ -116,9 +154,23 @@ Deliberately NOT done, because the research says they're cosmetic or wrong:
   status (finding 2), and asserting it while the function arguably makes it one
   could be worse than silence. Do not add.
 
-## What this research could NOT establish
+## What this research could NOT establish (still open)
 
-EU MDR Rule 11 / MDCG 2019-11 and US FDA CDS treatment (both errored out); the
-exact Indian risk class and licensing path; the DPDP data-fiduciary question for
-the Gemini transfer. Re-run the research after 2:30pm IST (session reset) or take
-these four questions straight to the lawyer.
+- **DPDP Act 2023 + the Gemini transfer — genuinely unverified.** Zero of the 23
+  verified claims reached it: not the localStorage/no-server obligation question,
+  not whether the opt-in image send to Google makes the operator a data
+  fiduciary, not the cross-border-transfer rules, not free-tier-vs-Vertex. Needs
+  its own research pass **and** a privacy lawyer. Until then the safe default
+  holds: no Gemini key in production = no transfer.
+- **Exact Indian risk class + licence path** (A/B/C/D, MD-5 vs MD-9, QMS,
+  predicate) — a lawyer question; the IVD hook hints it inherits the analyser's
+  class.
+- **Draft-status caveat:** the pivotal CDSCO software guidance (21-Oct-2025) is
+  **draft**, not final — it interprets the already-operative MDR 2017, but its
+  wording could shift before finalisation. The MDR-2017 IVD clause (finding 5) is
+  binding now regardless.
+
+_Sources: CDSCO Draft Guidance on Medical Device Software 21/10/2025; Medical
+Devices Rules 2017 First Schedule; MoHFW Telemedicine Practice Guidelines 2020;
+EU MDCG 2019-11; US FDA Clinical Decision Support Software guidance. All findings
+verified 3-0 (adversarial 3-vote) against primary sources except where marked._
