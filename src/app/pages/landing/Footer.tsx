@@ -13,6 +13,7 @@ const COMPANY: ReadonlyArray<[LegalKind, string]> = [
   ['about', 'About'],
   ['privacy', 'Privacy'],
   ['terms', 'Terms'],
+  ['accessibility', 'Accessibility'],
   ['contact', 'Contact'],
 ];
 

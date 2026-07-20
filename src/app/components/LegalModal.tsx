@@ -4,7 +4,12 @@ import { X } from 'lucide-react';
 import Button from './ui/Button';
 import { acquireBodyScrollLock } from '../utils/bodyScrollLock';
 
-export type LegalKind = 'privacy' | 'terms' | 'about' | 'contact';
+export type LegalKind =
+  | 'privacy'
+  | 'terms'
+  | 'about'
+  | 'contact'
+  | 'accessibility';
 
 type Props = {
   kind: LegalKind | null;
@@ -267,6 +272,34 @@ const CONTENT: Record<LegalKind, Doc> = {
         heading: 'Press + medical advisors',
         paragraphs: [
           "team@formen.co.in — clinical reviewers, advisors, or anyone writing about men's hormonal health in India.",
+        ],
+      },
+    ],
+  },
+  accessibility: {
+    eyebrow: 'Accessibility',
+    title: 'Built to be usable by everyone',
+    updated: 'July 2026',
+    sections: [
+      {
+        heading: 'What we do',
+        paragraphs: [
+          'Every interactive control is reachable and operable by keyboard, with a visible focus ring. Dialogs trap focus, close on Escape, and return focus where you left off.',
+          'Touch targets meet the 44×44px minimum, so buttons are easy to hit on a phone. We honour your system “reduce motion” setting — animations become instant, and nothing important depends on movement.',
+          'Status is never carried by colour alone: every marker also states its meaning in words (“Needs care”, “See a doctor”), and red is reserved for the genuinely urgent. Icon-only buttons carry text labels for screen readers, and the Health Map ships a written summary of what the diagram shows.',
+        ],
+      },
+      {
+        heading: 'Where we know we can do better',
+        paragraphs: [
+          'We have not yet completed a formal third-party WCAG 2.1 AA audit — that is on the roadmap. Screen-reader testing is ongoing, and a few rich visualisations are still easier to follow visually than by voice.',
+          'If something is hard to use with your assistive technology, please tell us — it goes straight to the top of the list.',
+        ],
+      },
+      {
+        heading: 'Contact',
+        paragraphs: [
+          'Write to hello@formen.co.in with “Accessibility” in the subject and we will reply within 7 business days.',
         ],
       },
     ],
