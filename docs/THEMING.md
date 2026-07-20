@@ -16,7 +16,7 @@ The visual identity is the **ForMen brand** (deep indigo + gold) rendered as
 | **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — resolves to a **warm-stone ramp**, NOT blue | nav, secondary buttons, most fills |
 | **Brand / interactive accent** (ForMen indigo) | `--color-forest` **and** `--color-clay`, both `#2D3B8E` (light — the EXACT wordmark hex, sampled from `public/favicon.svg`) / `#97A3EA` (dark), with `--color-on-*` for text on them | the wordmark, primary CTA, action links, focus rings, landing accent phrases — the one ownable brand hue |
 | **Warm secondary** (ForMen gold) | `--color-gold-*` (`#FFB800`, desaturated for dark) | highlights, gold pills, the calm `attention` status family |
-| **Alarm** (crimson) | `--color-concern` → **`#ef4444`** (dark) | clinical warnings / flagged diagnostics only |
+| **Alarm** (warm red) | `--color-concern` → `#dc2626` (light) / **`#ff7a6b`** (dark) | clinical warnings / flagged diagnostics only |
 
 The accent is **blue-dominant**, so the "act here" indigo separates from the crimson alarm under protanopia/deuteranopia (blue-vs-red is the safe CVD pair) — even more reliably than the old forest did. Clay and forest now resolve to the *same* indigo (the app has one brand accent + gold, not two warm accents); terracotta has retired into the brand. The clinical status colours (`good` / `attention` / `concern` / `critical`) are **unchanged** and stay label-backed, never colour-only.
 
@@ -58,9 +58,20 @@ These are deliberate. Without them, `text-white` on a light dark-mode fill drops
 
 ### 4. De-escalated status palette in dark mode
 
-Status fills de-escalate in dark mode: `good` → emerald `#5FCB95`, `attention` → warm amber `#D9A765`. **`concern` is an authoritative crimson `#ef4444`** — it deliberately stays clear of both the warm-stone chrome and the forest interactive accent so an alarm never reads as a button. Forest↔crimson also separate under colour-blindness (on both hue and lightness) — which is exactly why forest, not the red-family clay, owns the interactive lane. The vivid Tailwind defaults are visual noise on a dark canvas; this set reads as clinical.
+Status fills **do** re-bind per theme — they are not a single hardcoded set. The light `@theme :root` values (`good #16a34a`, `attention #d97706`, `concern #dc2626`) are re-bound in the `:root[data-theme='dark']` block to a de-escalated set tuned for a dark canvas:
 
-Status text *on soft backgrounds* uses dedicated `*-ink` tokens (`--color-good-ink`, `--color-attention-ink`, etc.) for AA contrast.
+| Token | Light | Dark |
+| --- | --- | --- |
+| `--color-good` | `#16a34a` | `#5fd39a` |
+| `--color-attention` | `#d97706` | `#f0b44e` |
+| `--color-concern` | `#dc2626` | `#ff7a6b` |
+| `--color-concern-ink` | `#b91c1c` | `#ff9184` |
+
+**`concern` stays an unmistakable warm red in both themes** — it deliberately stays clear of both the warm-stone chrome and the indigo interactive accent so an alarm never reads as a button, and it separates from the accent under colour-blindness on both hue and lightness. The vivid Tailwind defaults are visual noise on a dark canvas; this set reads as clinical.
+
+Status text *on soft backgrounds* uses dedicated `*-ink` tokens (`--color-good-ink`, `--color-attention-ink`, etc.) for AA contrast. In dark, `--color-good-ink` / `--color-attention-ink` alias their base token and `--color-concern-ink` lightens to `#ff9184`.
+
+> **Verify before reporting drift.** These values live in the `:root[data-theme='dark']` block of [`src/index.css`](../src/index.css) — read that block rather than the light `@theme :root` defaults higher up the file. Reading only the `:root` defaults is what produces the recurring (and incorrect) "status colours never adapt to dark mode" review finding.
 
 ### 5. Inset shadows in dark, drop shadows in light
 

@@ -34,7 +34,8 @@ Env vars are documented in [`.env.example`](../.env.example). To enable the fall
 
 Notes:
 - `GEMINI_API_KEY` is a **server-side secret**, read only by [`api/parse-image.ts`](../api/parse-image.ts). It never reaches the browser. Don't commit a real key and don't prefix it with `VITE_` (that would bundle it into the client).
-- **Privacy:** this is the one path where an image leaves the device (sent to Google, which may retain it). It's opt-in by design — the user taps "Try AI parser" — so keep it opt-in, never automatic.
+- **Privacy:** this is the one path where an image leaves the device (sent to Google, which may retain it — the free tier trains on submitted data). It runs in two ways: the explicit **"Try AI parser"** button on the failure card, and an **automatic cascade** for images when local parsing fails. The cascade is **on by default** (`dc_aiAutoFallback`) — a deliberate product decision, because a user staring at a failed parse is worse served by a dead end than by a disclosed network call. What makes that honest is not a default-off switch but the three guarantees around it: the upload screen **discloses** it before you parse, the call is **cancelable** while it runs, and it's **togglable off** in Profile. See [Auto-cascade gate](#auto-cascade-gate) for the exact firing conditions.
+  > Never describe this as "opt-in, never automatic" (this line used to, incorrectly) — and never describe the app as "your data never leaves your device" unqualified. The accurate framing is **on-device by default, with a disclosed, cancelable, switch-offable escape hatch**. `src/app/services/aiParser.ts` holds the single source of truth for the user-facing disclosure copy; keep this doc, that copy, and `persistence.ts`'s default in agreement.
 - `ALLOWED_ORIGINS` / `ALLOW_NO_ORIGIN` gate who may call the endpoint; see `.env.example`.
 
 ---
@@ -73,7 +74,7 @@ parseUploadedReport(name, file, onProgress)
    auto-cascade (image + no-file failure + dc_aiAutoFallback setting on).
 ```
 
-The separation matters: Pipelines 1+2 are free (CPU on the user's device), Pipeline 3 costs quota. The orchestrator doesn't cascade automatically — ProcessingPage does, with explicit user consent.
+The separation matters: Pipelines 1+2 are free (CPU on the user's device), Pipeline 3 costs quota **and leaves the device**. The orchestrator never cascades — ProcessingPage does, under the disclosed, cancelable, default-on `dc_aiAutoFallback` gate (not a per-upload consent prompt).
 
 ---
 
