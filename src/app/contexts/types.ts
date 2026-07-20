@@ -17,6 +17,9 @@ export type Page =
   // the default (undefined) is the calm Overview. Same page — the URL just
   // selects which layer of the progressive-disclosure the report shows.
   | { type: 'results'; reportId: string; view?: 'details' }
+  // Side-by-side comparison of two reports. Both ids optional: `/compare`
+  // with none opens the picker; `/compare/:aId/:bId` deep-links a pair.
+  | { type: 'compare'; aId?: string; bId?: string }
   | { type: 'problem'; problemId: string }
   | { type: 'profile' }
   | { type: 'privacy' };

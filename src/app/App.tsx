@@ -34,6 +34,7 @@ const ManualEntryPage = lazyWithReload(() => import('./pages/ManualEntryPage'));
 const ReportResultsPage = lazyWithReload(
   () => import('./pages/ReportResultsPage'),
 );
+const ComparePage = lazyWithReload(() => import('./pages/ComparePage'));
 const ProblemDetailPage = lazyWithReload(
   () => import('./pages/ProblemDetailPage'),
 );
@@ -59,6 +60,10 @@ function pageKey(p: Page): string {
     case 'profile':
     case 'privacy':
       return p.type;
+    // Stable key across id changes so swapping a report in the picker
+    // updates in place instead of remounting (and replaying the enter).
+    case 'compare':
+      return 'compare';
     default:
       return assertNever(p);
   }
@@ -113,6 +118,9 @@ function PageHost() {
       node = (
         <ReportResultsPage reportId={page.reportId} view={page.view} />
       );
+      break;
+    case 'compare':
+      node = <ComparePage aId={page.aId} bId={page.bId} />;
       break;
     case 'problem':
       node = <ProblemDetailPage problemId={page.problemId} />;

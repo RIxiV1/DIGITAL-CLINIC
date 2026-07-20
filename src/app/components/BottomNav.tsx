@@ -33,6 +33,7 @@ function navIdFor(page: Page): ItemId {
     case 'processing':
     case 'manualEntry':
     case 'results':
+    case 'compare':
     case 'problem':
       return 'home';
     case 'quiz':

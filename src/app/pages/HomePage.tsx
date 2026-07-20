@@ -929,6 +929,7 @@ export default function HomePage() {
                               navigate({ type: 'upload' })
                         }
                         onDeleteReport={(id) => setReportPendingDelete(id)}
+                        onCompare={() => navigate({ type: 'compare' })}
                       />
                     )}
                   </div>

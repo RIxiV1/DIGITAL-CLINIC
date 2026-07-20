@@ -75,6 +75,10 @@ export function pageToPath(page: Page): string {
       return page.view === 'details'
         ? `/reports/${encodeURIComponent(page.reportId)}/markers`
         : `/reports/${encodeURIComponent(page.reportId)}`;
+    case 'compare':
+      return page.aId && page.bId
+        ? `/compare/${encodeURIComponent(page.aId)}/${encodeURIComponent(page.bId)}`
+        : '/compare';
     case 'problem':
       return `/topics/${encodeURIComponent(page.problemId)}`;
     default:
@@ -123,6 +127,8 @@ export function pathToPage(pathname: string): Page {
       return { type: 'profile' };
     case '/privacy':
       return { type: 'privacy' };
+    case '/compare':
+      return { type: 'compare' };
   }
 
   // Parameterised routes — keyword case-insensitive (`/i`), param case
@@ -138,6 +144,14 @@ export function pathToPage(pathname: string): Page {
   const reportMatch = trimmed.match(/^\/reports\/([^/]+)$/i);
   if (reportMatch) {
     return { type: 'results', reportId: decodeURIComponent(reportMatch[1]) };
+  }
+  const compareMatch = trimmed.match(/^\/compare\/([^/]+)\/([^/]+)$/i);
+  if (compareMatch) {
+    return {
+      type: 'compare',
+      aId: decodeURIComponent(compareMatch[1]),
+      bId: decodeURIComponent(compareMatch[2]),
+    };
   }
   const topicMatch = trimmed.match(/^\/topics\/([^/]+)$/i);
   if (topicMatch) {
@@ -159,6 +173,11 @@ export function pageEquals(a: Page | null | undefined, b: Page): boolean {
   }
   if (a.type === 'problem' && b.type === 'problem') {
     return a.problemId === b.problemId;
+  }
+  if (a.type === 'compare' && b.type === 'compare') {
+    // The chosen pair is part of the identity — otherwise switching a
+    // report in the picker (same page type) would no-op the URL update.
+    return a.aId === b.aId && a.bId === b.bId;
   }
   return true;
 }

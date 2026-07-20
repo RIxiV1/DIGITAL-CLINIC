@@ -19,6 +19,8 @@ const ALL_PAGES: Page[] = [
   { type: 'manualEntry' },
   { type: 'profile' },
   { type: 'results', reportId: 'rep-3f2a9c1b' },
+  { type: 'compare' },
+  { type: 'compare', aId: 'rep-001', bId: 'rep-002' },
   { type: 'problem', problemId: 'low-testosterone' },
 ];
 
@@ -39,6 +41,13 @@ describe('pageToPath', () => {
     expect(pageToPath({ type: 'problem', problemId: 'high-ldl' })).toBe(
       '/topics/high-ldl',
     );
+    expect(pageToPath({ type: 'compare' })).toBe('/compare');
+    expect(
+      pageToPath({ type: 'compare', aId: 'rep-1', bId: 'rep-2' }),
+    ).toBe('/compare/rep-1/rep-2');
+    // A half-specified pair collapses to the picker route, not a broken
+    // /compare/rep-1 path the parser can't round-trip.
+    expect(pageToPath({ type: 'compare', aId: 'rep-1' })).toBe('/compare');
   });
 
   it('URL-encodes params with reserved characters', () => {
@@ -90,6 +99,15 @@ describe('pathToPage', () => {
     expect(pathToPage('/nope')).toEqual({ type: 'landing' });
     expect(pathToPage('/reports')).toEqual({ type: 'landing' });
     expect(pathToPage('/reports/a/b')).toEqual({ type: 'landing' });
+  });
+
+  it('parses the compare routes (picker and explicit pair)', () => {
+    expect(pathToPage('/compare')).toEqual({ type: 'compare' });
+    expect(pathToPage('/compare/rep-1/rep-2')).toEqual({
+      type: 'compare',
+      aId: 'rep-1',
+      bId: 'rep-2',
+    });
   });
 
   /**
@@ -150,6 +168,23 @@ describe('pageEquals', () => {
       pageEquals(
         { type: 'problem', problemId: 'x' },
         { type: 'problem', problemId: 'y' },
+      ),
+    ).toBe(false);
+  });
+
+  it('treats a changed compare pair as a different page', () => {
+    expect(
+      pageEquals(
+        { type: 'compare', aId: 'a', bId: 'b' },
+        { type: 'compare', aId: 'a', bId: 'b' },
+      ),
+    ).toBe(true);
+    // Swapping one side must register as a navigation, else the picker
+    // change would no-op the URL update.
+    expect(
+      pageEquals(
+        { type: 'compare', aId: 'a', bId: 'b' },
+        { type: 'compare', aId: 'a', bId: 'c' },
       ),
     ).toBe(false);
   });

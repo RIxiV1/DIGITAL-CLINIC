@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { FileText, Plus, Search, Trash2, X } from 'lucide-react';
+import { FileText, GitCompareArrows, Plus, Search, Trash2, X } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import Pill from '../../components/ui/Pill';
@@ -27,6 +27,7 @@ export default function LockerPane({
   onUpload,
   onOpenReport,
   onDeleteReport,
+  onCompare,
 }: {
   reports: Report[];
   displayedReports: Report[];
@@ -37,11 +38,17 @@ export default function LockerPane({
   onUpload: () => void;
   onOpenReport: (r: Report) => void;
   onDeleteReport: (id: string) => void;
+  onCompare: () => void;
 }) {
   // Surface the search + sort row only when the locker holds enough
   // reports to need them. Below 3, the chrome is louder than the
   // content it would control.
   const showControls = reports.length >= 3;
+  // Comparison needs two analyzed reports to line up. Only offer it once
+  // that's possible — a lone report has nothing to compare against.
+  const canCompare =
+    reports.filter((r) => r.status === 'ready' && r.biomarkers.length > 0)
+      .length >= 2;
 
   return (
     <div>
@@ -49,15 +56,28 @@ export default function LockerPane({
         <div className="text-caption text-muted">
           {reports.length} {reports.length === 1 ? 'report' : 'reports'} on file
         </div>
-        <button
-          type="button"
-          onClick={onUpload}
-          aria-label="Upload a new report"
-          className="inline-flex items-center justify-center gap-1.5 min-h-12 h-12 w-12 sm:w-auto px-0 sm:px-4 rounded-full bg-indigo-600 text-on-primary text-caption font-semibold shadow-soft hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
-        >
-          <Plus size={16} />
-          <span className="hidden sm:inline">Upload</span>
-        </button>
+        <div className="flex items-center gap-2">
+          {canCompare && (
+            <button
+              type="button"
+              onClick={onCompare}
+              aria-label="Compare two reports"
+              className="inline-flex items-center justify-center gap-1.5 min-h-12 h-12 w-12 sm:w-auto px-0 sm:px-4 rounded-full bg-surface border border-line text-ink-soft text-caption font-semibold hover:text-ink hover:border-line-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+            >
+              <GitCompareArrows size={16} />
+              <span className="hidden sm:inline">Compare</span>
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={onUpload}
+            aria-label="Upload a new report"
+            className="inline-flex items-center justify-center gap-1.5 min-h-12 h-12 w-12 sm:w-auto px-0 sm:px-4 rounded-full bg-indigo-600 text-on-primary text-caption font-semibold shadow-soft hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+          >
+            <Plus size={16} />
+            <span className="hidden sm:inline">Upload</span>
+          </button>
+        </div>
       </div>
 
       {showControls && (

@@ -36,6 +36,7 @@ function activeNavId(page: Page): NavSlot['id'] {
     case 'processing':
     case 'manualEntry':
     case 'results':
+    case 'compare':
     case 'problem':
       return 'home';
     case 'quiz':

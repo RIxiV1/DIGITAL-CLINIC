@@ -28,6 +28,7 @@ import ProfilePage from './ProfilePage';
 import ReportResultsPage from './ReportResultsPage';
 import ProblemDetailPage from './ProblemDetailPage';
 import HealthMapPage from './HealthMapPage';
+import ComparePage from './ComparePage';
 
 // jspdf needs window.matchMedia for some setup paths; framer-motion
 // reads it via prefers-reduced-motion. jsdom doesn't ship one by
@@ -164,6 +165,27 @@ describe('page smoke tests', () => {
   it('ProblemDetailPage renders not-found state for an unknown id', () => {
     const { container } = renderWithProvider(
       <ProblemDetailPage problemId="not-a-real-problem" />,
+    );
+    expect(container.firstChild).toBeTruthy();
+  });
+
+  it('ComparePage renders the sample-fallback demo with no ids', () => {
+    // Empty locker → the page falls back to the two curated sample
+    // reports and canonicalises the URL via replace(). MemoryRouter keeps
+    // that rewrite off window.history during the test.
+    const { container } = render(
+      <AppProvider router="memory" initialEntries={['/compare']}>
+        <ComparePage />
+      </AppProvider>,
+    );
+    expect(container.firstChild).toBeTruthy();
+  });
+
+  it('ComparePage renders a comparison for two sample report ids', () => {
+    const { container } = render(
+      <AppProvider router="memory" initialEntries={['/compare/rep-001/rep-002']}>
+        <ComparePage aId="rep-001" bId="rep-002" />
+      </AppProvider>,
     );
     expect(container.firstChild).toBeTruthy();
   });
