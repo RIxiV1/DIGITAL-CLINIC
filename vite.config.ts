@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import { fileURLToPath } from 'node:url';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
+import { VitePWA } from 'vite-plugin-pwa';
 
 // Stub used to short-circuit jsPDF's optional html2canvas + dompurify +
 // canvg deps. We use jsPDF only for programmatic text drawing (never
@@ -16,7 +17,60 @@ const emptyStub = fileURLToPath(
 );
 
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [
+    react(),
+    tailwindcss(),
+    // Offline support. The whole point of the product — on-device parsing,
+    // reports in localStorage — already works without a network; the missing
+    // piece was the app SHELL not loading offline. This precaches the built
+    // shell so a user on a train (India-first, intermittent connectivity) can
+    // reopen the app and read their locally-stored reports with no signal.
+    VitePWA({
+      // A new deploy silently takes over on the next load — no update prompt,
+      // and (with cleanupOutdatedCaches) no stale-version footgun.
+      registerType: 'autoUpdate',
+      // We call registerSW() ourselves from main.tsx (bundled, same-origin).
+      // An injected INLINE registration script would be blocked by the strict
+      // CSP (script-src 'self', no unsafe-inline) — same reason the app injects
+      // its JSON-LD from a module instead of inline.
+      injectRegister: false,
+      // Keep the hand-authored public/manifest.webmanifest; don't generate a
+      // second, competing manifest.
+      manifest: false,
+      workbox: {
+        // Precache the app shell (hashed build output) only. Deliberately
+        // EXCLUDE the ~16 MB vendored OCR/pdf runtime (public/tesseract,
+        // public/cmaps) — far too large to precache; it's runtime-cached on
+        // first use instead (below), which is enough to re-parse offline.
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp,woff,woff2,json}'],
+        globIgnores: ['**/tesseract/**', '**/cmaps/**'],
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
+        cleanupOutdatedCaches: true,
+        // Offline SPA navigations serve the shell; never hijack the Gemini
+        // fallback endpoint.
+        navigateFallback: '/index.html',
+        navigateFallbackDenylist: [/^\/api\//],
+        runtimeCaching: [
+          {
+            // Tesseract worker/core/lang + pdf.js cmaps: cache-first, so the
+            // second parse (and any offline re-parse) needs no network.
+            urlPattern: ({ url }) =>
+              url.pathname.startsWith('/tesseract/') ||
+              url.pathname.startsWith('/cmaps/'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ocr-runtime',
+              expiration: {
+                maxEntries: 80,
+                maxAgeSeconds: 60 * 60 * 24 * 30,
+              },
+              cacheableResponse: { statuses: [0, 200] },
+            },
+          },
+        ],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       html2canvas: emptyStub,
