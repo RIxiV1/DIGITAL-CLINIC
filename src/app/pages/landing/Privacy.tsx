@@ -58,7 +58,14 @@ export default function Privacy() {
                 AES-GCM-256, the KDF is PBKDF2-SHA256 @ 200k iterations (NOT
                 Argon2id), encryption is PIN-gated/opt-in, and data persists
                 to localStorage (so no "zero-storage" claim). No invented
-                compliance seals — authority comes from precision. */}
+                compliance seals — authority comes from precision.
+
+                SERVER_UPLOAD is NONE_BY_DEFAULT (not a flat NONE) and an
+                explicit AI_ASSIST row names the single opt-in outbound path —
+                so the matrix can never be read to contradict the subtitle's
+                Gemini disclosure. The absolute "NONE" was the one place the
+                page overclaimed; the honest token is the default-plus-escape
+                framing we hold everywhere else. */}
             <div className="w-full max-w-sm mx-auto md:ml-auto font-mono">
               <div className="rounded-md border-[0.5px] border-line bg-surface overflow-hidden">
                 <div className="flex items-center justify-between px-3.5 py-2 border-b-[0.5px] border-line">
@@ -73,7 +80,8 @@ export default function Privacy() {
                   {(
                     [
                       ['PROCESSING', 'ON_DEVICE'],
-                      ['SERVER_UPLOAD', 'NONE'],
+                      ['SERVER_UPLOAD', 'NONE_BY_DEFAULT'],
+                      ['AI_ASSIST', 'OPT-IN · OFF'],
                       ['ACCOUNT', 'NONE'],
                       ['STORAGE', 'BROWSER_LOCAL'],
                       ['ENCRYPTION', 'AES-GCM-256 · OPT-IN'],

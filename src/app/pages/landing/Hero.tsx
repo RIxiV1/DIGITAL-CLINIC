@@ -141,8 +141,21 @@ function HeroVisual({ onSample }: { onSample: () => void }) {
       />
 
       {/* Top-findings card — overlaps the photo. Shows what the product
-          actually returns on a real sample, not an abstract diagram. */}
-      <div className="absolute left-0 sm:-left-4 bottom-[16%] sm:bottom-[20%] w-[82%] sm:w-[74%] rounded-2xl bg-surface border border-line shadow-clinical-lg overflow-hidden">
+          actually returns on a real sample, not an abstract diagram.
+
+          The ENTIRE card is the tap target (one <button>), not just the
+          "See full report" link in the corner: the card reads as tappable
+          (elevation + hairline), so a tap anywhere should open the sample
+          rather than dead-end. One button, one action, one aria-label — no
+          nested interactives (the corner cue is now a decorative <span>).
+          Affordance is shadow + border on hover/focus only (composite-safe,
+          no transform), with a visible focus ring for keyboard users. */}
+      <button
+        type="button"
+        onClick={onSample}
+        aria-label="See the full sample report"
+        className="group absolute left-0 sm:-left-4 bottom-[16%] sm:bottom-[20%] w-[82%] sm:w-[74%] text-left rounded-2xl bg-surface border border-line hover:border-line-strong shadow-clinical-lg hover:shadow-pop overflow-hidden transition-[box-shadow,border-color] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400/60"
+      >
         <div className="px-4 py-2.5 border-b border-line/70 flex items-center justify-between">
           {/* Labelled "Sample" so a first-time visitor never mistakes these
               for their own results or a real statistic. */}
@@ -154,12 +167,13 @@ function HeroVisual({ onSample }: { onSample: () => void }) {
               Sample
             </span>
           </span>
-          <button
-            onClick={onSample}
-            className="inline-flex items-center gap-0.5 text-micro font-semibold text-blue-700 hover:text-blue-800 transition-colors"
-          >
-            See full report <ChevronRight size={12} />
-          </button>
+          <span className="inline-flex items-center gap-0.5 text-micro font-semibold text-blue-700 group-hover:text-blue-800 transition-colors">
+            See full report{' '}
+            <ChevronRight
+              size={12}
+              className="transition-transform group-hover:translate-x-0.5"
+            />
+          </span>
         </div>
 
         <div className="px-4 py-3 grid gap-2">
@@ -198,7 +212,7 @@ function HeroVisual({ onSample }: { onSample: () => void }) {
             />
           </div>
         </div>
-      </div>
+      </button>
     </div>
   );
 }
