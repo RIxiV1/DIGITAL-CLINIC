@@ -10,6 +10,8 @@ import {
 } from '../utils/persistence';
 import { clearPendingUpload } from '../services/api';
 import { formatBytes, formatDate } from '../utils/format';
+import { useReports } from '../AppContext';
+import { reportsToCsv } from '../utils/exportCsv';
 
 type Props = {
   open: boolean;
@@ -42,6 +44,10 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
   const cardRef = useRef<HTMLDivElement | null>(null);
   const [confirming, setConfirming] = useState(false);
   const [wiped, setWiped] = useState(false);
+  // Live, already-decrypted reports for the CSV export (the JSON export dumps
+  // the raw dc_* namespace; CSV needs the parsed biomarker rows).
+  const { reports } = useReports();
+  const readyReportCount = reports.filter((r) => r.status === 'ready').length;
   // Stats live in state (not derived on every render) so handleWipe
   // can refresh them after clearing storage. Previously the value
   // was frozen at open time, so post-wipe the download button still
@@ -102,6 +108,25 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
     a.remove();
     // Revoke on next tick so the browser has a chance to finalize the
     // download in single-threaded environments (Safari).
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
+  /** "Download markers (CSV)" — the analysis-friendly companion to the JSON
+   *  backup: one row per marker (report, date, value, unit, status, range)
+   *  for Excel / Sheets / a personal tracker. Built from the live decrypted
+   *  reports, so it works with the PIN lock on. */
+  const handleDownloadCsv = () => {
+    const blob = new Blob([reportsToCsv(reports)], {
+      type: 'text/csv;charset=utf-8',
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `digital-clinic-markers-${stamp}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 0);
   };
 
@@ -181,20 +206,33 @@ export default function DataPanelModal({ open, onClose, onAfterWipe }: Props) {
                 </div>
               )}
 
-              {/* Download is always available — even after a wipe the
-                  button still works (just exports an empty payload),
-                  which is the right shape: never block the user from
-                  taking their own data out. */}
-              <Button
-                size="md"
-                variant="secondary"
-                responsiveFullWidth
-                leading={<Download size={14} />}
-                onClick={handleDownload}
-                disabled={stats?.keyCount === 0}
-              >
-                Download my data (JSON)
-              </Button>
+              {/* Take your data out — two shapes for two needs. JSON is the
+                  full, loss-less backup of everything stored (survives even a
+                  wipe as a valid empty payload); CSV is the marker table for a
+                  spreadsheet / personal tracker. Never block a user from
+                  taking their own data. */}
+              <div className="space-y-2">
+                <Button
+                  size="md"
+                  variant="secondary"
+                  responsiveFullWidth
+                  leading={<Download size={14} />}
+                  onClick={handleDownload}
+                  disabled={stats?.keyCount === 0}
+                >
+                  Download my data (JSON)
+                </Button>
+                <Button
+                  size="md"
+                  variant="secondary"
+                  responsiveFullWidth
+                  leading={<Download size={14} />}
+                  onClick={handleDownloadCsv}
+                  disabled={readyReportCount === 0}
+                >
+                  Download markers (CSV)
+                </Button>
+              </div>
 
               {wiped ? (
                 <div className="rounded-[14px] bg-good-soft border border-good/30 p-4 text-caption text-good leading-relaxed">
