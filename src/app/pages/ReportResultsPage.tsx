@@ -317,6 +317,36 @@ export default function ReportResultsPage({
         }
       />
 
+      {/* Sample-report exit ramp. A curated report (rep-001/002) is a demo,
+          not the user's own data — without a clear "this is a sample, upload
+          your own" CTA, landing on /results/rep-001 was a dead end. Shown on
+          both the overview and details views (outside the isDetails gate) via
+          the report's isSample flag; no-print so it never lands in an exported
+          PDF. */}
+      {report.isSample && (
+        <Container size="wide" className="pt-4 no-print">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-2xl border border-blue-200 bg-blue-50/70 px-4 py-3.5">
+            <div className="flex items-start gap-2.5 flex-1 min-w-0">
+              <Info size={16} className="text-blue-700 mt-0.5 shrink-0" />
+              <p className="text-caption text-ink leading-snug">
+                <span className="font-semibold">This is a sample report.</span>{' '}
+                Upload your own blood test to see your real results, explained
+                in plain English.
+              </p>
+            </div>
+            <Button
+              variant="primary"
+              size="sm"
+              trailing={<ChevronRight size={14} />}
+              onClick={() => navigate({ type: 'upload' })}
+              className="shrink-0"
+            >
+              Upload your report
+            </Button>
+          </div>
+        </Container>
+      )}
+
       {/* ===== OVERVIEW — the calm "am I okay?" layer (default) ===== */}
       {!isDetails && (
         <>
