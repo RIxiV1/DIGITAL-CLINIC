@@ -10,6 +10,7 @@ import { motion } from 'framer-motion';
 import {
   AlertTriangle,
   CalendarClock,
+  CalendarPlus,
   ChevronRight,
   Info,
   Upload,
@@ -39,6 +40,7 @@ import {
   saveRetestDismissedReportId,
 } from '../utils/persistence';
 import { getMarkerInfo } from '../data/markerInfo';
+import { retestReminderIcs } from '../utils/calendarIcs';
 // Extracted dashboard view components + shared types. This page was a
 // ~1,600-line monolith; the Explore panes and the delete modal now live
 // in ./home/*.
@@ -459,13 +461,43 @@ export default function HomePage() {
                 . Most hormone and metabolic markers are worth re-checking every
                 3–6 months to see whether your changes are working.
               </p>
-              <button
-                type="button"
-                onClick={() => navigate({ type: 'upload' })}
-                className="mt-2 inline-flex items-center min-h-11 font-semibold text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
-              >
-                Upload a new report →
-              </button>
+              <div className="mt-2 flex flex-wrap items-center gap-x-5 gap-y-1">
+                <button
+                  type="button"
+                  onClick={() => navigate({ type: 'upload' })}
+                  className="inline-flex items-center min-h-11 font-semibold text-indigo-700 hover:text-indigo-900 underline underline-offset-2 decoration-indigo-300 hover:decoration-indigo-700 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+                >
+                  Upload a new report →
+                </button>
+                {/* Turn the nudge into a concrete next step: a downloadable
+                    .ics the user drops into Google/Apple/Outlook. Client-side
+                    only — no backend, no account. */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const blob = new Blob(
+                      [
+                        retestReminderIcs({
+                          reportName: retestReminder.report.name,
+                          months: retestReminder.months,
+                        }),
+                      ],
+                      { type: 'text/calendar;charset=utf-8' },
+                    );
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'formen-retest-reminder.ics';
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => URL.revokeObjectURL(url), 0);
+                  }}
+                  className="inline-flex items-center gap-1.5 min-h-11 font-semibold text-indigo-700 hover:text-indigo-900 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60 rounded-sm"
+                >
+                  <CalendarPlus size={14} aria-hidden /> Add to calendar
+                </button>
+              </div>
             </div>
             <button
               type="button"
