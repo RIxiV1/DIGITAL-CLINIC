@@ -14,8 +14,10 @@ import Container from '../components/ui/Container';
 import Header from '../components/Header';
 import BiomarkerBar from '../components/BiomarkerBar';
 import BottomNav from '../components/BottomNav';
+import { EvidenceBadge, EvidenceLegend } from '../components/EvidenceBadge';
 import { useNavigation, useReports } from '../AppContext';
 import { sampleBiomarkers, type BiomarkerStatus } from '../data/biomarkers';
+import { evidenceForRecommendation } from '../clinical';
 import { getPrimaryReport } from '../data/reports';
 import { getProblem } from '../data/problems';
 
@@ -298,30 +300,44 @@ export default function ProblemDetailPage({
         </div>
 
         <div className="mt-4 grid sm:grid-cols-2 gap-3 lg:max-w-3xl">
-          {p.actions.map((a, i) => (
-            // Per-row stagger removed — see #6.7. Action lists rarely
-            // exceed 4 items so the stagger was pure cost.
-            <div key={a.title}>
-              <Card>
-                <div className="flex items-start gap-3">
-                  <div className="font-display text-indigo-700 text-body-lg shrink-0 w-7">
-                    0{i + 1}
+          {p.actions.map((a, i) => {
+            // Grade the lever against the conservative evidence engine. It
+            // reads title + detail together and returns null for anything
+            // it can't ground to a named source — so an ungraded step shows
+            // no badge (honest) rather than a guessed one. The "Supports X"
+            // clause keeps the grade outcome-specific, never a blanket claim.
+            const ev = evidenceForRecommendation(`${a.title}. ${a.detail}`);
+            return (
+              // Per-row stagger removed — see #6.7. Action lists rarely
+              // exceed 4 items so the stagger was pure cost.
+              <div key={a.title}>
+                <Card>
+                  <div className="flex items-start gap-3">
+                    <div className="font-display text-indigo-700 text-body-lg shrink-0 w-7">
+                      0{i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold">{a.title}</div>
+                      <p className="text-caption text-ink-soft mt-1 leading-relaxed">
+                        {a.detail}
+                      </p>
+                      {ev && <EvidenceBadge match={ev} showSupports className="mt-2" />}
+                    </div>
+                    <CheckCircle2
+                      size={20}
+                      className="text-indigo-300 shrink-0"
+                    />
                   </div>
-                  <div className="flex-1">
-                    <div className="font-semibold">{a.title}</div>
-                    <p className="text-caption text-ink-soft mt-1 leading-relaxed">
-                      {a.detail}
-                    </p>
-                  </div>
-                  <CheckCircle2
-                    size={20}
-                    className="text-indigo-300 shrink-0"
-                  />
-                </div>
-              </Card>
-            </div>
-          ))}
+                </Card>
+              </div>
+            );
+          })}
         </div>
+        {/* Grade legend — shown once when any step on this plan is graded,
+            so the tier labels are self-explanatory without a hover. */}
+        {p.actions.some((a) =>
+          evidenceForRecommendation(`${a.title}. ${a.detail}`),
+        ) && <EvidenceLegend className="mt-3 lg:max-w-3xl" />}
       </Container>
 
       {/* Retest — collapsed by default. Cadence info; user opens when
