@@ -1,9 +1,11 @@
 import { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { ArrowRight, ChevronRight, Check } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import ConnectedSystems from '../../components/ConnectedSystems';
 import { buildBodySystems, healthStorySentence } from '../../clinical';
 import { sampleBiomarkers } from '../../data/biomarkers';
+import { usePressMotion } from '../../hooks/usePressMotion';
 import { Reveal } from './shared';
 
 /**
@@ -33,6 +35,7 @@ export default function HealthMapPreview({
 }) {
   const systems = useMemo(() => buildBodySystems(sampleBiomarkers), []);
   const story = useMemo(() => healthStorySentence(systems), [systems]);
+  const linkPress = usePressMotion({ lift: false });
 
   return (
     <section className="bg-canvas py-16 md:py-28 border-t border-line/60">
@@ -76,13 +79,14 @@ export default function HealthMapPreview({
               >
                 Find out in 2 minutes
               </Button>
-              <button
+              <motion.button
+                {...linkPress}
                 onClick={onSample}
                 className="inline-flex items-center justify-center gap-1.5 h-11 px-2 text-body-sm font-semibold text-ink-soft hover:text-blue-700 transition-colors"
               >
                 See the full sample report
                 <ChevronRight size={14} />
-              </button>
+              </motion.button>
             </div>
           </Reveal>
 

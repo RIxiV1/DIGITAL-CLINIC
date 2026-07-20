@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { ArrowRight, ChevronRight, FlaskConical, Lock } from 'lucide-react';
 import Button from '../../components/ui/Button';
+import { usePressMotion } from '../../hooks/usePressMotion';
 import {
   sampleBiomarkers,
   statusColor,
@@ -15,6 +16,9 @@ export default function Hero({
   onStart: () => void;
   onSample: () => void;
 }) {
+  // Scale-only press (no hover-lift) for the secondary text CTA — a 1px hop
+  // on a run of text reads as twitchy; the tap-scale is the tactile cue.
+  const linkPress = usePressMotion({ lift: false });
   return (
     <section id="top" className="relative bg-canvas overflow-hidden">
       {/* Left blue accent bar */}
@@ -78,13 +82,14 @@ export default function Hero({
               >
                 Find out in 2 minutes
               </Button>
-              <button
+              <motion.button
+                {...linkPress}
                 onClick={onSample}
                 className="inline-flex items-center justify-center gap-1.5 px-1 sm:px-2 h-11 text-body-sm font-semibold text-ink-soft hover:text-blue-700 transition-colors"
               >
                 See a sample report
                 <ChevronRight size={14} />
-              </button>
+              </motion.button>
             </motion.div>
 
             {/* Real credibility strip — no fake user counts */}
@@ -114,6 +119,10 @@ export default function Hero({
 }
 
 function HeroVisual({ onSample }: { onSample: () => void }) {
+  // Scale-only press: the card already signals hover via shadow+border, but
+  // on touch (no hover) the tap-scale is the ONLY confirmation the tap
+  // registered — the feedback that matters most for our mobile-first audience.
+  const cardPress = usePressMotion({ lift: false });
   // A peek at the actual product, from the SAMPLE report — real flagged
   // markers with their real tier labels, and an honest "N of M on track"
   // bar. Deliberately NOT a synthetic 0–100 "health score" (implies a
@@ -150,7 +159,8 @@ function HeroVisual({ onSample }: { onSample: () => void }) {
           nested interactives (the corner cue is now a decorative <span>).
           Affordance is shadow + border on hover/focus only (composite-safe,
           no transform), with a visible focus ring for keyboard users. */}
-      <button
+      <motion.button
+        {...cardPress}
         type="button"
         onClick={onSample}
         aria-label="See the full sample report"
@@ -212,7 +222,7 @@ function HeroVisual({ onSample }: { onSample: () => void }) {
             />
           </div>
         </div>
-      </button>
+      </motion.button>
     </div>
   );
 }

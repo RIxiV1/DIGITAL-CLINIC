@@ -1,5 +1,6 @@
 import { motion, type HTMLMotionProps } from 'framer-motion';
 import type { ReactNode } from 'react';
+import { usePressMotion } from '../../hooks/usePressMotion';
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'outline' | 'gold' | 'dark';
 // Size scale, rough heights:
@@ -89,11 +90,12 @@ export default function Button({
     : responsiveFullWidth
       ? 'w-full lg:w-auto'
       : '';
+  // The tactile press-scale + hover-lift, shared with every hand-rolled
+  // control via usePressMotion (reduced-motion aware, composite-only).
+  const press = usePressMotion();
   return (
     <motion.button
-      whileTap={{ scale: 0.97 }}
-      whileHover={{ y: -1 }}
-      transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+      {...press}
       // Default to type="button" so a Button inside a <form> doesn't
       // accidentally submit it.
       type={type ?? 'button'}

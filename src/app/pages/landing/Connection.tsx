@@ -8,6 +8,7 @@ import {
   FlaskConical,
 } from 'lucide-react';
 import { useQuiz } from '../../AppContext';
+import { usePressMotion } from '../../hooks/usePressMotion';
 import { Reveal, SectionHeader } from './shared';
 
 type Station = {
@@ -67,6 +68,7 @@ export default function ConnectionSection({
   onStart: () => void;
 }) {
   const { setQuiz } = useQuiz();
+  const press = usePressMotion();
   // Tap-to-select symptoms. Selection lives here (lifted) so the diagram's
   // chip grid and the conversion CTA in the right column share one source.
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -160,7 +162,8 @@ export default function ConnectionSection({
                     </span>
                   )}
                 </p>
-                <button
+                <motion.button
+                  {...press}
                   onClick={startWithSelected}
                   className="mt-3 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-clay hover:opacity-90 text-on-clay text-caption font-semibold shadow-clinical transition-opacity"
                 >
@@ -168,7 +171,7 @@ export default function ConnectionSection({
                     ? `See what your ${n} ${n === 1 ? 'symptom' : 'symptoms'} connect to`
                     : 'See what’s actually going on'}
                   <ArrowRight size={14} />
-                </button>
+                </motion.button>
               </div>
             </Reveal>
           </div>

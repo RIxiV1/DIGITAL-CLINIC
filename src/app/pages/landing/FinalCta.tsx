@@ -1,7 +1,10 @@
+import { motion } from 'framer-motion';
 import { ArrowRight, Lock } from 'lucide-react';
+import { usePressMotion } from '../../hooks/usePressMotion';
 import { Reveal } from './shared';
 
 export default function FinalCta({ onStart }: { onStart: () => void }) {
+  const press = usePressMotion();
   return (
     <section id="report" className="py-16 sm:py-20 md:py-28">
       <div className="mx-auto w-full max-w-6xl px-5 md:px-8">
@@ -27,14 +30,15 @@ export default function FinalCta({ onStart }: { onStart: () => void }) {
               </p>
 
               <div className="mt-8 sm:mt-9 flex justify-center">
-                <button
+                <motion.button
+                  {...press}
                   onClick={onStart}
                   style={{ height: 56 }}
                   className="inline-flex items-center justify-center gap-2 px-7 rounded-full bg-surface text-ink hover:bg-canvas text-body font-semibold shadow-clinical-lg transition-colors w-full sm:w-auto"
                 >
                   Start the assessment
                   <ArrowRight size={16} />
-                </button>
+                </motion.button>
               </div>
 
               <div className="mt-6 text-caption text-on-clay/85 inline-flex items-center gap-1.5">
