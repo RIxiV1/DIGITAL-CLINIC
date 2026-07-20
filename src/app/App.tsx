@@ -3,6 +3,7 @@ import { MotionConfig, motion } from 'framer-motion';
 import { AppProvider, useNavigation, useReports, type Page } from './AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import PrivacyScreen from './components/PrivacyScreen';
+import OfflineBanner from './components/OfflineBanner';
 import UnlockGate from './components/UnlockGate';
 import { PageSkeleton } from './components/ui/Skeleton';
 import LandingPage from './pages/LandingPage';
@@ -213,6 +214,10 @@ export default function App() {
        *  explicitly (event listener is the bigger cost there). */}
       <MotionConfig reducedMotion="user">
         <AppProvider>
+          {/* Shown on every screen (incl. the unlock gate) the moment
+              connectivity drops — the app keeps working from the service-worker
+              cache, and this says so. */}
+          <OfflineBanner />
           <LockGate>
             <PageHost />
             <PrivacyScreen />
