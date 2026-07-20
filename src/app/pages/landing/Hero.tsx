@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { ArrowRight, ChevronRight, FlaskConical, Lock } from 'lucide-react';
+import { ArrowRight, Check, ChevronRight, FlaskConical, Lock } from 'lucide-react';
 import Button from '../../components/ui/Button';
 import { usePressMotion } from '../../hooks/usePressMotion';
 import {
@@ -187,6 +187,17 @@ function HeroVisual({ onSample }: { onSample: () => void }) {
         </div>
 
         <div className="px-4 py-3 grid gap-2">
+          {/* Defensive: if the sample ever has zero flagged markers (data
+              edit), show a positive "all on track" line instead of an empty
+              card that reads as broken. */}
+          {flagged.length === 0 && (
+            <div className="flex items-center gap-1.5">
+              <Check size={14} className="text-good shrink-0" strokeWidth={3} />
+              <span className="text-caption text-ink">
+                All markers on track
+              </span>
+            </div>
+          )}
           {flagged.map((m) => {
             const c = statusColor(m.status);
             return (

@@ -66,7 +66,7 @@ export default function LandingPage() {
         <Hero onStart={startQuiz} onSample={viewSample} />
         <MinimalWhy />
         <FinalCta onStart={startQuiz} />
-        <Footer />
+        <Footer variant="minimal" />
       </div>
     );
   }

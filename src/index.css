@@ -322,6 +322,11 @@ body,
  * keeps working. */
 html {
   overflow-x: clip;
+  /* Smooth-scroll the landing's in-page hash anchors (#connection, #how,
+   * #report from TopNav/Footer) instead of a hard jump. The
+   * prefers-reduced-motion block below forces this back to `auto !important`,
+   * so users who ask for reduced motion still get an instant jump. */
+  scroll-behavior: smooth;
   /* No scroll-chaining / rubber-band bounce past the content — the
    * springy overscroll reads as "the page keeps scrolling into empty
    * space" on phones. */

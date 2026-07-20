@@ -16,8 +16,18 @@ const COMPANY: ReadonlyArray<[LegalKind, string]> = [
   ['contact', 'Contact'],
 ];
 
-export default function Footer() {
+export default function Footer({
+  variant = 'full',
+}: {
+  /** On the `/minimal` landing the section anchors (#connection, #how)
+   *  don't exist, so a bare `#connection` link is dead. In that variant we
+   *  point the Product links at the full landing (`/#connection`) so they
+   *  navigate there and scroll, instead of no-opping. TopNav already guards
+   *  these the same way; the Footer was the one place that didn't. */
+  variant?: 'full' | 'minimal';
+} = {}) {
   const [legal, setLegal] = useState<LegalKind | null>(null);
+  const anchor = (hash: string) => (variant === 'minimal' ? `/${hash}` : hash);
   return (
     <footer className="border-t border-line/70 bg-surface">
       {/* grid-cols-2 on mobile so the two link columns sit side-by-side
@@ -50,17 +60,17 @@ export default function Footer() {
           <div className="font-semibold text-ink mb-1">Product</div>
           <ul>
             <li>
-              <a href="#connection" className={linkCls}>
+              <a href={anchor('#connection')} className={linkCls}>
                 The connection
               </a>
             </li>
             <li>
-              <a href="#how" className={linkCls}>
+              <a href={anchor('#how')} className={linkCls}>
                 How it works
               </a>
             </li>
             <li>
-              <a href="#report" className={linkCls}>
+              <a href={anchor('#report')} className={linkCls}>
                 What you’ll get
               </a>
             </li>
