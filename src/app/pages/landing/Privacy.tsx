@@ -47,7 +47,7 @@ export default function Privacy() {
             <SectionHeader
               eyebrow="Your privacy"
               title="Your report is read on your device, not on our servers."
-              subtitle="No account to create, nothing uploaded to us. The whole thing runs in your browser — because a lab report is nobody else's business. The one exception: if a photo is too blurry to read, you can choose to send it to Google's AI. It never happens unless you ask."
+              subtitle="No account to create, nothing uploaded to us. The whole thing runs in your browser — because a lab report is nobody else's business. The one exception: if a photo can't be read on your device, it's sent to Google's AI for a second look — shown on screen before it happens, with a Cancel, and switchable off in Profile."
             />
           </Reveal>
           <Reveal delay={0.1}>
@@ -60,12 +60,14 @@ export default function Privacy() {
                 to localStorage (so no "zero-storage" claim). No invented
                 compliance seals — authority comes from precision.
 
-                SERVER_UPLOAD is NONE_BY_DEFAULT (not a flat NONE) and an
-                explicit AI_ASSIST row names the single opt-in outbound path —
-                so the matrix can never be read to contradict the subtitle's
-                Gemini disclosure. The absolute "NONE" was the one place the
-                page overclaimed; the honest token is the default-plus-escape
-                framing we hold everywhere else. */}
+                SERVER_UPLOAD is NONE_BY_DEFAULT (not a flat NONE): the normal
+                parse path uploads nothing. The one exception is the AI_ASSIST
+                row — the Gemini fallback. Because that can fire by default for a
+                failed image (dc_aiAutoFallback defaults on), the honest token is
+                DISCLOSED · CANCELABLE (shown on screen before it happens, with a
+                Cancel, switchable off in Profile) — NOT "OFF", which would imply
+                it never sends unless toggled on. The absolute "NONE" and a false
+                "OFF" were the two places the matrix could overclaim. */}
             <div className="w-full max-w-sm mx-auto md:ml-auto font-mono">
               <div className="rounded-md border-[0.5px] border-line bg-surface overflow-hidden">
                 <div className="flex items-center justify-between px-3.5 py-2 border-b-[0.5px] border-line">
@@ -81,7 +83,7 @@ export default function Privacy() {
                     [
                       ['PROCESSING', 'ON_DEVICE'],
                       ['SERVER_UPLOAD', 'NONE_BY_DEFAULT'],
-                      ['AI_ASSIST', 'OPT-IN · OFF'],
+                      ['AI_ASSIST', 'DISCLOSED · CANCELABLE'],
                       ['ACCOUNT', 'NONE'],
                       ['STORAGE', 'BROWSER_LOCAL'],
                       ['ENCRYPTION', 'AES-GCM-256 · OPT-IN'],
