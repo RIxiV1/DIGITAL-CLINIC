@@ -32,17 +32,17 @@ Don't have a report yet? Take the short quiz about how you've been feeling and w
 
 ## What makes it different
 
-**🔒 Your report is read on your phone.** There's no server holding your data — no login, no cloud, no tracking. Your reports live only in your browser. The one time anything leaves your device is if the AI helps read a photo (below), and we always tell you before it happens.
+**Your report is read on your phone.** There's no server holding your data — no login, no cloud, no tracking. Your reports live only in your browser. The one time anything leaves your device is if the AI helps read a photo (below), and we always tell you before it happens.
 
-**📄 Reads tricky reports.** Indian lab PDFs are hard — tight tables, odd fonts, sometimes just a scanned photo. We try three different ways to read the file and keep whichever works best. If it's a photo, we read it the way a scanner does. And if a photo still won't read, you can send that one image to Google's AI to try again — it's shown on screen first, you can cancel, and you can switch it off in your profile. (It's on by default for photos we can't read; we'd rather tell you that plainly than claim "nothing ever leaves your device.")
+**Reads tricky reports.** Indian lab PDFs are hard — tight tables, odd fonts, sometimes just a scanned photo. We try three different ways to read the file and keep whichever works best. If it's a photo, we read it the way a scanner does. And if a photo still won't read, you can send that one image to Google's AI to try again — it's shown on screen first, you can cancel, and you can switch it off in your profile. (It's on by default for photos we can't read; we'd rather tell you that plainly than claim "nothing ever leaves your device.")
 
-**🧠 Explains results like a friend would.** No walls of numbers — just "here's what it is, here's why it matters, here's what to do," with the source behind our advice so you can check it.
+**Explains results like a friend would.** No walls of numbers — just "here's what it is, here's why it matters, here's what to do," with the source behind our advice so you can check it.
 
-**🇮🇳 Follows Indian guidelines.** We use ICMR, the Lipid Association of India, and IAP references — not American ones that don't always fit Indian bodies. And if your lab printed its own normal range, we trust that over ours.
+**Follows Indian guidelines.** We use ICMR, the Lipid Association of India, and IAP references — not American ones that don't always fit Indian bodies. And if your lab printed its own normal range, we trust that over ours.
 
-**🔐 Extra privacy if you want it.** Turn on the PIN lock and your saved reports are locked with strong encryption that only your PIN can open — even we can't recover it, so keep the PIN safe. Turn on Discreet Mode and the screen hides the moment you switch apps.
+**Extra privacy if you want it.** Turn on the PIN lock and your saved reports are locked with strong encryption that only your PIN can open — even we can't recover it, so keep the PIN safe. Turn on Discreet Mode and the screen hides the moment you switch apps.
 
-**♿ Built for everyone.** Works well with reduced-motion settings. Colours are chosen so red-green colour-blind readers can still tell a warning from an all-clear — and every status has a word next to it, never just a colour.
+**Built for everyone.** Works well with reduced-motion settings. Colours are chosen so red-green colour-blind readers can still tell a warning from an all-clear — and every status has a word next to it, never just a colour.
 
 ---
 
