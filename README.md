@@ -2,132 +2,133 @@
 
 # Digital Clinic
 
-**A patient-facing health dashboard that turns lab reports into plain English — entirely in the browser.**
+**Understand your blood test in plain English — right on your phone.**
 
-Upload a PDF or photo of your blood work. The app parses it client-side (no server, no upload), scores you across hormonal / metabolic / cardiac / thyroid / vitamin axes, and shows trends over time. Pairs with a symptom quiz that recommends the right tests when you don't have a report yet.
+Upload your blood report (PDF or photo). We read it, show you where you stand, and explain what each number means — the way a friend who happens to be a doctor would. No signup, no account, and nothing is uploaded to us.
 
-<p>
-  <a href="https://react.dev/"><img src="https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=white" alt="React 18.3" /></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.6-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript 5.6" /></a>
-  <a href="https://vite.dev/"><img src="https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 6.0" /></a>
-  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_CSS-v4.0-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" /></a>
-  <a href="https://vitest.dev/"><img src="https://img.shields.io/badge/Vitest-4.1-7E9B4E?style=flat-square&logo=vitest&logoColor=white" alt="Vitest 4.1" /></a>
-</p>
-
-<sub><a href="https://digital-clinic-formen.vercel.app">Live demo</a> · built for <a href="https://formen.co.in">ForMen</a></sub>
+**[Try it here](https://digital-clinic-formen.vercel.app)** · Built for [ForMen](https://formen.co.in)
 
 </div>
 
----
-
-<!-- Drop a 1:1 or 16:9 GIF / screenshot here once deployed: -->
 <p align="center"><img src="docs/preview.png" alt="Digital Clinic walkthrough" width="720" /></p>
 
-## Why this exists
+> A screening tool to help you understand your results — **not a diagnosis**. Always confirm with a doctor before acting on anything here.
 
-Most lab reports in India are 4–10 page PDFs with subset fonts, dense tables, and zero accessibility. Patients get the file, glance at the "out of range" highlights, and panic — or ignore it. Digital Clinic re-presents the same data the way a friend who happens to be a doctor would: a single dashboard score, marker-by-marker plain-English explanations, and a "what to do next" rather than a wall of numbers.
+---
 
-The whole thing runs in the browser — no uploads, no account, no tracking. For shared devices there's an **opt-in PIN lock** that encrypts reports + quiz answers at rest (AES-GCM-256, key derived via PBKDF2 and held in memory only), plus a **Discreet Mode** that veils the screen the moment the app is backgrounded. The one exception to "nothing leaves the device" is the **AI parser** fallback: when on-device OCR can't read a photo, that single image can be sent to Google Gemini to extract the values. It's **disclosed up front, cancelable while it runs, and switch-offable in Profile** — and it's on by default for a failed *image* parse (a dead-end failure serves the user worse than a disclosed retry), never for a PDF that already has a readable text layer. So the honest framing is **on-device by default, with a disclosed escape hatch** — not an unqualified "nothing ever leaves the device." The full threat model is in [docs/SECURITY.md](docs/SECURITY.md).
+## Why we built this
 
-## Highlights (the parts worth reading the code for)
+Most blood reports in India are 4–10 pages of tiny tables and confusing numbers. People either panic at the "out of range" values or ignore the whole thing. Neither helps.
 
-**Multi-strategy PDF parser** — `src/app/services/pdfParser.ts`
-PDF text extraction is notoriously fragile. This pipeline runs three reconstruction strategies in parallel and picks the candidate that yields the most catalog matches:
-- Adaptive Y-tolerance line grouping (handles dense Indian-lab tables where rows pack tighter than pdfjs's default heuristic expects)
-- X-gap–aware token joining (so `43` doesn't get split into `4 3` by the renderer and parse as `4` — a real bug seen on Thyrocare/SRL/Metropolis output)
-- CID-keyed font handling via `cMapUrl` + `cMapPacked` for subset fonts
+Digital Clinic shows you the same report in a way you can actually use:
 
-**OCR fallback for scanned reports** — Tesseract.js renders each PDF page at a device-adaptive 2.0–2.5× and re-extracts when the text layer is empty or yields no catalog hits. Per-page timeout, page cap, Otsu-adaptive binarisation for photos, and OCR-artefact normalisation (`5 .` → `5.`) keep it from stalling on pathological inputs. Same path handles JPEG / PNG uploads.
+- One clear picture of where you stand
+- Every result in plain words — what it is, whether it's fine, and what to do
+- How your numbers change over time, once you've uploaded more than one report
 
-**Biomarker catalog with alias matching** — the catalog drives both parsing and rendering. Each marker knows its clinical aliases, reference ranges, optimal sub-ranges, and direction semantics (`band` / `up` / `down`) so a single component can correctly visualise "higher is better" (HDL) and "lower is better" (LDL) without per-marker branching.
+Don't have a report yet? Take the short quiz about how you've been feeling and we'll tell you which tests to ask for.
 
-**Clinical status logic that leans away from false assurance** — `statusForValue` grades each reading into optimal / borderline / out-of-range / critical. It trusts the lab's *own printed reference range* over our hardcoded band (no "your lab says normal, we say not" trust breaks), gates every "optimal" and harm-anchor line behind a **required citation** (cite-or-omit; no fabricated clinical lines), and localizes ranges to Indian guidelines (ICMR, Lipid Association of India, IAP). Ranges were audited against those guidelines and real Indian-lab references with adversarial verification — see [docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md).
+---
 
-**No backend, no auth, type-safe navigation** — a custom `NavigationContext` exposes a discriminated-union `Page` type on top of react-router primitives, so route params (`reportId`, `problemId`) are typed end-to-end and impossible-state navigations are caught at compile time. Pages are route-split via `React.lazy` with a stale-deploy guard: if a chunk fetch fails (user had the app open across a deploy), it hard-reloads instead of dropping them on an error boundary.
+## What makes it different
 
-**Privacy by architecture** — there is no backend with user data: reports are parsed in-browser and stored in `localStorage`, namespaced (`dc_*`) and zod-validated on every read. An opt-in PIN lock encrypts reports + quiz answers at rest with **AES-GCM-256** keyed by **PBKDF2-SHA256 (200k iterations)** via Web Crypto — the key is non-extractable and never leaves memory, so a forgotten PIN is unrecoverable by design (no backdoor). Discreet Mode veils the screen on background. See [docs/SECURITY.md](docs/SECURITY.md).
+**🔒 Your report is read on your phone.** There's no server holding your data — no login, no cloud, no tracking. Your reports live only in your browser. The one time anything leaves your device is if the AI helps read a photo (below), and we always tell you before it happens.
 
-**Accessibility & motion** — `prefers-reduced-motion` cascaded through `MotionConfig` at the root so every framer-motion descendant collapses to 0ms without per-component checks. Skip-link to main content. Focus management on modals. Semantic landmarks throughout. Colour is split into three never-overlapping lanes — neutral chrome, an **indigo** interactive accent, and a **red** alarm — so the "act here" control and the "this is wrong" warning stay distinguishable under red-green colour-blindness (they differ in both hue and lightness); status is never carried by colour alone (every dot is paired with a text label). All text measured against WCAG AA/AAA in both themes.
+**📄 Reads tricky reports.** Indian lab PDFs are hard — tight tables, odd fonts, sometimes just a scanned photo. We try three different ways to read the file and keep whichever works best. If it's a photo, we read it the way a scanner does. And if a photo still won't read, you can send that one image to Google's AI to try again — it's shown on screen first, you can cancel, and you can switch it off in your profile. (It's on by default for photos we can't read; we'd rather tell you that plainly than claim "nothing ever leaves your device.")
 
-## How it works
+**🧠 Explains results like a friend would.** No walls of numbers — just "here's what it is, here's why it matters, here's what to do," with the source behind our advice so you can check it.
 
-```
-PDF / image upload
-      │
-      ▼
-┌─────────────────────────────────────────────┐
-│  pdfjs text layer  ──► 3 reconstruction     │
-│                        strategies in parallel│
-│                                              │
-│  (fallback)  ──────► Tesseract.js OCR       │
-│  (opt-in)    ──────► Gemini vision (api/)   │
-└─────────────────────────────────────────────┘
-      │
-      ▼
-  Normalisation (OCR artefacts, unit fixes)
-      │
-      ▼
-  Biomarker catalog match (best candidate wins)
-      │
-      ▼
-  Persist to localStorage  ──►  Dashboard / Results / Trends
-```
+**🇮🇳 Follows Indian guidelines.** We use ICMR, the Lipid Association of India, and IAP references — not American ones that don't always fit Indian bodies. And if your lab printed its own normal range, we trust that over ours.
 
-State lives in React contexts (`Reports`, `Quiz`, `Navigation`, `Language`, `Discreet`) with zod-validated `localStorage` persistence. The only network calls are loading the PDF/OCR workers — plus the Gemini fallback (`api/parse-image.ts`), which sends an image to Google when the user taps "Try AI parser" **or** via the disclosed, default-on auto-cascade for a failed image parse (cancelable, and switch-offable in Profile).
+**🔐 Extra privacy if you want it.** Turn on the PIN lock and your saved reports are locked with strong encryption that only your PIN can open — even we can't recover it, so keep the PIN safe. Turn on Discreet Mode and the screen hides the moment you switch apps.
 
-## Stack
+**♿ Built for everyone.** Works well with reduced-motion settings. Colours are chosen so red-green colour-blind readers can still tell a warning from an all-clear — and every status has a word next to it, never just a colour.
 
-- **UI** — React 18, TypeScript, Tailwind CSS v4, framer-motion, lucide-react
-- **Build** — Vite 6, route-level code splitting
-- **Parsing** — pdfjs-dist 5, tesseract.js 7
-- **Export** — jspdf for downloadable result reports
-- **Test** — Vitest + Testing Library + jsdom
+---
 
-## Local development
+## What you'll see
 
-Requires Node `>=20.19 <23`.
+- One **overview** so you know where you stand at a glance
+- Each marker (cholesterol, sugar, thyroid, vitamins, hormones) explained in simple words
+- A clear status for each: **healthy**, **keep an eye on it**, **needs care**, or **see a doctor**
+- How each number is trending, once you've uploaded more than one report
+- A plain **"what to do next"** — with the evidence behind it — for anything that's off
+
+---
+
+## For developers
+
+**Built with:** React 18 · TypeScript · Vite 6 · Tailwind CSS v4 · framer-motion
+**Reads PDFs:** pdfjs-dist &nbsp;·&nbsp; **Reads photos:** Tesseract.js
+**Optional AI backup:** Google Gemini (server-side key; used only for photos the device can't read)
+**Export:** jsPDF &nbsp;·&nbsp; **Testing:** Vitest + Testing Library + Playwright
+
+### Run it locally
+
+Node.js 20–22 (at least 20.19).
 
 ```bash
 npm install
 npm run dev          # http://localhost:5173
-npm run test         # vitest run
-npm run build        # tsc --noEmit && vitest run && vite build
-npm run preview      # serve dist/
+npm run test         # run the tests
+npm run build        # typecheck + tests + bundle
+npm run preview      # preview the build
 ```
 
-`npm run build` runs typecheck and tests before bundling — the build fails fast on either.
+The build fails fast — a broken test or a type error means no bundle.
 
-## Project Structure
+### How it works
 
-```text
-src/
-└── app/
-    ├── clinical/    # Interpretation layer — turns matched markers into meaning (systems, context, trends, limitations)
-    ├── components/  # Reusable UI (BiomarkerBar, HealthRing, Sparkline, modals)
-    ├── contexts/    # React Contexts (Language, Discreet, Navigation, Quiz, Reports)
-    ├── data/        # Static catalogs (biomarkerCatalog, tests, quiz) + grading/trend logic
-    ├── pages/       # Route-level pages; big ones split into folders (home/, processing/)
-    ├── services/    # Client-side services (PDF parser pipeline, PDF report exporter, API)
-    └── utils/       # Global utilities (localStorage helpers, lazy reloading, a11y hooks)
+```
+PDF or photo comes in
+        │
+        ▼
+Read the PDF's text layer  (3 reconstruction strategies, best match wins)
+        │
+        ▼   (if empty / no matches)
+Read it like a scanner — Tesseract OCR
+        │
+        ▼   (if still stuck, and only for photos)
+Offer to send the image to Google's AI — user's choice, on by default, cancelable
+        │
+        ▼
+Clean up OCR noise + reconcile units (Indian lab quirks)
+        │
+        ▼
+Match against our biomarker catalog (best candidate wins)
+        │
+        ▼
+Save to browser storage → dashboard / results / trends
 ```
 
-## Docs
+### Folder structure
 
-For anyone (human or AI) digging into the code, start here:
+```
+src/app/
+├── clinical/    # Turns matched numbers into meaning (status, context, trends, limits)
+├── components/  # Reusable UI (bars, rings, sparklines, modals)
+├── contexts/    # App-wide state (navigation, reports, quiz, language, discreet)
+├── data/        # The biomarker catalog + sample reports + quiz config
+├── pages/       # One screen per route (big ones split into folders)
+├── services/    # PDF parser pipeline, PDF report exporter, API client
+└── utils/       # localStorage, share text, a11y hooks, lazy reload
+```
 
-- **[AGENTS.md](AGENTS.md)** — repo conventions, sharp edges, commit rules. Read this first.
-- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — 10-minute system map: state, routing, code-splitting, the upload flow.
-- **[docs/PARSER.md](docs/PARSER.md)** — the multi-strategy PDF / OCR / Gemini pipeline. The hardest part of the codebase.
-- **[docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md)** — how a value becomes optimal / borderline / out-of-range / critical, the "trust the pathologist" rule, range validation, and the false-alarm vs false-assurance trade-offs.
-- **[docs/FIRST-IMPRESSION-CONTRACT.md](docs/FIRST-IMPRESSION-CONTRACT.md)** — the experience-first contract every report-interpretation screen must satisfy (the five questions, the honesty gates, `certaintyOfAction`).
-- **[docs/DESIGN-PHILOSOPHY.md](docs/DESIGN-PHILOSOPHY.md)** — the design *principles* (not the system): one question per screen, reveal-don't-dump, system-first, and the self-understanding metric.
-- **[docs/SECURITY.md](docs/SECURITY.md)** — the privacy/security model: threat model, on-device storage, the opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the consent-gated AI caveat, and how to report a vulnerability.
-- **[docs/NAVIGATION.md](docs/NAVIGATION.md)** — the no-router `NavigationContext`, typed `Page` union, the `location.key` back() trick, and the StrictMode async-navigation gotcha.
-- **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, the three colour lanes (chrome / indigo accent / red alarm), the dark Instrument-navy ladder, theme resolution (explicit `dc_theme` → default Instrument dark; OS preference deliberately ignored), `[data-theme='light']` scope-local islands.
-- **[docs/I18N.md](docs/I18N.md)** — the UI-language system: dictionary, English-fallback chain, and why clinical copy is never auto-translated.
-- **[docs/MOBILE.md](docs/MOBILE.md)** — mobile-first patterns and footguns: PWA install, fixed nav, `min-w-0`, 44px touch targets, OCR prewarm.
-- **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** — workflow, commits, branches, where to make common changes.
+### Deeper docs
+
+Start with **[AGENTS.md](AGENTS.md)** for repo conventions, then dig in — each doc is a focused deep-dive:
+
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — how the whole thing fits together
+- **[docs/PARSER.md](docs/PARSER.md)** — reading PDFs and photos (the hard part)
+- **[docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md)** — how a value becomes healthy / borderline / off / critical
+- **[docs/SECURITY.md](docs/SECURITY.md)** — the privacy + encryption model (and the honest AI caveat)
+- **[docs/THEMING.md](docs/THEMING.md)** · **[docs/COLOR-SYSTEM.md](docs/COLOR-SYSTEM.md)** — look, feel, and colour
+- **[docs/I18N.md](docs/I18N.md)** · **[docs/MOBILE.md](docs/MOBILE.md)** — languages and mobile patterns
+
+Full index in [AGENTS.md](AGENTS.md).
+
+---
 
 ## Status
 
-Built as a 3-month contract engagement. Production-grade build pipeline (typecheck + tests gating the bundle), deployable to any static host, currently configured for Vercel via `vercel.json`. PRs and forks welcome.
+Built as a 3-month engagement for [ForMen](https://formen.co.in). Production-grade build (typecheck + tests gate the bundle); deploys to any static host, currently on Vercel. PRs and forks welcome.
