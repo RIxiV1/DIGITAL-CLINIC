@@ -3,7 +3,7 @@ import { Reveal, SectionHeader } from './shared';
 /**
  * How it works — restructured from a 3-icon card grid into a single
  * Chronological Hairline Axis: one vertical rule threading three numbered
- * checkpoints. The markers are raw Instrument Serif numerals (low weight,
+ * checkpoints. The markers are raw Domine serif numerals (low weight,
  * clay), with dense copy packed tight beneath — no stock illustration, no
  * lucide step-icons. The process itself is unchanged.
  */

@@ -31,15 +31,15 @@ type Props = {
  * warm hairline, split into an ASYMMETRIC two-panel layout: a wide
  * narrative column and a narrower score panel divided by a warm rule.
  *
- * Hierarchy comes from radical type CONTRAST, not effects: an oversized,
- * thin Instrument Serif headline + score (`font-editorial`) set against
+ * Hierarchy comes from radical type CONTRAST, not effects: an oversized
+ * editorial Domine serif headline + score (`font-editorial`) set against
  * dense, tightly-tracked monospace counts and tiny uppercase labels —
  * the kind of intentional scale jump a human designer makes and a
  * generator's uniform hierarchy doesn't. The score is a custom split
  * meter (in-range vs to-review), not the generic activity ring every
- * dashboard reaches for. Colour is owned and restrained: warm charcoal
- * ink, a deep forest "in-range" tone, and a single terracotta accent on
- * the CTA + the "to review" count.
+ * dashboard reaches for. Colour is owned and restrained: the warm-paper
+ * ink, a forest-token "in-range" tone, and the brand indigo accent (the
+ * `clay`/`forest` tokens, both the ForMen indigo) on the CTA + counts.
  *
  * Four data-driven copy states (logic unchanged):
  *   A. 2+ readings on at least one marker  → call out the biggest change
@@ -148,7 +148,7 @@ export default function DashboardHeadline({
 
 /**
  * Custom split meter — the in-range share (forest) butted against the
- * to-review share (terracotta) in one continuous bar, divided by a warm
+ * to-review share (the `clay` token) in one continuous bar, divided by a warm
  * hairline so the two zones read as a single split rather than a generic
  * progress fill. Domain-specific: it answers "how much of my panel is
  * clear" at a glance, and pairs with the mono counts below it.

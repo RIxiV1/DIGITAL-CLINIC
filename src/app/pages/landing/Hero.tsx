@@ -49,7 +49,7 @@ export default function Hero({
             >
               Your hair loss, your fatigue, and your sex drive{' '}
               {/* One solid accent on the payoff phrase — terracotta, not a
-                  gradient. A massive single-weight Instrument Serif carries
+                  gradient. A massive single-weight Domine serif carries
                   the punch; the gradient-text trick read as tech-SaaS. */}
               <span className="text-clay">might be the same problem.</span>
             </motion.h1>

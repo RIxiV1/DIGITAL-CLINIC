@@ -220,7 +220,7 @@ export default function HealthMapPage() {
       <div className="min-h-dvh pb-28 md:pb-12 bg-canvas">
         <Header variant="page" title="Health Map" />
         <Container size="narrow" className="pt-10 md:pt-12">
-          {/* Focal block — plain, in Instrument Serif. */}
+          {/* Focal block — plain, in the editorial Domine serif. */}
           <h1 className="font-display text-4xl md:text-5xl leading-[1.04] tracking-tight text-balance max-w-[15ch]">
             Nothing on your map yet.
           </h1>
@@ -319,7 +319,7 @@ export default function HealthMapPage() {
           honest line, and a celebratory/honest movement signal. */}
       <Container size="wide" className="pt-7 md:pt-9">
         {/* Warm "paper" spotlight — same focal surface as the dashboard
-            hero: flat, hairline, no ring/glow. Big Instrument Serif score +
+            hero: flat, hairline, no ring/glow. Big Domine serif score +
             a split meter (in-range vs to-review) instead of the activity
             ring, so the two heroes speak one language. */}
         <div className="rounded-lg border border-paper-line bg-paper text-paper-ink p-6 md:p-8">

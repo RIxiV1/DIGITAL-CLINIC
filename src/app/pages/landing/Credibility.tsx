@@ -1,7 +1,7 @@
 import { Reveal, SectionHeader } from './shared';
 
 // "By the numbers" figures — recast from the old three-stat-card row (canonical
-// template furniture) into a hairline data-strip: the big Instrument Serif
+// template furniture) into a hairline data-strip: the big Domine serif
 // numbers stay (an identity element), but the card fills, shadows, hover-lift
 // and the clay accent-card are gone, and the source line becomes a mono
 // caption — the same editorial/ledger voice as the verification_ledger beside
