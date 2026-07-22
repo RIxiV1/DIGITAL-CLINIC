@@ -13,6 +13,7 @@ import Container from '../components/ui/Container';
 import Header from '../components/Header';
 import BottomNav from '../components/BottomNav';
 import ClinicalSpot from '../components/ClinicalSpot';
+import Sparkline from '../components/ui/Sparkline';
 import { useNavigation, useReports } from '../AppContext';
 import { sampleReports, type Report } from '../data/reports';
 import { statusColor } from '../data/biomarkers';
@@ -102,6 +103,13 @@ function ComparisonRow({ row }: { row: MarkerComparison }) {
   const DeltaIcon = delta > 0 ? TrendingUp : delta < 0 ? TrendingDown : Minus;
   const tone = changeTone(change);
 
+  // A two-point before→after spark reinforces the delta visually. Built as a
+  // synthetic marker (after + a single prior reading = the before value) so it
+  // always has the ≥2 points Sparkline needs and its band/colour track the
+  // after reading. Desktop-only — the mobile row already carries direction via
+  // the status dots + delta arrow, and a fourth column would crowd 390px.
+  const sparkMarker = { ...after, history: [{ date: '', value: before.value }] };
+
   return (
     <div className="flex items-center gap-3 py-3 border-b border-line/60 last:border-0">
       <div className="flex-1 min-w-0">
@@ -130,6 +138,11 @@ function ComparisonRow({ row }: { row: MarkerComparison }) {
           </span>
         </span>
         <span className="text-micro text-muted">{row.unit}</span>
+      </div>
+
+      {/* Desktop-only before→after spark. */}
+      <div className="hidden sm:block shrink-0" aria-hidden>
+        <Sparkline marker={sparkMarker} width={64} height={26} />
       </div>
 
       {/* change chip: arrow shows which way the number moved; colour shows
