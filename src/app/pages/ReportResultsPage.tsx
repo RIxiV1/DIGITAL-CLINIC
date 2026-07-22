@@ -46,7 +46,7 @@ import {
   type StatusFilterId,
 } from '../data/biomarkers';
 import { findReport } from '../data/reports';
-import { reportShareText, whatsappShareUrl } from '../utils/shareText';
+import { shareReport } from '../utils/shareReport';
 
 type Filter = StatusFilterId;
 
@@ -752,21 +752,18 @@ export default function ReportResultsPage({
             >
               One-page doctor summary
             </Button>
-            {/* WhatsApp text share — the flow most Indian users actually
-                reach for. wa.me only pre-fills the message; nothing sends
-                until the user picks a recipient and taps send in WhatsApp,
-                so no data leaves without an explicit action. */}
+            {/* Share — the flow most Indian users actually reach for. On a
+                phone this opens the native share sheet with the one-page
+                doctor PDF attached (WhatsApp right there); on desktop it
+                falls back to a wa.me text link. Either way it only STAGES the
+                content — nothing sends until the user picks a recipient. */}
             <Button
               variant="ghost"
               size="sm"
               leading={<Share2 size={14} />}
-              onClick={() =>
-                window.open(
-                  whatsappShareUrl(reportShareText(report)),
-                  '_blank',
-                  'noopener,noreferrer',
-                )
-              }
+              onClick={() => {
+                void shareReport(report);
+              }}
             >
               Share on WhatsApp
             </Button>
