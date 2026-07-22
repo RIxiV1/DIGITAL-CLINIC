@@ -56,3 +56,8 @@ export {
   type ExplanationBeat,
 } from './explainFinding';
 export { explainChange } from './explainChange';
+export {
+  symptomLinks,
+  symptomLinkSentence,
+  type SymptomLink,
+} from './symptomLinks';
