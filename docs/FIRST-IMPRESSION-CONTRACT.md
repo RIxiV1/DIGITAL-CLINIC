@@ -116,7 +116,7 @@ new collection problem:
 | 2 | The one thing | `pickHeadlineMarker` / `rankFlaggedMarkers` |
 | 3 | Why it matters | harm anchor (`actionSource`) + `markerContextNote` (intake) |
 | 4 | What to do next | `certaintyOfAction` map (§4) + `getRetestReminder` |
-| 5 | What it can't tell me | `reportLimitations` + `reportProvenance` |
+| 5 | What it can't tell me | `reportLimitations` + `reportProvenanceNote` |
 
 The interpretation engine (`src/app/clinical/`) already holds or is growing
 every one of these. "Your Body's Story" is the **presentation of this engine**,

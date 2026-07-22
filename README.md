@@ -27,7 +27,7 @@ Upload a PDF or photo of your blood work. The app parses it client-side (no serv
 
 Most lab reports in India are 4–10 page PDFs with subset fonts, dense tables, and zero accessibility. Patients get the file, glance at the "out of range" highlights, and panic — or ignore it. Digital Clinic re-presents the same data the way a friend who happens to be a doctor would: a single dashboard score, marker-by-marker plain-English explanations, and a "what to do next" rather than a wall of numbers.
 
-The whole thing runs in the browser — no uploads, no account, no tracking. For shared devices there's an **opt-in PIN lock** that encrypts reports + quiz answers at rest (AES-GCM-256, key derived via PBKDF2 and held in memory only), plus a **Discreet Mode** that veils the screen the moment the app is backgrounded. The one exception to "nothing leaves the device" is an **optional, consent-gated** "Try AI parser" fallback: when on-device OCR can't read a photo, the user can choose to send that single image to Google Gemini, with a clear "the image leaves your device" disclosure shown at the point of use. The full threat model is in [docs/SECURITY.md](docs/SECURITY.md).
+The whole thing runs in the browser — no uploads, no account, no tracking. For shared devices there's an **opt-in PIN lock** that encrypts reports + quiz answers at rest (AES-GCM-256, key derived via PBKDF2 and held in memory only), plus a **Discreet Mode** that veils the screen the moment the app is backgrounded. The one exception to "nothing leaves the device" is the **AI parser** fallback: when on-device OCR can't read a photo, that single image can be sent to Google Gemini to extract the values. It's **disclosed up front, cancelable while it runs, and switch-offable in Profile** — and it's on by default for a failed *image* parse (a dead-end failure serves the user worse than a disclosed retry), never for a PDF that already has a readable text layer. So the honest framing is **on-device by default, with a disclosed escape hatch** — not an unqualified "nothing ever leaves the device." The full threat model is in [docs/SECURITY.md](docs/SECURITY.md).
 
 ## Highlights (the parts worth reading the code for)
 
@@ -47,7 +47,7 @@ PDF text extraction is notoriously fragile. This pipeline runs three reconstruct
 
 **Privacy by architecture** — there is no backend with user data: reports are parsed in-browser and stored in `localStorage`, namespaced (`dc_*`) and zod-validated on every read. An opt-in PIN lock encrypts reports + quiz answers at rest with **AES-GCM-256** keyed by **PBKDF2-SHA256 (200k iterations)** via Web Crypto — the key is non-extractable and never leaves memory, so a forgotten PIN is unrecoverable by design (no backdoor). Discreet Mode veils the screen on background. See [docs/SECURITY.md](docs/SECURITY.md).
 
-**Accessibility & motion** — `prefers-reduced-motion` cascaded through `MotionConfig` at the root so every framer-motion descendant collapses to 0ms without per-component checks. Skip-link to main content. Focus management on modals. Semantic landmarks throughout. Colour is split into three never-overlapping lanes — neutral chrome, a **forest** interactive accent, and a **crimson** alarm — so the "act here" control and the "this is wrong" warning stay distinguishable under red-green colour-blindness (they differ in both hue and lightness); status is never carried by colour alone (every dot is paired with a text label). All text measured against WCAG AA/AAA in both themes.
+**Accessibility & motion** — `prefers-reduced-motion` cascaded through `MotionConfig` at the root so every framer-motion descendant collapses to 0ms without per-component checks. Skip-link to main content. Focus management on modals. Semantic landmarks throughout. Colour is split into three never-overlapping lanes — neutral chrome, an **indigo** interactive accent, and a **red** alarm — so the "act here" control and the "this is wrong" warning stay distinguishable under red-green colour-blindness (they differ in both hue and lightness); status is never carried by colour alone (every dot is paired with a text label). All text measured against WCAG AA/AAA in both themes.
 
 ## How it works
 
@@ -73,7 +73,7 @@ PDF / image upload
   Persist to localStorage  ──►  Dashboard / Results / Trends
 ```
 
-State lives in React contexts (`Reports`, `Quiz`, `Navigation`, `Language`, `Discreet`) with zod-validated `localStorage` persistence. The only network calls are loading the PDF/OCR workers — plus the **opt-in** Gemini fallback (`api/parse-image.ts`), which sends an image to Google only when the user explicitly taps "Try AI parser".
+State lives in React contexts (`Reports`, `Quiz`, `Navigation`, `Language`, `Discreet`) with zod-validated `localStorage` persistence. The only network calls are loading the PDF/OCR workers — plus the Gemini fallback (`api/parse-image.ts`), which sends an image to Google when the user taps "Try AI parser" **or** via the disclosed, default-on auto-cascade for a failed image parse (cancelable, and switch-offable in Profile).
 
 ## Stack
 
@@ -123,7 +123,7 @@ For anyone (human or AI) digging into the code, start here:
 - **[docs/DESIGN-PHILOSOPHY.md](docs/DESIGN-PHILOSOPHY.md)** — the design *principles* (not the system): one question per screen, reveal-don't-dump, system-first, and the self-understanding metric.
 - **[docs/SECURITY.md](docs/SECURITY.md)** — the privacy/security model: threat model, on-device storage, the opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the consent-gated AI caveat, and how to report a vulnerability.
 - **[docs/NAVIGATION.md](docs/NAVIGATION.md)** — the no-router `NavigationContext`, typed `Page` union, the `location.key` back() trick, and the StrictMode async-navigation gotcha.
-- **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, the three colour lanes (chrome / forest accent / crimson alarm), the dark warm-charcoal ladder, theme resolution (explicit choice → OS preference → warm-paper light), `[data-theme='light']` scope-local islands.
+- **[docs/THEMING.md](docs/THEMING.md)** — semantic tokens, the three colour lanes (chrome / indigo accent / red alarm), the dark Instrument-navy ladder, theme resolution (explicit `dc_theme` → default Instrument dark; OS preference deliberately ignored), `[data-theme='light']` scope-local islands.
 - **[docs/I18N.md](docs/I18N.md)** — the UI-language system: dictionary, English-fallback chain, and why clinical copy is never auto-translated.
 - **[docs/MOBILE.md](docs/MOBILE.md)** — mobile-first patterns and footguns: PWA install, fixed nav, `min-w-0`, 44px touch targets, OCR prewarm.
 - **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** — workflow, commits, branches, where to make common changes.

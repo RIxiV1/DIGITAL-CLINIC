@@ -24,7 +24,7 @@ the one or two things worth attention, in the voice of a doctor you trust
 LOW / DEFICIENT"*). **Make people feel understood, not diagnosed:** *"this
 explains what you've been feeling,"* not *"something is wrong with you."* Never
 simulate stress to show off the fix. Colour follows this too: ~95% of the
-interface stays calm (forest healthy, terracotta attention), and red is spent
+interface stays calm (green healthy, amber attention), and red is spent
 only on genuine urgency — never the 🟢🟡🔴 panic palette. If a choice — a word,
 a colour, a score, a motion — adds anxiety without adding honest signal, it's
 wrong, however impressive it looks. (Honest signal still ships: calm ≠ hiding a

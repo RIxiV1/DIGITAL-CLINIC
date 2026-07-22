@@ -15,7 +15,7 @@ anything in `utils/crypto.ts`, `utils/dataLock.ts`, `utils/persistence.ts`,
 | Adversary | Mitigation |
 |---|---|
 | **A server breach leaking everyone's reports** | There is no server with user data. Reports are parsed in the browser and stored in `localStorage`. There's nothing central to breach. |
-| **Someone with physical access to the unlocked device** (shared family phone — common in our India-first audience) | Opt-in **PIN lock** encrypts reports + quiz answers at rest (AES-GCM); **Discreet Mode** veils the screen the instant the app is backgrounded. |
+| **Someone with physical access to the unlocked device** (shared family phone — common in our India-first audience) | Opt-in **PIN lock** encrypts reports at rest (AES-GCM); **Discreet Mode** veils the screen the instant the app is backgrounded. (Quiz answers are not encrypted — see "What the lock covers" below.) |
 | **A shoulder-surfer while the app is open** | **Discreet Mode** (`PrivacyScreen`) blanks content on blur / tab-switch / app-background. |
 | **A poisoned `localStorage` key** (browser extension, past-buggy build, dev-tools on a shared device) | Every load path validates against a **zod** schema and falls back to default rather than trusting (or crashing on) malformed data. |
 | **Eavesdropping on the one network call** (the optional AI parser) | HTTPS; only a single image is sent, only on explicit per-use consent, and only if the user turned the feature on. |
@@ -40,9 +40,11 @@ malicious extension with full page access. Those defeat any client-side app.
 
 ## At-rest encryption (opt-in PIN lock)
 
-Off by default. When a user sets a PIN in Profile, their reports and quiz answers are
-encrypted in `localStorage` so someone browsing the device (or its dev-tools) sees only
-ciphertext. Implemented in `utils/crypto.ts` + `utils/dataLock.ts` on the Web Crypto API.
+Off by default. When a user sets a PIN in Profile, their **reports** are encrypted in
+`localStorage` so someone browsing the device (or its dev-tools) sees only ciphertext.
+(Quiz answers are **not** encrypted — `saveQuiz` writes plaintext; only `dc_reports`
+goes through `saveReportsMaybeEncrypted`.) Implemented in `utils/crypto.ts` +
+`utils/dataLock.ts` on the Web Crypto API.
 
 **Crypto:**
 - **AES-GCM, 256-bit key** for the data, with a fresh **96-bit IV** per encryption.
@@ -62,10 +64,11 @@ from the PIN, a forgotten PIN is unrecoverable. The UI offers "forgot PIN → wi
 start over" rather than a backdoor. That's the honest trade-off of real client-side
 encryption: no recovery path means no backdoor.
 
-**Coordination across contexts.** Reports and quiz answers both sit behind the one PIN, so
-`dataLock.ts` exposes a small lock-event bus (`enabled` / `unlocked` / `disabled` /
-`wiped`) that `ReportsContext` and `QuizContext` subscribe to — encrypt on enable,
-decrypt on unlock, re-write as plaintext on disable, clear on wipe. A guard in the
+**Coordination.** The lock covers **reports** (quiz answers are stored as plaintext today).
+`dataLock.ts` exposes imperative helpers (`enableLock` / `unlock` / `lock` / `clearLockMeta`
+/ `getSessionKey`) that `ReportsContext` calls directly — encrypt on enable, decrypt on
+unlock, re-write as plaintext on disable, clear on wipe. There is no event bus and no
+subscriber model. A guard in the
 plaintext loaders refuses to read ciphertext (so a half-migrated state can't silently
 wipe data).
 
@@ -88,8 +91,9 @@ single image to Google Gemini (`api/parse-image.ts`, a stateless Vercel function
 forwards the image and returns structured JSON — it stores nothing).
 
 This is the **only** path where data leaves the device, and it's treated as such:
-- **Off unless invoked.** Either an explicit per-use tap, or an opt-in auto-cascade the
-  user turns on in Profile.
+- **Two ways it fires.** Either an explicit per-use tap, or an **auto-cascade that is on by
+  default** (opt-out) for a failed *image* parse — a Cancel control shows while it runs, and
+  it can be switched off in Profile → "AI auto-fallback" for zero implicit network egress.
 - **Disclosed at the point of use:** "the image leaves your device; Google may retain it
   to improve their service."
 - **Honest caveat:** it currently uses Gemini's **free tier, which can use submitted data

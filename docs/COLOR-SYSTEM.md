@@ -116,6 +116,8 @@ red-green CVD, so lightness + words carry the signal, not hue alone.
 | Selection | | `rgba(54,58,87,0.16)` | warm ink wash, never browser-blue |
 | Shadow | `sm` / `md` | `0 1px 2px rgba(40,30,20,.06)` / `0 4px 16px rgba(40,30,20,.05)` | warm, low, single-lamp |
 
+> **Design intent, not the token spec.** These tables express the *Lamplight* colour direction. The exact as-shipped tokens live in [THEMING.md](THEMING.md) + `src/index.css` — and the shipped dark theme is an **Instrument navy** (canvas `#0f1320`, accent `#8fa2f2`), not the warm-charcoal lamplight shown below. Read this file for the *why*; read THEMING/`index.css` for the values that render.
+
 ### Dark (the same study, by lamplight — warm ink, never black)
 | Role | Token | Value |
 | --- | --- | --- |

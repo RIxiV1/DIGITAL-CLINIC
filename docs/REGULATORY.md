@@ -128,9 +128,10 @@ cosmetic.
    QMS, predicate)?** Not pinned by this research (partly, the IVD-analyser hook
    suggests it inherits the analyser's class). A direct lawyer question.
 3. **DPDP Act 2023 + the Gemini transfer.** UNRESOLVED. The on-device/no-server
-   design plausibly minimises data-fiduciary exposure, but the opt-in image
-   send to Google's **free** Gemini tier (which may train on the data) is the one
-   outbound flow. Ask: *does that transfer make the operator a data fiduciary,
+   design plausibly minimises data-fiduciary exposure, but the disclosed image
+   send to Google's **free** Gemini tier (which may train on the data) — an
+   auto-cascade that is **on by default** for a failed image parse, plus a manual
+   "Try AI parser" button — is the one outbound flow. Ask: *does that transfer make the operator a data fiduciary,
    and does moving to paid/Vertex (no training) change it?* Until answered, the
    safe default holds: **no Gemini key in production = no transfer** (the app
    already degrades to on-device-only without a key).

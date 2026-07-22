@@ -75,18 +75,20 @@ Read the one matching what you're touching before you grep — each is a focused
 
 | Doc | Covers |
 |---|---|
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | The big picture: the four contexts, the upload flow, persistence, code-splitting |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | The big picture: the five contexts, the upload flow, persistence, code-splitting |
 | [docs/NAVIGATION.md](docs/NAVIGATION.md) | The hand-rolled no-router `Page`-union navigation + the StrictMode async gotcha |
 | [docs/PARSER.md](docs/PARSER.md) | The three-pipeline parser, the biomarker catalog + its fields (optimal / action / critical), India-localized ranges |
 | [docs/CLINICAL-ACCURACY.md](docs/CLINICAL-ACCURACY.md) | How a value becomes optimal/borderline/out-of-range/critical, the "trust the pathologist" rule, cite-or-omit, range validation, and known accuracy caveats |
 | [docs/FIRST-IMPRESSION-CONTRACT.md](docs/FIRST-IMPRESSION-CONTRACT.md) | The experience-first contract every report-interpretation screen must satisfy: the five questions, the honesty gates (prioritize-confidently/synthesize-conservatively), `certaintyOfAction`, and a deliberately-light enforcement (five functions + one guard test, no mega-type) |
-| [docs/SECURITY.md](docs/SECURITY.md) | The privacy/security model: threat model, on-device storage, opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the consent-gated AI caveat, vuln reporting |
-| [docs/THEMING.md](docs/THEMING.md) | Semantic tokens (both themes first-class), theme resolution (explicit→OS→warm-paper light), the external (CSP-safe) bootstrap, on-color contrast |
+| [docs/SECURITY.md](docs/SECURITY.md) | The privacy/security model: threat model, on-device storage, opt-in at-rest encryption (AES-GCM + PBKDF2), Discreet Mode, the disclosed AI escape hatch, vuln reporting |
+| [docs/REGULATORY.md](docs/REGULATORY.md) | India regulatory exposure: why the interpretation function likely makes this Software as a Medical Device (SaMD), what the disclaimer does and doesn't do, and the open legal questions — a sourced map, not legal advice |
+| [docs/THEMING.md](docs/THEMING.md) | Semantic tokens (both themes first-class), theme resolution (explicit `dc_theme` → default Instrument **dark**; OS preference deliberately ignored), the external (CSP-safe) bootstrap, on-color contrast |
 | [docs/DESIGN-PHILOSOPHY.md](docs/DESIGN-PHILOSOPHY.md) | The design *principles* (not the system): one question/one action per screen, reveal-don't-dump, system-first, reassure-in-voice-gate-on-data, every-word-is-behavior — plus the self-understanding metric |
 | [docs/COLOR-SYSTEM.md](docs/COLOR-SYSTEM.md) | "Lamplight" — the emotion-first color identity: the one indigo thread ("heartbeat"), dynamic emotional grading (contrast/weight/density, never hue), reward-brass, relief-first order, warm-paper token tables |
 | [docs/I18N.md](docs/I18N.md) | The UI-language system: dictionary, English-fallback chain, adding keys/languages |
 | [docs/MOBILE.md](docs/MOBILE.md) | Mobile-first patterns + footguns: PWA, fixed nav, `min-w-0`, touch targets, OCR prewarm |
 | [docs/CONTRIBUTING.md](docs/CONTRIBUTING.md) | Setup, running locally, and how to ship a change |
+| [docs/MAINTAINABILITY.md](docs/MAINTAINABILITY.md) | A dated maintainability snapshot: source LOC, test coverage by area, dep count, and the prioritized risks — re-run the metrics before trusting them (they drift) |
 | [docs/VOCABULARY.md](docs/VOCABULARY.md) | "One word, one meaning" — the canonical term for each concept and the naming collisions still being reconciled |
 
 ---
@@ -103,9 +105,9 @@ Why: we needed a handful of path routes plus a dozen typed page states, and a ha
 
 See [docs/NAVIGATION.md](docs/NAVIGATION.md).
 
-### 2. Theme: explicit choice wins, else honor OS, fall back to warm-paper light
+### 2. Theme: explicit choice wins, else default to Instrument dark (OS preference deliberately ignored)
 
-The whole semantic token system runs on `:root[data-theme='dark']` overrides, not `dark:` Tailwind variants. The theme is stamped on `<html>` *before* React mounts (no FOUC) by an **external** bootstrap, `public/theme-init.js` — external, **not** inline, because the production CSP's `script-src` allows `'self'`, `'wasm-unsafe-eval'`, and the jsdelivr CDN — but no `'unsafe-inline'`, so inline scripts are blocked. As an inline script it silently failed in prod (the bootstrap didn't run at all); don't move it back inline. **Theme resolution:** an explicit saved `dc_theme` wins; otherwise it honors the OS `prefers-color-scheme` and falls back to the **warm-paper light** theme (the distinctive identity leads the first impression, and it's safer for dense clinical numbers — dark's eye-comfort claim didn't survive verification). `loadTheme()` in persistence.ts must mirror the bootstrap exactly or first paint flashes.
+The whole semantic token system runs on `:root[data-theme='dark']` overrides, not `dark:` Tailwind variants. The theme is stamped on `<html>` *before* React mounts (no FOUC) by an **external** bootstrap, `public/theme-init.js` — external, **not** inline, because the production CSP's `script-src` allows `'self'`, `'wasm-unsafe-eval'`, and the jsdelivr CDN — but no `'unsafe-inline'`, so inline scripts are blocked. As an inline script it silently failed in prod (the bootstrap didn't run at all); don't move it back inline. **Theme resolution:** an explicit saved `dc_theme` wins; otherwise we default to the **Instrument dark** theme. The OS `prefers-color-scheme` is **intentionally NOT consulted** (see the note in `persistence.ts`) — the distinctive dark identity leads the first impression, and it sidesteps the light-on-dark halation astigmatic readers can get. Warm-paper light is one tap away in Profile. `loadTheme()` in persistence.ts must mirror the bootstrap exactly (both default to `'dark'`) or first paint flashes.
 
 See [docs/THEMING.md](docs/THEMING.md).
 

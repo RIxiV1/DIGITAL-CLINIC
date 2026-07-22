@@ -74,6 +74,8 @@ Two optional bands carry a **required citation**, enforced structurally:
 
 The tick literally cannot render without its source: [`BiomarkerBar.tsx`](../src/app/components/BiomarkerBar.tsx) gates it on `!!marker.actionSource`. An uncited clinical threshold is worse than no threshold — it looks invented and erodes the whole product's credibility. If you can't cite it, don't draw it.
 
+**Cite-or-omit extends to the "what helps" recommendations, too.** Each action-plan lever is graded at render time by [`clinical/evidence.ts`](../src/app/clinical/evidence.ts) (`evidenceForRecommendation`): a lever it can tie to a named source gets a **Strong / Moderate / Emerging** tier (GRADE-aligned certainty language), the specific outcome it supports (never a blanket claim), and a tappable source link — rendered through the shared [`EvidenceBadge`](../src/app/components/EvidenceBadge.tsx) on both the action plan ([`ProblemDetailPage`](../src/app/pages/ProblemDetailPage.tsx)) and the marker "Learn more" modal. A lever it can't ground returns `null` and shows **no badge** — an ungraded line is honest; a guessed "Strong evidence" would be the same false authority this rule forbids for clinical thresholds.
+
 ### 3. India-first ranges
 
 Where Indian guidance diverges from Western defaults, we follow the Indian one and cite it:

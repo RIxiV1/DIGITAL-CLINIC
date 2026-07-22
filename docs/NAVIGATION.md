@@ -21,7 +21,8 @@ export type Page =
   | { type: 'upload' }
   | { type: 'processing' }
   | { type: 'manualEntry' }
-  | { type: 'results'; reportId: string }
+  | { type: 'results'; reportId: string; view?: 'details' }
+  | { type: 'compare'; aId?: string; bId?: string }
   | { type: 'problem'; problemId: string }
   | { type: 'profile' }
   | { type: 'privacy' };
@@ -76,8 +77,12 @@ Each Page maps to a clean URL **path** (not a query string). `pageToPath()` and 
 | `{ type: 'quiz' }` | `/quiz` |
 | `{ type: 'recommendedTests' }` | `/tests` |
 | `{ type: 'results', reportId }` | `/reports/:reportId` |
+| `{ type: 'results', reportId, view: 'details' }` | `/reports/:reportId/markers` |
+| `{ type: 'compare', aId?, bId? }` | `/compare` or `/compare/:aId/:bId` |
+| `{ type: 'healthMap' }` | `/health-map` |
 | `{ type: 'problem', problemId }` | `/topics/:problemId` |
 | `{ type: 'profile' }` | `/profile` |
+| `{ type: 'privacy' }` | `/privacy` |
 
 (`/processing` and `/manual-entry` round out the set.) The mapping is bidirectional, and the **URL is the source of truth** — `page` is derived from `location.pathname`, so `navigate`/`replace` just change the path and the page follows. Pasting a deep link like `/reports/rep-001` works for free, because `pathToPage()` parses it on mount; unknown paths fall back to `landing`.
 
@@ -159,7 +164,7 @@ if (!mountedRef.current) return;   // safe — ref is stable across re-renders
 
 `mountedRef` survives StrictMode's double-mount because refs aren't recreated on remount. The first mount's ref is reused on the second mount.
 
-This pattern is intentionally documented in [`feedback_strictmode_async_navigation.md`](../memory/feedback_strictmode_async_navigation.md) (the AI agent memory file) because it's bitten the team before.
+This pattern is called out deliberately (in code comments on the affected effects, and here) because it's bitten the team before.
 
 ---
 
@@ -218,4 +223,4 @@ This is the only place in the app where we round-trip parser output through loca
 
 If you ever need nested routes, route-level data loaders, or path-based routing (like `/reports/:id/markers/:markerId`), the home-rolled context starts to feel cramped. At that point, the migration is one PR — replace `NavigationContext` with React Router's `useNavigate` + a route config that maps `Page` variants to URL patterns. The page components themselves don't change.
 
-For the current scope (10 pages, 2 path-level routes, a typed param dictionary), the hand-rolled version is simpler and easier to reason about.
+For the current scope (13 pages, 4 path-level routes, a typed param dictionary), the hand-rolled version is simpler and easier to reason about.

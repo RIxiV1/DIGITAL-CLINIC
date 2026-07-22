@@ -1,6 +1,6 @@
 # Theming
 
-An explicit saved choice always wins; with no choice we honor the OS `prefers-color-scheme` and fall back to the **warm-paper light** theme (the brand's distinctive identity, and the safer default for dense clinical numbers). Both themes are first-class. The whole system runs on semantic Tailwind v4 tokens — there are zero `dark:` variants sprinkled across components.
+An explicit saved choice always wins; with no saved choice we default to the **Instrument dark** theme — the OS `prefers-color-scheme` is intentionally **not** consulted (the distinctive dark identity leads the first impression, and per the bootstrap's own note it sidesteps the light-on-dark halation astigmatic readers can get). Warm-paper light is one tap away via the Profile toggle. Both themes are first-class. The whole system runs on semantic Tailwind v4 tokens — there are zero `dark:` variants sprinkled across components.
 
 This doc explains the five principles, the no-FOUC bootstrap, and how to add a new themed surface without breaking dark mode.
 
@@ -14,13 +14,13 @@ The visual identity is the **ForMen brand** (deep indigo + gold) rendered as
 | Lane | Tokens | Use |
 | --- | --- | --- |
 | **Chrome** (neutral warm-stone) | the `blue-*` / `indigo-*` / `primary-*` alias — resolves to a **warm-stone ramp**, NOT blue | nav, secondary buttons, most fills |
-| **Brand / interactive accent** (ForMen indigo) | `--color-forest` **and** `--color-clay`, both `#2D3B8E` (light — the EXACT wordmark hex, sampled from `public/favicon.svg`) / `#97A3EA` (dark), with `--color-on-*` for text on them | the wordmark, primary CTA, action links, focus rings, landing accent phrases — the one ownable brand hue |
+| **Brand / interactive accent** (ForMen indigo) | `--color-forest` **and** `--color-clay`, both `#2D3B8E` (light — the EXACT wordmark hex, sampled from `public/favicon.svg`) / `#8fa2f2` (dark — the brand indigo lifted to periwinkle on the navy canvas), with `--color-on-*` for text on them | the wordmark, primary CTA, action links, focus rings, landing accent phrases — the one ownable brand hue |
 | **Warm secondary** (ForMen gold) | `--color-gold-*` (`#FFB800`, desaturated for dark) | highlights, gold pills, the calm `attention` status family |
 | **Alarm** (warm red) | `--color-concern` → `#dc2626` (light) / **`#ff7a6b`** (dark) | clinical warnings / flagged diagnostics only |
 
 The accent is **blue-dominant**, so the "act here" indigo separates from the crimson alarm under protanopia/deuteranopia (blue-vs-red is the safe CVD pair) — even more reliably than the old forest did. Clay and forest now resolve to the *same* indigo (the app has one brand accent + gold, not two warm accents); terracotta has retired into the brand. The clinical status colours (`good` / `attention` / `concern` / `critical`) are **unchanged** and stay label-backed, never colour-only.
 
-**Dark ladder** (warm charcoal): canvas `#0b0a09` → card `--color-surface` `#1a1816` → hero `--color-paper` `#242220` — an even ~1.12:1 step each so layers read. In dark the drop-shadows are invisible, so the **hairline carries the card edge**: `--color-line` is `rgb(231 229 228 / 0.16)` (≈1.44:1 over canvas), not a barely-there 0.10.
+**Dark ladder** (Instrument navy): canvas `#0f1320` → card `--color-surface` `#191f30` → hero `--color-paper` `#212a44` — an even step each so layers read. In dark the drop-shadows are invisible, so the **hairline carries the card edge**: `--color-line` is `rgb(206 214 238 / 0.15)`, not a barely-there 0.10.
 
 > **The class names lie, on purpose.** `bg-indigo-600` / `text-blue-700` render *terracotta-stone*, because the brand hue was retargeted in one place (`--color-blue-*`) rather than via 380+ per-component edits. Don't "fix" them back to blue. A future rename to `--color-primary-*` is the proper cleanup.
 
@@ -103,14 +103,12 @@ theme and then flicker to the resolved theme once React reads
     if (saved === 'light' || saved === 'dark') {
       theme = saved; // explicit user choice always wins
     } else {
-      theme = window.matchMedia &&
-        window.matchMedia('(prefers-color-scheme: dark)').matches
-          ? 'dark' : 'light';
+      theme = 'dark'; // no saved choice → default Instrument dark (OS preference deliberately ignored)
     }
-  } catch (e) { theme = 'light'; /* private mode / disabled storage */ }
+  } catch (e) { theme = 'dark'; /* private mode / disabled storage */ }
   document.documentElement.dataset.theme = theme;
 
-  var themeColor = theme === 'light' ? '#F7F4EF' : '#100E0C';
+  var themeColor = theme === 'light' ? '#F7F4EF' : '#0F1320';
   var meta = document.querySelector('meta[name="theme-color"]');
   if (meta) meta.setAttribute('content', themeColor);
 })();
@@ -118,11 +116,11 @@ theme and then flicker to the resolved theme once React reads
 
 Three things this script does:
 
-1. Resolves the theme: an explicit `localStorage['dc_theme']` wins; otherwise it honors the OS `prefers-color-scheme` and falls back to **`'light'`** (the warm-paper identity) — including on any storage failure. `loadTheme()` in `persistence.ts` mirrors this exactly, or first paint flashes.
+1. Resolves the theme: an explicit `localStorage['dc_theme']` wins; otherwise it falls back to **`'dark'`** (the Instrument identity) — the OS `prefers-color-scheme` is deliberately not consulted, including on any storage failure. `loadTheme()` in `persistence.ts` mirrors this exactly, or first paint flashes.
 2. Stamps `<html data-theme="dark">` or `<html data-theme="light">`.
 3. Syncs the `<meta name="theme-color">` tag so the mobile browser top-bar tint matches the canvas color on first paint.
 
-**`prefers-color-scheme` IS honored now** (it previously wasn't). Rationale: the distinctive warm-paper look should lead the first impression, and the evidence on dense clinical data + astigmatism halation favors light; dark-preferrers still get dark via their OS setting or the Profile toggle.
+**`prefers-color-scheme` is deliberately NOT consulted.** Rationale: the distinctive Instrument-dark look should lead the first impression, and defaulting to dark sidesteps the light-on-dark halation astigmatic readers can get; light-preferrers switch once via the Profile toggle, and the saved `dc_theme` then wins on every load. See the note in `persistence.ts`.
 
 ---
 
@@ -148,7 +146,7 @@ const toggleTheme = () => {
   const root = document.documentElement;
   root.classList.add('theme-transitioning');    // 240ms color transition
   root.dataset.theme = next;                    // re-bind tokens
-  const themeColor = next === 'light' ? '#F7F4EF' : '#100E0C';
+  const themeColor = next === 'light' ? '#F7F4EF' : '#0F1320';
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
   setTimeout(() => root.classList.remove('theme-transitioning'), 240);
 };

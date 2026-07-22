@@ -54,7 +54,7 @@ parseUploadedReport(name, file, onProgress)
 │   └─ classifyOutOfScope(text) → "this is a CT scan / dental, not a lab panel"
 │
 ├─ if image:
-│   ├─ preprocess (grayscale + Otsu-adaptive binarisation, fixed-160 fallback)
+│   ├─ preprocess (upscale toward ~300 DPI + grayscale (Rec. 601 luma) + unsharp mask — no binarization)
 │   ├─ run Tesseract with PSM 6
 │   └─ extractBiomarkersFromText(text) → same matcher
 │
@@ -148,7 +148,7 @@ This only handles the count-prefix family. Mass/concentration units (mg/dL, ng/m
 
 Two layers, applied to the **scaled** value:
 
-1. **Absolute cap** — `value > 0 && value < 1e8`. Catches obvious hallucinations and missed-decimal mistakes (12.5 → 125000 from an OCR error).
+1. **Non-negative floor** — `value >= 0` (a negative reading is a hallucination or sign-flip); the text path additionally rejects a percentage-unit marker `> 100`. Missed-decimal blowups (12.5 → 125000) are caught by the per-template physical bounds below, not by an absolute cap.
 2. **Per-template physical bounds** — uses `physicalMin/Max` if the template sets them, otherwise falls back to `min - 5×span` / `max + 5×span`. Admits clinical extremes (severe hypogonadism testosterone 80 ng/dL, DKA glucose 500) while rejecting "the model invented a number" cases.
 
 Values that fail sanity bounds drop to the `unmapped` array, which the confirm view surfaces as "we saw these rows but couldn't map them" so the user knows something was read but not used.
@@ -178,9 +178,9 @@ This is one half of the defence. The other half is in the Gemini system prompt �
 | `no-file` | the file was lost (refresh, consumed pendingUpload) | shows "nothing to parse"; no AI cascade (no file to send) |
 | `no-matches` | parser ran but found nothing in the catalog | manual failure card with "Try AI parser" button; auto-cascades on images |
 | `parser-error` | parser crashed (corruption, password-protected, unexpected format) | same as no-matches |
-| `out-of-scope` | classifier decided this isn't a lab panel (e.g. "Tax Invoice", X-ray report) | failure card; auto-cascades for images (the OCR-noise false-positive case), not for PDFs |
+| `out-of-scope` | classifier decided this isn't a lab panel (e.g. an X-ray narrative, a urinalysis, a dengue/HBsAg panel) | failure card; auto-cascades for images (the OCR-noise false-positive case), not for PDFs |
 
-The `out-of-scope` classifier in `classifyOutOfScope()` scans the raw text for 5+ keyword hits from non-lab categories (viral panels, imaging, dental, billing). It's tuned conservatively — single matches don't trigger. Designed against clean PDF text; on noisy Tesseract output it false-positives, which is why image uploads get the more permissive cascade rule.
+The `out-of-scope` classifier in `classifyOutOfScope()` scans the raw text for **2+ distinct** keyword hits within a single non-lab category (`viral`, `imaging`, `physical-exam` incl. dental/vision/audiometry, `urine` — there is no "billing" category, so a tax invoice isn't flagged out-of-scope). On the failure path a single *definitive* term (e.g. HBsAg, Widal) also triggers; lone generic matches don't. Designed against clean PDF text; on noisy Tesseract output it false-positives, which is why image uploads get the more permissive cascade rule.
 
 ---
 
@@ -189,19 +189,21 @@ The `out-of-scope` classifier in `classifyOutOfScope()` scans the raw text for 5
 When local parsing fails, ProcessingPage decides whether to invoke Pipeline 3 automatically or stop at the failure card.
 
 ```ts
-// src/app/pages/ProcessingPage.tsx (around line 320)
+// src/app/pages/ProcessingPage.tsx (around line 368)
 const reason = result.failureReason ?? 'no-matches';
 const isImage = !!file && /^image\//.test(file.type || '');
 const isCascadeReason = reason !== 'no-file';
 const shouldCascade =
-  isImage && isCascadeReason && loadAiAutoFallbackSetting();
+  isImage && isCascadeReason && loadAiAutoFallbackSetting() &&
+  !aiEndpointUnavailable;
 ```
 
-Three conditions, all required:
+Four conditions, all required:
 
 1. The file is an image (PDFs never cascade — pdfjs is reliable enough that PDF failures usually mean it's not a lab document at all)
 2. The reason isn't `no-file` (nothing to send Gemini)
-3. The user has `dc_aiAutoFallback` set to `true` (default; togglable in Profile)
+3. The user has `dc_aiAutoFallback` set to `true` (**default on**; togglable in Profile)
+4. The AI endpoint hasn't already been detected as unavailable this session (no key configured, or a prior 5xx)
 
 When the cascade fires, ProcessingPage skips the failure card and renders `AiCascadeView` directly — spinner + privacy disclosure + Cancel button. Success → confirm view. Failure → drop to the failure card with the AI error inline.
 

@@ -21,7 +21,7 @@ The app is a single-page Vite + React 18 SPA that runs entirely client-side, wit
                    │  (zod-validated on every load)       │
                    └─────────────────┬────────────────────┘
                                      │
-                                     │  Pipeline 3 only — opt-in
+                                     │  Pipeline 3 — disclosed, default-on
                                      ▼
                    ┌─────────────────────────────────────┐
                    │   Vercel Function /api/parse-image  │
@@ -37,7 +37,7 @@ Everything except Pipeline 3 happens in the user's browser. No PII leaves the de
 
 ## State containers
 
-There are four React contexts, combined under one `AppProvider`:
+There are five React contexts, combined under one `AppProvider`:
 
 ```
 AppProvider (src/app/AppContext.tsx)
@@ -65,13 +65,14 @@ export type Page =
   | { type: 'upload' }
   | { type: 'processing' }
   | { type: 'manualEntry' }
-  | { type: 'results'; reportId: string }
+  | { type: 'results'; reportId: string; view?: 'details' }
+  | { type: 'compare'; aId?: string; bId?: string }
   | { type: 'problem'; problemId: string }
   | { type: 'profile' }
   | { type: 'privacy' };
 ```
 
-`navigate(page)` pushes a new URL **path** (e.g. `/reports/:id`), `replace(page)` rewrites the current entry, and `back()` defers to the browser. `page` is derived from the URL, so back/forward and pasted deep links work for free. The whole thing is ~250 lines. See [NAVIGATION.md](NAVIGATION.md) for the deep dive.
+`navigate(page)` pushes a new URL **path** (e.g. `/reports/:id`), `replace(page)` rewrites the current entry, and `back()` defers to the browser. `page` is derived from the URL, so back/forward and pasted deep links work for free. The whole thing is ~300 lines. See [NAVIGATION.md](NAVIGATION.md) for the deep dive.
 
 ### QuizContext
 
@@ -228,7 +229,7 @@ forgot-PIN-means-wipe trade-off and the cross-context lock-event bus — in
 
 Every other page is lazy-loaded through `lazyWithReload` (not raw `React.lazy`). The wrapper catches the specific `ChunkLoadError` that happens when a user has the app open during a deploy (old chunk URLs gone) and triggers a hard reload instead of dumping them on the ErrorBoundary.
 
-Per-page chunks: Quiz, RecommendedTests, Home, HealthMap, Upload, Processing, ManualEntry, ReportResults, ProblemDetail, Profile, Privacy.
+Per-page chunks: Quiz, RecommendedTests, Home, HealthMap, Upload, Processing, ManualEntry, ReportResults, Compare, ProblemDetail, Profile, Privacy.
 
 Suspense fallback is a low-fidelity `PageSkeleton` — kept deliberately ugly so it never gets mistaken for the real page during slow networks.
 
@@ -263,7 +264,7 @@ Environment variables (`GEMINI_API_KEY`, optional `ALLOWED_ORIGINS`, optional `A
 
 ## What this architecture is good at
 
-- **Privacy.** No backend means no logs of who uploaded what. Even the Gemini fallback is opt-in and surfaces a clear "image leaves your device" disclosure.
+- **Privacy.** No backend means no logs of who uploaded what. The Gemini fallback is the one path off-device — disclosed at the point of use, cancelable, and switch-offable in Profile (default-on for a failed *image* parse; off entirely when no `GEMINI_API_KEY` is configured).
 - **Cheap to host.** Static SPA + one serverless function. The free Vercel tier covers everything except heavy Gemini use.
 - **Fast first paint.** ~150 kB gzipped main bundle, eager landing, route-split everything else.
 - **Deterministic on the client.** The whole parser is replayable from a saved file; no server roundtrips means no rate limits to debug.

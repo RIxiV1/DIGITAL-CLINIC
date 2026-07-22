@@ -59,7 +59,7 @@ names, never overloaded:
 
 | concept | means | code today | user-facing word |
 | --- | --- | --- | --- |
-| **Read quality** | how cleanly the parser/OCR read the number | `ocrConfidence`, `reportProvenance` | "read clearly" / "scanned, double-check" — NOT "confidence" |
+| **Read quality** | how cleanly the parser/OCR read the number | `ocrConfidence`, `reportProvenanceNote` | "read clearly" / "scanned, double-check" — NOT "confidence" |
 | **Evidence strength** | how strong the clinical support for a recommendation is | `evidence.ts` (Strong/Moderate/Emerging) | "Evidence: Strong" |
 | **Action confidence** | how sure we are about what to DO (not the diagnosis) | `certaintyOfAction` | "High confidence" (on the action) |
 

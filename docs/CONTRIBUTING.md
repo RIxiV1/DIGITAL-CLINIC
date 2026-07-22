@@ -21,7 +21,7 @@ npm run dev
 npm run build
 ```
 
-Node ≥20.11 < 23. PowerShell 5.1 on Windows; bash via WSL also works. The dev server hot-reloads everything except the `index.html` bootstrap script (full page refresh required for that).
+Node ≥20.19 < 23. PowerShell 5.1 on Windows; bash via WSL also works. The dev server hot-reloads everything except the `index.html` bootstrap script (full page refresh required for that).
 
 The AI parser pipeline (Pipeline 3) needs a `GEMINI_API_KEY` env var to function. For local development, copy `.env.example` to `.env.local` and add your key — or run `vercel env pull` if you have access to the Vercel project. Without the key, Pipelines 1 and 2 still work fine; Pipeline 3 returns a 500 with `GEMINI_API_KEY not configured on the server`.
 
