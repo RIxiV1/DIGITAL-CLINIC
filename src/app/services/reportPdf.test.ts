@@ -11,7 +11,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { asciize, tierForMarker, buildReportPdf } from './reportPdf';
+import {
+  asciize,
+  tierForMarker,
+  buildReportPdf,
+  buildDoctorBrief,
+} from './reportPdf';
 import { sampleReports } from '../data/reports';
 import type { Biomarker } from '../data/biomarkers';
 
@@ -125,5 +130,38 @@ describe('buildReportPdf', () => {
       ],
     };
     expect(() => buildReportPdf(uni)).not.toThrow();
+  });
+});
+
+describe('buildDoctorBrief', () => {
+  it('produces a non-empty PDF for a real sample report', () => {
+    const doc = buildDoctorBrief(sampleReports[0]);
+    expect(doc.getNumberOfPages()).toBeGreaterThanOrEqual(1);
+    expect((doc.output('arraybuffer') as ArrayBuffer).byteLength).toBeGreaterThan(0);
+  });
+
+  it('stays a single page for a typical report — it is a one-pager', () => {
+    // Flagged list is capped at 6, plus fixed question + retest + disclaimer
+    // blocks, so a normal report fits one A4 page. This guards the "one-page"
+    // promise against future content creep.
+    const doc = buildDoctorBrief(sampleReports[0]);
+    expect(doc.getNumberOfPages()).toBe(1);
+  });
+
+  it('handles an all-in-range report (no flagged markers) without throwing', () => {
+    const clear = {
+      ...sampleReports[0],
+      biomarkers: sampleReports[0].biomarkers.map((b) => ({
+        ...b,
+        status: 'good' as const,
+      })),
+    };
+    expect(() => buildDoctorBrief(clear)).not.toThrow();
+  });
+
+  it('handles an empty-biomarker report without throwing', () => {
+    expect(() =>
+      buildDoctorBrief({ ...sampleReports[0], biomarkers: [] }),
+    ).not.toThrow();
   });
 });

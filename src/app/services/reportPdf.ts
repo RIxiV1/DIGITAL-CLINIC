@@ -461,3 +461,143 @@ export function generateReportPdf(report: Report): void {
       .replace(/^-+|-+$/g, '') || 'report';
   doc.save(`formen-${slug}.pdf`);
 }
+
+/* ------------------------------------------------------------------ */
+/* "Take to your doctor" one-pager                                      */
+/*                                                                      */
+/* A deliberately SHORT briefing sheet — distinct from the full report */
+/* dump above. Patients don't hand a doctor a 10-page dashboard; they   */
+/* need one page: what stands out, questions to ask, and a re-test note.*/
+/* Reuses the same header / tier badges / disclaimer / footer helpers.  */
+/* ------------------------------------------------------------------ */
+
+const FLAGGED_RANK: Record<Biomarker['status'], number> = {
+  critical: 0,
+  concern: 1,
+  attention: 2,
+  good: 3,
+};
+
+/** Safe, non-prescriptive questions — these are QUESTIONS, not clinical
+ *  claims, so they need no citation; they just help the patient lead the
+ *  conversation. */
+const DOCTOR_QUESTIONS = [
+  'Which of these need action now, and which can wait?',
+  'Should any be re-tested to confirm before acting on them?',
+  'Could any of the symptoms I have be related to these results?',
+  'What follow-up tests, if any, would you recommend?',
+];
+
+export function buildDoctorBrief(report: Report): jsPDF {
+  const ctx = newCtx();
+  const { doc } = ctx;
+
+  drawHeader(ctx, report);
+
+  setText(ctx, 10, 'italic', COLOR.muted);
+  doc.text(
+    asciize('A one-page summary to take to your doctor'),
+    MARGIN_L,
+    ctx.y,
+  );
+  ctx.y += 9;
+
+  const flagged = report.biomarkers
+    .filter((m) => m.status !== 'good')
+    .slice()
+    .sort((a, b) => FLAGGED_RANK[a.status] - FLAGGED_RANK[b.status]);
+  const good = report.biomarkers.filter((m) => m.status === 'good').length;
+  const total = report.biomarkers.length;
+
+  // ---- What stands out ----
+  setText(ctx, 12, 'bold', COLOR.ink);
+  doc.text('What stands out', MARGIN_L, ctx.y);
+  ctx.y += 6;
+
+  setText(ctx, 9, 'normal', COLOR.muted);
+  doc.text(asciize(`${good} of ${total} markers are in range.`), MARGIN_L, ctx.y);
+  ctx.y += 7;
+
+  if (flagged.length === 0) {
+    setText(ctx, 10, 'normal', COLOR.inkSoft);
+    doc.text(asciize('Everything read is within range.'), MARGIN_L, ctx.y);
+    ctx.y += 8;
+  } else {
+    const shown = flagged.slice(0, 6);
+    for (const m of shown) {
+      ensureSpace(ctx, 13);
+      const tier = tierForMarker(m);
+      setText(ctx, 10.5, 'bold', COLOR.ink);
+      doc.text(asciize(m.name), MARGIN_L, ctx.y);
+      setText(ctx, 8, 'bold', tier.color);
+      const tw = doc.getTextWidth(tier.label);
+      doc.text(tier.label, PAGE_W - MARGIN_R - tw, ctx.y);
+      ctx.y += 5;
+
+      setText(ctx, 9, 'normal', COLOR.inkSoft);
+      const unit = m.unit ? ` ${m.unit}` : '';
+      let detail = `${m.value}${unit}`;
+      if (typeof m.labRefMin === 'number' && typeof m.labRefMax === 'number') {
+        detail += `   -   lab's range ${m.labRefMin}-${m.labRefMax}${unit}`;
+      } else if (typeof m.min === 'number' && typeof m.max === 'number') {
+        detail += `   -   healthy ${m.min}-${m.max}${unit}`;
+      }
+      doc.text(asciize(detail), MARGIN_L, ctx.y);
+      ctx.y += 7.5;
+    }
+    if (flagged.length > shown.length) {
+      setText(ctx, 9, 'italic', COLOR.muted);
+      doc.text(
+        asciize(`+ ${flagged.length - shown.length} more in the full report.`),
+        MARGIN_L,
+        ctx.y,
+      );
+      ctx.y += 7;
+    }
+  }
+
+  ctx.y += 3;
+
+  // ---- Questions to ask ----
+  ensureSpace(ctx, 44);
+  setText(ctx, 12, 'bold', COLOR.ink);
+  doc.text('Questions to ask', MARGIN_L, ctx.y);
+  ctx.y += 6;
+  setText(ctx, 10, 'normal', COLOR.inkSoft);
+  for (const q of DOCTOR_QUESTIONS) {
+    ensureSpace(ctx, 8);
+    const wrapped = doc.splitTextToSize(asciize(`-  ${q}`), CONTENT_W) as string[];
+    doc.text(wrapped, MARGIN_L, ctx.y);
+    ctx.y += wrapped.length * 5 + 2;
+  }
+
+  ctx.y += 4;
+
+  // ---- Re-test note ----
+  ensureSpace(ctx, 22);
+  setText(ctx, 12, 'bold', COLOR.ink);
+  doc.text('A note on re-testing', MARGIN_L, ctx.y);
+  ctx.y += 6;
+  setText(ctx, 10, 'normal', COLOR.inkSoft);
+  const retest = asciize(
+    'Most hormone and metabolic markers are worth re-checking every 3-6 months to see whether things are moving. Ask your doctor which of these to re-test, and when.',
+  );
+  const rw = doc.splitTextToSize(retest, CONTENT_W) as string[];
+  doc.text(rw, MARGIN_L, ctx.y);
+  ctx.y += rw.length * 5 + 6;
+
+  drawDisclaimer(ctx);
+  drawFooters(ctx);
+  return ctx.doc;
+}
+
+/** Build the one-page doctor summary and trigger a browser download. */
+export function generateDoctorBrief(report: Report): void {
+  const doc = buildDoctorBrief(report);
+  const slug =
+    report.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '') || 'report';
+  doc.save(`formen-doctor-summary-${slug}.pdf`);
+}

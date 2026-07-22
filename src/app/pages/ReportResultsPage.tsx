@@ -27,6 +27,8 @@ import {
   healthStorySentence,
   explainFinding,
   explainChange,
+  symptomLinks,
+  symptomLinkSentence,
   type BodySystemId,
 } from '../clinical';
 import ConnectedSystems from '../components/ConnectedSystems';
@@ -139,6 +141,13 @@ export default function ReportResultsPage({
   // The longitudinal twin — "what changed since last time" — when this
   // report carries history from a prior one. Leads when present.
   const change = useMemo(() => explainChange(biomarkers, quiz), [biomarkers, quiz]);
+  // Symptom ↔ result links — connects the quiz's symptoms to the markers
+  // actually flagged here. Co-occurrence only (never causal). Empty unless
+  // the user took the quiz AND an associated marker is flagged.
+  const symLinks = useMemo(
+    () => symptomLinks(quiz, biomarkers),
+    [quiz, biomarkers],
+  );
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   // Mobile marker detail opens in a focused sheet rather than expanding the
   // whole list inline (functional audit #6).
@@ -270,6 +279,19 @@ export default function ReportResultsPage({
       // it out of the main chunk; load only on first click.
       const { generateReportPdf } = await import('../services/reportPdf');
       generateReportPdf(report);
+    } finally {
+      pdfBusyRef.current = false;
+    }
+  };
+
+  // The concise "take to your doctor" one-pager — distinct from the full
+  // report PDF above. Same lazy chunk + double-tap guard.
+  const handleDoctorBrief = async () => {
+    if (!report || pdfBusyRef.current) return;
+    pdfBusyRef.current = true;
+    try {
+      const { generateDoctorBrief } = await import('../services/reportPdf');
+      generateDoctorBrief(report);
     } finally {
       pdfBusyRef.current = false;
     }
@@ -527,6 +549,43 @@ export default function ReportResultsPage({
         </Container>
       )}
 
+      {/* Symptom ↔ result links. Connects what the user told us in the quiz
+          to the markers actually flagged here — the join nobody had made.
+          Strict co-occurrence rail (see clinical/symptomLinks): every line
+          says a symptom and a marker showed up TOGETHER, never that one
+          caused the other. Only renders when the quiz has symptoms and an
+          associated marker is flagged. */}
+      {symLinks.length > 0 && (
+        <Container size="wide" className="mt-6">
+          <Card className="bg-surface border-line no-print">
+            <div className="text-micro font-bold uppercase tracking-eyebrow text-indigo-700">
+              From your quiz
+            </div>
+            <h2 className="font-display text-display-sm leading-tight mt-1.5 text-balance">
+              What you told us, next to what we found
+            </h2>
+            <ul className="mt-3 space-y-2.5">
+              {symLinks.map((link) => (
+                <li key={link.symptomId} className="flex items-start gap-2.5">
+                  <span
+                    className="mt-2 w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"
+                    aria-hidden
+                  />
+                  <p className="text-body-sm text-ink-soft leading-relaxed">
+                    {symptomLinkSentence(link)}
+                  </p>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-4 text-caption text-muted leading-relaxed max-w-2xl">
+              These come from what you told us — associations, not causes, and
+              not a diagnosis. Bring them to your doctor; a report shows what,
+              never why.
+            </p>
+          </Card>
+        </Container>
+      )}
+
       {/* Signature moment — "your body as one connected system". Leads the
           body of the report, right under the Bottom Line. Built on the same
           markers, it reframes the wall of values as one story before the
@@ -671,9 +730,9 @@ export default function ReportResultsPage({
               variant={topFlagged ? 'secondary' : 'primary'}
               size="sm"
               leading={<Download size={14} />}
-              onClick={handleDownload}
+              onClick={handleDoctorBrief}
             >
-              Save a summary for your doctor
+              One-page doctor summary
             </Button>
             {/* WhatsApp text share — the flow most Indian users actually
                 reach for. wa.me only pre-fills the message; nothing sends
