@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Download,
   Info,
+  Share2,
 } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
@@ -43,6 +44,7 @@ import {
   type StatusFilterId,
 } from '../data/biomarkers';
 import { findReport } from '../data/reports';
+import { reportShareText, whatsappShareUrl } from '../utils/shareText';
 
 type Filter = StatusFilterId;
 
@@ -672,6 +674,24 @@ export default function ReportResultsPage({
               onClick={handleDownload}
             >
               Save a summary for your doctor
+            </Button>
+            {/* WhatsApp text share — the flow most Indian users actually
+                reach for. wa.me only pre-fills the message; nothing sends
+                until the user picks a recipient and taps send in WhatsApp,
+                so no data leaves without an explicit action. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              leading={<Share2 size={14} />}
+              onClick={() =>
+                window.open(
+                  whatsappShareUrl(reportShareText(report)),
+                  '_blank',
+                  'noopener,noreferrer',
+                )
+              }
+            >
+              Share on WhatsApp
             </Button>
           </div>
         </Card>
