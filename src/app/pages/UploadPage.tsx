@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertTriangle,
   ArrowRight,
+  Camera,
   FileText,
   Image as ImageIcon,
   Info,
@@ -524,6 +525,22 @@ export default function UploadPage() {
                 enter by hand
               </div>
             </button>
+          </div>
+
+          {/* Photo-quality guide. We can't overlay a frame on the OS camera
+              (the capture= input hands off to the native app), so the next
+              best thing is telling users up front what a readable shot needs
+              — which is what actually cuts the failed-parse rate on photos. */}
+          <div className="mt-3 rounded-[14px] border border-line bg-canvas/40 px-4 py-3">
+            <div className="flex items-center gap-2 text-caption font-semibold text-ink">
+              <Camera size={14} className="text-blue-700 shrink-0" aria-hidden />
+              Photographing a report? A clear shot reads best
+            </div>
+            <ul className="mt-1.5 space-y-1 text-micro text-muted leading-relaxed list-disc pl-5">
+              <li>Lay it flat in good light — no shadow across the numbers.</li>
+              <li>Fit all four corners in the frame, straight-on.</li>
+              <li>Avoid glare, and use one photo per page.</li>
+            </ul>
           </div>
         </motion.div>
 
