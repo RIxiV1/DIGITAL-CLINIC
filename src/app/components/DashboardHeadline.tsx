@@ -230,8 +230,15 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
   const summary = summarizeStatuses(markers);
 
   // State D — everything is green. Voice: celebrating without sounding
-  // like a smug fitness app.
-  if (summary.concern === 0 && summary.attention === 0) {
+  // like a smug fitness app. `critical === 0` is load-bearing: a report
+  // with ONE critical value and nothing else flagged (concern/attention
+  // both 0) would otherwise fall in here and read "Everything's in range"
+  // over a same-day-care finding.
+  if (
+    summary.concern === 0 &&
+    summary.attention === 0 &&
+    summary.critical === 0
+  ) {
     return {
       eyebrow: 'All clear',
       headline: 'Everything’s in range.',
@@ -294,17 +301,45 @@ function pickCopy(markers: Biomarker[] | null, hasReport: boolean): Copy {
     }
   }
 
-  // State B — single report (no history we can compare against), but some
-  // red markers exist. Count them, lead with the count.
-  const flagged = summary.needCare + summary.attention;
+  // State B — single report (no history to compare), but some markers are
+  // flagged. Reassurance-first: lead the masthead with what's FINE (the
+  // in-range majority) and carry the flagged count in the qualifier beneath.
+  // Pairing the flag with the healthy majority is the anxiety-mitigation
+  // pattern the whole dashboard leans on — and it makes the headline agree
+  // with the score panel instead of fighting it. Two honesty guards:
+  //   - a CRITICAL marker always leads (reassurance must never bury a
+  //     same-day-care finding);
+  //   - if NOTHING is in range there's no honest reassurance to lead with,
+  //     so we lead with the flag.
+  const needCareVerb = summary.needCare === 1 ? 'needs' : 'need';
+  if (summary.critical > 0) {
+    const one = summary.critical === 1;
+    return {
+      eyebrow: 'Your latest report',
+      headline: `${summary.critical} result${one ? '' : 's'} ${one ? 'needs' : 'need'} a doctor soon.`,
+      qualifier: `${summary.good} of ${summary.total} markers are in range — but take the flagged one${one ? '' : 's'} to a doctor without waiting.`,
+      ctaLabel: 'See what needs a look',
+    };
+  }
+  if (summary.good === 0) {
+    const flagged = summary.needCare + summary.attention;
+    return {
+      eyebrow: 'Your latest report',
+      headline:
+        summary.needCare > 0
+          ? `${summary.needCare} marker${summary.needCare === 1 ? '' : 's'} ${needCareVerb} a closer look.`
+          : `${flagged} markers to keep an eye on.`,
+      ctaLabel: 'See all markers',
+    };
+  }
   return {
     eyebrow: 'Your latest report',
-    headline:
+    headline: `${summary.good} of ${summary.total} markers look good.`,
+    qualifier:
       summary.needCare > 0
-        ? `${summary.needCare} marker${summary.needCare === 1 ? '' : 's'} need${summary.needCare === 1 ? 's' : ''} a closer look.`
-        : `${flagged} markers to keep an eye on.`,
-    sub: `${summary.good} of ${summary.total} markers in range.`,
-    ctaLabel: 'See all markers',
+        ? `${summary.needCare} ${needCareVerb} a closer look — here's the one to start with.`
+        : `${summary.attention} to keep an eye on — nothing urgent.`,
+    ctaLabel: summary.needCare > 0 ? 'See what needs a look' : 'See all markers',
   };
 }
 
