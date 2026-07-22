@@ -148,6 +148,24 @@ export default function ReportResultsPage({
     () => symptomLinks(quiz, biomarkers),
     [quiz, biomarkers],
   );
+  // "Reference-range trap" heads-up: do any markers we flag 'keep an eye'
+  // sit INSIDE the lab's own printed normal range (i.e. flagged only for
+  // being outside our tighter optimal band)? Surfaced on the Overview only
+  // when it actually happens, to pre-empt the "my lab said normal, why is
+  // this flagged?" confusion — the exact trust break the lab-range-priority
+  // rule exists to avoid.
+  const subOptimalInLabRange = useMemo(
+    () =>
+      biomarkers.some(
+        (m) =>
+          m.status === 'attention' &&
+          typeof m.labRefMin === 'number' &&
+          typeof m.labRefMax === 'number' &&
+          m.value >= m.labRefMin &&
+          m.value <= m.labRefMax,
+      ),
+    [biomarkers],
+  );
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   // Mobile marker detail opens in a focused sheet rather than expanding the
   // whole list inline (functional audit #6).
@@ -754,6 +772,39 @@ export default function ReportResultsPage({
             </Button>
           </div>
         </Card>
+      </Container>
+
+      {/* Reference-range heads-up — only when the report actually contains a
+          value that's inside the lab's normal range yet flagged for being
+          outside our optimal band. Pre-empts the "my lab said normal" trust
+          break; no new claim, just names what the flag means. */}
+      {subOptimalInLabRange && (
+        <Container size="wide" className="mt-6 md:mt-8">
+          <div className="rounded-xl border border-line bg-surface/60 px-4 py-3.5 flex items-start gap-3">
+            <Info
+              size={16}
+              className="text-indigo-600 shrink-0 mt-0.5"
+              aria-hidden
+            />
+            <p className="text-caption text-ink-soft leading-relaxed max-w-2xl">
+              <span className="font-semibold text-ink">A note on the flags:</span>{' '}
+              a few markers here sit inside your lab’s normal range but outside
+              the tighter <span className="font-medium text-ink">optimal</span>{' '}
+              band we compare against — that’s why they read “keep an eye”, not a
+              problem. Open any marker to see both ranges side by side.
+            </p>
+          </div>
+        </Container>
+      )}
+
+      {/* Method + sources on the calm read. The per-marker citations already
+          live in the marker detail (the full BiomarkerBar); this surfaces the
+          "how we read your report / our sources" trust panel on the Overview
+          too — so the discipline is reachable without drilling into "View all
+          results", which is where most people stop. Collapsed by default; the
+          detailed view keeps its own copy below. */}
+      <Container size="wide" className="mt-6 md:mt-8">
+        <ReportAboutPanel hasCritical={summary.critical > 0} />
       </Container>
         </>
       )}
