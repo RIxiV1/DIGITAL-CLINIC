@@ -15,6 +15,9 @@ type State = {
    *  hatch so a poisoned `dc_*` record can't permanently brick the
    *  app from inside. */
   consecutiveCrashes: number;
+  /** Whether the user has copied the diagnostic to their clipboard —
+   *  drives the "Copied" confirmation on the button. */
+  copied: boolean;
 };
 
 /** Repeated-crash window — within this many ms a second crash counts
@@ -36,7 +39,48 @@ const REPEAT_CRASH_WINDOW_MS = 10_000;
  * in the persistence layer).
  */
 export default class ErrorBoundary extends Component<Props, State> {
-  state: State = { error: null, lastCrashAt: 0, consecutiveCrashes: 0 };
+  state: State = {
+    error: null,
+    lastCrashAt: 0,
+    consecutiveCrashes: 0,
+    copied: false,
+  };
+
+  /** A privacy-preserving diagnostic string the user can copy and send
+   *  when they report a crash. No backend receives this — the app has no
+   *  telemetry by design, so this is how a crash becomes visible: the
+   *  user forwards it. Deliberately carries NO report/biomarker data —
+   *  only the error, where it happened, and the browser. */
+  private buildDiagnostic(): string {
+    const e = this.state.error;
+    const when = this.state.lastCrashAt
+      ? new Date(this.state.lastCrashAt).toISOString()
+      : 'unknown';
+    const stack = (e?.stack ?? '').split('\n').slice(0, 12).join('\n');
+    return [
+      'ForMen Digital Clinic — crash diagnostic',
+      `when:  ${when}`,
+      `where: ${typeof location !== 'undefined' ? location.pathname : '?'}`,
+      `error: ${e?.message || e?.toString() || 'unknown'}`,
+      `agent: ${typeof navigator !== 'undefined' ? navigator.userAgent : '?'}`,
+      '',
+      stack,
+    ].join('\n');
+  }
+
+  private copyDiagnostic = () => {
+    try {
+      navigator.clipboard
+        ?.writeText(this.buildDiagnostic())
+        .then(() => this.setState({ copied: true }))
+        .catch(() => {
+          /* clipboard blocked — the "Technical details" block is still
+             there for manual selection */
+        });
+    } catch {
+      /* no clipboard API — same manual fallback */
+    }
+  };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
@@ -56,6 +100,7 @@ export default class ErrorBoundary extends Component<Props, State> {
       return {
         lastCrashAt: now,
         consecutiveCrashes: isRepeat ? prev.consecutiveCrashes + 1 : 1,
+        copied: false,
       };
     });
   }
@@ -90,10 +135,6 @@ export default class ErrorBoundary extends Component<Props, State> {
 
   render() {
     if (this.state.error) {
-      const msg =
-        this.state.error.message ||
-        this.state.error.toString() ||
-        'Unknown error';
       // Chunk-load failures usually mean a stale deploy — the user had
       // the app open when we shipped and is now holding chunk URLs that
       // no longer exist. lazyWithReload tries one auto-reload first;
@@ -153,12 +194,29 @@ export default class ErrorBoundary extends Component<Props, State> {
                 ? "Your browser is still on the previous version of the app. Refresh to load the latest — you won't lose any saved reports."
                 : showWipeRecovery
                   ? 'Looks like something in your saved data is causing the crash. Resetting clears everything stored in this browser — reports, quiz answers, prefs — and reloads from scratch. You can re-upload your reports afterwards.'
-                  : 'You hit a render error in the app. Try again to get back to a clean state — if it keeps happening on the same page, the message below is the clue to send back.'}
+                  : 'You hit a render error in the app. Try again to get back to a clean state — and if it keeps happening on the same page, copy the diagnostic below and send it along when you report it.'}
             </p>
             {!isChunkError && (
-              <pre className="mt-5 text-left text-caption leading-relaxed font-mono bg-surface border border-line rounded-2xl p-4 overflow-auto max-h-48">
-                {msg}
-              </pre>
+              <div className="mt-5">
+                <button
+                  type="button"
+                  onClick={this.copyDiagnostic}
+                  className="inline-flex items-center gap-2 h-10 px-4 rounded-full bg-surface border border-line text-ink-soft text-caption font-semibold hover:text-ink hover:border-line-strong transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-400/60"
+                >
+                  {this.state.copied ? 'Copied ✓' : 'Copy diagnostic details'}
+                </button>
+                {/* The raw detail is available but no longer shoved at the
+                    user — collapsed, for anyone who wants to read or hand-
+                    copy it if the clipboard is blocked. */}
+                <details className="mt-3 text-left">
+                  <summary className="cursor-pointer text-micro text-muted select-none">
+                    Technical details
+                  </summary>
+                  <pre className="mt-2 text-caption leading-relaxed font-mono bg-surface border border-line rounded-2xl p-4 overflow-auto max-h-48">
+                    {this.buildDiagnostic()}
+                  </pre>
+                </details>
+              </div>
             )}
             <div className="mt-5 flex flex-col gap-2 items-center">
               <button
