@@ -68,6 +68,26 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'Bare "Glucose" panel — unqualified + specimen/timing guards',
+    note: 'a report printing just "Glucose 105 mg/dL" (no "Fasting" qualifier) extracted NOTHING — every glucose alias was Fasting-qualified. Bare forms now grade as fasting (the panel convention), while the excludeIfRowMatches guard keeps urine glucose (would false-critical against 70–99) and random/post-prandial glucose (would false-flag a normal 130) from being graded here.',
+    text: [
+      'Glucose 105 mg/dL 70 - 100',
+      'Blood Sugar 92 mg/dL',
+      'Urine Glucose 15 mg/dL',
+      'Random Blood Sugar 130 mg/dL',
+      'Post Prandial Blood Sugar 145 mg/dL',
+    ].join('\n'),
+    expect: {
+      values: {
+        glucose: 105, // first bare row grades as fasting
+      },
+      // The urine / random / PP rows must NOT be pulled into the fasting
+      // glucose marker — same name, different test/range. (glucose already
+      // resolved to 105 above; these guards prove none of them overrode it
+      // or produced a false flag.)
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [

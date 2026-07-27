@@ -994,6 +994,16 @@ export type BiomarkerTemplate = {
    *  admitting hallucinated values from OCR misreads. */
   physicalMin?: number;
   physicalMax?: number;
+  /** Skip a match when the marker's own text row contains a disqualifying
+   *  word — because the SAME analyte name denotes a DIFFERENT test, in a
+   *  different specimen, graded against a different range. Blood glucose
+   *  (70–99 mg/dL fasting) vs urine glucose (normally absent) is the
+   *  canonical case: once bare "Glucose" is an alias, "Urine Glucose 15"
+   *  or "Random Blood Sugar 130" would otherwise grade against the fasting
+   *  band and fire a false flag. Tested case-insensitively against the
+   *  marker's enclosing line; MUST be authored without the global (`g`)
+   *  flag so `.test()` is stateless across the alias loop. */
+  excludeIfRowMatches?: RegExp;
   /** Source for the optimal sub-range. Required by convention whenever
    *  `optimalMin`/`optimalMax` are set — without a citation the
    *  numbers look invented and the brand's clinical-honest stance

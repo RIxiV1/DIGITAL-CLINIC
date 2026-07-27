@@ -234,8 +234,31 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Glucose Fasting',
       'Glucose, Fasting',
       'Fasting Blood Sugar',
+      'Fasting Plasma Glucose',
       'FBS',
+      'FPG',
+      // Unqualified glucose. On a chemistry panel an unlabelled "Glucose"
+      // is the fasting draw by clinical convention, so these grade against
+      // the fasting band — the bare forms were previously MISSED entirely
+      // (a report printing just "Glucose 105 mg/dL" extracted nothing).
+      // excludeIfRowMatches below keeps urine / random / post-prandial
+      // glucose — same name, different specimen or timing, different range —
+      // from being graded here and firing a false flag.
+      'Glucose',
+      'Blood Glucose',
+      'Plasma Glucose',
+      'Serum Glucose',
+      'Blood Sugar',
     ],
+    // Refuse rows where "glucose"/"sugar" means a DIFFERENT test than the
+    // fasting blood draw this template grades: a different specimen (urine,
+    // CSF, body fluid — normally near-zero, so a value would false-critical
+    // against the 70–99 band) or a different timing (random / post-prandial /
+    // OGTT — legitimately higher, so a normal 130 would false-flag as
+    // 'concern'). Those surface uninterpreted instead — correct, since we
+    // don't carry their ranges. Authored without the `g` flag (stateless).
+    excludeIfRowMatches:
+      /\b(?:urine|urinary|csf|cerebrospinal|pleural|ascitic|peritoneal|synovial|body[\s-]*fluid|random|post[\s-]?prandial|postprandial|non[\s-]?fasting|ogtt|pp|ppbs|rbs|ppg)\b/i,
     unit: 'mg/dL',
     unitAliases: ['mg/dl'],
     // SI: glucose 1 mmol/L = 18.0156 mg/dL (MW 180.16). Malaysian/UK/EU

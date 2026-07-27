@@ -384,6 +384,23 @@ function extractMarkerValue(
       : `${lb}${aliasEsc}${rb}${between}${numPattern}${tail}${unitGate}${tailAfterUnit}`;
     const m = text.match(aliasRegex(pattern));
     if (!m) continue;
+    // Context guard: the same analyte name can denote a different test in a
+    // different specimen with a different range ("Urine Glucose", "Random
+    // Blood Sugar"). When the matched row carries a disqualifying word, this
+    // template must not grade it — skip to the next alias (and, if every
+    // alias lands on a disqualified row, return null so the value surfaces
+    // uninterpreted rather than as a false flag). Scoped to the alias's own
+    // line so a disqualifier elsewhere in the report can't suppress a valid
+    // row. See BiomarkerTemplate.excludeIfRowMatches.
+    if (template.excludeIfRowMatches) {
+      const s = m.index ?? 0;
+      const lineFrom = text.lastIndexOf('\n', s - 1) + 1;
+      let lineTo = text.indexOf('\n', s);
+      if (lineTo === -1) lineTo = text.length;
+      if (template.excludeIfRowMatches.test(text.slice(lineFrom, lineTo))) {
+        continue;
+      }
+    }
     const raw = parseFloat(m[1]);
     if (Number.isNaN(raw)) continue;
     // Capture group layout depends on whether skipUnit branched off.
