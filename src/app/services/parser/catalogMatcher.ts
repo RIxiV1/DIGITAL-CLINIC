@@ -311,7 +311,15 @@ function extractMarkerValue(
   // this keeps the m[2]/m[3] refMin/refMax group numbering unchanged. The
   // value itself is never captured from here: numPattern's `(?<![<>≤≥…])`
   // lookbehind already refuses to start a value right after a cutoff sign.
-  const oneSidedCutoff = '[<>≤≥]\\s*\\d+(?:\\.\\d+)?';
+  //
+  // Also absorb the WORD forms "up to 15" / "upto 15" — the textual
+  // equivalent of "≤15", printed by many Indian/European labs (e.g. an ESR
+  // reference of "Up to 15 mm/hr"). Without this, "ESR 2 Up to 15 mm/hr"
+  // couldn't get the value "2" to the unit, so it backtracked and read the
+  // reference "15" AS the value. "up to" is specific enough to be safe; bare
+  // "to" is deliberately excluded (two-sided "X to Y" ranges are already
+  // handled by refRangeBody, which the alternation tries first).
+  const oneSidedCutoff = '(?:[<>≤≥]|up\\s*to|upto)\\s*\\d+(?:\\.\\d+)?';
   const tail = `[^\\d\\n]{0,30}?(?:(?:${refRangeBody}|${oneSidedCutoff})[^\\d\\n]{0,30}?)?`;
 
   // The SAME range, but sitting AFTER the unit — which is where real labs

@@ -2280,6 +2280,8 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Polymorphonuclear',
       'PMN',
       'Segmented Neutrophils',
+      'NEU%',
+      'NEU',
     ],
     unit: '%',
     min: 40,
@@ -2295,7 +2297,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'lymphocytes',
     name: 'Lymphocytes',
-    aliases: ['Lymphocytes', 'Lymphocyte', 'Lymphocytes %', 'Lymphs'],
+    aliases: ['Lymphocytes', 'Lymphocyte', 'Lymphocytes %', 'Lymphs', 'LYM%', 'LYM'],
     unit: '%',
     min: 20,
     max: 45,
@@ -2310,7 +2312,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'monocytes',
     name: 'Monocytes',
-    aliases: ['Monocytes', 'Monocyte', 'Monocytes %', 'Monos'],
+    aliases: ['Monocytes', 'Monocyte', 'Monocytes %', 'Monos', 'MON%', 'MON'],
     unit: '%',
     min: 2,
     max: 10,
@@ -2340,7 +2342,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'basophils',
     name: 'Basophils',
-    aliases: ['Basophils', 'Basophil', 'Basophils %', 'Basos'],
+    aliases: ['Basophils', 'Basophil', 'Basophils %', 'Basos', 'BAS%', 'BAS'],
     unit: '%',
     min: 0,
     max: 2,

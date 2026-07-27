@@ -183,6 +183,60 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'GNU Solidario CBC — 10^3/uL prefixes, "Up to" ref, differential abbreviations',
+    note: 'a real CBC upload. Three things exercised: (1) "ESR 2 Up to 15 mm/hr" was reading the reference 15 as the value — the textual one-sided cutoff "Up to N" now absorbs so the value 2 survives; (2) 10^3/uL and 10^6/uL count prefixes scale WBC/PLT/RBC; (3) abbreviated differential names (NEU%/LYM%/MON%/BAS%) now match.',
+    text: [
+      'Hemoglobin 12 11.0 - 16.0 g/dL',
+      'RBC 3.3 3.5-5.50 10^6/uL',
+      'HCT 36 37.0-50.0 %',
+      'WBC 6.7 4.5-11 10^3/uL',
+      'NEU% 60 40-70 %',
+      'LYM% 30 20-45 %',
+      'MON% 8 2-10 %',
+      'BAS% 0 0-2 %',
+      'PLT 256 150-450 10^3/uL',
+      'ESR 2 Up to 15 mm/hr',
+    ].join('\n'),
+    expect: {
+      values: {
+        hb: 12,
+        rbc: 3.3,
+        hematocrit: 36,
+        wbc: 6700, // 6.7 x10^3
+        platelets: 256000, // 256 x10^3
+        neutrophils: 60,
+        lymphocytes: 30,
+        monocytes: 8,
+        basophils: 0,
+        esr: 2, // NOT 15 — the "Up to 15" reference must not become the value
+      },
+    },
+  },
+  {
+    name: 'Tabular anemia panel — dual-sex ranges, gm/dl, mcg/dl',
+    note: 'a real tabular report with dual male/female reference ranges inline. Confirms the value (not a sex-range bound) is captured, and gm/dl / mcg/dl unit spellings match. "Total count 12.000" (European thousands separator) is intentionally NOT extracted — bare "Total count" is excluded to avoid the sperm-count collision, which also dodges the 12.000-vs-12.0 ambiguity.',
+    text: [
+      'Hemoglobin 10.2 Male: 13-18 gm/dl Female: 12-16 gm/dl',
+      'Total count 12.000 4,000-10,000 cm/mm',
+      'ESR 53 Male: 0-9 mm/hr Female: 10-20 mm/hr',
+      'Total protein 4.2 6-8 gm/dl',
+      'Blood urea 26 10-50 mg/dl',
+      'Serum creatinine 0.8 0.6-1.1 mg/dl',
+      'T4 6.62 6.09-12.23 mcg/dl',
+    ].join('\n'),
+    expect: {
+      values: {
+        hb: 10.2, // not 13/18/12/16 (the sex-range bounds)
+        esr: 53,
+        'total-protein': 4.2,
+        bun: 26,
+        creatinine: 0.8,
+        t4: 6.62,
+      },
+      absent: ['wbc'], // "Total count 12.000" must not surface a mis-scaled WBC
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [
