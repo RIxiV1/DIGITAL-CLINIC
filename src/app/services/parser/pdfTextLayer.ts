@@ -61,6 +61,18 @@ export function normalize(text: string): string {
   t = t.replace(/(\d) \./g, '$1.'); // "5 ." -> "5."
   t = t.replace(/\. (\d)/g, '.$1'); // ". 5" -> ".5"
   t = t.replace(/(\d) %/g, '$1%'); // "5 %" -> "5%"
+  // eGFR is universally standardised "per 1.73 m²" (body-surface area).
+  // OCR/flattening strands that constant right next to the real result
+  // ("GFR 28 1.73 mL/min/m²"), and because 1.73 hugs the unit, the matcher
+  // grabs it as the value — reading a normal-ish "28" as a nonsensical
+  // "1.73" and firing a FALSE critical. 1.73 m² is never a lab value, so we
+  // strip the normalisation, leaving a clean "mL/min" unit and the true
+  // result. Both eGFR-specific forms (leading constant, in-unit suffix).
+  t = t.replace(
+    /1\.73\s+(mL\s*\/\s*min)\s*\/\s*(?:1\.73\s*)?m\s*[²2]/gi,
+    '$1',
+  );
+  t = t.replace(/(mL\s*\/\s*min)\s*\/\s*1\.73\s*m\s*[²2]/gi, '$1');
   // Strip number-internal commas — handles both US "240,000" and
   // Indian "2,40,000" notation. Without this, "Platelets 2,40,000"
   // parses as 2 (the regex only captures up to the first comma).

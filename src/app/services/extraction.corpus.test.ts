@@ -54,6 +54,20 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'US-format renal panel — eGFR "per 1.73 m²" normalization',
+    note: 'a real uploaded report: "GFR 28 1.73 mL/min/m²". The matcher grabbed the 1.73 body-surface-area constant as the value (a FALSE critical) instead of the true 28. The normalization is now stripped before matching.',
+    text: [
+      'GFR 28 1.73 mL/min/m²',
+      'Creatinine 205 59 - 104 umol/L',
+    ].join('\n'),
+    expect: {
+      values: {
+        egfr: 28, // the real result, not the 1.73 normalization constant
+        creatinine: [2.28, 2.36], // 205 µmol/L ÷ 88.42
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [
