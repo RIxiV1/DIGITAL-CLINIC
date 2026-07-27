@@ -244,11 +244,15 @@ export default function ConfirmExtractedValuesView({
         </div>
 
         <div className="mt-6 lg:max-w-3xl lg:mx-auto grid gap-4">
-          {/* Critical-tier callout — highest-priority banner. Appears
-              when any marker landed in the 'critical' tier (severe
-              hypoglycemia, potassium >6.0, platelet <50,000, etc.).
-              Same-day-care copy supersedes the 12-week-plan tone we
-              use elsewhere. */}
+          {/* Critical-tier callout. This is the VERIFICATION screen — every
+              value here is an unconfirmed parse/OCR read, so we must NOT fire
+              an emergency "contact a doctor today" off a possible misread (a
+              US "172 Thous/cu.mm" platelet or a value grabbed from the wrong
+              table column can look critical when it isn't). So the copy leads
+              with "check we read this right" instead of a diagnosis. The real
+              same-day-care banner lives on the report AFTER the user confirms
+              the numbers — where the values are trusted. It stays red +
+              visible so a genuine critical is never hidden. */}
           {counts.critical > 0 && (
             <Card padded={false} className="overflow-hidden border-concern">
               <div className="px-5 py-4 bg-concern text-on-status flex items-start gap-3">
@@ -260,14 +264,17 @@ export default function ConfirmExtractedValuesView({
                         .filter((m) => m.status === 'critical')
                         .map((m) => m.name);
                       return names.length === 1
-                        ? `One reading needs same-day attention: ${names[0]}`
-                        : `${names.length} readings need same-day attention: ${names.join(', ')}`;
+                        ? `Double-check this one — it reads far outside the normal range: ${names[0]}`
+                        : `Double-check these — they read far outside the normal range: ${names.join(', ')}`;
                     })()}
                   </div>
                   <p className="mt-1 text-caption text-white/85 leading-relaxed">
-                    These values are far enough outside the healthy range that
-                    magnitude itself is a clinical signal. Don't wait for a
-                    follow-up — contact a doctor today.
+                    Make sure we read {counts.critical === 1 ? 'it' : 'them'}{' '}
+                    correctly first — tap any value to fix a misread (a wrong
+                    unit or a dropped decimal can look alarming). If the
+                    {counts.critical === 1 ? ' number is' : ' numbers are'} right,
+                    {counts.critical === 1 ? ' it is' : ' they are'} worth prompt
+                    medical attention — bring the report to a doctor soon.
                   </p>
                 </div>
               </div>
