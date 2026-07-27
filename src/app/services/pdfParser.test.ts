@@ -730,14 +730,17 @@ describe('statusForValue — critical tier', () => {
     expect(result.find((m) => m.id === 'potassium')?.status).toBe('critical');
   });
 
-  it('flags glucose >250 as critical (DKA-risk threshold)', () => {
-    const text = 'Fasting Glucose 350 mg/dL';
+  it('flags glucose >400 as critical (DKA/HHS threshold)', () => {
+    // 450 is DKA/HHS territory. (Threshold corrected from 250 → 400 in the
+    // Jul-2026 accuracy pass — 250–350 is stable uncontrolled diabetes, not a
+    // same-day emergency; 350 is now 'concern', not 'critical'.)
+    const text = 'Fasting Glucose 450 mg/dL';
     const result = extractBiomarkersFromText(text);
     expect(result.find((m) => m.id === 'glucose')?.status).toBe('critical');
   });
 
   it('keeps concerning-but-not-critical glucose at concern tier', () => {
-    // 110 is above max (99) but below critical (250).
+    // 110 is above max (99) but below critical (400).
     const text = 'Fasting Glucose 110 mg/dL';
     const result = extractBiomarkersFromText(text);
     expect(result.find((m) => m.id === 'glucose')?.status).toBe('concern');

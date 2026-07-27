@@ -238,10 +238,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       url: 'https://diabetesjournals.org/care/article/33/4/834',
       audience: 'adults',
     },
-    // Critical ceiling: ≥10% indicates severely uncontrolled diabetes
-    // with elevated micro/macrovascular event risk; needs prompt
-    // endocrinology engagement, not a 12-week home plan.
-    criticalHigh: 10,
+    // No `criticalHigh`: HbA1c is a ~3-month average, NOT an acute/stat
+    // analyte — no lab flags it as a panic value, and a same-day-emergency
+    // framing mislabels a chronic marker. A high HbA1c (≥6.5% diabetic, and
+    // markedly so above ~10%) is surfaced through the actionMax harm-anchor
+    // and 'concern' status — urgent clinical review, not an emergency alarm.
+    // (Corrected in the Jul-2026 clinical-accuracy pass.)
     physicalMin: 3,
     physicalMax: 18,
     // Harm-anchor: India's WHO/ICMR diabetes diagnostic line. A reading
@@ -318,10 +320,14 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       audience: 'adults',
     },
     // Critical floor: <50 mg/dL is symptomatic hypoglycemia (confusion,
-    // seizure risk). Critical ceiling: ≥250 mg/dL fasting suggests
-    // uncontrolled diabetes / DKA risk and is same-day-care territory.
+    // seizure risk). Critical ceiling: ≥400 mg/dL is DKA/HHS territory —
+    // genuine same-day-care. The earlier 250 over-alarmed: a stable but
+    // chronically-uncontrolled T2DM man (very common in India) routinely runs
+    // 250–350 fasting without an emergency, so 250 fired FALSE criticals and
+    // desensitised users. ≥126 is still flagged (diagnostic) via actionMax;
+    // 250 now reads as 'concern', not panic. (Jul-2026 clinical-accuracy pass.)
     criticalLow: 50,
-    criticalHigh: 250,
+    criticalHigh: 400,
     // Physical bounds: 30 floor (incompatible with consciousness below);
     // 800 ceiling (reported extreme in DKA case literature).
     physicalMin: 30,
@@ -379,7 +385,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     min: 70,
     max: 140,
     criticalLow: 50,
-    criticalHigh: 300,
+    // ≥400 mg/dL for the same-day critical (DKA/HHS), matching fasting
+    // glucose — 300 over-alarmed on stable uncontrolled diabetes. ≥200
+    // (diabetes) is still flagged via actionMax. (Jul-2026 accuracy pass.)
+    criticalHigh: 400,
     physicalMin: 30,
     physicalMax: 900,
     actionMax: 200,
@@ -418,7 +427,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     min: 70,
     max: 140,
     criticalLow: 50,
-    criticalHigh: 300,
+    // ≥400 mg/dL for the same-day critical (DKA/HHS), matching fasting
+    // glucose — 300 over-alarmed on stable uncontrolled diabetes. ≥200
+    // (diabetes) is still flagged via actionMax. (Jul-2026 accuracy pass.)
+    criticalHigh: 400,
     physicalMin: 30,
     physicalMax: 900,
     actionMax: 200,
@@ -1612,8 +1624,14 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unit: 'mg/dL',
     unitAliases: ['mg/dl'],
     // SI: uric acid 1 mmol/L = 16.81 mg/dL (MW 168.11). Standard in
-    // Malaysia/UK/EU reports.
-    altUnits: [{ units: ['mmol/L', 'mmol/l'], toCanonical: 16.81 }],
+    // Malaysia/UK/EU reports. Most SI labs actually report uric acid in
+    // µmol/L (e.g. 420), NOT mmol/L — an unconverted 420 read as mg/dL is a
+    // gross FALSE critical, so the µmol/L factor (×0.016814 = 1/59.48) is the
+    // one that matters most. (Added in the Jul-2026 clinical-accuracy pass.)
+    altUnits: [
+      { units: ['µmol/L', 'umol/L', 'μmol/l'], toCanonical: 0.016814 },
+      { units: ['mmol/L', 'mmol/l'], toCanonical: 16.81 },
+    ],
     min: 3.5,
     max: 7.2,
     // Critical: ≥10 = severe hyperuricemia, acute-gout-flare and
@@ -1929,11 +1947,15 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     unitAliases: ['mEq/L', 'mmol/l'],
     min: 135,
     max: 145,
-    // Critical: <125 = severe hyponatremia (seizure risk, cerebral
-    // edema); >155 = severe hypernatremia (CNS dysfunction, brain
-    // dehydration). Both are same-day-care.
-    criticalLow: 125,
-    criticalHigh: 155,
+    // Critical (panic) thresholds per Mayo / ARUP / Cleveland Clinic
+    // standard critical-value lists: <120 = severe hyponatremia (seizure
+    // risk, cerebral edema); >160 = severe hypernatremia (CNS dysfunction,
+    // brain dehydration). The earlier 125/155 pair over-alarmed — mild
+    // dysnatremia (Na 121–134 / 146–159) is common and rarely a same-day
+    // emergency, so it fired FALSE criticals. (Corrected in the Jul-2026
+    // clinical-accuracy pass.)
+    criticalLow: 120,
+    criticalHigh: 160,
     physicalMin: 90,
     physicalMax: 200,
     category: 'electrolytes',
@@ -1990,12 +2012,17 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Calcium', 'Total Calcium', 'Serum Calcium'],
     unit: 'mg/dL',
     unitAliases: ['mg/dl'],
+    // SI: 1 mmol/L calcium = 4.008 mg/dL (MW 40.08). UK/EU/Australian labs
+    // print mmol/L (e.g. a hypercalcemia of 3.35 mmol/L → 13.4 mg/dL).
+    altUnits: [{ units: ['mmol/L', 'mmol/l'], toCanonical: 4.008 }],
     min: 8.5,
     max: 10.2,
-    // Critical: <7 = severe hypocalcemia (tetany, seizure, prolonged
-    // QT); >12 = hypercalcemia crisis (renal failure, coma risk).
+    // Critical: <7 = severe hypocalcemia (tetany, seizure, prolonged QT);
+    // >13 = hypercalcemic crisis (renal failure, coma risk). The high cutoff
+    // is 13, not 12 — 12.0–12.9 mg/dL is usually an "alert", not a same-day
+    // emergency, so 12 over-alarmed. (Corrected in the Jul-2026 pass.)
     criticalLow: 7,
-    criticalHigh: 12,
+    criticalHigh: 13,
     physicalMin: 4,
     physicalMax: 20,
     category: 'electrolytes',
@@ -2102,7 +2129,15 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Fibrin Degradation Product',
     ],
     unit: 'ng/mL',
-    unitAliases: ['ng/ml', 'µg/mL', 'mg/L', 'FEU ng/mL', 'DDU ng/mL'],
+    unitAliases: ['ng/ml', 'FEU ng/mL', 'DDU ng/mL'],
+    // µg/mL and mg/L are 1000x ng/mL (FEU) — a different SCALE, not a spelling
+    // variant, so they must CONVERT rather than sit as same-scale aliases.
+    // Miscoded as plain aliases, a real PE-range "2.5 mg/L" (= 2500 ng/mL) was
+    // read as 2.5 → below the 1000 critical cutoff → a SILENTLY missed PE.
+    // (Caught in the Jul-2026 clinical-accuracy verification pass.)
+    altUnits: [
+      { units: ['µg/mL', 'ug/mL', 'ug/ml', 'mg/L', 'mg/l'], toCanonical: 1000 },
+    ],
     min: 0,
     max: 500,
     // Acute-phase reactant — pulmonary embolism, DVT, DIC, COVID-19
@@ -2144,7 +2179,15 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'High Sensitivity Troponin I',
     ],
     unit: 'ng/mL',
-    unitAliases: ['ng/ml', 'pg/mL', 'pg/ml'],
+    unitAliases: ['ng/ml'],
+    // pg/mL (≡ ng/L) is 1/1000 of ng/mL — a different SCALE. hs-cTnI is
+    // routinely reported in pg/mL / ng/L; miscoded as a same-scale alias, a
+    // NORMAL hs-troponin of ~14 pg/mL read as 14 ng/mL = 350x the 0.04 cutoff
+    // → a FALSE MI emergency on a healthy man. Convert instead.
+    // (Caught in the Jul-2026 clinical-accuracy verification pass.)
+    altUnits: [
+      { units: ['pg/mL', 'pg/ml', 'ng/L', 'ng/l'], toCanonical: 0.001 },
+    ],
     min: 0,
     max: 0.04,
     // Critical: ≥0.04 ng/mL is the universal MI rule-in threshold

@@ -71,6 +71,50 @@ describe('Blood Urea (bun) — urea-scale grading', () => {
   });
 });
 
+/* ------------------------------------------------------------------ */
+/* Clinical-accuracy corrections (Jul-2026 verification pass).          */
+/* Each asserts a corrected critical threshold no longer fires a FALSE  */
+/* same-day emergency on a common non-emergent value, while a genuine   */
+/* emergency still escalates. See the citations in biomarkerCatalog.ts. */
+/* ------------------------------------------------------------------ */
+describe('clinical-accuracy critical thresholds', () => {
+  const GLUCOSE = getTemplateById('glucose');
+  const SODIUM = getTemplateById('sodium');
+  const CALCIUM = getTemplateById('calcium');
+  if (!GLUCOSE || !SODIUM || !CALCIUM) {
+    throw new Error('Fixture template missing: glucose, sodium, calcium');
+  }
+
+  it('fasting glucose 260 is concern, not a false critical (stable uncontrolled T2DM)', () => {
+    expect(statusForValue(GLUCOSE, 260)).toBe('concern');
+  });
+  it('fasting glucose 420 still escalates to critical (DKA/HHS)', () => {
+    expect(statusForValue(GLUCOSE, 420)).toBe('critical');
+  });
+
+  it('sodium 128 is not a false critical (mild hyponatremia)', () => {
+    expect(statusForValue(SODIUM, 128)).not.toBe('critical');
+  });
+  it('sodium 156 is not a false critical (mild hypernatremia)', () => {
+    expect(statusForValue(SODIUM, 156)).not.toBe('critical');
+  });
+  it('sodium 118 / 162 still escalate to critical', () => {
+    expect(statusForValue(SODIUM, 118)).toBe('critical');
+    expect(statusForValue(SODIUM, 162)).toBe('critical');
+  });
+
+  it('calcium 12.5 is not a false critical (alert, not panic)', () => {
+    expect(statusForValue(CALCIUM, 12.5)).not.toBe('critical');
+  });
+  it('calcium 13.5 still escalates to critical (hypercalcemic crisis)', () => {
+    expect(statusForValue(CALCIUM, 13.5)).toBe('critical');
+  });
+
+  it('HbA1c 11% is high but not a same-day critical (chronic 3-month average)', () => {
+    expect(statusForValue(HBA1C, 11)).not.toBe('critical');
+  });
+});
+
 const SHBG = getTemplateById('shbg');
 if (!SHBG) {
   throw new Error('Fixture template missing from catalog: shbg');
@@ -208,13 +252,15 @@ describe('markerFromTemplate', () => {
   });
 
   it('propagates clinical-critical bounds so the bar can scale against them', () => {
-    // HbA1c has an explicit 10% critical cliff; a 7.2% reading is
-    // diabetic (concern) but well below it, so the bar must place the
-    // dot against the real 10% ceiling — not peg it to the track wall.
-    const m = markerFromTemplate(HBA1C, 7.2);
-    expect(m.criticalHigh).toBe(HBA1C.criticalHigh);
-    expect(m.criticalHigh).toBe(10);
-    expect(m.criticalLow).toBe(HBA1C.criticalLow); // undefined here
+    // LDL has an explicit 190 mg/dL critical cliff (severe hypercholesterolemia);
+    // a 145 reading is high (concern) but well below it, so the bar must place
+    // the dot against the real 190 ceiling — not peg it to the track wall.
+    // (Was HbA1c, until the Jul-2026 accuracy pass correctly removed HbA1c's
+    // critical cliff — a 3-month average is never a same-day panic value.)
+    const m = markerFromTemplate(LDL, 145);
+    expect(m.criticalHigh).toBe(LDL.criticalHigh);
+    expect(m.criticalHigh).toBe(190);
+    expect(m.criticalLow).toBe(LDL.criticalLow); // undefined here
     expect(m.status).toBe('concern');
   });
 });

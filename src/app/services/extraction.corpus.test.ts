@@ -273,6 +273,24 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'Clinical-accuracy unit conversions (troponin, D-dimer, SI uric acid/calcium)',
+    note: 'the Jul-2026 accuracy pass found two different-scale units miscoded as same-scale aliases. Troponin pg/mL (≡ng/L) must ÷1000 — a normal 14 pg/mL was reading as 14 ng/mL = a FALSE MI. D-Dimer mg/L / µg/mL must ×1000 — a PE-range 2.5 mg/L was reading as 2.5 ng/mL = a SILENTLY missed PE. Plus SI uric acid (µmol/L) and calcium (mmol/L) conversions.',
+    text: [
+      'Troponin I 14 pg/mL',
+      'D-Dimer 2.5 mg/L',
+      'Uric Acid 600 umol/L',
+      'Calcium 2.4 mmol/L',
+    ].join('\n'),
+    expect: {
+      values: {
+        'troponin-i': [0.013, 0.015], // 14 pg/mL ÷1000 = 0.014 (normal, not a false MI)
+        'd-dimer': 2500, // 2.5 mg/L ×1000 (PE-range critical, not missed)
+        'uric-acid': [10.0, 10.2], // 600 µmol/L ×0.016814
+        calcium: [9.5, 9.7], // 2.4 mmol/L ×4.008
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [
