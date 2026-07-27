@@ -163,10 +163,13 @@ function unitMultiplier(unit: string | null | undefined): number {
   ) {
     return 1e6;
   }
-  // Thousand = 1e3. Variants: thou, thousand, 10^3 / 10³ / 10E3 /
-  // x10^3 with optional spacing.
+  // Thousand = 1e3. Variants: thou, thous (the US CBC abbreviation, e.g.
+  // "5.2 Thous/cu.mm"), thousand, 10^3 / 10³ / 10E3 / x10^3 with optional
+  // spacing. Without `thous`, a US-format platelet/WBC count like
+  // "172 Thous/cu.mm" stays 172 against a /cumm template (150k–450k) and
+  // reads as a FALSE critical-low — the exact real-report bug this fixes.
   if (
-    /(^|[^a-z])(thousands|thousand|thou)([^a-z]|$)/.test(u) ||
+    /(^|[^a-z])(thousands|thousand|thous|thou)([^a-z]|$)/.test(u) ||
     /\b10\s*\^?\s*3\b/.test(u) ||
     /x\s*10\s*\^?\s*3/.test(u) ||
     /10\s*e\s*3\b/.test(u) ||
@@ -339,11 +342,13 @@ function extractMarkerValue(
   // unitMultiplier() figure out the scaling.
   // Optional count-prefix that can sit before the catalog's bare unit.
   // Mirrors the families recognised by unitMultiplier(): the named
-  // prefixes (lakh/lac/thou/thousand/million/mill/mio) and the
+  // prefixes (lakh/lac/thousand/thous/thou/million/mill/mio) and the
   // exponent typesettings (10^N, 10ᴺ, 10EN, x10^N) for N ∈ {3, 6}.
+  // `thous` (the US CBC abbreviation) is listed BEFORE `thou` so it wins
+  // the alternation and matches "Thous/cu.mm" whole, not just "thou".
   const prefixPattern =
     '(?:' +
-    '(?:lakh|lakhs|lac|lacs|thou|thousand|million|mill|mio)\\s*[/]?\\s*' +
+    '(?:lakh|lakhs|lac|lacs|thousand|thous|thou|million|mill|mio)\\s*[/]?\\s*' +
     '|' +
     '(?:x?\\s*10\\s*(?:\\^|e|⁶|³)?\\s*[36]?)\\s*[/]?\\s*' +
     ')?';

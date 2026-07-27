@@ -38,6 +38,22 @@ type Fixture = { name: string; note: string; text: string; expect: Expectation }
 
 const FIXTURES: Fixture[] = [
   {
+    name: 'US-format CBC — Thous/cu.mm units',
+    note: 'a real uploaded report: platelet/WBC printed as "Thous/cu.mm" (US abbreviation) were read UNSCALED — 172 vs a 150k–450k template — and flagged a FALSE critical-low. The "thous" prefix now scales them ×1000.',
+    text: [
+      'WBC 5.2 Thous/cu.mm 3.9 - 11.1',
+      'PLATELET COUNT 172 Thous/cu.mm 140 - 390',
+      'HGB (HEMOGLOBIN) 14.5 g/dL 13.2 - 16.9',
+    ].join('\n'),
+    expect: {
+      values: {
+        wbc: 5200, // 5.2 Thous → ×1000, normal (not critical-low)
+        platelets: 172000, // 172 Thous → ×1000, normal (not critical-low)
+        hb: 14.5,
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [
