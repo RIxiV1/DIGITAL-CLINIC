@@ -164,12 +164,16 @@ function unitMultiplier(unit: string | null | undefined): number {
     return 1e6;
   }
   // Thousand = 1e3. Variants: thou, thous (the US CBC abbreviation, e.g.
-  // "5.2 Thous/cu.mm"), thousand, 10^3 / 10³ / 10E3 / x10^3 with optional
-  // spacing. Without `thous`, a US-format platelet/WBC count like
-  // "172 Thous/cu.mm" stays 172 against a /cumm template (150k–450k) and
-  // reads as a FALSE critical-low — the exact real-report bug this fixes.
+  // "5.2 Thous/cu.mm"), thousand, and the short forms `th` ("4.24 th/cumm",
+  // Healthians) and `k` ("202 K/uL", US/international), plus 10^3 / 10³ /
+  // 10E3 / x10^3 with optional spacing. Without `th`, a Healthians TLC like
+  // "4.24 th/cumm" stayed 4.24 against a /cumm template (4000–11000) and read
+  // as a FALSE critical-low. `k`/`th` only ever match a standalone letter
+  // followed by a non-letter (the `([^a-z]|$)` guard) — "kg", "kU/L" don't
+  // trip them — and this function only runs on a unit that already passed
+  // the gate, so the letters can't fire on arbitrary text.
   if (
-    /(^|[^a-z])(thousands|thousand|thous|thou)([^a-z]|$)/.test(u) ||
+    /(^|[^a-z])(thousands|thousand|thous|thou|th|k)([^a-z]|$)/.test(u) ||
     /\b10\s*\^?\s*3\b/.test(u) ||
     /x\s*10\s*\^?\s*3/.test(u) ||
     /10\s*e\s*3\b/.test(u) ||

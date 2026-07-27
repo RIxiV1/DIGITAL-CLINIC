@@ -237,6 +237,42 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'US-style CBC — K/uL and M/uL count units',
+    note: 'a stock US CBC printed WBC/PLT in K/uL and RBC in M/uL (ascii-u microlitre). None were recognised, so all three dropped. K→x1000, M→x1e6 now scale them: WBC 7800, RBC 5.2, PLT 202000.',
+    text: [
+      'WBC 7.8 4.0-11.0 K/uL',
+      'RBC 5.20 4.5-6.0 M/uL',
+      'Hemoglobin 15.3 13.5-17.5 g/dL',
+      'Platelets 202 150-400 K/uL',
+    ].join('\n'),
+    expect: {
+      values: {
+        wbc: 7800, // 7.8 K → x1000
+        rbc: 5.2, // 5.20 M/uL, already in millions → unchanged
+        hb: 15.3,
+        platelets: 202000, // 202 K → x1000
+      },
+    },
+  },
+  {
+    name: 'Healthians CBC — "th/cumm" abbreviation (false-critical fix)',
+    note: 'Healthians printed TLC as "4.24 th/cumm" (th = thousand). Unscaled, 4.24 read as a FALSE critical-low against the 4000-11000 band. "th" now scales x1000 → 4240 normal. Also confirms millions/cumm (RBC) and lakh/uL (platelets).',
+    text: [
+      'HAEMOGLOBIN 14.3 gm/dl 13.0-18.0',
+      'TLC (Total Leucocyte Count) 4.24 th/cumm 4.0-10.0',
+      'RBC 4.9 millions/cumm 4.5-5.5',
+      'PLATELET COUNT 2.19 lakh/uL 1.5-4.5',
+    ].join('\n'),
+    expect: {
+      values: {
+        hb: 14.3,
+        wbc: 4240, // 4.24 th → x1000, NORMAL (not critical-low)
+        rbc: 4.9,
+        platelets: 219000, // 2.19 lakh → x1e5
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [
