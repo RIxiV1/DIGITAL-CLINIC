@@ -821,7 +821,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'hb',
     name: 'Hemoglobin',
-    aliases: ['Hemoglobin', 'Haemoglobin', 'Hb'],
+    aliases: ['Hemoglobin', 'Haemoglobin', 'Hb', 'HGB', 'Hgb'],
     // g% is older Indian/British notation for "grams per 100 mL" =
     // g/dL — identical units, different glyph. Adding it as an alias
     // (along with the spaced "g %" variant) so reports from labs that

@@ -276,7 +276,22 @@ function extractMarkerValue(
   // the whole number or no match. A trailing "." is deliberately still
   // allowed — it's punctuation ("Glucose 92. mg/dL"), not a split — because
   // `(?:\\.\\d+)?` only consumes a "." when a digit follows it anyway.
-  const numPattern = '(?<![<>≤≥\\d.])(-?\\d+(?:\\.\\d+)?)(?!\\d)';
+  // The second lookbehind `(?<!\\d\\s*[-–—]\\s*)` refuses a number that is the
+  // MAX side of a reference range — i.e. immediately preceded by "<digit> - ".
+  // In the reverse column layout "WBC 4-10 x10^3/ul 7.7" (result in the
+  // RIGHTMOST column, after the range and unit) the forward pattern would
+  // otherwise grab the range max "10" as the value. Rejecting it makes the
+  // forward pattern correctly FAIL on that layout, handing off to the reverse
+  // pattern below. Range-BEFORE-value rows ("Hb 13-17 10.5 g/dL") are
+  // untouched: the real value 10.5 is preceded by "17 " (digit-space), not
+  // "17-". Variable-length lookbehind is supported in modern JS.
+  // `(?!\\d)(?!\\.\\d)` — atomic tail. `(?!\\d)` blocks ending before a digit
+  // ("70-75" can't split to "7"); `(?!\\.\\d)` blocks ending before a DECIMAL
+  // continuation, so "3.5-5.5" can't split "3.5" into "3" + read ".5-5.5" as a
+  // range (which surfaced RBC 3 instead of 5.53). A bare trailing "." is still
+  // allowed ("Glucose 92. mg/dL") — it's punctuation, not ".<digit>".
+  const numPattern =
+    '(?<![<>≤≥\\d.])(?<!\\d\\s*[-–—]\\s*)(-?\\d+(?:\\.\\d+)?)(?!\\d)(?!\\.\\d)';
   // Between number and unit: up to 30 non-digit chars, OPTIONALLY
   // followed by a reference-range shape ("12-14", "150 to 450",
   // "80–99") and then up to 30 more non-digit chars before the unit.
@@ -414,7 +429,26 @@ function extractMarkerValue(
     const pattern = skipUnit
       ? `${lb}${aliasEsc}${rb}${between}${numPattern}(?!\\w)`
       : `${lb}${aliasEsc}${rb}${between}${numPattern}${tail}${unitGate}${tailAfterUnit}`;
-    const m = text.match(aliasRegex(pattern));
+    let m = text.match(aliasRegex(pattern));
+    // Reverse column order: `Marker  RefMin-RefMax  Unit  Value` — the result
+    // sits in the RIGHTMOST column, AFTER both the reference range and the
+    // unit (Shaukat Khanum and other hospital templates: "WBC 4-10 x10^3/ul
+    // 7.7"). Attempted only when the forward pattern fails — and numPattern's
+    // range-max lookbehind makes forward fail here rather than grab the range
+    // endpoint "10". Gated on a MANDATORY numeric range immediately after the
+    // alias: that is the unique signature of this layout and never appears in
+    // a value-first row, so reverse cannot fire on the common formats. Groups:
+    // 1=refMin, 2=refMax, 3=unit, 4=value.
+    let reverse = false;
+    if (!m && !skipUnit && unitGate) {
+      const revRange = '(\\d+(?:\\.\\d+)?)\\s*[-–—]\\s*(\\d+(?:\\.\\d+)?)';
+      const reversePattern = `${lb}${aliasEsc}${rb}${between}${revRange}[^\\d\\n]{0,15}?${unitGate}[^\\d\\n]{0,15}?${numPattern}(?!\\w)`;
+      const rm = text.match(aliasRegex(reversePattern));
+      if (rm) {
+        m = rm;
+        reverse = true;
+      }
+    }
     if (!m) continue;
     // Context guard: the same analyte name can denote a different test in a
     // different specimen with a different range ("Urine Glucose", "Random
@@ -433,21 +467,30 @@ function extractMarkerValue(
         continue;
       }
     }
-    const raw = parseFloat(m[1]);
+    const raw = parseFloat(reverse ? m[4] : m[1]);
     if (Number.isNaN(raw)) continue;
-    // Capture group layout depends on whether skipUnit branched off.
+    // Capture group layout depends on which pattern matched.
     //   skipUnit=true:  m[1]=value (no other groups)
-    //   skipUnit=false: m[1]=value, m[2]=refMin?, m[3]=refMax?, m[4]=unit,
+    //   forward:        m[1]=value, m[2]=refMin?, m[3]=refMax?, m[4]=unit,
     //                   m[5]=refMin?, m[6]=refMax?  (the post-unit range)
-    // Each ref-range pair exists only when the lab printed one matching the
-    // strict `\d+(.\d+)? sep \d+(.\d+)?` shape in that position; otherwise
-    // that pair's outer `(?:...)?` was skipped and both are undefined.
-    // Only ONE of the two pairs can be populated — they describe the same
-    // slot on opposite sides of the unit — so pre-unit wins and post-unit is
-    // the fallback.
-    const printedUnit = !skipUnit && m[4] ? m[4] : '';
-    const labRefMinStr = !skipUnit ? (m[2] ?? m[5] ?? '') : '';
-    const labRefMaxStr = !skipUnit ? (m[3] ?? m[6] ?? '') : '';
+    //   reverse:        m[1]=refMin, m[2]=refMax, m[3]=unit, m[4]=value
+    // Each forward ref-range pair exists only when the lab printed one matching
+    // the strict `\d+(.\d+)? sep \d+(.\d+)?` shape in that position; otherwise
+    // that pair's outer `(?:...)?` was skipped and both are undefined. Only ONE
+    // of the two forward pairs can be populated (same slot, opposite sides of
+    // the unit) — pre-unit wins, post-unit is the fallback. The reverse layout
+    // always carries its range (it's mandatory) in m[1]/m[2].
+    const printedUnit = reverse ? (m[3] ?? '') : !skipUnit && m[4] ? m[4] : '';
+    const labRefMinStr = reverse
+      ? (m[1] ?? '')
+      : !skipUnit
+        ? (m[2] ?? m[5] ?? '')
+        : '';
+    const labRefMaxStr = reverse
+      ? (m[2] ?? '')
+      : !skipUnit
+        ? (m[3] ?? m[6] ?? '')
+        : '';
     // Reconcile the lab's printed unit against the catalog's canonical
     // unit. Only do the reconciliation when we actually captured a
     // printed unit token (non-skipUnit path). When skipUnit is true,

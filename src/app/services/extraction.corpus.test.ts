@@ -291,6 +291,28 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'Shaukat Khanum haematology — reverse column order (value in rightmost column)',
+    note: 'a real hospital report laid out as TEST | NORMAL-RANGE | UNIT | RESULT — the value is in the RIGHTMOST column, after both the reference range and the unit. The forward matcher was grabbing the range endpoint (WBC read 10000 instead of 7700). Fixed by (a) numPattern refusing a range-max capture, so forward fails cleanly, and (b) a range-gated reverse pattern that reads the trailing value. HGB alias added. rbc/mchc land just above the lab\'s own printed range, which correctly drives their status.',
+    text: [
+      'WBC 4-10 x10^3/ul 7.7',
+      'RBC 3.5-5.5 x10^6/ul 5.53',
+      'HGB 13-17 g/dL 15.7',
+      'MCV 76-96 fL 81.9',
+      'MCHC 31.5-34.5 g/dL 34.7',
+      'PLT 150-400 x10^3/ul 294',
+    ].join('\n'),
+    expect: {
+      values: {
+        wbc: 7700, // 7.7 x10^3 — NOT the range max 10 (→10000)
+        rbc: 5.53,
+        hb: 15.7,
+        mcv: 81.9,
+        mchc: 34.7,
+        platelets: 294000, // 294 x10^3 — NOT the range max 400
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [
