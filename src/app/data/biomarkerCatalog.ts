@@ -296,8 +296,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     // CSF, body fluid — normally near-zero, so a value would false-critical
     // against the 70–99 band) or a different timing (random / post-prandial /
     // OGTT — legitimately higher, so a normal 130 would false-flag as
-    // 'concern'). Those surface uninterpreted instead — correct, since we
-    // don't carry their ranges. Authored without the `g` flag (stateless).
+    // 'concern'). The timed draws are instead graded by the dedicated
+    // glucose-random / glucose-pp templates below (whose specific aliases
+    // never match a fasting row); this guard just stops the fasting band
+    // from also claiming them. Authored without the `g` flag (stateless).
     excludeIfRowMatches:
       /\b(?:urine|urinary|csf|cerebrospinal|pleural|ascitic|peritoneal|synovial|body[\s-]*fluid|random|post[\s-]?prandial|postprandial|non[\s-]?fasting|ogtt|gtt|tolerance|pp|ppbs|rbs|ppg)\b/i,
     unit: 'mg/dL',
@@ -340,6 +342,97 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     simpleName: 'Blood sugar this morning',
     plain:
       'Your blood sugar this morning, before food. Movement after meals helps many men keep it steady — but a high reading is worth confirming with a doctor.',
+  },
+  {
+    id: 'glucose-pp',
+    name: 'Post-Prandial Glucose',
+    // Every alias carries an explicit post-meal marker (PP / prandial / post
+    // lunch / 2 hour), so none can match a fasting or random row — and the
+    // fasting template's excludeIfRowMatches keeps IT from claiming these.
+    aliases: [
+      'Post-Prandial Glucose',
+      'Post-Prandial Blood Sugar',
+      'Post Prandial Blood Sugar',
+      'Postprandial Blood Sugar',
+      'Post Prandial Plasma Glucose',
+      'Post Prandial Glucose',
+      'Postprandial Glucose',
+      '2 Hour Post Prandial',
+      'Post Lunch Blood Sugar',
+      'Glucose Post Prandial',
+      'Glucose, PP',
+      'Glucose PP',
+      'PPBS',
+      'PLBS',
+    ],
+    unit: 'mg/dL',
+    unitAliases: ['mg/dl'],
+    altUnits: [{ units: ['mmol/L', 'mmol/l'], toCanonical: 18.0156 }],
+    // Same specimen caveat as fasting glucose: a urine/body-fluid draw is a
+    // different test on a different scale.
+    excludeIfRowMatches:
+      /\b(?:urine|urinary|csf|cerebrospinal|pleural|ascitic|peritoneal|synovial|body[\s-]*fluid)\b/i,
+    // WHO/ICMR 2-hour post-load thresholds: <140 normal, 140–199 impaired
+    // glucose tolerance, ≥200 diagnostic of diabetes. The lower bound is the
+    // hypoglycaemia floor, not a target — there's no "optimal" post-meal peak
+    // beyond "under 140".
+    min: 70,
+    max: 140,
+    criticalLow: 50,
+    criticalHigh: 300,
+    physicalMin: 30,
+    physicalMax: 900,
+    actionMax: 200,
+    actionSource: {
+      label:
+        'WHO/ICMR diabetes diagnostic line (2-hour post-load glucose ≥200 mg/dL); 140–199 mg/dL is impaired glucose tolerance',
+      url: 'https://main.icmr.nic.in/sites/default/files/guidelines/ICMR_GuidelinesType2diabetes2018_0.pdf',
+      audience: 'adults · India (ICMR/WHO criteria)',
+    },
+    category: 'metabolic',
+    direction: 'down',
+    simpleName: 'Blood sugar ~2 hours after a meal',
+    plain:
+      'Your blood sugar about two hours after eating. Under 140 is normal; a higher reading means your body cleared the meal slowly — worth confirming with a doctor.',
+  },
+  {
+    id: 'glucose-random',
+    name: 'Random Glucose',
+    aliases: [
+      'Random Blood Sugar',
+      'Random Blood Glucose',
+      'Random Plasma Glucose',
+      'Random Glucose',
+      'Glucose Random',
+      'Glucose, Random',
+      'RBS',
+    ],
+    unit: 'mg/dL',
+    unitAliases: ['mg/dl'],
+    altUnits: [{ units: ['mmol/L', 'mmol/l'], toCanonical: 18.0156 }],
+    excludeIfRowMatches:
+      /\b(?:urine|urinary|csf|cerebrospinal|pleural|ascitic|peritoneal|synovial|body[\s-]*fluid)\b/i,
+    // A random (non-fasting) draw has no fasting reference: WHO/ADA read
+    // <140 mg/dL as normal and ≥200 mg/dL (with symptoms) as diagnostic of
+    // diabetes. 140–199 warrants a fasting re-check.
+    min: 70,
+    max: 140,
+    criticalLow: 50,
+    criticalHigh: 300,
+    physicalMin: 30,
+    physicalMax: 900,
+    actionMax: 200,
+    actionSource: {
+      label:
+        'WHO/ADA random plasma glucose ≥200 mg/dL (with symptoms) is diagnostic of diabetes; <140 mg/dL is normal',
+      url: 'https://main.icmr.nic.in/sites/default/files/guidelines/ICMR_GuidelinesType2diabetes2018_0.pdf',
+      audience: 'adults · India (ICMR/WHO criteria)',
+    },
+    category: 'metabolic',
+    direction: 'down',
+    simpleName: 'Blood sugar at a random time',
+    plain:
+      'Blood sugar measured without fasting. Under 140 is normal; 140–199 is worth a fasting re-check, and 200 or above needs a doctor’s review.',
   },
   {
     id: 'insulin',
@@ -1355,6 +1448,30 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     simpleName: 'The main blood protein your liver makes',
     plain:
       'Low albumin can mean liver dysfunction, malnutrition, or chronic disease. A solid health-status indicator.',
+  },
+  {
+    id: 'globulin',
+    name: 'Globulin',
+    aliases: ['Total Globulin', 'Serum Globulin', 'Globulin'],
+    unit: 'g/dL',
+    unitAliases: ['g/dl', 'gm/dL'],
+    // Guard the shared "globulin" suffix: protein-electrophoresis fractions
+    // (alpha / beta / gamma globulin) and the binding globulins (SHBG, TBG,
+    // CBG) are DIFFERENT analytes on different scales and must not grade
+    // against the total-globulin band. "Immunoglobulin" is already blocked
+    // by the alias left-boundary (…noGlobulin has no word break before it);
+    // the spaced fraction/binding names need this. Unit gate (g/dL) also
+    // rejects SHBG (nmol/L), but the guard keeps the g/dL electrophoresis
+    // fractions out too.
+    excludeIfRowMatches:
+      /\b(?:alpha|beta|gamma|immuno|sex[\s-]*hormone|shbg|thyroxine|corticosteroid|binding)\b/i,
+    min: 2,
+    max: 3.5,
+    category: 'liver',
+    direction: 'band',
+    simpleName: 'Immune & transport proteins',
+    plain:
+      'The blood proteins other than albumin — many of them antibodies. Reported alongside total protein and albumin; a persistent abnormality is worth a look with your doctor.',
   },
 
   /* ---- Additional Kidney --------------------------------------- */

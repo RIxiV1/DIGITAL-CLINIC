@@ -100,6 +100,39 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'FBS + PPBS + RBS triad — each graded by its own template',
+    note: 'the standard Indian metabolic panel prints all three glucose draws together. Previously only fasting extracted; PP and random were dropped. Now each grades against its OWN cited band (fasting 70–99, post-prandial/random <140), and none cross-claims another — the fasting guard refuses the PP/random rows and their specific aliases never match the fasting row.',
+    text: [
+      'Fasting Blood Sugar 92 mg/dL 70 - 99',
+      'Post Prandial Blood Sugar 128 mg/dL < 140',
+      'Random Blood Sugar 118 mg/dL',
+    ].join('\n'),
+    expect: {
+      values: {
+        glucose: 92,
+        'glucose-pp': 128,
+        'glucose-random': 118,
+      },
+    },
+  },
+  {
+    name: 'Globulin — direct extraction + electrophoresis-fraction guard',
+    note: 'Globulin is printed on most liver panels and was dropped. Added as a direct 2.0–3.5 g/dL marker. Guard proven: a "Gamma Globulin" electrophoresis fraction must NOT be read as total globulin (different analyte/scale).',
+    text: [
+      'Total Protein 7.4 g/dL',
+      'Albumin 4.4 g/dL',
+      'Globulin 3.0 g/dL',
+      'Gamma Globulin 1.1 g/dL',
+    ].join('\n'),
+    expect: {
+      values: {
+        'total-protein': 7.4,
+        albumin: 4.4,
+        globulin: 3.0,
+      },
+    },
+  },
+  {
     name: 'PSA + Phosphorus additions — with collision guards',
     note: 'new catalog entries (#coverage): PSA (men’s prostate marker) and Phosphorus, both previously dropped. Guards proven here: "Alkaline Phosphatase" must NOT be read as Phosphorus (different analyte), and a "% Free PSA" percentage must NOT be read as total PSA (the ng/mL unit gate blocks it). Phosphorus SI mmol/L converts to mg/dL.',
     text: [
