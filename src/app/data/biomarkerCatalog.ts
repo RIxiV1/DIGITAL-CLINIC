@@ -258,7 +258,7 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     // 'concern'). Those surface uninterpreted instead — correct, since we
     // don't carry their ranges. Authored without the `g` flag (stateless).
     excludeIfRowMatches:
-      /\b(?:urine|urinary|csf|cerebrospinal|pleural|ascitic|peritoneal|synovial|body[\s-]*fluid|random|post[\s-]?prandial|postprandial|non[\s-]?fasting|ogtt|pp|ppbs|rbs|ppg)\b/i,
+      /\b(?:urine|urinary|csf|cerebrospinal|pleural|ascitic|peritoneal|synovial|body[\s-]*fluid|random|post[\s-]?prandial|postprandial|non[\s-]?fasting|ogtt|gtt|tolerance|pp|ppbs|rbs|ppg)\b/i,
     unit: 'mg/dL',
     unitAliases: ['mg/dl'],
     // SI: glucose 1 mmol/L = 18.0156 mg/dL (MW 180.16). Malaysian/UK/EU

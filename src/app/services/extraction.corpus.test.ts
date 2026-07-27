@@ -88,6 +88,18 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'Non-fasting glucose rows only — must stay uninterpreted',
+    note: 'guard proof in isolation: when the ONLY glucose-named rows are a tolerance-test draw and a urine draw (no plain fasting row to win first), the fasting template must extract NOTHING rather than grade them against 70–99. Both would be false flags otherwise.',
+    text: [
+      'Glucose Tolerance Test 2 Hour 160 mg/dL',
+      'Urine Glucose 20 mg/dL',
+    ].join('\n'),
+    expect: {
+      values: {},
+      absent: ['glucose'],
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [
