@@ -160,6 +160,29 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'DRLOGY seminogram — the report that "couldn\'t be parsed"',
+    note: 'a real semen-analysis upload extracted almost nothing. Three causes fixed: (1) a one-sided cutoff between value and unit ("15 >15 Million/mL") blocked the unit gate and dropped the headline sperm concentration; (2) "Percentage motility" was not an alias; (3) Vitality had no marker at all. Volume/pH already worked. Now the five real parameters extract; morphology on this template is a range-only placeholder cell, not a real value, so it is intentionally not asserted.',
+    text: [
+      'Duration of abstinence 2 2 - 7 days',
+      'Liquefaction at 37 C 37 30 - 60 minutes',
+      'Volume 1.5 > 1.5 mL',
+      'pH 7.2',
+      'Total sperm concentration 15 >15 Million/mL',
+      'Percentage motility 60 >50 %',
+      'Vitality 60 >58 %',
+      'Agglutination Negative Negative',
+    ].join('\n'),
+    expect: {
+      values: {
+        'semen-volume': 1.5,
+        'semen-ph': 7.2,
+        'sperm-density': 15, // recovered by the one-sided-cutoff fix
+        'sperm-motility-total': 60, // recovered by the "Percentage motility" alias
+        'sperm-vitality': 60, // new marker
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [

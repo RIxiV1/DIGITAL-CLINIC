@@ -949,6 +949,13 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Total motility',
       'Total motile (a+b+c)',
       'Total motile',
+      // "Percentage motility" / "Motility (Total)" — DRLOGY & other Indian
+      // seminogram templates. Both name the total explicitly, so (unlike
+      // bare "Motility") they can't collide with the progressive/forward
+      // grades.
+      'Percentage motility',
+      'Motility (Total)',
+      'Total Motility (PR+NP)',
     ],
     unit: '%',
     min: 42,
@@ -984,6 +991,28 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     simpleName: '% of sperm not moving at all',
     plain:
       'Up to 60% can be immotile in a healthy sample. Above that suggests motility problems.',
+  },
+  {
+    id: 'sperm-vitality',
+    name: 'Vitality',
+    // "Vitality" / "Viability" — the live-sperm fraction, a distinct WHO
+    // parameter from motility (a sperm can be alive but not moving). Common
+    // on Indian seminograms and previously missing entirely.
+    aliases: [
+      'Sperm vitality',
+      'Vitality',
+      'Sperm viability',
+      'Viability',
+      'Live sperm',
+    ],
+    unit: '%',
+    min: 54,
+    max: 100,
+    category: 'fertility',
+    direction: 'up',
+    simpleName: '% of sperm that are alive',
+    plain:
+      'WHO 2021 reference is ≥54% live sperm. A sperm can be alive but not moving, so vitality is checked separately from motility — a low value with low motility points to a viability problem.',
   },
   {
     id: 'sperm-morphology',

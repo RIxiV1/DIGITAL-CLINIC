@@ -264,7 +264,15 @@ function extractMarkerValue(
   //     at the `.`'s right boundary).
   //   - mid-digit starts — `(?<!\\d)` so a captured number can't begin
   //     inside another number.
-  const numPattern = '(?<![<>≤≥\\d.])(-?\\d+(?:\\.\\d+)?)';
+  // Trailing `(?!\\d)` makes the number ATOMIC: it can't END mid-number
+  // either. Without it the engine backtracks a multi-digit value to satisfy
+  // a downstream unit — e.g. "Normal morphology 70 - 75 %" split "70" into
+  // "7" and then read "0 - 75" as a reference range, surfacing a phantom
+  // morphology of 7. Forbidding a DIGIT immediately after the capture forces
+  // the whole number or no match. A trailing "." is deliberately still
+  // allowed — it's punctuation ("Glucose 92. mg/dL"), not a split — because
+  // `(?:\\.\\d+)?` only consumes a "." when a digit follows it anyway.
+  const numPattern = '(?<![<>≤≥\\d.])(-?\\d+(?:\\.\\d+)?)(?!\\d)';
   // Between number and unit: up to 30 non-digit chars, OPTIONALLY
   // followed by a reference-range shape ("12-14", "150 to 450",
   // "80–99") and then up to 30 more non-digit chars before the unit.
@@ -292,7 +300,19 @@ function extractMarkerValue(
   // and the ":" / "Reference Range" lead-ins that some templates use.
   const refRangeBody =
     '(\\d+(?:\\.\\d+)?)\\s*(?:[-–—]|to)\\s*(\\d+(?:\\.\\d+)?)';
-  const tail = `[^\\d\\n]{0,30}?(?:${refRangeBody}[^\\d\\n]{0,30}?)?`;
+  // A one-sided reference cutoff ("> 15", "<50", "≥58") printed BETWEEN the
+  // value and the unit. Seminograms and many Indian panels format the row as
+  // `Marker  Value  >Ref  Unit` — e.g. "Total sperm concentration 15 >15
+  // Million/mL". Without absorbing it, the bare "15" of ">15" sits between
+  // the value and the unit and blocks the unit gate, so the whole marker was
+  // silently dropped (the headline sperm-concentration number, missed). It's
+  // NON-capturing (unlike refRangeBody) — a one-sided cutoff is a threshold,
+  // not a [min,max] range, so there's nothing to surface as the lab's range;
+  // this keeps the m[2]/m[3] refMin/refMax group numbering unchanged. The
+  // value itself is never captured from here: numPattern's `(?<![<>≤≥…])`
+  // lookbehind already refuses to start a value right after a cutoff sign.
+  const oneSidedCutoff = '[<>≤≥]\\s*\\d+(?:\\.\\d+)?';
+  const tail = `[^\\d\\n]{0,30}?(?:(?:${refRangeBody}|${oneSidedCutoff})[^\\d\\n]{0,30}?)?`;
 
   // The SAME range, but sitting AFTER the unit — which is where real labs
   // actually print it:
