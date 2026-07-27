@@ -100,6 +100,33 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'PSA + Phosphorus additions — with collision guards',
+    note: 'new catalog entries (#coverage): PSA (men’s prostate marker) and Phosphorus, both previously dropped. Guards proven here: "Alkaline Phosphatase" must NOT be read as Phosphorus (different analyte), and a "% Free PSA" percentage must NOT be read as total PSA (the ng/mL unit gate blocks it). Phosphorus SI mmol/L converts to mg/dL.',
+    text: [
+      'PSA Total 1.8 ng/mL 0 - 4',
+      'Phosphorus 3.4 mg/dL 2.5 - 4.5',
+      'Alkaline Phosphatase 96 U/L 40 - 130',
+      '% Free PSA 22 %',
+    ].join('\n'),
+    expect: {
+      values: {
+        psa: 1.8,
+        phosphorus: 3.4,
+      },
+      absent: [], // psa must stay 1.8 (not overwritten by the 22% free-PSA row)
+    },
+  },
+  {
+    name: 'Phosphorus in SI units (mmol/L)',
+    note: 'UK/EU/Malaysian phosphorus prints mmol/L; 1.13 mmol/L × 3.097 ≈ 3.5 mg/dL, normal against the 2.5–4.5 band.',
+    text: ['Phosphate 1.13 mmol/L (0.81 - 1.45)'].join('\n'),
+    expect: {
+      values: {
+        phosphorus: [3.4, 3.6], // 1.13 mmol/L × 3.097
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [

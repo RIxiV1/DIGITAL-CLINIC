@@ -104,6 +104,47 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     problemId: 'low-testosterone',
   },
   {
+    id: 'psa',
+    name: 'PSA (Total)',
+    aliases: [
+      'Prostate Specific Antigen',
+      'Prostate-Specific Antigen',
+      'PSA Total',
+      'PSA, Total',
+      'Total PSA',
+      'Serum PSA',
+      'PSA',
+    ],
+    unit: 'ng/mL',
+    unitAliases: ['ng/ml'],
+    min: 0,
+    max: 4,
+    // No optimal sub-band: within the normal range PSA has no "better when
+    // lower" target — a healthy 0.5 and a healthy 3.5 read the same. Only
+    // the upper bound carries clinical meaning.
+    // Harm-anchor: the conventional total-PSA screening threshold. >4.0 ng/mL
+    // is the long-standing referral line — age-dependent and non-specific
+    // (see plain), NOT a same-day emergency, so no critical bound: a raised
+    // PSA is an unhurried urology conversation, not a panic value.
+    actionMax: 4,
+    actionSource: {
+      label:
+        'Catalona et al., NEJM 1991 — 4.0 ng/mL total-PSA screening threshold (the conventional referral cutoff; age-specific ranges refine it)',
+      url: 'https://www.nejm.org/doi/full/10.1056/NEJM199104253241702',
+      audience: 'adult men · age-dependent',
+    },
+    // Physical ceiling deliberately generous: metastatic prostate disease
+    // pushes PSA into the hundreds or thousands, and the 5×-span fallback
+    // (cap ≈ 24) would silently drop those real, important reads.
+    physicalMin: 0,
+    physicalMax: 10000,
+    category: 'hormones',
+    direction: 'down',
+    simpleName: 'Prostate screening marker',
+    plain:
+      'A prostate protein used for screening. A raised PSA is common and usually NOT cancer — an enlarged prostate, a recent bike ride or ejaculation, or inflammation all lift it, and the normal cutoff rises with age. Treat a high value as a reason to talk to a doctor, not to worry.',
+  },
+  {
     id: 'free-t',
     name: 'Free Testosterone',
     // Bare 'Free T' is intentionally EXCLUDED: its right-boundary allows
@@ -1791,6 +1832,38 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     simpleName: 'Bones, muscles, nerves',
     plain:
       'Calcium is regulated by parathyroid hormone and Vitamin D. Persistent abnormalities need investigation.',
+  },
+  {
+    id: 'phosphorus',
+    name: 'Phosphorus',
+    aliases: [
+      'Inorganic Phosphorus',
+      'Serum Phosphorus',
+      'Phosphorus',
+      'Phosphorous',
+      'Inorganic Phosphate',
+      'Serum Phosphate',
+      'Phosphate',
+    ],
+    unit: 'mg/dL',
+    unitAliases: ['mg/dl'],
+    // SI: 1 mmol/L phosphorus = 3.097 mg/dL (atomic mass P = 30.97).
+    // UK / EU / Malaysian reports print mmol/L.
+    altUnits: [{ units: ['mmol/L', 'mmol/l'], toCanonical: 3.097 }],
+    min: 2.5,
+    max: 4.5,
+    // Critical: <1.0 mg/dL is severe hypophosphatemia (respiratory-muscle
+    // weakness, rhabdomyolysis) — a recognised panic value. >9 mg/dL is
+    // severe hyperphosphatemia, typically advanced renal failure.
+    criticalLow: 1,
+    criticalHigh: 9,
+    physicalMin: 0.2,
+    physicalMax: 20,
+    category: 'electrolytes',
+    direction: 'band',
+    simpleName: 'Bone & energy mineral',
+    plain:
+      'Phosphorus partners with calcium for bone strength and powers your cells. Abnormal levels usually point to kidney function or Vitamin D rather than diet.',
   },
 
   /* ---- Inflammation -------------------------------------------- */
