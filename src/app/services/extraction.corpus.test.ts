@@ -347,6 +347,20 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'ACCESA PSA — "<= 4.0" two-char cutoff (was reading 600 as normal 4.0)',
+    note: 'a real US PSA report: "TOTAL PSA 600.3 HIGH <= 4.0 ng/mL". The two-char "<=" (OCR/lab shorthand for ≤) was not recognised as a cutoff, so the value 600.3 could not reach its unit and the matcher fell back to the reference 4.0 next to ng/mL — reading a metastatic-range PSA of 600 as a NORMAL 4.0, the worst kind of false reassurance. Now "<=" / ">=" are absorbed, and numPattern refuses a value sitting after a cutoff sign.',
+    text: [
+      'PSA (FREE AND TOTAL)',
+      'TOTAL PSA 600.3 HIGH <= 4.0 ng/mL EN',
+      'FREE PSA >17.0 ng/mL EN',
+    ].join('\n'),
+    expect: {
+      values: {
+        psa: 600.3, // the real value, NOT the 4.0 reference cutoff
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [

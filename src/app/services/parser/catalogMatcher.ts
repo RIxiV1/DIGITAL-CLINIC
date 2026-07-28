@@ -290,8 +290,13 @@ function extractMarkerValue(
   // continuation, so "3.5-5.5" can't split "3.5" into "3" + read ".5-5.5" as a
   // range (which surfaced RBC 3 instead of 5.53). A bare trailing "." is still
   // allowed ("Glucose 92. mg/dL") — it's punctuation, not ".<digit>".
+  // `(?<![<>≤≥]=?\\s*)` — refuse a value immediately preceded by a cutoff
+  // sign, INCLUDING the two-char "<= " / ">= " with intervening spaces. The
+  // first lookbehind only rejects a sign glued to the digit ("≤4"); this one
+  // also rejects "<= 4.0" (space + "="), so the reference threshold in
+  // "PSA ... <= 4.0 ng/mL" can never be captured as the measured value.
   const numPattern =
-    '(?<![<>≤≥\\d.])(?<!\\d\\s*[-–—]\\s*)(-?\\d+(?:\\.\\d+)?)(?!\\d)(?!\\.\\d)';
+    '(?<![<>≤≥\\d.])(?<![<>≤≥]=?\\s*)(?<!\\d\\s*[-–—]\\s*)(-?\\d+(?:\\.\\d+)?)(?!\\d)(?!\\.\\d)';
   // Between number and unit: up to 30 non-digit chars, OPTIONALLY
   // followed by a reference-range shape ("12-14", "150 to 450",
   // "80–99") and then up to 30 more non-digit chars before the unit.
@@ -338,7 +343,12 @@ function extractMarkerValue(
   // reference "15" AS the value. "up to" is specific enough to be safe; bare
   // "to" is deliberately excluded (two-sided "X to Y" ranges are already
   // handled by refRangeBody, which the alternation tries first).
-  const oneSidedCutoff = '(?:[<>≤≥]|up\\s*to|upto)\\s*\\d+(?:\\.\\d+)?';
+  // `[<>≤≥]=?` also accepts the TWO-CHARACTER forms "<=" and ">=" — which
+  // OCR and many labs print for ≤/≥. Without it, "TOTAL PSA 600.3 HIGH <= 4.0
+  // ng/mL" couldn't get 600.3 to the unit and the matcher fell back to the
+  // reference "4.0" next to ng/mL — reading a metastatic-range PSA of 600 as
+  // a NORMAL 4.0. The single-char "<"/"≤" already worked; "<=" did not.
+  const oneSidedCutoff = '(?:[<>≤≥]=?|up\\s*to|upto)\\s*\\d+(?:\\.\\d+)?';
   const tail = `[^\\d\\n]{0,30}?(?:(?:${refRangeBody}|${oneSidedCutoff})[^\\d\\n]{0,30}?)?`;
 
   // The SAME range, but sitting AFTER the unit — which is where real labs
