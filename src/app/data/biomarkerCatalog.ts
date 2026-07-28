@@ -1711,6 +1711,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       '10^3/uL',
       'x10^3/μL',
       'x10³/μL',
+      // Exponent-E notation (Sysmex/analyzer): "10E3/uL" ≡ 10^3/µL.
+      '10E3/uL',
+      '10E3/μL',
+      'x10E3/uL',
       // Short thousand-prefix forms + ascii-u microlitre (K/uL, th/cumm).
       // unitMultiplier scales k/th → x1000; these just admit the token.
       'K/uL',
@@ -1771,6 +1775,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       '10^6/uL',
       'x10^6/μL',
       'x10⁶/μL',
+      // Exponent-E notation (Sysmex/analyzer): "10E6/uL" ≡ 10^6/µL.
+      '10E6/uL',
+      '10E6/μL',
+      'x10E6/uL',
       // ascii-u microlitre variants (M/uL, million/uL) — RBC already lists
       // the micro-sign 'M/μL'; these admit the plain-u spelling.
       'M/uL',
@@ -1829,6 +1837,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       '10^3/uL',
       'x10^3/μL',
       'x10³/μL',
+      // Exponent-E notation (Sysmex/analyzer): "10E3/uL" ≡ 10^3/µL.
+      '10E3/uL',
+      '10E3/μL',
+      'x10E3/uL',
       // Short thousand-prefix + ascii-u forms (K/uL, th/uL, lakh/uL).
       'K/uL',
       'K/μL',

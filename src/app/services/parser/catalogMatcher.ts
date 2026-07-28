@@ -89,6 +89,13 @@ const OCR_UNIT_CONFUSIONS: Record<string, string> = {
 function ocrTolerantUnit(unit: string): string {
   let out = '';
   for (const ch of unit) {
+    // A "/" in a unit tolerates surrounding spaces, so the "mg/dL" token also
+    // matches "mg / dL" / "mg /dL" — a common OCR / typesetting variant. It
+    // only ever loosens whitespace around the slash, never the unit shape.
+    if (ch === '/') {
+      out += '\\s*/\\s*';
+      continue;
+    }
     out += OCR_UNIT_CONFUSIONS[ch.toLowerCase()] ?? escapeRegex(ch);
   }
   return out;
@@ -349,7 +356,15 @@ function extractMarkerValue(
   // reference "4.0" next to ng/mL — reading a metastatic-range PSA of 600 as
   // a NORMAL 4.0. The single-char "<"/"≤" already worked; "<=" did not.
   const oneSidedCutoff = '(?:[<>≤≥]=?|up\\s*to|upto)\\s*\\d+(?:\\.\\d+)?';
-  const tail = `[^\\d\\n]{0,30}?(?:(?:${refRangeBody}|${oneSidedCutoff})[^\\d\\n]{0,30}?)?`;
+  // The range/cutoff slot repeats up to TWICE so a DUAL-SEX row prints its
+  // unit once after both ranges: "Hemoglobin 10.2 Male: 13-18 Female: 12-16
+  // gm/dl" — two ranges sit between the value and the unit. One slot only
+  // reached the unit when it was reprinted after the first range; {0,2} lets
+  // the value reach a trailing unit past both. `[^\d\n]` still can't cross a
+  // newline, so it stays on the marker's own row. (Only the last range's
+  // groups are captured, which is fine — dual-sex ranges are sex-specific and
+  // we grade on the catalog band anyway.)
+  const tail = `[^\\d\\n]{0,30}?(?:(?:${refRangeBody}|${oneSidedCutoff})[^\\d\\n]{0,30}?){0,2}`;
 
   // The SAME range, but sitting AFTER the unit — which is where real labs
   // actually print it:
@@ -439,7 +454,33 @@ function extractMarkerValue(
     const pattern = skipUnit
       ? `${lb}${aliasEsc}${rb}${between}${numPattern}(?!\\w)`
       : `${lb}${aliasEsc}${rb}${between}${numPattern}${tail}${unitGate}${tailAfterUnit}`;
-    let m = text.match(aliasRegex(pattern));
+    // Context guard: the same analyte name can denote a different test in a
+    // different specimen/timing with a different range ("Urine Glucose",
+    // "Random Blood Sugar"). `rowExcluded` is true when a match's OWN line
+    // carries a disqualifying word (scoped to that line so a disqualifier
+    // elsewhere can't suppress a valid row). See excludeIfRowMatches.
+    const rowExcluded = (idx: number): boolean => {
+      if (!template.excludeIfRowMatches) return false;
+      const from = text.lastIndexOf('\n', idx - 1) + 1;
+      let to = text.indexOf('\n', idx);
+      if (to === -1) to = text.length;
+      return template.excludeIfRowMatches.test(text.slice(from, to));
+    };
+    // For a guarded template, scan matches IN ORDER and take the first whose
+    // line isn't disqualified — a plain first-match would land on a "Urine
+    // Glucose" row printed ABOVE the real "Glucose" row and wrongly give up,
+    // dropping the real value. Unguarded templates keep the fast single match.
+    let m: RegExpMatchArray | null = null;
+    if (template.excludeIfRowMatches) {
+      for (const cand of text.matchAll(new RegExp(pattern, 'gi'))) {
+        if (!rowExcluded(cand.index ?? 0)) {
+          m = cand;
+          break;
+        }
+      }
+    } else {
+      m = text.match(aliasRegex(pattern));
+    }
     // Reverse column order: `Marker  RefMin-RefMax  Unit  Value` — the result
     // sits in the RIGHTMOST column, AFTER both the reference range and the
     // unit (Shaukat Khanum and other hospital templates: "WBC 4-10 x10^3/ul
@@ -454,29 +495,12 @@ function extractMarkerValue(
       const revRange = '(\\d+(?:\\.\\d+)?)\\s*[-–—]\\s*(\\d+(?:\\.\\d+)?)';
       const reversePattern = `${lb}${aliasEsc}${rb}${between}${revRange}[^\\d\\n]{0,15}?${unitGate}[^\\d\\n]{0,15}?${numPattern}(?!\\w)`;
       const rm = text.match(aliasRegex(reversePattern));
-      if (rm) {
+      if (rm && !rowExcluded(rm.index ?? 0)) {
         m = rm;
         reverse = true;
       }
     }
     if (!m) continue;
-    // Context guard: the same analyte name can denote a different test in a
-    // different specimen with a different range ("Urine Glucose", "Random
-    // Blood Sugar"). When the matched row carries a disqualifying word, this
-    // template must not grade it — skip to the next alias (and, if every
-    // alias lands on a disqualified row, return null so the value surfaces
-    // uninterpreted rather than as a false flag). Scoped to the alias's own
-    // line so a disqualifier elsewhere in the report can't suppress a valid
-    // row. See BiomarkerTemplate.excludeIfRowMatches.
-    if (template.excludeIfRowMatches) {
-      const s = m.index ?? 0;
-      const lineFrom = text.lastIndexOf('\n', s - 1) + 1;
-      let lineTo = text.indexOf('\n', s);
-      if (lineTo === -1) lineTo = text.length;
-      if (template.excludeIfRowMatches.test(text.slice(lineFrom, lineTo))) {
-        continue;
-      }
-    }
     const raw = parseFloat(reverse ? m[4] : m[1]);
     if (Number.isNaN(raw)) continue;
     // Capture group layout depends on which pattern matched.

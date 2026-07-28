@@ -361,6 +361,26 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'Adversarial-sweep regression guards (Jul-2026 best-possible pass)',
+    note: 'four bugs an exhaustive adversarial battery surfaced: (1) dual-sex range with the unit printed ONCE after both ranges; (2) a urine-glucose row printed ABOVE the real blood-glucose row (the guard used to give up on the first match); (3) a slash-spaced unit "mg / dL"; (4) exponent-E count notation "10E3/uL". Each is one line, exercised together here.',
+    text: [
+      'Hemoglobin 10.2 Male: 13-18 Female: 12-16 gm/dl',
+      'Urine Glucose 15 mg/dL',
+      'Glucose 105 mg/dL',
+      'Creatinine 1.0 mg / dL',
+      'Platelet Count 250 10E3/uL',
+    ].join('\n'),
+    expect: {
+      values: {
+        hb: 10.2, // dual-sex, unit printed once after both ranges
+        glucose: 105, // the blood row below the excluded urine row
+        creatinine: 1.0, // "mg / dL" with spaces around the slash
+        platelets: 250000, // 250 x10E3
+      },
+      absent: [], // urine glucose must not have become the glucose value
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [
