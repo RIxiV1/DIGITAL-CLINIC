@@ -225,14 +225,15 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // straight to OCR. Scanned PDFs hit this path.
     if (totalCharCount < MIN_USABLE_TEXT_LENGTH) {
       const ocr = await runPdfOcr(pdf);
+      const best = bestOcrCandidate(ocr.text, ocr.reconstructedText);
       const { markers: ocrBiomarkers, provenance } =
-        extractBiomarkersWithProvenance(ocr.text);
+        extractBiomarkersWithProvenance(best.text);
       return {
         biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
         source: 'pdf-ocr',
         provenance,
-        rawText: rawTextForDisplay(ocr.text),
-        unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
+        rawText: rawTextForDisplay(best.text),
+        unrecognizedRows: findUnrecognizedRows(best.text, ocrBiomarkers),
         ocrPagesAttempted: ocr.pagesAttempted,
         ocrPagesSkipped: ocr.pagesSkipped,
         ocrConfidence: ocr.confidence,
@@ -286,14 +287,15 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
     // into-PDF reports with a thin text layer of metadata sometimes
     // hit this path.
     const ocr = await runPdfOcr(pdf);
+    const best = bestOcrCandidate(ocr.text, ocr.reconstructedText);
     const { markers: ocrBiomarkers, provenance } =
-      extractBiomarkersWithProvenance(ocr.text);
+      extractBiomarkersWithProvenance(best.text);
     return {
       biomarkers: tagOcrConfidence(ocrBiomarkers, ocr.confidence),
       source: 'pdf-ocr',
       provenance,
-      rawText: ocr.text,
-      unrecognizedRows: findUnrecognizedRows(ocr.text, ocrBiomarkers),
+      rawText: best.text,
+      unrecognizedRows: findUnrecognizedRows(best.text, ocrBiomarkers),
       ocrPagesAttempted: ocr.pagesAttempted,
       ocrPagesSkipped: ocr.pagesSkipped,
       ocrConfidence: ocr.confidence,
@@ -305,19 +307,46 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
   }
 }
 
+/**
+ * Pick the OCR candidate that yields the most catalog markers: the flat
+ * Tesseract `text`, or the bbox-reconstructed text that un-interleaves tables
+ * Tesseract read across columns. When reconstruction doesn't help (or isn't
+ * available), the raw text wins and nothing changes — a TIE also goes to raw,
+ * the known-good path. This is why the whole bbox feature can only ever add
+ * recoveries, never regress: it competes, it doesn't replace.
+ */
+function bestOcrCandidate(
+  text: string,
+  reconstructedText: string,
+): { text: string; biomarkers: Biomarker[] } {
+  const rawMarkers = extractBiomarkersFromText(text);
+  if (!reconstructedText || reconstructedText === text) {
+    return { text, biomarkers: rawMarkers };
+  }
+  const reMarkers = extractBiomarkersFromText(reconstructedText);
+  return reMarkers.length > rawMarkers.length
+    ? { text: reconstructedText, biomarkers: reMarkers }
+    : { text, biomarkers: rawMarkers };
+}
+
 async function ocrAttempt(
   file: File,
   unsharpAmount: number,
 ): Promise<PdfParseResult> {
-  const { text, confidence } = await runImageOcr(file, unsharpAmount);
-  const { markers: biomarkers, provenance } =
-    extractBiomarkersWithProvenance(text);
+  const { text, confidence, reconstructedText } = await runImageOcr(
+    file,
+    unsharpAmount,
+  );
+  const best = bestOcrCandidate(text, reconstructedText);
+  const { markers: biomarkers, provenance } = extractBiomarkersWithProvenance(
+    best.text,
+  );
   return {
     biomarkers: tagOcrConfidence(biomarkers, confidence),
     source: 'image-ocr',
     provenance,
-    rawText: text,
-    unrecognizedRows: findUnrecognizedRows(text, biomarkers),
+    rawText: best.text,
+    unrecognizedRows: findUnrecognizedRows(best.text, biomarkers),
     ocrConfidence: confidence,
   };
 }

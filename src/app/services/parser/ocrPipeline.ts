@@ -13,7 +13,23 @@
  */
 
 import { escapeRegex } from './regexUtils';
+import { reconstructLinesFromWords, wordsFromBlocks } from './ocrLayout';
 import { type Biomarker } from '../../data/biomarkers';
+
+/**
+ * Reconstruct table-faithful text from a Tesseract recognize result's word
+ * boxes. Best-effort and defensive: returns '' on any missing/odd shape so the
+ * caller simply falls back to the flat `data.text`. Surfaced as an ADDITIONAL
+ * matcher candidate, never a replacement.
+ */
+function reconstructFromResult(data: unknown): string {
+  try {
+    const blocks = (data as { blocks?: unknown })?.blocks;
+    return reconstructLinesFromWords(wordsFromBlocks(blocks));
+  } catch {
+    return '';
+  }
+}
 
 /** Tesseract OCR is slow — cap pages scanned per PDF so a 50-page lab
  *  bundle doesn't take 10 minutes to fail. Lab reports almost always
@@ -489,7 +505,7 @@ async function preprocessImageForOcr(
 export async function runImageOcr(
   file: Blob,
   unsharpAmount: number = UNSHARP_AMOUNT,
-): Promise<{ text: string; confidence: number }> {
+): Promise<{ text: string; confidence: number; reconstructedText: string }> {
   const createWorker = await loadTesseract();
   const worker = await withTimeout(
     // `undefined` oem keeps the library default (OEM.LSTM_ONLY), which is
@@ -513,12 +529,19 @@ export async function runImageOcr(
     // about intra-line spacing). Both scored an identical 43/48 on the bench.
     await worker.setParameters({ tessedit_pageseg_mode: '6' as never });
     const preprocessed = await preprocessImageForOcr(file, unsharpAmount);
+    // Request word `blocks` alongside `text` so we can also reconstruct the
+    // table from bounding boxes (see reconstructFromResult). `text: true` is
+    // kept explicit so enabling blocks can't drop the flat text.
     const result = await withTimeout(
-      worker.recognize(preprocessed),
+      worker.recognize(preprocessed, {}, { text: true, blocks: true }),
       OCR_PAGE_TIMEOUT_MS,
       'OCR',
     );
-    return { text: result.data.text, confidence: result.data.confidence };
+    return {
+      text: result.data.text,
+      confidence: result.data.confidence,
+      reconstructedText: reconstructFromResult(result.data),
+    };
   } finally {
     await worker.terminate();
   }
@@ -526,6 +549,10 @@ export async function runImageOcr(
 
 export type PdfOcrResult = {
   text: string;
+  /** Table-faithful text reconstructed from word bounding boxes — an
+   *  ADDITIONAL matcher candidate alongside `text`. '' when no page produced
+   *  usable word geometry. */
+  reconstructedText: string;
   /** How many of the attempted pages OCR could not complete (timeout
    *  or render failure). Surfaced in the confirm view so a partial
    *  result doesn't masquerade as a complete one. */
@@ -576,6 +603,7 @@ export async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
   );
   try {
     let fullText = '';
+    let fullReconstructed = '';
     const pagesAttempted = Math.min(pdf.numPages, OCR_MAX_PAGES);
     let pagesSkipped = 0;
     let confidenceSum = 0;
@@ -584,17 +612,21 @@ export async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
       try {
         const imgData = await renderPageToImage(pdf, i);
         const result = await withTimeout(
-          worker.recognize(imgData),
+          worker.recognize(imgData, {}, { text: true, blocks: true }),
           OCR_PAGE_TIMEOUT_MS,
           `OCR page ${i}`,
         );
         fullText += result.data.text;
+        fullReconstructed += reconstructFromResult(result.data);
         confidenceSum += result.data.confidence;
         pagesRead += 1;
         // Page boundary sentinel. Catalog matcher splits on this so a
         // marker on page N can't glue to a number on page N+1 via the
         // [^\n]{0,80}? between-window.
-        if (i < pagesAttempted) fullText += PAGE_BOUNDARY_SENTINEL;
+        if (i < pagesAttempted) {
+          fullText += PAGE_BOUNDARY_SENTINEL;
+          fullReconstructed += PAGE_BOUNDARY_SENTINEL;
+        }
       } catch (pageErr) {
         // eslint-disable-next-line no-console
         console.warn(`Skipping page ${i}:`, pageErr);
@@ -602,12 +634,16 @@ export async function runPdfOcr(pdf: PdfDoc): Promise<PdfOcrResult> {
         // human-readable placeholder. The boundary is invisible to
         // the user-facing rawText display (we strip it before render)
         // but enforces a hard page-break for the matcher.
-        if (i < pagesAttempted) fullText += PAGE_BOUNDARY_SENTINEL;
+        if (i < pagesAttempted) {
+          fullText += PAGE_BOUNDARY_SENTINEL;
+          fullReconstructed += PAGE_BOUNDARY_SENTINEL;
+        }
         pagesSkipped += 1;
       }
     }
     return {
       text: fullText,
+      reconstructedText: fullReconstructed,
       pagesAttempted,
       pagesSkipped,
       confidence: pagesRead > 0 ? confidenceSum / pagesRead : 0,
