@@ -1,5 +1,14 @@
-import { useState } from 'react';
-import { ChevronDown, Pencil, RotateCcw, Sparkles } from 'lucide-react';
+import { Fragment, useState } from 'react';
+import {
+  Check,
+  ChevronDown,
+  FileText,
+  Pencil,
+  RotateCcw,
+  ScanLine,
+  Sparkles,
+  Target,
+} from 'lucide-react';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import ClinicalSpot, {
@@ -12,6 +21,78 @@ import type { FailureState } from './types';
 /* ================================================================== */
 /* Inline error state — parser yielded zero usable markers              */
 /* ================================================================== */
+
+/** The marker families the parser interprets — rendered as scannable chips
+ *  on the no-matches state instead of a run-on sentence, so a user can see
+ *  at a glance what IS covered. Mirrors the biomarkerCatalog categories. */
+const PARSER_CATEGORIES = [
+  'Hormone',
+  'Metabolic',
+  'Heart',
+  'Thyroid',
+  'Vitamin',
+  'Liver',
+  'Kidney',
+  'Blood',
+  'Electrolyte',
+  'Inflammation',
+  'Fertility',
+] as const;
+
+/**
+ * "Here's what happened" process strip. Shown on the states where we DID read
+ * the file but couldn't line it up (no-matches / not-lab-content / out-of-
+ * scope). The first two steps are done (accent + check), the last is the one
+ * that didn't complete (dashed, muted) — so the failure reads as "we got your
+ * file and read every line; the matching is what stopped," not "your file is
+ * broken." Same objects-not-people, ink-line vocabulary as ClinicalSpot;
+ * lucide glyphs keep it consistent with the rest of the app's iconography.
+ */
+function ProcessStrip({ lastLabel }: { lastLabel: string }) {
+  const steps = [
+    { icon: FileText, label: 'Uploaded', done: true },
+    { icon: ScanLine, label: 'Read every line', done: true },
+    { icon: Target, label: lastLabel, done: false },
+  ];
+  return (
+    <div className="mt-6 flex items-start justify-between w-full max-w-[19rem] mx-auto">
+      {steps.map((s, i) => (
+        <Fragment key={s.label}>
+          <div className="flex flex-col items-center gap-1.5 w-[4.5rem] shrink-0">
+            <div
+              className={`relative grid place-items-center w-11 h-11 rounded-full border ${
+                s.done
+                  ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/30'
+                  : 'bg-canvas/40 text-muted border-dashed border-line'
+              }`}
+            >
+              <s.icon size={17} aria-hidden />
+              {s.done && (
+                <span className="absolute -top-1 -right-1 grid place-items-center w-4 h-4 rounded-full bg-indigo-500 text-white">
+                  <Check size={10} strokeWidth={3} aria-hidden />
+                </span>
+              )}
+            </div>
+            <span
+              className={`text-micro leading-tight text-center ${
+                s.done ? 'text-ink-soft' : 'text-muted font-medium'
+              }`}
+            >
+              {s.label}
+            </span>
+          </div>
+          {i < steps.length - 1 && (
+            <div
+              className={`flex-1 mt-[21px] h-0 border-t ${
+                steps[i + 1].done ? 'border-line' : 'border-dashed border-line/70'
+              }`}
+            />
+          )}
+        </Fragment>
+      ))}
+    </div>
+  );
+}
 
 export default function ParseFailedView({
   failure,
@@ -152,9 +233,9 @@ export default function ParseFailedView({
           <div
             role="alert"
             aria-live="polite"
-            className="px-6 pt-8 pb-6 sm:px-8 border-b border-line/70 bg-canvas/40 flex flex-col items-center text-center"
+            className="px-6 pt-10 pb-8 sm:px-8 border-b border-line/70 bg-gradient-to-b from-canvas/60 to-transparent flex flex-col items-center text-center"
           >
-            <ClinicalSpot name={copy.spot} size={120} className="mb-4" />
+            <ClinicalSpot name={copy.spot} size={152} className="mb-5" />
             <div className="text-micro font-bold uppercase tracking-eyebrow text-gold-700">
               {copy.kicker}
             </div>
@@ -164,6 +245,21 @@ export default function ParseFailedView({
             <p className="mt-2 text-caption leading-relaxed text-ink-soft max-w-md">
               {copy.detail}
             </p>
+            {/* "Here's what happened" strip — only on the states where we read
+                the file but couldn't map it, so the story is honest. */}
+            {(failure.reason === 'no-matches' ||
+              failure.reason === 'not-lab-content' ||
+              failure.reason === 'out-of-scope') && (
+              <ProcessStrip
+                lastLabel={
+                  failure.reason === 'out-of-scope'
+                    ? 'Different report'
+                    : failure.reason === 'not-lab-content'
+                      ? 'No lab values'
+                      : 'No markers matched'
+                }
+              />
+            )}
             <div className="mt-4 inline-block text-left rounded-[10px] bg-surface border border-line/70 px-3 py-2 text-caption text-muted break-all max-w-full">
               <span className="font-bold uppercase tracking-label text-micro text-muted block mb-0.5">
                 File
@@ -205,9 +301,10 @@ export default function ParseFailedView({
                 Sits above "Enter values manually" because for the user
                 whose photo just failed Tesseract, the AI parser is
                 meaningfully more likely to succeed than typing 20 lab
-                values by hand. Gold tone signals "try this first" the
-                same way the Starter Check uses gold to mark "do this
-                first" on the recommended-tests page.
+                values by hand. It uses the calm forest primary (the app's
+                single CTA accent) — its "try this first" weight comes from
+                being the top, full-width action, not a loud gold fill (the
+                bright override read as jarring on the dark card).
                 Privacy disclosure under the button is non-negotiable:
                 Pipelines 1+2 never leave the device; Pipeline 3 sends
                 the image to Google AI Studio's free tier, which may
@@ -224,7 +321,6 @@ export default function ParseFailedView({
                   onClick={handleAiClick}
                   disabled={aiBusy}
                   fullWidth
-                  className="!bg-gold-500 !text-indigo-900 hover:!bg-gold-400"
                 >
                   {aiBusy ? 'Reading with AI…' : 'Try AI parser'}
                 </Button>
@@ -255,34 +351,58 @@ export default function ParseFailedView({
             >
               Enter values manually
             </Button>
-            <div className="grid sm:grid-cols-2 gap-2.5">
+            {/* Tertiary escape hatches — deliberately quiet (ghost, no
+                fill/border) so the eye lands on the primary + manual entry
+                first. A row of solid buttons made the block feel like a
+                heavy 4-button stack. */}
+            <div className="mt-0.5 flex items-center justify-center gap-1">
               <Button
-                size="md"
-                variant="secondary"
+                size="sm"
+                variant="ghost"
                 leading={<RotateCcw size={14} />}
                 onClick={onRetry}
-                fullWidth
               >
-                Try a different file
+                Different file
               </Button>
+              <span className="text-muted/50" aria-hidden>
+                ·
+              </span>
               <Button
-                size="md"
-                variant="secondary"
+                size="sm"
+                variant="ghost"
                 leading={<Sparkles size={14} />}
                 onClick={onSample}
-                fullWidth
               >
-                Use sample report
+                Sample report
               </Button>
             </div>
           </div>
 
           <div className="px-5 pb-5 -mt-1">
-            <p className="text-caption text-muted leading-relaxed">
-              {failure.reason === 'out-of-scope'
-                ? 'Your file looks like a viral panel, imaging report, urine/urinalysis, or clinical exam — those aren’t something we interpret (we read blood markers). If part of it has metabolic, hormone, or vitamin values, type them in via “Enter values manually”.'
-                : 'Our parser currently recognises hormone, metabolic, heart, thyroid, vitamin, liver, kidney, blood, electrolyte, inflammation, and fertility markers from text-layer PDFs and clear photos. Older scanned PDFs or non-standard lab layouts may not parse — we don’t guess.'}
-            </p>
+            {failure.reason === 'out-of-scope' ? (
+              <p className="text-caption text-muted leading-relaxed">
+                This looks like a viral panel, imaging or ECG, a urine test, a
+                physical exam, or a food / product-safety certificate — not a
+                blood test. If part of it does have blood values, add them with
+                “Enter values manually”.
+              </p>
+            ) : (
+              // De-boxed + de-pilled: the panel-in-a-card and 11 outlined
+              // chips read as busy. A quiet middot line of the families is
+              // calmer and still scannable.
+              <div className="text-center">
+                <p className="text-micro font-bold uppercase tracking-label text-muted mb-1.5">
+                  What we read
+                </p>
+                <p className="text-caption text-ink-soft leading-relaxed max-w-sm mx-auto">
+                  {PARSER_CATEGORIES.join(' · ')}
+                </p>
+                <p className="mt-2 text-caption text-muted leading-relaxed max-w-sm mx-auto">
+                  …from text-layer PDFs and clear photos. Older scans or
+                  non-standard layouts may not parse — we don’t guess.
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Raw-text diagnostic. Same disclosure pattern the confirm
