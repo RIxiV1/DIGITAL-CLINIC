@@ -46,7 +46,12 @@ export default function ConfirmExtractedValuesView({
   fileName: string;
   rawText?: string;
   unrecognizedRows?: string[];
-  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam' | 'urine';
+  ignoredCategory?:
+    | 'viral'
+    | 'imaging'
+    | 'physical-exam'
+    | 'urine'
+    | 'product-safety';
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
   ocrConfidence?: number;
@@ -461,7 +466,9 @@ export default function ConfirmExtractedValuesView({
                         ? 'imaging or ECG'
                         : ignoredCategory === 'urine'
                           ? 'urine / urinalysis'
-                          : 'physical-exam'}{' '}
+                          : ignoredCategory === 'product-safety'
+                            ? 'food / product-safety'
+                            : 'physical-exam'}{' '}
                     results
                   </span>
                   . Those aren’t part of the metabolic / HPA-axis analysis we

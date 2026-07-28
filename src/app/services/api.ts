@@ -172,7 +172,12 @@ export type ParsedReport = {
    *  CBC bundled with a viral panel. The confirm step uses this to
    *  show a "we ignored these sections" note so the unrecognized-rows
    *  panel doesn't make a deliberate skip look like a parser miss. */
-  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam' | 'urine';
+  ignoredCategory?:
+    | 'viral'
+    | 'imaging'
+    | 'physical-exam'
+    | 'urine'
+    | 'product-safety';
   /** OCR diagnostic — populated when the parser used Tesseract on a
    *  PDF. Lets the confirm view warn the user when some pages couldn't
    *  be read, so a partial extraction doesn't masquerade as complete. */
@@ -222,7 +227,13 @@ export async function parseUploadedReport(
         biomarkers: Biomarker[];
         rawText: string;
         unrecognizedRows: string[];
-        ignoredCategory: 'viral' | 'imaging' | 'physical-exam' | 'urine' | null;
+        ignoredCategory:
+          | 'viral'
+          | 'imaging'
+          | 'physical-exam'
+          | 'urine'
+          | 'product-safety'
+          | null;
         ocrPagesAttempted?: number;
         ocrPagesSkipped?: number;
         ocrConfidence?: number;

@@ -60,7 +60,12 @@ export type ConfirmState = {
    *  the classifier flags the out-of-scope half so the confirm view can
    *  say "we ignored these sections" rather than letting the deliberately
    *  skipped rows show up in the unrecognized-rows panel. */
-  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam' | 'urine';
+  ignoredCategory?:
+    | 'viral'
+    | 'imaging'
+    | 'physical-exam'
+    | 'urine'
+    | 'product-safety';
   /** OCR diagnostic — non-zero `pagesSkipped` means the user's report
    *  parsed partially. We surface a banner so a partial result isn't
    *  mistaken for a complete one. */

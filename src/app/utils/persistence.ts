@@ -210,7 +210,7 @@ const PendingConfirmSchema = z.object({
   rawText: z.string().max(200_000).optional(),
   unrecognizedRows: z.array(z.string().max(500)).max(50).optional(),
   ignoredCategory: z
-    .enum(['viral', 'imaging', 'physical-exam', 'urine'])
+    .enum(['viral', 'imaging', 'physical-exam', 'urine', 'product-safety'])
     .optional(),
   ocrPagesAttempted: z.number().int().nonnegative().max(50).optional(),
   ocrPagesSkipped: z.number().int().nonnegative().max(50).optional(),
@@ -557,7 +557,12 @@ export type PendingConfirmRecord<TBiomarker> = {
   biomarkers: TBiomarker[];
   rawText?: string;
   unrecognizedRows?: string[];
-  ignoredCategory?: 'viral' | 'imaging' | 'physical-exam' | 'urine';
+  ignoredCategory?:
+    | 'viral'
+    | 'imaging'
+    | 'physical-exam'
+    | 'urine'
+    | 'product-safety';
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
   ocrConfidence?: number;

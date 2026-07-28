@@ -92,13 +92,11 @@ export default function ParseFailedView({
           spot: 'blank',
         };
       case 'out-of-scope':
-        // Exact string. Keep it intact — backend / analytics / future
-        // automated handlers should be able to string-match on it.
         return {
           kicker: 'A different kind of report',
-          title: 'This report is outside what we cover.',
+          title: 'This looks like a different kind of report.',
           detail:
-            'Error: The uploaded document contains testing (e.g., infectious disease panels or localized physical exams) that is not related to general metabolic biomarkers or the HPA axis ecosystem. We cannot analyze this report.',
+            'We read blood-test results — a marker, a number and a unit, like “Testosterone 280 ng/dL”. This looks like something else: an infectious-disease panel, an imaging or urine report, a physical exam, or a food / product-safety certificate. Nothing’s wrong with your file — it’s just not what we interpret. If part of it has blood values, you can type those in below.',
           spot: 'off-scope',
         };
       case 'blank':

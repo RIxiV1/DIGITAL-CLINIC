@@ -1651,6 +1651,32 @@ describe('classifyOutOfScope', () => {
     expect(classifyOutOfScope(text)).toBe('imaging');
   });
 
+  it('flags a food/product-safety microbiology certificate (product-safety category)', () => {
+    // A real case: users upload the manufacturer's COA for their supplement.
+    const text = `
+      TEST REPORT
+      Description of Sample: Iron for Men
+      Quality Characteristics Result Test Method Unit
+      Listeria monocytogenes Absent per 25g
+      Salmonella Absent per 25g
+      Enterobacteriaceae <10 Cfu/gm
+    `;
+    expect(classifyOutOfScope(text)).toBe('product-safety');
+  });
+
+  it('does NOT flag a Widal/typhoid blood serology as product-safety', () => {
+    // "salmonella" appears on typhoid BLOOD serology, so it is deliberately
+    // excluded from the product-safety keywords — a Widal must not be mistaken
+    // for a food report.
+    const text = `
+      WIDAL TEST
+      Salmonella Typhi O 1:80
+      Salmonella Typhi H 1:160
+      Salmonella Paratyphi AH 1:40
+    `;
+    expect(classifyOutOfScope(text)).not.toBe('product-safety');
+  });
+
   it('flags an ECG/EKG tracing report (imaging category)', () => {
     // ECG isn't strictly "imaging" but is a tracing, not a lab. Lives
     // under the imaging set so the category list stays at three.

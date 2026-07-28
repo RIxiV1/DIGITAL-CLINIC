@@ -25,7 +25,8 @@ export type OutOfScopeCategory =
   | 'viral'
   | 'imaging'
   | 'physical-exam'
-  | 'urine';
+  | 'urine'
+  | 'product-safety';
 
 /**
  * Per-category keyword sets, with a "definitive" subset that's specific
@@ -214,6 +215,44 @@ const OUT_OF_SCOPE: Record<OutOfScopeCategory, OutOfScopeKeywordSet> = {
       'urine r/e',
       'pus cells',
       'urobilinogen',
+    ],
+  },
+  // Food / product-safety certificates. People searching their supplements
+  // sometimes upload the manufacturer's microbiology or heavy-metals COA
+  // (e.g. an "Iron for Men" powder tested for Listeria/Salmonella/CFU) — a
+  // real document, just not a blood test. Terms are food-specific: notably
+  // "salmonella" is EXCLUDED (it appears on Widal/typhoid BLOOD serology),
+  // and the definitive set uses per-GRAM colony counts + food-report headers
+  // that never appear on a human blood panel.
+  'product-safety': {
+    keywords: [
+      'cfu/gm',
+      'cfu/g',
+      'cfu / g',
+      'listeria',
+      'listeria monocytogenes',
+      'enterobacteriaceae',
+      'per 25g',
+      'per 25 g',
+      'per 25gm',
+      'quality characteristics',
+      'total plate count',
+      'aerobic plate count',
+      'yeast and mould',
+      'yeast & mould',
+      'shelf life',
+      'foods llp',
+      'food safety',
+      'mg/kg',
+    ],
+    definitive: [
+      'cfu/gm',
+      'cfu/g',
+      'listeria monocytogenes',
+      'enterobacteriaceae',
+      'per 25g',
+      'per 25 g',
+      'quality characteristics',
     ],
   },
 };
