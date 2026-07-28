@@ -313,6 +313,40 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'Best One Lab (Pakistan) — reverse column, Total RBCs, x10^9/l platelets',
+    note: 'a real image upload, reverse column order (TEST | RANGE | UNIT | RESULT). Two catalog gaps it exposed: "Total RBCs" (plural — the bare RBC alias cannot match "RBCs") and platelets in x10^9/l (SI ≡ x10^3/µL, ×1000 → 82,000, a typhoid thrombocytopenia that was dropped whole). All 12 hematology values now read on clean text.',
+    text: [
+      'Hemoglobin (HB) 13.00 - 17.00 g/dl 12.7',
+      'WBC (TLC) 4.00 - 12.00 x10^3/uL 7.4',
+      'Total RBCs 4.50 - 6.50 x10^6/uL 5.13',
+      'HCT (Hematocrit) 40.00 - 50.00 % 41.7',
+      'MCV 80.00 - 96.00 fl 81.3',
+      'MCH 27.00 - 32.00 pg 24.8',
+      'MCHC 30.00 - 35.00 g/dl 30.5',
+      'Platelet Count 150.00 - 450.00 x10^9/l 82',
+      'Neutrophils 40.00 - 80.00 % 80',
+      'Lymphocytes 20.00 - 40.00 % 12',
+      'Monocytes 2.00 - 10.00 % 05',
+      'Eosinophils 1.00 - 6.00 % 03',
+    ].join('\n'),
+    expect: {
+      values: {
+        hb: 12.7,
+        wbc: 7400, // 7.4 x10^3
+        rbc: 5.13, // "Total RBCs" plural alias
+        hematocrit: 41.7,
+        mcv: 81.3,
+        mch: 24.8,
+        mchc: 30.5,
+        platelets: 82000, // 82 x10^9/l ×1000 (thrombocytopenia)
+        neutrophils: 80,
+        lymphocytes: 12,
+        monocytes: 5,
+        eosinophils: 3,
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [

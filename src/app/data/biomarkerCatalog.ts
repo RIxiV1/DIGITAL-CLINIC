@@ -1721,6 +1721,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'thou/uL',
       'thousand/uL',
     ],
+    // SI: WBC as x10^9/L ≡ x10^3/µL (the /L→/µL ÷1e6 leaves the 10^9 prefix
+    // net ×1e3 over the /µL canonical). value × 1000 = /cumm.
+    altUnits: [
+      { units: ['x10^9/L', 'x10^9/l', '10^9/L', '10^9/l'], toCanonical: 1000 },
+    ],
     min: 4000,
     max: 11000,
     // Critical: <2000 = severe neutropenia + infection risk;
@@ -1745,6 +1750,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'RBC Count',
       'Total RBC Count',
       'Erythrocyte Count',
+      // Plural forms — Pakistani/Indian labs print "Total RBCs" / "RBCs";
+      // the bare 'RBC' alias can't match "RBCs" (trailing-letter boundary).
+      'Total RBCs',
+      'RBCs',
       'RBC',
     ],
     unit: 'million/cumm',
@@ -1769,6 +1778,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'mill/uL',
       'millions/cumm',
       'millions/μL',
+    ],
+    // SI: RBC reported as x10^12/L ≡ million/µL (same numeric value) — the
+    // /L→/µL (÷1e6) exactly cancels the 10^12→10^6 prefix, so toCanonical 1.
+    altUnits: [
+      { units: ['x10^12/L', 'x10^12/l', '10^12/L', '10^12/l'], toCanonical: 1 },
     ],
     min: 4.5,
     max: 5.9,
@@ -1824,6 +1838,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'thousand/uL',
       'lakh/uL',
       'lakhs/uL',
+    ],
+    // SI: platelets as x10^9/L ≡ x10^3/µL — value × 1000 = /cumm. A real
+    // Pakistani report printed "Platelet Count ... x10^9/l 82" (= 82,000, a
+    // typhoid thrombocytopenia); unrecognised, the whole marker dropped.
+    altUnits: [
+      { units: ['x10^9/L', 'x10^9/l', '10^9/L', '10^9/l'], toCanonical: 1000 },
     ],
     min: 150000,
     max: 450000,
