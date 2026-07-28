@@ -86,6 +86,47 @@ describe('mapGeminiResultsToCatalog — match, scale, bound, dedupe, route', () 
     );
   });
 
+  // altUnits SI conversion on the AI path — previously the AI parser only did
+  // count-prefix scaling and skipped altUnits entirely, so SI units and the
+  // troponin/D-dimer scale-safety fixes silently didn't apply when a report
+  // went through Gemini. These keep it in lockstep with the text parser.
+  it('troponin pg/mL ÷1000 via AI path (no false MI)', () => {
+    const out = mapGeminiResultsToCatalog([
+      { name: 'Troponin I', value: 14, unit: 'pg/mL' },
+    ]);
+    expect(out.biomarkers.find((m) => m.id === 'troponin-i')?.value).toBeCloseTo(
+      0.014,
+      4,
+    );
+  });
+  it('D-Dimer mg/L ×1000 via AI path (no missed PE)', () => {
+    const out = mapGeminiResultsToCatalog([
+      { name: 'D-Dimer', value: 2.5, unit: 'mg/L' },
+    ]);
+    expect(out.biomarkers.find((m) => m.id === 'd-dimer')?.value).toBeCloseTo(
+      2500,
+      1,
+    );
+  });
+  it('glucose mmol/L → mg/dL via AI path', () => {
+    const out = mapGeminiResultsToCatalog([
+      { name: 'Fasting Glucose', value: 5, unit: 'mmol/L' },
+    ]);
+    expect(out.biomarkers.find((m) => m.id === 'glucose')?.value).toBeCloseTo(
+      90.08,
+      1,
+    );
+  });
+  it('platelets x10^9/L ×1000 via AI path', () => {
+    const out = mapGeminiResultsToCatalog([
+      { name: 'Platelet Count', value: 82, unit: 'x10^9/L' },
+    ]);
+    expect(out.biomarkers.find((m) => m.id === 'platelets')?.value).toBeCloseTo(
+      82000,
+      0,
+    );
+  });
+
   it('routes an unrecognised marker name to unmapped, not the dashboard', () => {
     const out = mapGeminiResultsToCatalog([
       { name: 'Zorblaxium Level', value: 5, unit: 'mg/dL' },

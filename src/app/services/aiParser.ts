@@ -33,6 +33,7 @@ import {
   deriveComputedMarkers,
   type Biomarker,
 } from '../data/biomarkers';
+import { normalizeMu } from './parser/pdfTextLayer';
 
 /**
  * Single source of truth for the AI-parser privacy disclosure copy.
@@ -204,7 +205,7 @@ export function unitMultiplier(unit: string | null | undefined): number {
     return 1e6;
   }
   if (
-    /(^|[^a-z])(thousands|thousand|thou)([^a-z]|$)/.test(u) ||
+    /(^|[^a-z])(thousands|thousand|thous|thou|th|k)([^a-z]|$)/.test(u) ||
     /\b10\^?3\b/.test(u) ||
     /x10\^?3/.test(u) ||
     /10³/.test(u)
@@ -302,7 +303,22 @@ export function mapGeminiResultsToCatalog(
     // → store 245,000. "4.09 mill/cumm" → catalog `million/cumm` →
     // ratio 1 → store 4.09 unchanged. Mass/concentration units (mg/dL,
     // ng/mL) return ratio 1 and pass through.
-    const scale = unitMultiplier(r.unit) / unitMultiplier(template.unit);
+    // SI / alternative-unit conversion takes priority (mirrors pdfParser's
+    // extractMarkerValue): when Gemini's unit is one of the marker's altUnits,
+    // apply its exact per-marker factor — mmol/L→mg/dL, µmol/L→mg/dL,
+    // pg/mL→ng/mL, x10^9/L→/cumm, etc. Otherwise fall back to the count-prefix
+    // ratio. Without this the AI path silently skipped EVERY SI conversion:
+    // a troponin in pg/mL stayed 1000x too high (a false MI), a D-dimer in
+    // mg/L stayed 1000x too low (a missed PE), SI glucose/creatinine/calcium
+    // graded against the wrong band. This keeps the AI parser in lockstep
+    // with the text parser on unit handling.
+    const normPrinted = normalizeMu(r.unit ?? '').toLowerCase();
+    const alt = template.altUnits?.find((a) =>
+      a.units.some((u) => normPrinted.includes(normalizeMu(u).toLowerCase())),
+    );
+    const scale = alt
+      ? alt.toCanonical
+      : unitMultiplier(r.unit) / unitMultiplier(template.unit);
     // Clean up IEEE-754 noise from scaling (2.45 * 1e5 → 245000.0000000003)
     // so the dashboard never shows "245000.0000000003" / a stray
     // "40.99999%". Mirrors pdfParser's extractMarkerValue; only kicks in
