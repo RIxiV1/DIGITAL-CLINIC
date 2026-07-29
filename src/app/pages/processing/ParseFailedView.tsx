@@ -1,4 +1,4 @@
-import { Fragment, useState } from 'react';
+import { useState } from 'react';
 import {
   Check,
   ChevronDown,
@@ -54,42 +54,54 @@ function ProcessStrip({ lastLabel }: { lastLabel: string }) {
     { icon: ScanLine, label: 'Read every line', done: true },
     { icon: Target, label: lastLabel, done: false },
   ];
+  // 3 equal columns so each node sits at its column's centre and every label
+  // lands directly beneath its node — no magic offsets to drift. The connector
+  // is absolute from a node's centre spanning one full column (= the exact gap
+  // to the next node's centre). The accent PATH runs through the completed
+  // steps and turns to a dashed muted line into the step that didn't complete
+  // — the failure reads as "we got here, this is where it stopped".
+  const NODE = 44; // h-11
   return (
-    <div className="mt-6 flex items-start justify-between w-full max-w-[19rem] mx-auto">
-      {steps.map((s, i) => (
-        <Fragment key={s.label}>
-          <div className="flex flex-col items-center gap-1.5 w-[4.5rem] shrink-0">
+    <div className="mt-7 w-full max-w-[20rem] mx-auto grid grid-cols-3">
+      {steps.map((s, i) => {
+        const nextDone = i < steps.length - 1 && steps[i + 1].done;
+        return (
+          <div key={s.label} className="relative flex flex-col items-center gap-2">
+            {i < steps.length - 1 && (
+              <div
+                aria-hidden
+                style={{ top: NODE / 2 }}
+                className={`absolute left-1/2 w-full h-px ${
+                  nextDone
+                    ? 'bg-forest/45'
+                    : 'border-t border-dashed border-line-strong'
+                }`}
+              />
+            )}
             <div
-              className={`relative grid place-items-center w-11 h-11 rounded-full border ${
+              className={`relative z-10 grid place-items-center w-11 h-11 rounded-full ${
                 s.done
-                  ? 'bg-indigo-500/10 text-indigo-500 border-indigo-500/30'
-                  : 'bg-canvas/40 text-muted border-dashed border-line'
+                  ? 'bg-forest/12 text-forest border border-forest/40'
+                  : 'bg-surface text-muted border border-dashed border-line-strong'
               }`}
             >
               <s.icon size={17} aria-hidden />
               {s.done && (
-                <span className="absolute -top-1 -right-1 grid place-items-center w-4 h-4 rounded-full bg-indigo-500 text-white">
-                  <Check size={10} strokeWidth={3} aria-hidden />
+                <span className="absolute -top-1 -right-1 grid place-items-center w-[18px] h-[18px] rounded-full bg-forest text-on-forest ring-2 ring-surface">
+                  <Check size={11} strokeWidth={3} aria-hidden />
                 </span>
               )}
             </div>
             <span
-              className={`text-micro leading-tight text-center ${
-                s.done ? 'text-ink-soft' : 'text-muted font-medium'
+              className={`text-micro leading-tight text-center px-0.5 ${
+                s.done ? 'text-ink-soft' : 'text-ink font-semibold'
               }`}
             >
               {s.label}
             </span>
           </div>
-          {i < steps.length - 1 && (
-            <div
-              className={`flex-1 mt-[21px] h-0 border-t ${
-                steps[i + 1].done ? 'border-line' : 'border-dashed border-line/70'
-              }`}
-            />
-          )}
-        </Fragment>
-      ))}
+        );
+      })}
     </div>
   );
 }
