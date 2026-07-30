@@ -34,6 +34,12 @@ import {
   type Biomarker,
 } from '../data/biomarkers';
 import { normalizeMu } from './parser/pdfTextLayer';
+import { unitMultiplier, roundConvertedValue } from './parser/units';
+
+/** Re-exported so this module stays the import site the AI-path tests and
+ *  callers already use. The definition itself is shared with the text
+ *  matcher — see parser/units.ts for why it must not be duplicated. */
+export { unitMultiplier };
 
 /**
  * Single source of truth for the AI-parser privacy disclosure copy.
@@ -173,46 +179,33 @@ function hasContiguousWordMatch(
 }
 
 /**
- * Detect the count-prefix multiplier in a printed unit string.
+ * Molar-concentration unit spellings. A value in any of these is a count of
+ * molecules per litre; a catalog unit like mg/dL is a mass per volume. The
+ * two are related only through the analyte's molar mass, which is exactly
+ * what a template's `altUnits` entry encodes — so if no altUnit matched,
+ * we have no lawful way to convert and must not pretend the number is
+ * already canonical.
  *
- * Indian labs print platelets/WBC as "245 thou/cumm" or "2.45 lakh/cumm"
- * rather than the canonical raw count (245,000). Gemini returns whatever
- * the lab printed verbatim; we have to reconcile that against the
- * catalog's canonical unit before storing the value, otherwise a
- * platelet count of 245 thou shows up as "245" against a 150,000–450,000
- * reference range and lights up red on a healthy reading.
- *
- * Returns the linear multiplier (1, 1e3, 1e5, 1e6). The reconciliation
- * step computes `geminiMult / catalogMult` and scales the value — so a
- * catalog template already in `million/cumm` (RBC) gets multiplier 1e6
- * too and the values pass through unscaled.
- *
- * NOT a general unit converter — only handles the count-prefix family
- * the Indian lab format uses. Mass/concentration units (mg/dL, ng/mL,
- * g/dL) return 1; the catalog's per-marker canonical unit already
- * enforces scale on those.
+ * Deliberately does NOT include mass-ratio units (mg/L, µg/mL, g/L): those
+ * differ from a mass-per-volume canonical unit only by a power of ten, which
+ * `unitMultiplier` and the count-prefix path already handle correctly.
  */
-export function unitMultiplier(unit: string | null | undefined): number {
-  if (!unit) return 1;
-  const u = unit.toLowerCase().trim();
-  if (/(^|[^a-z])(lakh|lac|lakhs)([^a-z]|$)/.test(u)) return 1e5;
-  if (
-    /(^|[^a-z])(millions|million|mill|mil|m)([^a-z]|$)/.test(u) ||
-    /\b10\^?6\b/.test(u) ||
-    /x10\^?6/.test(u) ||
-    /10⁶/.test(u)
-  ) {
-    return 1e6;
-  }
-  if (
-    /(^|[^a-z])(thousands|thousand|thous|thou|th|k)([^a-z]|$)/.test(u) ||
-    /\b10\^?3\b/.test(u) ||
-    /x10\^?3/.test(u) ||
-    /10³/.test(u)
-  ) {
-    return 1e3;
-  }
-  return 1;
+const MOLAR_UNIT_PATTERN = /(^|[^a-z])[munp]?mol\s*\/\s*l([^a-z]|$)/i;
+
+/**
+ * True when the printed unit is molar, the template's canonical unit is NOT
+ * molar, and therefore no meaning-preserving conversion exists here.
+ *
+ * A template whose own unit is molar (SHBG in nmol/L, for instance) is left
+ * alone — matching molar against molar is the normal case, and the
+ * count-prefix ratio handles any magnitude difference.
+ */
+function isUnconvertibleMolarUnit(
+  normalisedPrintedUnit: string,
+  templateUnit: string,
+): boolean {
+  if (!MOLAR_UNIT_PATTERN.test(normalisedPrintedUnit)) return false;
+  return !MOLAR_UNIT_PATTERN.test(normalizeMu(templateUnit).toLowerCase());
 }
 
 /**
@@ -235,6 +228,20 @@ function findTemplateByName(name: string) {
     .trim();
   if (!normalised) return null;
   const haystack = tokenise(normalised);
+  // Take the MOST SPECIFIC match, not the first one in catalog order.
+  //
+  // A short alias that is a prefix of a longer marker's name wins on catalog
+  // order alone: "Free T4" contains the token "T4", so it resolved to the
+  // TOTAL T4 template (µg/dL, a different analyte with a different range)
+  // and a free T4 of 1.13 ng/dL was reported as a total T4 of 14.5 µg/dL,
+  // graded 'concern' instead of 'good'. "Free T3" → total T3 the same way.
+  //
+  // The text matcher already defends this with span-containment suppression
+  // (see collectHits); this is the same idea in token space. Longest match
+  // wins, catalog order only breaks ties, so every existing single-candidate
+  // resolution is unchanged.
+  let best: (typeof biomarkerCatalog)[number] | null = null;
+  let bestTokens = 0;
   for (const template of biomarkerCatalog) {
     const candidates = [template.name, ...template.aliases]
       .map((c) =>
@@ -247,10 +254,14 @@ function findTemplateByName(name: string) {
       .filter((c) => c.length >= MIN_CANDIDATE_LENGTH);
     for (const candidate of candidates) {
       const needle = tokenise(candidate);
-      if (hasContiguousWordMatch(haystack, needle)) return template;
+      if (needle.length <= bestTokens) continue;
+      if (hasContiguousWordMatch(haystack, needle)) {
+        best = template;
+        bestTokens = needle.length;
+      }
     }
   }
-  return null;
+  return best;
 }
 
 export type AiMapResult = {
@@ -263,6 +274,46 @@ export type AiMapResult = {
    *  didn't get silently truncated to 18. */
   unmapped: Array<{ name: string; value: number; unit: string }>;
 };
+
+/**
+ * Scale and vet the reference range the model read off the report.
+ *
+ * Deliberately the same three guards the text matcher applies to a range it
+ * captured itself (see extractMarkerValue in parser/catalogMatcher.ts), for
+ * the same reason: once a printed range DRIVES status, a misread one doesn't
+ * degrade gracefully — it invents a flag.
+ *
+ *   1. Well-formed: both bounds finite and min < max.
+ *   2. Physically plausible: the scaled range sits inside the marker's own
+ *      physical bounds, so a range mangled into the wrong magnitude is out.
+ *   3. The value belongs beside it: a lab never prints a result more than
+ *      ~5x outside the range it prints next to it. When that happens the
+ *      RANGE is the misread, so we drop it and grade on the catalog band.
+ *      Tested by magnitude ratio rather than span, because spans differ far
+ *      too much between markers for one window to fit them all.
+ *
+ * Returns undefined when the range fails any guard — the caller then grades
+ * against the catalog, exactly as it did before ranges were plumbed through.
+ */
+function trustedLabRange(
+  r: GeminiMarker,
+  scale: number,
+  value: number,
+  physMin: number,
+  physMax: number,
+): { min: number; max: number } | undefined {
+  const rawMin = typeof r.refMin === 'number' ? r.refMin : NaN;
+  const rawMax = typeof r.refMax === 'number' ? r.refMax : NaN;
+  if (!Number.isFinite(rawMin) || !Number.isFinite(rawMax)) return undefined;
+  if (rawMin >= rawMax) return undefined;
+  const min = scale !== 1 ? roundConvertedValue(rawMin * scale, scale) : rawMin;
+  const max = scale !== 1 ? roundConvertedValue(rawMax * scale, scale) : rawMax;
+  if (min < physMin || max > physMax) return undefined;
+  const belowOk = min <= 0 ? true : value >= min / 5;
+  const aboveOk = max <= 0 ? true : value <= max * 5;
+  if (!belowOk || !aboveOk) return undefined;
+  return { min, max };
+}
 
 /**
  * Map Gemini's flat array onto our Biomarker shape. Markers that don't
@@ -316,17 +367,36 @@ export function mapGeminiResultsToCatalog(
     const alt = template.altUnits?.find((a) =>
       a.units.some((u) => normPrinted.includes(normalizeMu(u).toLowerCase())),
     );
+    // A MOLAR unit we can't convert is not a unit we may ignore.
+    //
+    // The text matcher has a unit gate: a printed unit that isn't the
+    // template's own (or a declared altUnit) simply fails to match, and the
+    // marker is safely skipped. The AI path has no such gate — it resolves on
+    // NAME and then applies whatever scale it can work out, defaulting to 1.
+    // So a lipid panel printed in mmol/L (routine across the UK, Europe,
+    // Malaysia and Australia) mapped "Total Cholesterol 5.2 mmol/L" straight
+    // onto the mg/dL template as 5.2 mg/dL — a real 201 mg/dL reported as an
+    // impossibly low number that still cleared the physical bounds and
+    // rendered as a normal result.
+    //
+    // A molar concentration can NEVER be numerically equivalent to a
+    // mass-per-volume canonical unit, so when we see one and the template
+    // doesn't declare a conversion for it, treating it as canonical is always
+    // wrong. Route it to unmapped instead — the user is told the lab tested
+    // it and we didn't interpret it, which is the honest outcome. Narrow on
+    // purpose: only these molar spellings, and only when no altUnit matched,
+    // so no marker we CAN read is newly rejected.
+    if (!alt && isUnconvertibleMolarUnit(normPrinted, template.unit)) {
+      recordUnmapped(r);
+      continue;
+    }
     const scale = alt
       ? alt.toCanonical
       : unitMultiplier(r.unit) / unitMultiplier(template.unit);
-    // Clean up IEEE-754 noise from scaling (2.45 * 1e5 → 245000.0000000003)
-    // so the dashboard never shows "245000.0000000003" / a stray
-    // "40.99999%". Mirrors pdfParser's extractMarkerValue; only kicks in
-    // when we actually scaled (ratio ≠ 1), so unscaled values pass through
-    // byte-identical.
-    // 3 sig-figs = a converted value's honest precision (see pdfParser's
-    // extractMarkerValue); avoids false-precision decimals like 2.3184799819.
-    const value = scale !== 1 ? parseFloat((raw * scale).toPrecision(3)) : raw;
+    // Same precision rule as the text matcher — a molar conversion rounds to
+    // 3 sig-figs, an exact power-of-ten count-prefix shift keeps every
+    // printed digit and only sheds IEEE-754 noise. See parser/units.ts.
+    const value = scale !== 1 ? roundConvertedValue(raw * scale, scale) : raw;
     // Sanity bounds applied to the SCALED value:
     //   1. Non-negative — biomarkers are non-negative; a negative
     //      reading is hallucination or sign-flip.
@@ -352,8 +422,24 @@ export function mapGeminiResultsToCatalog(
       recordUnmapped(r);
       continue;
     }
+    // The lab's OWN printed range, scaled the same way the value was.
+    //
+    // Gemini returns refMin/refMax, the response schema validates them, and
+    // they were then dropped on the floor — `markerFromTemplate` was called
+    // without its third argument. So "trust the signing pathologist", the
+    // rule the whole grading model is built on, silently did not apply to
+    // anything read off a photo. It also removed the only mechanism that
+    // absorbs a lab's sex- or method-specific range, since the catalog
+    // carries one band per marker.
+    //
+    // Trusted on the same terms as the text path (see extractMarkerValue):
+    // min < max, both inside the marker's physical bounds, and the value has
+    // to plausibly belong beside them — a model that misreads a range is at
+    // least as likely as OCR that does, and an unchecked range invents
+    // flags rather than fixing them.
+    const labRef = trustedLabRange(r, scale, value, physMin, physMax);
     mapped.push({
-      ...markerFromTemplate(template, value),
+      ...markerFromTemplate(template, value, labRef),
       // Unit-reconciliation receipt — keep the lab's printed value/unit
       // when we rescaled (e.g. lakh/thou/million prefixes), so the UI can
       // show "same result, standard units".

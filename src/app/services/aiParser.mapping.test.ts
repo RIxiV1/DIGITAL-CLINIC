@@ -11,6 +11,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { unitMultiplier, mapGeminiResultsToCatalog } from './aiParser';
+import { extractBiomarkersFromText } from './pdfParser';
 
 describe('unitMultiplier — Indian count-prefix reconciliation', () => {
   it('returns 1 for plain mass/concentration units and empties', () => {
@@ -186,5 +187,120 @@ describe('mapGeminiResultsToCatalog — match, scale, bound, dedupe, route', () 
     ]);
     expect(out.biomarkers).toHaveLength(1);
     expect(out.unmapped.map((u) => u.name)).toContain('Zorblaxium');
+  });
+});
+
+/**
+ * The AI path and the text path are two readings of the SAME report, so
+ * anything they disagree about is a bug in one of them by definition. Every
+ * case below was a real divergence: the AI path silently produced a different
+ * number, a different marker, or a different grade than the deterministic
+ * path would have for identical input.
+ */
+describe('AI path ≡ text path — divergences that produced false results', () => {
+  const viaAi = (name: string, value: number, unit: string) =>
+    mapGeminiResultsToCatalog([{ name, value, unit }]);
+  const viaText = (name: string, value: number, unit: string) =>
+    extractBiomarkersFromText(`${name} ${value} ${unit}\n`);
+
+  it.each([
+    // Unit spellings the AI path's own copy of unitMultiplier had never
+    // learned — each one left the value unscaled and graded it as critical.
+    ['Platelet Count', 2.4, 'lacs/cumm'],
+    ['Total Leucocyte Count', 7.2, '10E3/uL'],
+    ['Total Leucocyte Count', 11.25, 'x10^9/L'],
+    // Conversions both paths already shared — guarding the parity itself.
+    ['Creatinine', 88, 'umol/L'],
+    ['Glucose', 5.5, 'mmol/L'],
+    ['Hemoglobin', 13.2, 'g/dL'],
+  ])('reads "%s %s %s" identically on both paths', (name, value, unit) => {
+    const ai = viaAi(name as string, value as number, unit as string);
+    const text = viaText(name as string, value as number, unit as string);
+    expect(text).toHaveLength(1);
+    expect(ai.biomarkers).toHaveLength(1);
+    expect(ai.biomarkers[0].id).toBe(text[0].id);
+    expect(ai.biomarkers[0].value).toBe(text[0].value);
+    expect(ai.biomarkers[0].status).toBe(text[0].status);
+  });
+
+  it('resolves "Free T4" to free T4, not to total T4', () => {
+    // "Free T4" contains the token "T4", so first-match-in-catalog-order
+    // resolved it to the TOTAL T4 template (µg/dL) and reported a free T4 of
+    // 1.13 ng/dL as a total T4 of 14.5 µg/dL, graded 'concern' not 'good'.
+    const out = viaAi('Free T4', 14.5, 'pmol/L');
+    expect(out.biomarkers[0]?.id).toBe('free-t4');
+    expect(out.biomarkers[0]?.id).toBe(viaText('Free T4', 14.5, 'pmol/L')[0].id);
+  });
+
+  it('resolves "Free T3" to free T3, not to total T3', () => {
+    const out = viaAi('Free T3', 4.8, 'pmol/L');
+    expect(out.biomarkers[0]?.id).toBe('free-t3');
+  });
+
+  it.each([
+    ['Total Cholesterol', 5.2],
+    ['Triglycerides', 1.7],
+    ['HDL Cholesterol', 1.3],
+  ])(
+    'refuses to read "%s" in mmol/L as though it were mg/dL',
+    (name, value) => {
+      // The lipid templates declare no mmol/L conversion, and the AI path had
+      // no unit gate — so a routine UK/EU lipid panel mapped 5.2 mmol/L onto
+      // the mg/dL template as "5.2 mg/dL" (really ~201) and rendered normal.
+      // The text path's unit gate already refused this; now both do.
+      const out = viaAi(name as string, value as number, 'mmol/L');
+      expect(out.biomarkers).toHaveLength(0);
+      expect(out.unmapped.map((u) => u.name)).toContain(name);
+      expect(viaText(name as string, value as number, 'mmol/L')).toHaveLength(0);
+    },
+  );
+
+  it('leaves a natively-molar marker alone', () => {
+    // SHBG's own canonical unit is nmol/L — molar against molar is the
+    // normal case and must not be caught by the guard above.
+    const out = viaAi('SHBG', 30, 'nmol/L');
+    expect(out.biomarkers[0]?.value).toBe(30);
+  });
+});
+
+describe("AI path — the lab's own printed reference range", () => {
+  it('carries a sane printed range through to the marker', () => {
+    // refMin/refMax were validated by the response schema and then dropped:
+    // markerFromTemplate was called without them, so "trust the signing
+    // pathologist" never applied to anything read off a photo.
+    const out = mapGeminiResultsToCatalog([
+      { name: 'Hemoglobin', value: 13.2, unit: 'g/dL', refMin: 12, refMax: 16 },
+    ]);
+    expect(out.biomarkers[0].labRefMin).toBe(12);
+    expect(out.biomarkers[0].labRefMax).toBe(16);
+  });
+
+  it('rejects an inverted range', () => {
+    const out = mapGeminiResultsToCatalog([
+      { name: 'Hemoglobin', value: 13.2, unit: 'g/dL', refMin: 16, refMax: 12 },
+    ]);
+    expect(out.biomarkers[0].labRefMin).toBeUndefined();
+  });
+
+  it('rejects a range the value could not plausibly belong to', () => {
+    // A misread range is at least as likely from a vision model as from OCR,
+    // and an unchecked one invents flags rather than fixing them.
+    const out = mapGeminiResultsToCatalog([
+      {
+        name: 'Hemoglobin',
+        value: 13.2,
+        unit: 'g/dL',
+        refMin: 1200,
+        refMax: 1600,
+      },
+    ]);
+    expect(out.biomarkers[0].labRefMin).toBeUndefined();
+  });
+
+  it('omits the range when the model reported none', () => {
+    const out = mapGeminiResultsToCatalog([
+      { name: 'Hemoglobin', value: 13.2, unit: 'g/dL' },
+    ]);
+    expect(out.biomarkers[0].labRefMin).toBeUndefined();
   });
 });
