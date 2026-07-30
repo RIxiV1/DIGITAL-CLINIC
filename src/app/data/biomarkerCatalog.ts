@@ -550,6 +550,39 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     plain: 'Your “good” cholesterol — clears the bad kind.',
   },
   {
+    id: 'tc-hdl-ratio',
+    name: 'Cholesterol/HDL Ratio',
+    aliases: [
+      'Cholesterol/HDL Ratio',
+      'Total Cholesterol/HDL Ratio',
+      'TC/HDL Ratio',
+      'TC:HDL Ratio',
+      'Cholesterol : HDL Ratio',
+      'CHOL/HDL Ratio',
+      'Cardiac Risk Ratio',
+      'Chol/HDL Ratio',
+    ],
+    unit: '',
+    // Calculated: total cholesterol ÷ HDL. Lower is better; <5 desirable,
+    // <3.5 ideal. A single figure that captures the balance of good vs total.
+    min: 0,
+    max: 5,
+    optimalMin: 0,
+    optimalMax: 3.5,
+    optimalSource: {
+      label:
+        'Framingham-derived cardiac-risk ratio — total-cholesterol ÷ HDL below 5 is desirable and below 3.5 is optimal',
+      audience: 'adults',
+    },
+    physicalMin: 0,
+    physicalMax: 30,
+    category: 'heart',
+    direction: 'down',
+    simpleName: 'Good-vs-total cholesterol balance (calculated)',
+    plain:
+      'Your total cholesterol divided by your HDL — one number for the balance of good versus total cholesterol. Lower is better: under 5 is desirable and under 3.5 is ideal. It is calculated, not measured separately.',
+  },
+  {
     id: 'tg',
     name: 'Triglycerides',
     aliases: ['Triglycerides', 'TG'],
@@ -1178,6 +1211,85 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     plain:
       'Cortisol naturally peaks in the morning. Persistently high or low values disrupt sleep, energy, and metabolism.',
   },
+  {
+    id: 'dhea-s',
+    name: 'DHEA-Sulfate',
+    aliases: [
+      'DHEA-Sulfate',
+      'DHEA Sulfate',
+      'DHEA-S',
+      'DHEAS',
+      'DHEA-SO4',
+      'Dehydroepiandrosterone Sulfate',
+      'Dehydroepiandrosterone Sulphate',
+    ],
+    unit: 'µg/dL',
+    unitAliases: ['ug/dL', 'mcg/dL', 'µg/dl'],
+    // SI: DHEA-S in µmol/L (UK/EU labs). 1 µmol/L = 36.85 µg/dL (MW 368.5).
+    altUnits: [{ units: ['µmol/L', 'umol/L', 'μmol/l'], toCanonical: 36.85 }],
+    // Broad adult-male fallback band. DHEA-S is strongly age-dependent
+    // (highest in the 20s, declining ~10%/decade), so the report's own
+    // age-matched range is the better judge — statusForValue uses it when
+    // printed. This wide band just avoids false flags when it isn't.
+    min: 80,
+    max: 560,
+    physicalMin: 0,
+    physicalMax: 2000,
+    category: 'hormones',
+    direction: 'band',
+    simpleName: 'An adrenal androgen that falls with age',
+    plain:
+      'An adrenal hormone and a building block for testosterone and estrogen. Levels are highest in your 20s and drift down with age, so it is best read against your report’s age-matched range. A very high value is worth a doctor’s look.',
+  },
+  {
+    id: 'progesterone',
+    name: 'Progesterone',
+    aliases: ['Progesterone', 'Serum Progesterone'],
+    unit: 'ng/mL',
+    unitAliases: ['ng/ml'],
+    // SI: nmol/L (UK/EU). 1 nmol/L = 0.314 ng/mL (MW 314.5).
+    altUnits: [{ units: ['nmol/L', 'nmol/l'], toCanonical: 0.314 }],
+    // Male reference band; progesterone is naturally low in men.
+    min: 0.1,
+    max: 1,
+    physicalMin: 0,
+    physicalMax: 40,
+    category: 'hormones',
+    direction: 'band',
+    simpleName: 'A hormone that is naturally low in men',
+    plain:
+      'Best known in women’s cycles, but men carry a small amount as a building block for other hormones. In men it is normally low; it is usually only checked as part of a wider hormone workup.',
+  },
+  {
+    id: 'free-psa-ratio',
+    name: '% Free PSA',
+    // The FREE-to-TOTAL PSA percentage, not the absolute free-PSA ng/mL
+    // value (which isn't independently interpretable). Deliberately does
+    // NOT alias bare 'Free PSA' — that string is the ng/mL absolute.
+    aliases: [
+      '% Free PSA',
+      'Free PSA %',
+      'Percent Free PSA',
+      'Free PSA Ratio',
+      'Free/Total PSA Ratio',
+      'Free:Total PSA Ratio',
+      'PSA Free/Total Ratio',
+      'fPSA %',
+    ],
+    unit: '%',
+    // Only meaningful when TOTAL PSA is mildly raised (the 4–10 ng/mL grey
+    // zone). Floor at 10%: below ~10% the case for a urology review rises;
+    // above ~25% is reassuring (Catalona, JAMA 1998). Higher is better.
+    min: 10,
+    max: 100,
+    physicalMin: 0,
+    physicalMax: 100,
+    category: 'hormones',
+    direction: 'up',
+    simpleName: 'The reassuring share of your PSA (calculated)',
+    plain:
+      'The share of your PSA that floats free rather than bound. It only matters when your total PSA is mildly raised — in that window a higher free share (above ~25%) is reassuring and a lower one (below ~10%) is a reason to talk to a urologist. On its own, it needs no action.',
+  },
 
   /* ---- Additional Heart ---------------------------------------- */
   {
@@ -1193,6 +1305,25 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     simpleName: 'All your bad cholesterol added up',
     plain:
       'Total cholesterol minus HDL — a more comprehensive bad-cholesterol number than LDL alone.',
+  },
+  {
+    id: 'homocysteine',
+    name: 'Homocysteine',
+    aliases: ['Homocysteine', 'Total Homocysteine', 'Plasma Homocysteine', 'tHcy'],
+    unit: 'µmol/L',
+    unitAliases: ['umol/L', 'μmol/l'],
+    // Desirable <15 µmol/L; a mild rise is common and often just low
+    // B12/folate/B6 (very correctable). Higher levels are an independent
+    // cardiovascular and clotting risk marker. No same-day critical.
+    min: 5,
+    max: 15,
+    physicalMin: 0,
+    physicalMax: 500,
+    category: 'heart',
+    direction: 'down',
+    simpleName: 'An amino acid tied to heart risk',
+    plain:
+      'An amino acid that, when high, is linked to heart and clotting risk. The good news: a mild rise is usually just low B12, folate, or B6 — often fixable with diet or a supplement your doctor suggests.',
   },
 
   /* ---- Additional Thyroid -------------------------------------- */
@@ -1329,6 +1460,31 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     plain:
       'High TIBC can go with iron deficiency; low TIBC with inflammation or a long-term illness. Read it alongside your other iron markers.',
   },
+  {
+    id: 'transferrin-saturation',
+    name: 'Transferrin Saturation',
+    aliases: [
+      'Transferrin Saturation',
+      'Transferrin Saturation (TSAT)',
+      'TSAT',
+      'Iron Saturation',
+      '% Transferrin Saturation',
+      'Transferrin Sat',
+    ],
+    unit: '%',
+    min: 20,
+    max: 50,
+    // Calculated from serum iron ÷ TIBC. Low points to iron deficiency;
+    // a high value (≥45%) can be an early sign of iron overload
+    // (haemochromatosis). Read with ferritin + the rest of the iron panel.
+    physicalMin: 0,
+    physicalMax: 100,
+    category: 'vitamins',
+    direction: 'band',
+    simpleName: 'How full your iron-transport is (calculated)',
+    plain:
+      'The share of your iron-carrying protein that is actually carrying iron — calculated from serum iron and TIBC. A low value points to iron deficiency; a high one can be an early sign of iron overload. Read alongside ferritin.',
+  },
 
   /* ---- Additional Liver ---------------------------------------- */
   {
@@ -1457,6 +1613,32 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Elevated direct bilirubin (out of proportion to total) points to biliary obstruction or intrahepatic cholestasis — needs medical attention.',
   },
   {
+    id: 'indirect-bilirubin',
+    name: 'Indirect Bilirubin',
+    aliases: [
+      'Indirect Bilirubin',
+      'Bilirubin Indirect',
+      'Bilirubin - Indirect',
+      'Bilirubin (Indirect)',
+      'Bilirubin, Indirect',
+      'Unconjugated Bilirubin',
+      'I. Bilirubin',
+    ],
+    unit: 'mg/dL',
+    unitAliases: ['mg/dl'],
+    // Calculated as total minus direct. A mild isolated rise is usually
+    // harmless (Gilbert syndrome) or from mild haemolysis.
+    min: 0.1,
+    max: 1,
+    physicalMin: 0,
+    physicalMax: 60,
+    category: 'liver',
+    direction: 'band',
+    simpleName: 'The unprocessed part of bilirubin (calculated)',
+    plain:
+      'Calculated as total bilirubin minus the direct part. A mild rise on its own is usually harmless — Gilbert syndrome (a common, benign trait) or a little red-cell turnover. A large rise is read alongside the rest of your liver panel.',
+  },
+  {
     id: 'total-protein',
     name: 'Total Protein',
     // 'Protein, Total' — the comma form — was missing while every sibling
@@ -1520,6 +1702,31 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     simpleName: 'Immune & transport proteins',
     plain:
       'The blood proteins other than albumin — many of them antibodies. Reported alongside total protein and albumin; a persistent abnormality is worth a look with your doctor.',
+  },
+  {
+    id: 'ag-ratio',
+    name: 'A/G Ratio',
+    aliases: [
+      'A/G Ratio',
+      'A:G Ratio',
+      'AG Ratio',
+      'Albumin/Globulin Ratio',
+      'Albumin : Globulin Ratio',
+      'Albumin/Globulin',
+      'Albumin Globulin Ratio',
+    ],
+    unit: '',
+    // Calculated as albumin ÷ globulin. Interpreted with the proteins it
+    // comes from, not alone; the lab's printed range wins when present.
+    min: 1,
+    max: 2.1,
+    physicalMin: 0,
+    physicalMax: 10,
+    category: 'liver',
+    direction: 'band',
+    simpleName: 'Albumin-to-globulin balance (calculated)',
+    plain:
+      'Albumin divided by globulin — a balance calculated from two proteins already on your panel, not measured directly. It only means something read alongside those two; on its own a mildly off ratio rarely matters.',
   },
 
   /* ---- Additional Kidney --------------------------------------- */
@@ -1625,6 +1832,33 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'The most direct kidney function number. ≥90 is ideal and 60–89 is mildly reduced (often normal with age); a persistent reading below 60 indicates chronic kidney disease, and below 30 needs prompt kidney care.',
   },
   {
+    id: 'bun-creatinine-ratio',
+    name: 'Urea/Creatinine Ratio',
+    aliases: [
+      'BUN/Creatinine Ratio',
+      'BUN:Creatinine Ratio',
+      'BUN/Cr Ratio',
+      'Urea/Creatinine Ratio',
+      'Urea : Creatinine Ratio',
+      'Urea/Creatinine',
+      'BUN Creatinine Ratio',
+    ],
+    unit: '',
+    // Calculated ratio whose "normal" depends on scale: BUN/Creatinine
+    // runs ~10–20, while the urea/creatinine form Indian labs print runs
+    // higher. Band is deliberately wide so it informs without false-flagging
+    // when no printed range is captured; the lab's own range wins when present.
+    min: 10,
+    max: 40,
+    physicalMin: 0,
+    physicalMax: 300,
+    category: 'kidney',
+    direction: 'band',
+    simpleName: 'Urea-to-creatinine balance (calculated)',
+    plain:
+      'A ratio calculated from two kidney numbers already on your panel. Doctors use it as a hint about the cause of a change (for example dehydration) — it is read with the rest of your kidney results, not on its own.',
+  },
+  {
     id: 'uric-acid',
     name: 'Uric Acid',
     aliases: ['Uric Acid', 'Serum Uric Acid', 'UA'],
@@ -1651,6 +1885,44 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     simpleName: 'Waste product that can crystallise — causes gout',
     plain:
       'Elevated uric acid risks gout flares and kidney stones. Common drivers: red meat, alcohol, fructose.',
+  },
+  {
+    id: 'amylase',
+    name: 'Amylase',
+    aliases: ['Amylase', 'Serum Amylase', 'Amylase Total', 'S. Amylase'],
+    unit: 'U/L',
+    unitAliases: ['IU/L', 'U/l', 'iu/l'],
+    // Digestive enzyme; a marked rise (usually with lipase) points to the
+    // pancreas. Method-dependent, so the lab's printed range wins. No fixed
+    // critical here — lipase is the more specific pancreatic marker.
+    min: 30,
+    max: 110,
+    physicalMin: 0,
+    physicalMax: 20000,
+    category: 'metabolic',
+    direction: 'band',
+    simpleName: 'A digestive enzyme (pancreas + salivary)',
+    plain:
+      'An enzyme that breaks down starch, made by your pancreas and salivary glands. A large rise — usually alongside lipase — points to the pancreas and warrants medical attention.',
+  },
+  {
+    id: 'lipase',
+    name: 'Lipase',
+    aliases: ['Lipase', 'Serum Lipase', 'S. Lipase'],
+    unit: 'U/L',
+    unitAliases: ['IU/L', 'U/l', 'iu/l'],
+    // The more pancreas-specific of the two enzymes. Method-dependent band;
+    // the lab's printed range wins. A rise >3× the upper limit is the
+    // classic pancreatitis signal, but that reads off the printed range.
+    min: 13,
+    max: 60,
+    physicalMin: 0,
+    physicalMax: 20000,
+    category: 'metabolic',
+    direction: 'band',
+    simpleName: 'A pancreas-specific digestive enzyme',
+    plain:
+      'A fat-digesting enzyme made mainly by your pancreas — more specific to it than amylase. A marked rise points to the pancreas and is worth prompt medical attention.',
   },
 
   /* ---- Additional Blood (CBC) ----------------------------------
@@ -2046,6 +2318,36 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Moves with sodium to balance fluids and blood acidity. Usually only meaningful read alongside sodium and bicarbonate.',
   },
   {
+    id: 'bicarbonate',
+    name: 'Bicarbonate',
+    aliases: [
+      'Bicarbonate',
+      'Bicarbonate (HCO3)',
+      'HCO3',
+      'HCO3-',
+      'Serum Bicarbonate',
+      'Total CO2',
+      'Total Carbon Dioxide',
+      'Carbon Dioxide',
+      'TCO2',
+      'CO2 Content',
+    ],
+    unit: 'mmol/L',
+    unitAliases: ['mmol/l', 'mEq/L', 'meq/l'],
+    min: 22,
+    max: 29,
+    // No critical cliff: bicarbonate abnormalities are read in the context
+    // of the full acid–base + electrolyte picture, not panic-called from a
+    // single home-report number. The lab's printed range wins when present.
+    physicalMin: 5,
+    physicalMax: 60,
+    category: 'electrolytes',
+    direction: 'band',
+    simpleName: 'Your blood’s acid–base buffer',
+    plain:
+      'Part of the system that keeps your blood from turning too acidic. A low value can go with fast breathing, prolonged diarrhoea, or a kidney or metabolic issue; a high value with fluid loss or breathing problems. Read alongside your other electrolytes.',
+  },
+  {
     id: 'calcium',
     name: 'Calcium',
     aliases: ['Calcium', 'Total Calcium', 'Serum Calcium'],
@@ -2309,6 +2611,41 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'CK-MB rises with cardiac muscle damage. Largely superseded by Troponin I, but still printed on many Indian lab panels.',
   },
   {
+    id: 'ck-total',
+    name: 'Total CK (CPK)',
+    // Guard against the CK-MB isoenzyme row grading as total CK: the MB
+    // fraction is a different analyte on a different (ng/mL) scale. Span
+    // suppression usually handles the overlap, but the row guard makes it
+    // explicit. Bare 'CK' is deliberately NOT an alias — too collision-prone.
+    aliases: [
+      'Total CK',
+      'CK Total',
+      'Creatine Kinase',
+      'Creatine Phosphokinase',
+      'Creatine Kinase Total',
+      'CPK Total',
+      'Total CPK',
+      'CPK',
+      'CK-NAC',
+    ],
+    excludeIfRowMatches: /\bMB\b|isoenzyme|\bMM\b/i,
+    unit: 'U/L',
+    unitAliases: ['IU/L', 'U/l', 'iu/l'],
+    // Male reference band. CK is method- and ethnicity-dependent and rises
+    // for days after hard exercise, a fall, or an IM injection, so the
+    // lab's printed range wins when present. No fixed critical: a big rise
+    // matters in context (muscle strain, rarely heart), not as a lone panic.
+    min: 39,
+    max: 308,
+    physicalMin: 0,
+    physicalMax: 200000,
+    category: 'heart',
+    direction: 'band',
+    simpleName: 'A muscle-and-heart enzyme',
+    plain:
+      'An enzyme released when muscle is worked hard or bruised. Intense exercise, a fall, or an injection can lift it for a few days; a large, lasting rise points to muscle strain — or, rarely, heart strain — and is worth a doctor’s look.',
+  },
+  {
     id: 'procalcitonin',
     name: 'Procalcitonin',
     aliases: ['Procalcitonin', 'PCT', 'Pro-Calcitonin'],
@@ -2498,5 +2835,169 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     simpleName: 'Frontline infection-defence count',
     plain:
       'ANC < 1,500 is neutropenia; < 500 is severe and an immediate medical concern. Common in chemo patients, autoimmune disease, and severe viral illness.',
+  },
+  {
+    id: 'mpv',
+    name: 'MPV',
+    aliases: ['MPV', 'Mean Platelet Volume', 'Mean Platlet Volume'],
+    unit: 'fL',
+    unitAliases: ['fl', 'femtolitre'],
+    min: 7.5,
+    max: 11.5,
+    physicalMin: 0,
+    physicalMax: 30,
+    category: 'blood',
+    direction: 'band',
+    simpleName: 'The average size of your platelets',
+    plain:
+      'The average size of your platelets. Larger, younger platelets can show up when your marrow is replacing them quickly; on its own it rarely means much and is read alongside the platelet count.',
+  },
+  {
+    id: 'abs-lymphocytes',
+    name: 'Absolute Lymphocyte Count',
+    aliases: [
+      'Absolute Lymphocyte Count',
+      'Absolute Lymphocytes',
+      'Lymphocytes Absolute',
+      'Lymphocyte Absolute Count',
+      'ALC',
+    ],
+    unit: '/cumm',
+    unitAliases: [
+      'cells/cumm',
+      '/μL',
+      '/cu.mm',
+      'cu.mm',
+      '/cu mm',
+      'cumm',
+      'thou/μL',
+      'thousand/μL',
+      'thou/cumm',
+      '10^3/μL',
+      '10^3/uL',
+      '10E3/uL',
+      'K/uL',
+      'th/uL',
+    ],
+    min: 1000,
+    max: 4000,
+    physicalMin: 0,
+    physicalMax: 50000,
+    category: 'blood',
+    direction: 'band',
+    simpleName: 'Your lymphocyte count (not just the %)',
+    plain:
+      'The actual number of lymphocytes, not just their share. A high count can go with a viral illness; a persistently low count with stress, some medicines, or a weakened immune response — read alongside the wider picture.',
+  },
+  {
+    id: 'abs-monocytes',
+    name: 'Absolute Monocyte Count',
+    aliases: [
+      'Absolute Monocyte Count',
+      'Absolute Monocytes',
+      'Monocytes Absolute',
+      'Monocyte Absolute Count',
+      'AMC',
+    ],
+    unit: '/cumm',
+    unitAliases: [
+      'cells/cumm',
+      '/μL',
+      '/cu.mm',
+      'cu.mm',
+      '/cu mm',
+      'cumm',
+      'thou/μL',
+      'thousand/μL',
+      'thou/cumm',
+      '10^3/μL',
+      '10^3/uL',
+      '10E3/uL',
+      'K/uL',
+      'th/uL',
+    ],
+    min: 200,
+    max: 1000,
+    physicalMin: 0,
+    physicalMax: 20000,
+    category: 'blood',
+    direction: 'band',
+    simpleName: 'Your monocyte count (not just the %)',
+    plain:
+      'The actual number of your clean-up white cells. A lasting rise can go with ongoing inflammation, an infection, or recovering from an illness.',
+  },
+  {
+    id: 'abs-eosinophils',
+    name: 'Absolute Eosinophil Count',
+    aliases: [
+      'Absolute Eosinophil Count',
+      'Absolute Eosinophils',
+      'Eosinophils Absolute',
+      'Eosinophil Absolute Count',
+      'AEC',
+    ],
+    unit: '/cumm',
+    unitAliases: [
+      'cells/cumm',
+      '/μL',
+      '/cu.mm',
+      'cu.mm',
+      '/cu mm',
+      'cumm',
+      'thou/μL',
+      'thousand/μL',
+      'thou/cumm',
+      '10^3/μL',
+      '10^3/uL',
+      '10E3/uL',
+      'K/uL',
+      'th/uL',
+    ],
+    min: 20,
+    max: 500,
+    physicalMin: 0,
+    physicalMax: 20000,
+    category: 'blood',
+    direction: 'band',
+    simpleName: 'Your eosinophil count (not just the %)',
+    plain:
+      'The actual number of your allergy-and-parasite white cells. A high count can go with allergies, asthma, some medicines, or a parasite — it depends on the wider picture.',
+  },
+  {
+    id: 'abs-basophils',
+    name: 'Absolute Basophil Count',
+    aliases: [
+      'Absolute Basophil Count',
+      'Absolute Basophils',
+      'Basophils Absolute',
+      'Basophil Absolute Count',
+      'ABC',
+    ],
+    unit: '/cumm',
+    unitAliases: [
+      'cells/cumm',
+      '/μL',
+      '/cu.mm',
+      'cu.mm',
+      '/cu mm',
+      'cumm',
+      'thou/μL',
+      'thousand/μL',
+      'thou/cumm',
+      '10^3/μL',
+      '10^3/uL',
+      '10E3/uL',
+      'K/uL',
+      'th/uL',
+    ],
+    min: 0,
+    max: 200,
+    physicalMin: 0,
+    physicalMax: 10000,
+    category: 'blood',
+    direction: 'band',
+    simpleName: 'Your basophil count (not just the %)',
+    plain:
+      'The actual number of your rarest white cells. A small number is normal; a lasting rise can go with allergies or some longer-term conditions.',
   },
 ];

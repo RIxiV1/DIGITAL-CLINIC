@@ -702,6 +702,151 @@ const FIXTURES: Fixture[] = [
       },
     },
   },
+  {
+    name: 'CBC additions — MPV + absolute differential counts',
+    note: 'coverage additions: MPV and the absolute Lymphocyte/Monocyte/Eosinophil/Basophil counts were dropped (only ANC existed). Guard proven: an "Absolute Eosinophil Count 180 /cumm" row must NOT be read as the eosinophil PERCENT marker (different unit + scale) — the /cumm unit gate and span suppression keep the % differentials out.',
+    text: [
+      'MPV 9.8 fL 7.5 - 11.5',
+      'Absolute Lymphocyte Count 2100 /cumm 1000 - 4000',
+      'Absolute Monocyte Count 500 /cumm 200 - 1000',
+      'Absolute Eosinophil Count 180 /cumm 20 - 500',
+      'Absolute Basophil Count 40 /cumm 0 - 200',
+    ].join('\n'),
+    expect: {
+      values: {
+        mpv: 9.8,
+        'abs-lymphocytes': 2100,
+        'abs-monocytes': 500,
+        'abs-eosinophils': 180,
+        'abs-basophils': 40,
+      },
+      // The absolute-count rows must not leak into the PERCENT differentials.
+      absent: ['lymphocytes', 'monocytes', 'eosinophils', 'basophils'],
+    },
+  },
+  {
+    name: 'Electrolyte panel — Bicarbonate added',
+    note: 'coverage addition: Bicarbonate (Total CO2) is on every electrolyte panel and was dropped. Reads mmol/L and mEq/L; bare "CO2" is deliberately not an alias (collision-prone), so the spelled forms carry it.',
+    text: [
+      'Sodium 140 mmol/L 136 - 145',
+      'Potassium 4.2 mmol/L 3.5 - 5.1',
+      'Chloride 102 mmol/L 98 - 107',
+      'Bicarbonate 24 mmol/L 22 - 29',
+    ].join('\n'),
+    expect: {
+      values: {
+        sodium: 140,
+        potassium: 4.2,
+        chloride: 102,
+        bicarbonate: 24,
+      },
+    },
+  },
+  {
+    name: 'Total CO2 alias + mEq/L unit',
+    note: 'the same bicarbonate marker under its US "Total CO2" name and mEq/L unit.',
+    text: ['Total CO2 26 mEq/L 22 - 29'].join('\n'),
+    expect: { values: { bicarbonate: 26 } },
+  },
+  {
+    name: 'Total CK vs CK-MB — isoenzyme collision guard',
+    note: 'coverage addition: only the cardiac CK-MB isoenzyme existed; total CK/CPK (the skeletal-muscle enzyme, a different scale) was missing. Guard proven: a "CK-MB" row must NOT grade as total CK (excludeIfRowMatches \\bMB\\b), and total CK must read its own U/L value.',
+    text: [
+      'Creatine Kinase (CK) 180 U/L 39 - 308',
+      'CK-MB 3.2 ng/mL 0 - 5',
+    ].join('\n'),
+    expect: {
+      values: {
+        'ck-total': 180,
+        'ck-mb': 3.2,
+      },
+    },
+  },
+  {
+    name: 'Pancreatic enzymes — Amylase + Lipase',
+    note: 'coverage additions: both dropped previously. Standard U/L reference bands.',
+    text: [
+      'Amylase 65 U/L 30 - 110',
+      'Lipase 35 U/L 13 - 60',
+    ].join('\n'),
+    expect: {
+      values: {
+        amylase: 65,
+        lipase: 35,
+      },
+    },
+  },
+  {
+    name: "Men's-health extras — DHEA-S, Homocysteine, Progesterone",
+    note: 'coverage additions (Tier 2). DHEA-S is age-dependent so the lab range wins when printed; homocysteine is a cardiovascular marker; progesterone is naturally low in men.',
+    text: [
+      'DHEA-Sulfate 320 µg/dL 80 - 560',
+      'Homocysteine 11 µmol/L 5 - 15',
+      'Progesterone 0.4 ng/mL 0.1 - 1.0',
+    ].join('\n'),
+    expect: {
+      values: {
+        'dhea-s': 320,
+        homocysteine: 11,
+        progesterone: 0.4,
+      },
+    },
+  },
+  {
+    name: 'DHEA-S in SI units (µmol/L)',
+    note: 'UK/EU labs print DHEA-S in µmol/L; 6.5 µmol/L × 36.85 ≈ 239.5 µg/dL.',
+    text: ['DHEA-S 6.5 µmol/L'].join('\n'),
+    expect: { values: { 'dhea-s': [235, 245] } }, // 6.5 × 36.85 = 239.5
+  },
+  {
+    name: '% Free PSA ratio — captured without overwriting total PSA',
+    note: 'coverage addition: the free-to-total PSA percentage now surfaces as its own marker (higher is reassuring). Guard proven: it reads the % row and does NOT overwrite the ng/mL total PSA, and the bare "Free PSA" ng/mL absolute is deliberately not claimed as the ratio.',
+    text: [
+      'PSA Total 6.2 ng/mL 0 - 4',
+      'Free PSA 1.4 ng/mL',
+      '% Free PSA 24 %',
+    ].join('\n'),
+    expect: {
+      values: {
+        psa: 6.2,
+        'free-psa-ratio': 24,
+      },
+    },
+  },
+  {
+    name: 'Derived ratios — surfaced and labeled calculated',
+    note: 'coverage additions: A/G, Cholesterol/HDL and Urea/Creatinine ratios plus indirect bilirubin (total − direct) now surface as calculated values. Unitless ratios match on their specific alias text; the lab range wins when printed.',
+    text: [
+      'A/G Ratio 1.6 1.0 - 2.1',
+      'Cholesterol/HDL Ratio 3.2',
+      'Urea/Creatinine Ratio 28',
+      'Indirect Bilirubin 0.6 mg/dL 0.1 - 1.0',
+    ].join('\n'),
+    expect: {
+      values: {
+        'ag-ratio': 1.6,
+        'tc-hdl-ratio': 3.2,
+        'bun-creatinine-ratio': 28,
+        'indirect-bilirubin': 0.6,
+      },
+    },
+  },
+  {
+    name: 'Transferrin saturation — iron panel completion',
+    note: 'coverage addition: TSAT (iron ÷ TIBC) is printed on most iron panels and was dropped.',
+    text: [
+      'Iron 90 µg/dL 65 - 175',
+      'TIBC 320 µg/dL 250 - 450',
+      'Transferrin Saturation 28 % 20 - 50',
+    ].join('\n'),
+    expect: {
+      values: {
+        iron: 90,
+        tibc: 320,
+        'transferrin-saturation': 28,
+      },
+    },
+  },
 ];
 
 describe('real-report extraction corpus', () => {
