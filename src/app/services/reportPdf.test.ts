@@ -270,3 +270,42 @@ describe('doctorQuestionsFor', () => {
     }
   });
 });
+
+/* ------------------------------------------------------------------ */
+/* Embedded display font                                               */
+/*                                                                     */
+/* The PDF is the one artefact a user hands to someone else, so it     */
+/* renders headings in the app's display serif rather than Helvetica.  */
+/* Registration is best-effort at runtime, which is exactly why it     */
+/* needs a test — a silent fallback looks identical to the old output. */
+/* ------------------------------------------------------------------ */
+
+describe('embedded display font', () => {
+  it('registers Domine in both regular and bold', () => {
+    const list = buildDoctorBrief(sampleReports[0]).getFontList();
+    expect(list.Domine).toEqual(expect.arrayContaining(['normal', 'bold']));
+  });
+
+  it('actually embeds the font programs in the output file', () => {
+    // getFontList() only proves it was registered. /FontFile2 proves the
+    // TrueType program was written into the PDF, which is what makes the
+    // file render correctly on a machine that has never seen Domine.
+    const raw = Buffer.from(
+      buildDoctorBrief(sampleReports[0]).output('arraybuffer') as ArrayBuffer,
+    ).toString('latin1');
+    expect(raw).toContain('Domine');
+    expect((raw.match(/\/FontFile2/g) ?? []).length).toBe(2);
+  });
+
+  it('stays small — jsPDF subsets the embedded faces to glyphs used', () => {
+    // Guards against accidentally shipping the full face in every export.
+    const bytes = (
+      buildDoctorBrief(sampleReports[0]).output('arraybuffer') as ArrayBuffer
+    ).byteLength;
+    expect(bytes).toBeLessThan(120_000);
+  });
+
+  it('still builds the full report with the font active', () => {
+    expect(() => buildReportPdf(sampleReports[0])).not.toThrow();
+  });
+});

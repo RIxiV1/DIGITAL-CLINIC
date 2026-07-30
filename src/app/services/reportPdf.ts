@@ -17,6 +17,7 @@
  */
 
 import jsPDF from 'jspdf';
+import { DOMINE_REGULAR_B64, DOMINE_BOLD_B64 } from './pdfBrandFont';
 import {
   biomarkersByCategory,
   bottomLineFor,
@@ -83,12 +84,44 @@ const COLOR = {
 type Ctx = {
   doc: jsPDF;
   y: number;
+  /** False when embedding Domine failed; display text then renders in the
+   *  body face rather than failing the export. */
+  hasDisplayFont: boolean;
 };
 
+/** jsPDF's built-in face. Body copy, data rows and italics stay here — see
+ *  the note in pdfBrandFont.ts for why only the display face is embedded. */
+const BODY_FONT = 'helvetica';
+
+/** The app's display serif, embedded per-document. */
+const DISPLAY_FONT = 'Domine';
+
+/**
+ * Register Domine in this document's virtual file system.
+ *
+ * Per-document because jsPDF's VFS is per-instance. Best-effort: if the
+ * registration throws for any reason, `displayFont` below falls back to
+ * Helvetica and the export still succeeds. A PDF in the wrong typeface is a
+ * cosmetic problem; a PDF that failed to build is a broken feature.
+ */
+function registerDisplayFont(doc: jsPDF): boolean {
+  try {
+    doc.addFileToVFS('Domine-Regular.ttf', DOMINE_REGULAR_B64);
+    doc.addFont('Domine-Regular.ttf', DISPLAY_FONT, 'normal');
+    doc.addFileToVFS('Domine-Bold.ttf', DOMINE_BOLD_B64);
+    doc.addFont('Domine-Bold.ttf', DISPLAY_FONT, 'bold');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function newCtx(): Ctx {
+  const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' });
   return {
-    doc: new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait' }),
+    doc,
     y: MARGIN_T,
+    hasDisplayFont: registerDisplayFont(doc),
   };
 }
 
@@ -140,7 +173,24 @@ function setText(
   weight: FontWeight,
   color: readonly [number, number, number],
 ): void {
-  ctx.doc.setFont('helvetica', weight);
+  ctx.doc.setFont(BODY_FONT, weight);
+  ctx.doc.setFontSize(size);
+  ctx.doc.setTextColor(color[0], color[1], color[2]);
+}
+
+/**
+ * Like setText, but in the app's display serif — for the wordmark, the report
+ * title and section headings. Italic is deliberately not offered: the
+ * embedded subset has regular and bold only, and asking jsPDF for a style it
+ * has no face for is how you get a silently wrong document.
+ */
+function setDisplay(
+  ctx: Ctx,
+  size: number,
+  weight: 'normal' | 'bold',
+  color: readonly [number, number, number],
+): void {
+  ctx.doc.setFont(ctx.hasDisplayFont ? DISPLAY_FONT : BODY_FONT, weight);
   ctx.doc.setFontSize(size);
   ctx.doc.setTextColor(color[0], color[1], color[2]);
 }
@@ -158,10 +208,13 @@ function drawHeader(ctx: Ctx, report: Report): void {
   const { doc } = ctx;
 
   // Top eyebrow row: brand on the left, date+lab on the right.
-  setText(ctx, 12, 'bold', COLOR.indigoBrand);
+  setDisplay(ctx, 12, 'bold', COLOR.indigoBrand);
   doc.text('ForMen', MARGIN_L, ctx.y);
-  setText(ctx, 12, 'normal', COLOR.indigoBrand);
-  doc.text(' Digital Clinic', MARGIN_L + textWidth(ctx, 'ForMen') + 0.5, ctx.y);
+  // Measure while the BOLD face is still selected — measuring after the
+  // switch to normal understates the width and laps the two runs together.
+  const wordmarkW = textWidth(ctx, 'ForMen');
+  setDisplay(ctx, 12, 'normal', COLOR.indigoBrand);
+  doc.text(' Digital Clinic', MARGIN_L + wordmarkW + 0.5, ctx.y);
 
   setText(ctx, 9, 'normal', COLOR.muted);
   const right = asciize(`${report.uploadedOn}  -  ${report.lab}`);
@@ -170,7 +223,7 @@ function drawHeader(ctx: Ctx, report: Report): void {
   ctx.y += 6;
 
   // Report title
-  setText(ctx, 19, 'bold', COLOR.ink);
+  setDisplay(ctx, 19, 'bold', COLOR.ink);
   doc.text(asciize(report.name), MARGIN_L, ctx.y);
   ctx.y += 12;
 }
@@ -264,7 +317,7 @@ function drawCategorySection(
   const { doc } = ctx;
 
   // Section header
-  setText(ctx, 13, 'bold', COLOR.indigoBrand);
+  setDisplay(ctx, 13, 'bold', COLOR.indigoBrand);
   doc.text(asciize(category.name), MARGIN_L, ctx.y);
   ctx.y += 4.5;
 
@@ -607,7 +660,7 @@ export function buildDoctorBrief(report: Report): jsPDF {
   const total = report.biomarkers.length;
 
   // ---- What stands out ----
-  setText(ctx, 12, 'bold', COLOR.ink);
+  setDisplay(ctx, 12, 'bold', COLOR.ink);
   doc.text('What stands out', MARGIN_L, ctx.y);
   ctx.y += 6;
 
@@ -657,7 +710,7 @@ export function buildDoctorBrief(report: Report): jsPDF {
 
   // ---- Questions to ask ----
   ensureSpace(ctx, 44);
-  setText(ctx, 12, 'bold', COLOR.ink);
+  setDisplay(ctx, 12, 'bold', COLOR.ink);
   doc.text('Questions to ask', MARGIN_L, ctx.y);
   ctx.y += 6;
   setText(ctx, 10, 'normal', COLOR.inkSoft);
@@ -672,7 +725,7 @@ export function buildDoctorBrief(report: Report): jsPDF {
 
   // ---- Re-test note ----
   ensureSpace(ctx, 22);
-  setText(ctx, 12, 'bold', COLOR.ink);
+  setDisplay(ctx, 12, 'bold', COLOR.ink);
   doc.text('A note on re-testing', MARGIN_L, ctx.y);
   ctx.y += 6;
   setText(ctx, 10, 'normal', COLOR.inkSoft);
