@@ -737,7 +737,12 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
   {
     id: 'magnesium',
     name: 'Magnesium',
-    aliases: ['Magnesium', 'Serum Magnesium', 'Mg'],
+    // Bare 'Mg' is intentionally EXCLUDED: case-insensitively it matches the
+    // "mg" that starts the "mg/dL" / "mg/L" units printed on virtually every
+    // report, and in flattened text the between-window then binds a nearby
+    // number — a real LabCorp CMP surfaced a phantom "Magnesium 11 (critical)"
+    // off a "BUN 11 mg/dL" row. Reports name it "Magnesium" / "Serum Magnesium".
+    aliases: ['Magnesium', 'Serum Magnesium'],
     unit: 'mg/dL',
     unitAliases: ['mg/dl', 'mEq/L', 'mmol/L'],
     min: 1.7,

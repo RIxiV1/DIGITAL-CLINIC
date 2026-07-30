@@ -413,6 +413,21 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'US LabCorp CMP (flattened) — no phantom Magnesium from "mg/dL"',
+    note: 'a real LabCorp report: the bare "Mg" magnesium alias matched the "mg" starting the "mg/dL" unit, and in flattened text the between-window bound the "11" from "BUN 11 mg/dL" as a phantom Magnesium 11 (critical) — which ALSO suppressed the real BUN via specificity. Dropping the "Mg" alias fixes both. Also guards the E-notation "x10E3/uL" and the "eGFR If NonAfricn Am" 117 read (not the 1.73 constant).',
+    text: 'WBC 6.4 x10E3/uL 3.4 - 10.8 Glucose 90 mg/dL 65 - 99 BUN 11 mg/dL 6 - 20 Creatinine 0.70 mg/dL 0.57 - 1.00 eGFR If NonAfricn Am 117 mL/min/1.73 >59',
+    expect: {
+      values: {
+        wbc: 6400, // 6.4 x10E3
+        glucose: 90,
+        bun: 11, // real BUN, no longer suppressed by phantom magnesium
+        creatinine: 0.7,
+        egfr: 117, // the result, not the 1.73 constant
+      },
+      absent: ['magnesium'], // "mg/dL" must never surface a magnesium value
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [
