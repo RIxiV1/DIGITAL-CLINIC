@@ -215,6 +215,10 @@ const PendingConfirmSchema = z.object({
   ocrPagesAttempted: z.number().int().nonnegative().max(50).optional(),
   ocrPagesSkipped: z.number().int().nonnegative().max(50).optional(),
   ocrConfidence: z.number().min(0).max(100).optional(),
+  collectionDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
 });
 
 /* ------------------------------------------------------------------ */
@@ -566,6 +570,7 @@ export type PendingConfirmRecord<TBiomarker> = {
   ocrPagesAttempted?: number;
   ocrPagesSkipped?: number;
   ocrConfidence?: number;
+  collectionDate?: string;
 };
 
 export function savePendingConfirm<T>(record: PendingConfirmRecord<T>): void {

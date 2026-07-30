@@ -187,6 +187,12 @@ export type ParsedReport = {
    *  text-layer path. A low value drives a "double-check these values"
    *  banner in the confirm view. */
   ocrConfidence?: number;
+  /** ISO yyyy-mm-dd the sample was collected, read off the report header.
+   *  Undefined when the report printed no date we could trust — the caller
+   *  then keeps the upload date. Backdating matters: without it a user
+   *  backfilling old reports gets them all stamped today, which collapses
+   *  every trend and can headline a stale reading as current. */
+  collectionDate?: string;
 };
 
 /**
@@ -237,6 +243,7 @@ export async function parseUploadedReport(
         ocrPagesAttempted?: number;
         ocrPagesSkipped?: number;
         ocrConfidence?: number;
+        collectionDate?: string;
       }
     | {
         biomarkers: null;
@@ -302,6 +309,7 @@ export async function parseUploadedReport(
                   ocrPagesAttempted: r.ocrPagesAttempted,
                   ocrPagesSkipped: r.ocrPagesSkipped,
                   ocrConfidence: r.ocrConfidence,
+                  collectionDate: r.collectionDate,
                 };
               }
               // Every match was a urine false-positive → treat as a pure
@@ -440,6 +448,7 @@ export async function parseUploadedReport(
       ocrPagesAttempted: outcome.ocrPagesAttempted,
       ocrPagesSkipped: outcome.ocrPagesSkipped,
       ocrConfidence: outcome.ocrConfidence,
+      collectionDate: outcome.collectionDate,
     };
   }
   // outcome.biomarkers === null branch — narrow to the failure variant

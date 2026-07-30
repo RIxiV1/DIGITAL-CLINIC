@@ -20,6 +20,7 @@ import {
 import { parseWithAi } from '../services/aiParser';
 import { OCR_LOW_CONFIDENCE_THRESHOLD } from '../services/pdfParser';
 import { sanitizeFilename } from '../utils/sanitizeFilename';
+import { formatDate } from '../utils/format';
 // Extracted view components + shared state shapes. This page used to be a
 // ~2,000-line monolith; the views now live in ./processing/*.
 import type { ConfirmState, FailureState } from './processing/types';
@@ -289,6 +290,7 @@ export default function ProcessingPage() {
           ocrPagesSkipped: result.ocrPagesSkipped,
           ocrConfidence: result.ocrConfidence,
           semenStandardMismatch,
+          collectionDate: result.collectionDate,
         };
         // Persist so a navigate-away-then-back can restore this view
         // without re-running the parser against the consumed file.
@@ -520,9 +522,25 @@ export default function ProcessingPage() {
   // the view); falls back to the parsed set when nothing was edited.
   const confirmExtractedValues = (markers: Biomarker[]) => {
     if (!processingId || !pendingConfirm) return;
+    // Date the report by when the blood was DRAWN, not by when it was
+    // uploaded. A new user backfilling the reports they already have would
+    // otherwise get every one stamped today: trends need a non-zero day
+    // span to exist at all, and "latest report" is decided by this date, so
+    // same-day stamps let a two-year-old reading headline the dashboard.
+    // Falls back to the upload date makeReport already set when the report
+    // printed no date we could trust.
+    const collected = pendingConfirm.collectionDate;
     markReportReady(processingId, {
       biomarkers: markers,
       lab: 'Parsed from upload',
+      ...(collected
+        ? {
+            uploadedAt: collected,
+            // Local midnight, not the bare ISO string: parsing "2026-04-12"
+            // is UTC, which renders as the 11th anywhere west of Greenwich.
+            uploadedOn: formatDate(`${collected}T00:00:00`),
+          }
+        : {}),
     });
     clearPendingConfirm();
     setPendingConfirm(null);

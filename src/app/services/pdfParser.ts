@@ -53,6 +53,7 @@ import {
   findUnrecognizedRows,
   type MarkerProvenance,
 } from './parser/catalogMatcher';
+import { extractCollectionDate } from './parser/reportDate';
 // Catalog matcher moved to its own module; re-export the public surface so
 // importers (api.ts, the extraction test suites) keep importing from here.
 export {
@@ -136,6 +137,10 @@ export type PdfParseResult = {
    *  Combined with the report-level `source`/`ocrConfidence` above to give
    *  a full, honest chain. Undefined only on the empty/failure result. */
   provenance?: Map<string, MarkerProvenance>;
+  /** ISO yyyy-mm-dd the sample was collected, read off the report header.
+   *  Undefined when the report didn't print a labelled date we could trust
+   *  — the caller then keeps the upload date. See parser/reportDate.ts. */
+  collectionDate?: string;
 };
 
 const EMPTY_RESULT: PdfParseResult = {
@@ -233,6 +238,7 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
         source: 'pdf-ocr',
         provenance,
         rawText: rawTextForDisplay(best.text),
+        collectionDate: extractCollectionDate(best.text) ?? undefined,
         unrecognizedRows: findUnrecognizedRows(best.text, ocrBiomarkers),
         ocrPagesAttempted: ocr.pagesAttempted,
         ocrPagesSkipped: ocr.pagesSkipped,
@@ -279,6 +285,7 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
         strategy: winner.name,
         provenance,
         rawText: winner.text,
+        collectionDate: extractCollectionDate(winner.text) ?? undefined,
         unrecognizedRows: findUnrecognizedRows(winner.text, winner.biomarkers),
       };
     }
@@ -295,6 +302,7 @@ async function parsePdf(file: File): Promise<PdfParseResult> {
       source: 'pdf-ocr',
       provenance,
       rawText: best.text,
+      collectionDate: extractCollectionDate(best.text) ?? undefined,
       unrecognizedRows: findUnrecognizedRows(best.text, ocrBiomarkers),
       ocrPagesAttempted: ocr.pagesAttempted,
       ocrPagesSkipped: ocr.pagesSkipped,
@@ -346,6 +354,7 @@ async function ocrAttempt(
     source: 'image-ocr',
     provenance,
     rawText: best.text,
+    collectionDate: extractCollectionDate(best.text) ?? undefined,
     unrecognizedRows: findUnrecognizedRows(best.text, biomarkers),
     ocrConfidence: confidence,
   };

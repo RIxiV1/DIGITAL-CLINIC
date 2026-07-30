@@ -82,4 +82,9 @@ export type ConfirmState = {
    *  flag this so the confirm view can disclose the standard mismatch
    *  rather than letting the user assume one of us is wrong. */
   semenStandardMismatch?: boolean;
+  /** ISO yyyy-mm-dd read off the report header. Committed as the report's
+   *  date so a backfilled upload sorts by when the blood was drawn, not by
+   *  when it was uploaded. Undefined when the report printed no trustworthy
+   *  date — the report then keeps its upload date. */
+  collectionDate?: string;
 };

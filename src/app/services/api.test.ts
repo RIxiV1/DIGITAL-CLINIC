@@ -146,6 +146,49 @@ describe('api — parseUploadedReport', () => {
     expect(lastProgress.overall).toBe(1);
   });
 
+  it('carries the collection date through to the parsed report', async () => {
+    // Without this the report is dated by upload, so a user backfilling old
+    // reports gets them all stamped today — every trend collapses to a
+    // zero-day span and the newest-by-date report may not be the newest one.
+    vi.mocked(parsePdfFile).mockResolvedValue({
+      biomarkers: [
+        { id: 'glucose', name: 'Glucose', value: 90, unit: 'mg/dL' },
+      ] as never,
+      source: 'pdf-text',
+      rawText: 'Collected On : 12/04/2026\nGlucose 90 mg/dL',
+      unrecognizedRows: [],
+      collectionDate: '2026-04-12',
+    });
+
+    const file = new File(['x'], 'report.pdf', { type: 'application/pdf' });
+    const parsePromise = parseUploadedReport(
+      { name: 'Backfilled Report', file },
+      vi.fn(),
+    );
+    await vi.runAllTimersAsync();
+    const result = await parsePromise;
+
+    expect(result.collectionDate).toBe('2026-04-12');
+  });
+
+  it('leaves the collection date undefined when none was read', async () => {
+    vi.mocked(parsePdfFile).mockResolvedValue({
+      biomarkers: [
+        { id: 'glucose', name: 'Glucose', value: 90, unit: 'mg/dL' },
+      ] as never,
+      source: 'pdf-text',
+      rawText: 'Glucose 90 mg/dL',
+      unrecognizedRows: [],
+    });
+
+    const file = new File(['x'], 'report.pdf', { type: 'application/pdf' });
+    const parsePromise = parseUploadedReport({ name: 'No Date', file }, vi.fn());
+    await vi.runAllTimersAsync();
+    const result = await parsePromise;
+
+    expect(result.collectionDate).toBeUndefined();
+  });
+
   it('handles no file fallback scenario', async () => {
     const onProgress = vi.fn();
     const parsePromise = parseUploadedReport({ name: 'No File' }, onProgress);
