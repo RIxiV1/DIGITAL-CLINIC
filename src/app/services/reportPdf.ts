@@ -41,15 +41,32 @@ const MARGIN_R = 16;
 const CONTENT_W = PAGE_W - MARGIN_L - MARGIN_R;
 
 // Colors — RGB triples matching the app's design tokens.
+/**
+ * Mirrors the app's semantic tokens in src/index.css. This document is the
+ * one artefact of the product a user hands to somebody else, so it should
+ * look like it came from the same place the screen did.
+ *
+ * It didn't: the brand colour here was #0066CC — a stock blue that appears
+ * nowhere in the app — and the panel fill was the cool grey #F8F9FA against
+ * an app built on warm paper. Status colours already matched and are left
+ * alone. Keep these in step with the `:root` block in index.css.
+ */
 const COLOR = {
-  indigoBrand: [0, 102, 204] as const,
-  indigoDeep: [0, 82, 163] as const,
+  // --color-clay / --color-forest: the single verified brand indigo the
+  // palette consolidated on. One shade, so `indigoDeep` is the same value —
+  // it only ever tints a 7pt label, and inventing a darker shade here would
+  // put a colour in the product that the design system doesn't have.
+  indigoBrand: [45, 59, 142] as const,
+  indigoDeep: [45, 59, 142] as const,
   ink: [15, 20, 34] as const,
   inkSoft: [44, 51, 68] as const,
   muted: [107, 114, 128] as const,
   line: [229, 231, 235] as const,
-  canvas: [248, 249, 250] as const,
-  surface: [255, 255, 255] as const,
+  // --color-canvas: warm paper, not cool grey.
+  canvas: [247, 244, 239] as const,
+  // --color-on-clay / --color-on-forest. Despite the name this is only ever
+  // used as TEXT sitting on a filled status badge, never as a page fill.
+  surface: [253, 251, 247] as const,
   gold: [255, 184, 0] as const,
   good: [22, 163, 74] as const,
   goodSoft: [220, 252, 231] as const,
@@ -478,15 +495,95 @@ const FLAGGED_RANK: Record<Biomarker['status'], number> = {
   good: 3,
 };
 
-/** Safe, non-prescriptive questions — these are QUESTIONS, not clinical
- *  claims, so they need no citation; they just help the patient lead the
- *  conversation. */
-const DOCTOR_QUESTIONS = [
-  'Which of these need action now, and which can wait?',
-  'Should any be re-tested to confirm before acting on them?',
+/** "A", "A and B", "A, B and C" — so a generated sentence reads like one
+ *  someone wrote rather than a joined array. */
+function listPhrase(items: readonly string[]): string {
+  if (items.length <= 1) return items[0] ?? '';
+  return `${items.slice(0, -1).join(', ')} and ${items[items.length - 1]}`;
+}
+
+/** Closing questions that apply to any report, used to round out the list
+ *  once the result-specific ones are in. */
+const GENERAL_QUESTIONS = [
   'Could any of the symptoms I have be related to these results?',
   'What follow-up tests, if any, would you recommend?',
 ];
+
+/** Most questions we'll print. Past this the page stops being a prompt
+ *  sheet and starts being an interrogation. */
+const MAX_QUESTIONS = 5;
+
+/**
+ * Build the "Questions to ask" list from THIS report.
+ *
+ * The list used to be four fixed lines, identical whether the report had one
+ * flagged marker or twelve — which is what made a personal document read
+ * like a template. Naming the actual markers is also the difference between
+ * a patient who says "is everything okay?" and one who says "my ferritin is
+ * 18, should we look into that?".
+ *
+ * Everything here is phrased as a QUESTION about a number already printed on
+ * the report. That's deliberate: a question carries no clinical claim, so it
+ * needs no citation and can't assert something the catalog hasn't sourced.
+ * Nothing in this function may state what a value means, only ask.
+ */
+export function doctorQuestionsFor(report: Report): string[] {
+  const flagged = report.biomarkers
+    .filter((m) => m.status !== 'good')
+    .slice()
+    .sort((a, b) => FLAGGED_RANK[a.status] - FLAGGED_RANK[b.status]);
+
+  if (flagged.length === 0) {
+    return [
+      'Everything here read in range — is there anything you would still want to check?',
+      ...GENERAL_QUESTIONS,
+    ];
+  }
+
+  const questions: string[] = [];
+  const unitOf = (m: Biomarker) => (m.unit ? ` ${m.unit}` : '');
+
+  // Lead with the most urgent thing on the page, by name and number, so the
+  // conversation starts where it matters instead of at "so, my results".
+  const worst = flagged[0];
+  if (worst.status === 'critical') {
+    questions.push(
+      `My ${worst.name} is ${worst.value}${unitOf(worst)} — does this need attention today?`,
+    );
+  } else {
+    questions.push(
+      `My ${worst.name} is ${worst.value}${unitOf(worst)} — what would you want to do about it?`,
+    );
+  }
+
+  // The second marker, when there is one, so a two-problem report doesn't
+  // look like a one-problem report.
+  if (flagged.length > 1) {
+    const next = flagged[1];
+    questions.push(
+      `My ${next.name} is ${next.value}${unitOf(next)} — is that connected to the above, or separate?`,
+    );
+  }
+
+  // Triage only earns a line when there's actually something to triage.
+  if (flagged.length > 2) {
+    questions.push(
+      `${flagged.length} of my markers are outside range — which need action now, and which can wait?`,
+    );
+  }
+
+  questions.push(
+    flagged.length === 1
+      ? `Should ${worst.name} be re-tested to confirm before acting on it?`
+      : 'Should any of these be re-tested to confirm before acting on them?',
+  );
+
+  for (const q of GENERAL_QUESTIONS) {
+    if (questions.length >= MAX_QUESTIONS) break;
+    questions.push(q);
+  }
+  return questions.slice(0, MAX_QUESTIONS);
+}
 
 export function buildDoctorBrief(report: Report): jsPDF {
   const ctx = newCtx();
@@ -564,7 +661,7 @@ export function buildDoctorBrief(report: Report): jsPDF {
   doc.text('Questions to ask', MARGIN_L, ctx.y);
   ctx.y += 6;
   setText(ctx, 10, 'normal', COLOR.inkSoft);
-  for (const q of DOCTOR_QUESTIONS) {
+  for (const q of doctorQuestionsFor(report)) {
     ensureSpace(ctx, 8);
     const wrapped = doc.splitTextToSize(asciize(`-  ${q}`), CONTENT_W) as string[];
     doc.text(wrapped, MARGIN_L, ctx.y);
@@ -579,8 +676,15 @@ export function buildDoctorBrief(report: Report): jsPDF {
   doc.text('A note on re-testing', MARGIN_L, ctx.y);
   ctx.y += 6;
   setText(ctx, 10, 'normal', COLOR.inkSoft);
+  // Name the markers actually flagged rather than closing on the same
+  // paragraph every report gets. The general claim is unchanged; only the
+  // "which ones" is filled in from the page above it.
+  const retestNames = flagged.slice(0, 3).map((m) => m.name);
   const retest = asciize(
-    'Most hormone and metabolic markers are worth re-checking every 3-6 months to see whether things are moving. Ask your doctor which of these to re-test, and when.',
+    'Most hormone and metabolic markers are worth re-checking every 3-6 months to see whether things are moving. ' +
+      (retestNames.length > 0
+        ? `Ask your doctor whether ${listPhrase(retestNames)} should be re-checked, and when.`
+        : 'Ask your doctor which of these to re-test, and when.'),
   );
   const rw = doc.splitTextToSize(retest, CONTENT_W) as string[];
   doc.text(rw, MARGIN_L, ctx.y);

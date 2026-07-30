@@ -16,6 +16,7 @@ import {
   tierForMarker,
   buildReportPdf,
   buildDoctorBrief,
+  doctorQuestionsFor,
 } from './reportPdf';
 import { sampleReports } from '../data/reports';
 import type { Biomarker } from '../data/biomarkers';
@@ -163,5 +164,109 @@ describe('buildDoctorBrief', () => {
     expect(() =>
       buildDoctorBrief({ ...sampleReports[0], biomarkers: [] }),
     ).not.toThrow();
+  });
+});
+
+/* ------------------------------------------------------------------ */
+/* Doctor-brief questions                                              */
+/*                                                                     */
+/* This list used to be four fixed lines on every report, which is     */
+/* what made a personal document read like a form letter. The point of */
+/* these tests is that the page changes with the results — and that it */
+/* only ever ASKS about a number, never asserts what the number means  */
+/* (an assertion would need a citation the catalog hasn't given us).   */
+/* ------------------------------------------------------------------ */
+
+describe('doctorQuestionsFor', () => {
+  const reportWith = (biomarkers: Biomarker[]) => ({
+    ...sampleReports[0],
+    biomarkers,
+  });
+
+  it('names the flagged marker and its value', () => {
+    const qs = doctorQuestionsFor(
+      reportWith([
+        mk({ id: 'ferritin', name: 'Ferritin', value: 18, unit: 'ng/mL', status: 'concern' }),
+      ]),
+    );
+    expect(qs[0]).toContain('Ferritin');
+    expect(qs[0]).toContain('18');
+    expect(qs[0]).toContain('ng/mL');
+  });
+
+  it('leads with the most urgent marker, not the first one listed', () => {
+    const qs = doctorQuestionsFor(
+      reportWith([
+        mk({ id: 'a', name: 'Mild Marker', value: 1, status: 'attention' }),
+        mk({ id: 'b', name: 'Urgent Marker', value: 2, status: 'critical' }),
+      ]),
+    );
+    expect(qs[0]).toContain('Urgent Marker');
+    expect(qs[0]).toContain('today');
+  });
+
+  it('produces a different list for a different report', () => {
+    const a = doctorQuestionsFor(
+      reportWith([mk({ id: 'a', name: 'Ferritin', value: 18, status: 'concern' })]),
+    );
+    const b = doctorQuestionsFor(
+      reportWith([mk({ id: 'b', name: 'Vitamin D', value: 12, status: 'concern' })]),
+    );
+    expect(a).not.toEqual(b);
+  });
+
+  it('only asks for a re-test of the single flagged marker by name', () => {
+    const qs = doctorQuestionsFor(
+      reportWith([mk({ id: 'a', name: 'Ferritin', value: 18, status: 'concern' })]),
+    );
+    expect(qs.some((q) => q.includes('Should Ferritin be re-tested'))).toBe(true);
+  });
+
+  it('adds a triage question only once there are several flags', () => {
+    const two = doctorQuestionsFor(
+      reportWith([
+        mk({ id: 'a', name: 'A', value: 1, status: 'concern' }),
+        mk({ id: 'b', name: 'B', value: 2, status: 'concern' }),
+      ]),
+    );
+    expect(two.some((q) => q.includes('which need action now'))).toBe(false);
+
+    const three = doctorQuestionsFor(
+      reportWith([
+        mk({ id: 'a', name: 'A', value: 1, status: 'concern' }),
+        mk({ id: 'b', name: 'B', value: 2, status: 'concern' }),
+        mk({ id: 'c', name: 'C', value: 3, status: 'attention' }),
+      ]),
+    );
+    expect(three.some((q) => q.includes('which need action now'))).toBe(true);
+  });
+
+  it('handles an all-clear report without naming a marker', () => {
+    const qs = doctorQuestionsFor(
+      reportWith([mk({ id: 'a', name: 'A', value: 1, status: 'good' })]),
+    );
+    expect(qs.length).toBeGreaterThan(0);
+    expect(qs[0]).toContain('in range');
+  });
+
+  it('never runs longer than the page allows', () => {
+    const many = Array.from({ length: 12 }, (_, i) =>
+      mk({ id: `m${i}`, name: `Marker ${i}`, value: i, status: 'concern' }),
+    );
+    expect(doctorQuestionsFor(reportWith(many)).length).toBeLessThanOrEqual(5);
+  });
+
+  it('asks rather than asserts — no clinical claim in any question', () => {
+    const qs = doctorQuestionsFor(
+      reportWith([
+        mk({ id: 'a', name: 'Ferritin', value: 18, unit: 'ng/mL', status: 'critical' }),
+        mk({ id: 'b', name: 'Vitamin D', value: 12, unit: 'ng/mL', status: 'concern' }),
+      ]),
+    );
+    for (const q of qs) {
+      expect(q).toContain('?');
+      // Words that would turn a prompt into a diagnosis or an instruction.
+      expect(q).not.toMatch(/\b(you have|indicates|diagnos|deficien|you should take|start taking)\b/i);
+    }
   });
 });
