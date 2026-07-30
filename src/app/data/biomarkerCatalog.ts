@@ -882,6 +882,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'grams%',
       'grams %',
     ],
+    // SI: UK/EU/Australian labs and many analyzers print haemoglobin in g/L
+    // (e.g. 136 g/L = 13.6 g/dL). Verified missed on real CBC report images
+    // that printed "HGB 136 g/L" / "Hemoglobin 123 g/L". ×0.1 → g/dL.
+    altUnits: [{ units: ['g/L', 'g/l'], toCanonical: 0.1 }],
     // Male anaemia floor 13.0 g/dL per WHO / Indian usage (men); the prior
     // 13.5 over-flagged the 13.0–13.4 band. This catalog is tuned for the
     // app's adult-male audience (the female cutoff, <12, differs).

@@ -847,6 +847,48 @@ const FIXTURES: Fixture[] = [
       },
     },
   },
+  {
+    name: 'US CBC in mcL units — K/mcL + M/mcL microlitre spelling',
+    note: 'a real testing.com CBC printed WBC/RBC/platelets in "K/mcL" and "M/mcL" (the US spelling of µL). The unit gate did not know "mcL" and silently DROPPED all three headline counts — including a critical-low RBC (an anemia this whole report was about). "mcL" is now admitted as a microlitre spelling; the K/ and M/ prefixes scale via unitMultiplier.',
+    text: [
+      'White Blood Cell (WBC) 6.9 K/mcL 4.8-10.8',
+      'Red Blood Cell (RBC) 1.8 M/mcL 4.7-6.1',
+      'Platelet count 180 K/mcL 150-450',
+    ].join('\n'),
+    expect: {
+      values: {
+        wbc: 6900, // 6.9 K/mcL → ×1000
+        rbc: 1.8, // M/mcL ≡ million/cumm, ×1
+        platelets: 180000, // 180 K/mcL → ×1000
+      },
+    },
+  },
+  {
+    name: 'Haemoglobin in SI g/L — international / analyzer format',
+    note: 'real CBC report images printed "HGB 136 g/L" / "Hemoglobin 123 g/L" (SI, standard in UK/EU/Australia and on many analyzers). Hb had no g/L altUnit, so these dropped. ×0.1 → g/dL: 136 → 13.6, 123 → 12.3 (mild anaemia).',
+    text: ['Hemoglobin 123 g/L 133 - 167'].join('\n'),
+    expect: {
+      values: {
+        hb: [12.2, 12.4], // 123 g/L × 0.1 = 12.3 g/dL
+      },
+    },
+  },
+  {
+    name: 'Quest ">OR=" / "<OR=" spelled reference cutoff',
+    note: 'Quest prints one-sided references as "81 > OR = 46 mg/dL" (HDL) and "2.0 < OR = 5.0" (Chol/HDL ratio). The unit-adjacent threshold (46) was read as the HDL RESULT instead of the real 81 — telling a patient with excellent HDL it was borderline. The spelled ">OR="/"<OR=" is now absorbed as a cutoff, so the leading value wins.',
+    text: [
+      'HDL Cholesterol 81 > OR = 46 mg/dL',
+      'Cholesterol/HDL Ratio 2.0 < OR = 5.0',
+      'LDL Cholesterol 74 <130 mg/dL',
+    ].join('\n'),
+    expect: {
+      values: {
+        hdl: 81, // the value, not the ">OR=46" threshold
+        'tc-hdl-ratio': 2, // 2.0, not the "<OR=5.0" threshold
+        ldl: 74,
+      },
+    },
+  },
 ];
 
 describe('real-report extraction corpus', () => {

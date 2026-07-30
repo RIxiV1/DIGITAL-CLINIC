@@ -299,7 +299,14 @@ function extractMarkerValue(
   // ng/mL" couldn't get 600.3 to the unit and the matcher fell back to the
   // reference "4.0" next to ng/mL — reading a metastatic-range PSA of 600 as
   // a NORMAL 4.0. The single-char "<"/"≤" already worked; "<=" did not.
-  const oneSidedCutoff = '(?:[<>≤≥]=?|up\\s*to|upto)\\s*\\d+(?:\\.\\d+)?';
+  // The optional "or\\s*=?" admits Quest's spelled-out inequality: HDL prints
+  // "81 > OR = 46 mg/dL" and Cholesterol/HDL "2.0 < OR = 5.0" — the ">OR="/
+  // "<OR=" is their rendering of ≥/≤. Without it the reference threshold (46)
+  // sat unabsorbed between the value and the unit, so the unit-adjacent 46 was
+  // read as the HDL result instead of the real 81. (case-insensitive flag on
+  // the compiled regex handles "OR"/"or".)
+  const oneSidedCutoff =
+    '(?:[<>≤≥]=?|up\\s*to|upto)\\s*(?:or\\s*=?\\s*)?\\d+(?:\\.\\d+)?';
   // The range/cutoff slot repeats up to TWICE so a DUAL-SEX row prints its
   // unit once after both ranges: "Hemoglobin 10.2 Male: 13-18 Female: 12-16
   // gm/dl" — two ranges sit between the value and the unit. One slot only
@@ -342,6 +349,17 @@ function extractMarkerValue(
   const unitTokens = template.unit
     ? [template.unit, ...(template.unitAliases ?? []), ...altUnitTokens]
         .filter((u) => u.length > 0)
+        // Admit the US "mcL" spelling of microlitre. Quest / LabCorp / many US
+        // CBC templates print "K/mcL", "M/mcL", "10^3/mcL" — the same unit as
+        // µL/uL, so a real Quest CBC (WBC/RBC/platelet in K/mcL & M/mcL) was
+        // silently dropped by the gate. Expand every microlitre token to its
+        // mcL twin; the K/ and M/ prefixes are already scaled by
+        // unitMultiplier. We only rewrite the litre unit "[µμu]L" (never µg /
+        // µmol, nor the marker names MCV/MCH which contain "mc" but no
+        // trailing L, nor "U/L" where the U and L aren't adjacent).
+        .flatMap((u) =>
+          /[µμu]l/i.test(u) ? [u, u.replace(/([µμu])(l)/gi, 'mc$2')] : [u],
+        )
         .map((u) => ocrTolerantUnit(normalizeMu(u)))
     : [];
   // Capture the matched unit token so we can apply unitMultiplier
