@@ -324,7 +324,9 @@ export function mapGeminiResultsToCatalog(
     // "40.99999%". Mirrors pdfParser's extractMarkerValue; only kicks in
     // when we actually scaled (ratio ≠ 1), so unscaled values pass through
     // byte-identical.
-    const value = scale !== 1 ? parseFloat((raw * scale).toPrecision(12)) : raw;
+    // 3 sig-figs = a converted value's honest precision (see pdfParser's
+    // extractMarkerValue); avoids false-precision decimals like 2.3184799819.
+    const value = scale !== 1 ? parseFloat((raw * scale).toPrecision(3)) : raw;
     // Sanity bounds applied to the SCALED value:
     //   1. Non-negative — biomarkers are non-negative; a negative
     //      reading is hallucination or sign-flip.

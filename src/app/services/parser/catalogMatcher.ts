@@ -547,12 +547,14 @@ function extractMarkerValue(
         ? alt.toCanonical
         : unitMultiplier(printedUnit) / unitMultiplier(template.unit);
     }
-    // Clean up float-precision noise introduced by scaling — 2.45 * 1e5
-    // yields 245000.00000000003 in IEEE-754, which is silly to surface
-    // on a clinical dashboard. `toPrecision(12)` keeps 12 significant
-    // digits (well above any real measurement precision) and drops the
-    // floating-point error.
-    const v = scale !== 1 ? parseFloat((raw * scale).toPrecision(12)) : raw;
+    // Round a converted value to its HONEST precision — 3 significant
+    // figures, the most any lab reports. A unit conversion otherwise surfaces
+    // a false-precision decimal (205 µmol/L ÷ 88.42 = 2.3184799819 mg/dL),
+    // which reads untrustworthy and cluttered. 3 sig-figs gives 2.32 / 52.9 /
+    // 13.4, and — since parseFloat un-does the scientific notation toPrecision
+    // emits for big numbers — a count like 316000 stays 316000, not 3.16e+5.
+    // Directly-read values (scale === 1) keep the lab's own printed precision.
+    const v = scale !== 1 ? parseFloat((raw * scale).toPrecision(3)) : raw;
     // Reject obviously-broken values up front. Floor at 0 (biomarkers
     // are non-negative even though the regex now refuses '-' anyway,
     // belt-and-braces).
@@ -598,11 +600,11 @@ function extractMarkerValue(
     // only a range the value can't plausibly belong to is rejected.
     const scaledRefMin =
       scale !== 1
-        ? parseFloat((labRefMinNum * scale).toPrecision(12))
+        ? parseFloat((labRefMinNum * scale).toPrecision(3))
         : labRefMinNum;
     const scaledRefMax =
       scale !== 1
-        ? parseFloat((labRefMaxNum * scale).toPrecision(12))
+        ? parseFloat((labRefMaxNum * scale).toPrecision(3))
         : labRefMaxNum;
     // Two guards, because the lab range now DRIVES status and a mis-OCR'd
     // range invents false flags:
