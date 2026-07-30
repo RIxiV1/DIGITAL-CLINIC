@@ -18,6 +18,7 @@ import {
 } from '../../data/biomarkers';
 import { escapeRegex } from './regexUtils';
 import { normalize, normalizeMu } from './pdfTextLayer';
+import { unitMultiplier, roundConvertedValue } from './units';
 
 /** Hard cap on input to the unknown-row matcher. Defensive — the regex
  *  is bounded (`{0,50}?` on the label window), but `matchAll` over a
@@ -132,63 +133,6 @@ function aliasContainsUnit(
     if (u.length > 0 && a.includes(u.toLowerCase())) return true;
   }
   return false;
-}
-
-/**
- * Detect a count-prefix multiplier in a printed unit string.
- *
- * Indian labs print platelets/WBC as "245 thou/cumm" or "2.45 lakh/cumm"
- * rather than the canonical raw count. The catalog's `platelets`
- * template uses /cumm (raw); a captured value of `245` against a
- * printed unit of `thou/cumm` is actually 245,000.
- *
- * Returns the linear multiplier (1, 1e3, 1e5, 1e6). The reconciliation
- * step in `extractMarkerValue` computes `printedMult / catalogMult` and
- * scales — so a catalog template already in `million/cumm` (RBC) gets
- * multiplier 1e6 too and values pass through unscaled.
- *
- * Mirror of aiParser.ts's identical helper. Mass/concentration units
- * (mg/dL, ng/mL, g/dL) return 1; per-marker canonical unit already
- * enforces scale on those.
- */
-function unitMultiplier(unit: string | null | undefined): number {
-  if (!unit) return 1;
-  const u = unit.toLowerCase().trim();
-  // Lakh = 1e5. Indian English convention. Variants: lakh, lakhs,
-  // lac (older), lacs (older plural).
-  if (/(^|[^a-z])(lakh|lakhs|lac|lacs)([^a-z]|$)/.test(u)) return 1e5;
-  // Million = 1e6. Variants: million, mill, mio (German/European
-  // notation seen on some imported labs), and the various 10^6
-  // typesettings — plain `10^6`, the superscript `10⁶`, the `E`
-  // notation `10E6`, and `x10^6` / `x 10^6` with optional space.
-  if (
-    /(^|[^a-z])(millions|million|mill|mil|mio|m)([^a-z]|$)/.test(u) ||
-    /\b10\s*\^?\s*6\b/.test(u) ||
-    /x\s*10\s*\^?\s*6/.test(u) ||
-    /10\s*e\s*6\b/.test(u) ||
-    /10⁶/.test(u)
-  ) {
-    return 1e6;
-  }
-  // Thousand = 1e3. Variants: thou, thous (the US CBC abbreviation, e.g.
-  // "5.2 Thous/cu.mm"), thousand, and the short forms `th` ("4.24 th/cumm",
-  // Healthians) and `k` ("202 K/uL", US/international), plus 10^3 / 10³ /
-  // 10E3 / x10^3 with optional spacing. Without `th`, a Healthians TLC like
-  // "4.24 th/cumm" stayed 4.24 against a /cumm template (4000–11000) and read
-  // as a FALSE critical-low. `k`/`th` only ever match a standalone letter
-  // followed by a non-letter (the `([^a-z]|$)` guard) — "kg", "kU/L" don't
-  // trip them — and this function only runs on a unit that already passed
-  // the gate, so the letters can't fire on arbitrary text.
-  if (
-    /(^|[^a-z])(thousands|thousand|thous|thou|th|k)([^a-z]|$)/.test(u) ||
-    /\b10\s*\^?\s*3\b/.test(u) ||
-    /x\s*10\s*\^?\s*3/.test(u) ||
-    /10\s*e\s*3\b/.test(u) ||
-    /10³/.test(u)
-  ) {
-    return 1e3;
-  }
-  return 1;
 }
 
 /**
@@ -547,14 +491,13 @@ function extractMarkerValue(
         ? alt.toCanonical
         : unitMultiplier(printedUnit) / unitMultiplier(template.unit);
     }
-    // Round a converted value to its HONEST precision — 3 significant
-    // figures, the most any lab reports. A unit conversion otherwise surfaces
-    // a false-precision decimal (205 µmol/L ÷ 88.42 = 2.3184799819 mg/dL),
-    // which reads untrustworthy and cluttered. 3 sig-figs gives 2.32 / 52.9 /
-    // 13.4, and — since parseFloat un-does the scientific notation toPrecision
-    // emits for big numbers — a count like 316000 stays 316000, not 3.16e+5.
-    // Directly-read values (scale === 1) keep the lab's own printed precision.
-    const v = scale !== 1 ? parseFloat((raw * scale).toPrecision(3)) : raw;
+    // Round a converted value to its HONEST precision. A molar conversion
+    // gets 3 sig-figs (no 2.3184799819 clutter); an exact power-of-ten
+    // count-prefix shift keeps every printed digit and only sheds IEEE noise,
+    // so "2.456 lakh/cumm" stays 245,600 instead of collapsing to 246,000.
+    // See roundConvertedValue. Directly-read values (scale === 1) keep the
+    // lab's own printed precision untouched.
+    const v = scale !== 1 ? roundConvertedValue(raw * scale, scale) : raw;
     // Reject obviously-broken values up front. Floor at 0 (biomarkers
     // are non-negative even though the regex now refuses '-' anyway,
     // belt-and-braces).
@@ -598,14 +541,12 @@ function extractMarkerValue(
     // on the catalog band. The window is generous (0.5x-2x the bounds) so a
     // genuinely out-of-range result — the whole point of flagging — is kept;
     // only a range the value can't plausibly belong to is rejected.
+    // Same precision rule as the value above, so the bounds we grade against
+    // are scaled exactly the way the value was.
     const scaledRefMin =
-      scale !== 1
-        ? parseFloat((labRefMinNum * scale).toPrecision(3))
-        : labRefMinNum;
+      scale !== 1 ? roundConvertedValue(labRefMinNum * scale, scale) : labRefMinNum;
     const scaledRefMax =
-      scale !== 1
-        ? parseFloat((labRefMaxNum * scale).toPrecision(3))
-        : labRefMaxNum;
+      scale !== 1 ? roundConvertedValue(labRefMaxNum * scale, scale) : labRefMaxNum;
     // Two guards, because the lab range now DRIVES status and a mis-OCR'd
     // range invents false flags:
     //
