@@ -381,6 +381,38 @@ const FIXTURES: Fixture[] = [
     },
   },
   {
+    name: 'SI renal/metabolic panel — eGFR 28, converted values rounded, g/L albumin',
+    note: 'a real 3-column table (Test | Result | Normal range). eGFR value is 28 (the "1.73 mL/min/m²" is the normal-range column, stripped before matching). SI conversions now round to 3 sig-figs (no 2.3184799819 clutter), x10^9/L scales WBC/platelets, and g/L albumin (÷10) is newly supported.',
+    text: [
+      'Hemoglobin 13.1 12.1-16.3 g/dL',
+      'WBC 8 4.0-11.1 x10^9/L',
+      'Platelet count 316 150-400 x10^9/L',
+      'BUN 8.8 2.8-8.1 mmol/L',
+      'Creatinine 205 59-104 umol/L',
+      'GFR 28 1.73 mL/min/m²',
+      'ESR 37 0-22 mm/hr',
+      'ALT 23 0-41 U/L',
+      'AST 87 0-40 U/L',
+      'Calcium 3.35 2.15-2.55 mmol/L',
+      'Albumin 45 35-52 g/L',
+    ].join('\n'),
+    expect: {
+      values: {
+        hb: 13.1,
+        wbc: 8000, // 8 x10^9/L
+        platelets: 316000, // 316 x10^9/L
+        bun: 52.9, // 8.8 mmol/L x6.006, rounded to 3 sig-figs
+        creatinine: 2.32, // 205 µmol/L ÷88.42, rounded (was 2.3184799819)
+        egfr: 28, // the result, NOT the 1.73 normal-range constant
+        esr: 37,
+        alt: 23,
+        ast: 87,
+        calcium: 13.4, // 3.35 mmol/L x4.008, rounded (real hypercalcemia)
+        albumin: 4.5, // 45 g/L ÷10
+      },
+    },
+  },
+  {
     name: 'Labsmart — lipid profile (India)',
     note: 'surfaced the missing VLDL catalog entry (#67)',
     text: [

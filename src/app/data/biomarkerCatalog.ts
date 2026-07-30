@@ -1482,6 +1482,8 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
     aliases: ['Albumin', 'Serum Albumin'],
     unit: 'g/dL',
     unitAliases: ['g/dl', 'gm/dL'],
+    // SI: UK/EU/Australian labs print albumin in g/L (e.g. 45 g/L = 4.5 g/dL).
+    altUnits: [{ units: ['g/L', 'g/l'], toCanonical: 0.1 }],
     min: 3.5,
     max: 5,
     category: 'liver',
