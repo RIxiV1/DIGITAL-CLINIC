@@ -322,6 +322,62 @@ describe('extractBiomarkersFromText — normalize artefacts', () => {
 });
 
 /* ------------------------------------------------------------------ */
+/* Decimal-comma documents (much of Europe)                            */
+/*                                                                     */
+/* The comma means opposite things in Mumbai and Munich, so the        */
+/* convention is decided once per document. These tests pin BOTH       */
+/* directions: the European reading has to work, and the Indian one    */
+/* must be impossible to break — which is why the detector fails       */
+/* closed to stripping.                                                */
+/* ------------------------------------------------------------------ */
+
+describe('extractBiomarkersFromText — comma as decimal separator', () => {
+  const EURO_PANEL = [
+    'Hemoglobin 14,2 g/dL',
+    'Creatinine 0,9 mg/dL',
+    'Total Bilirubin 0,8 mg/dL',
+  ].join('\n');
+
+  it('reads a comma-decimal panel at its real magnitude', () => {
+    // Stripping the comma multiplied every reading by ten. "Creatinine 0,9"
+    // became 9 mg/dL — end-stage renal failure — and nothing downstream
+    // could catch it, because 9 mg/dL is a physically real creatinine.
+    const result = extractBiomarkersFromText(EURO_PANEL);
+    expect(result.find((m) => m.id === 'creatinine')?.value).toBe(0.9);
+    expect(result.find((m) => m.id === 'creatinine')?.status).toBe('good');
+    expect(result.find((m) => m.id === 'hb')?.value).toBe(14.2);
+  });
+
+  it('still strips lakh grouping when one stray comma-decimal appears', () => {
+    // Fail-closed: a single decimal-shaped comma must never flip an Indian
+    // report, or a platelet count silently loses three digits.
+    const text = `Platelet Count 2,40,000 /cumm\nESR 1,5 mm/hr`;
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(240000);
+  });
+
+  it('keeps thousands grouping when it outnumbers the decimals', () => {
+    const text = [
+      'Platelet Count 2,40,000 /cumm',
+      'Total Leucocyte Count 7,800 /cumm',
+      'ESR 1,5 mm/hr',
+      'Hemoglobin 14,2 g/dL',
+    ].join('\n');
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'platelets')?.value).toBe(240000);
+    expect(result.find((m) => m.id === 'wbc')?.value).toBe(7800);
+  });
+
+  it('does not mistake a three-decimal reading for a thousands group', () => {
+    // "0,012" is twelve-thousandths, not a grouped number — the thousands
+    // pattern requires a non-zero leading digit for exactly this reason.
+    const text = 'Total Bilirubin 0,85 mg/dL\nCreatinine 0,95 mg/dL';
+    const result = extractBiomarkersFromText(text);
+    expect(result.find((m) => m.id === 'creatinine')?.value).toBe(0.95);
+  });
+});
+
+/* ------------------------------------------------------------------ */
 /* Sanity bound                                                        */
 /* ------------------------------------------------------------------ */
 

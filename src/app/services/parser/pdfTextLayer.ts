@@ -73,15 +73,72 @@ export function normalize(text: string): string {
     '$1',
   );
   t = t.replace(/(mL\s*\/\s*min)\s*\/\s*1\.73\s*m\s*[²2]/gi, '$1');
-  // Strip number-internal commas — handles both US "240,000" and
-  // Indian "2,40,000" notation. Without this, "Platelets 2,40,000"
-  // parses as 2 (the regex only captures up to the first comma).
-  // Multiple passes because a single replace doesn't catch repeated
-  // matches like "2,40,000" (overlapping captures).
-  for (let i = 0; i < 3; i++) {
-    t = t.replace(/(\d),(\d)/g, '$1$2');
+  // Number-internal commas mean opposite things in different countries, so
+  // decide ONCE for the whole document before touching any of them.
+  if (usesCommaAsDecimal(t)) {
+    // Comma is the decimal point (much of Europe, and the SI-unit labs whose
+    // spellings the catalog's altUnits already accept). Stripping it here
+    // multiplied the reading: "Creatinine 0,9 mg/dL" became 9 mg/dL and
+    // graded as critical renal failure, and no downstream guard could catch
+    // it because 9 mg/dL is a physically real creatinine.
+    t = t.replace(/(\d),(\d)/g, '$1.$2');
+  } else {
+    // Comma is a thousands separator — US "240,000" and Indian "2,40,000".
+    // Without stripping, "Platelets 2,40,000" parses as 2. Multiple passes
+    // because a single replace doesn't catch repeated matches like
+    // "2,40,000" (overlapping captures).
+    for (let i = 0; i < 3; i++) {
+      t = t.replace(/(\d),(\d)/g, '$1$2');
+    }
   }
   return t;
+}
+
+/** A comma with exactly three digits after it, not starting from a leading
+ *  zero — i.e. a genuine thousands group. Matches the ",000" of both
+ *  "240,000" and Indian "2,40,000", but never a three-decimal reading like
+ *  "0,012".
+ *
+ *  The lookbehind rejects a preceding digit or period but deliberately
+ *  ALLOWS a preceding comma, because that is exactly what Indian grouping
+ *  looks like: in "2,40,000" the group that proves the convention is the
+ *  "40,000", and it sits behind a comma. Excluding it made a lakh-grouped
+ *  platelet count read as evidence FOR comma-decimals — the one regression
+ *  this detector exists to prevent. A period is still excluded so European
+ *  "1.234,567" can't be misread as a thousands group. */
+const THOUSANDS_GROUP = /(?<![\d.])[1-9]\d{0,2},\d{3}(?!\d)/g;
+
+/** A small number with one or two digits after the comma and nothing
+ *  numeric on either side — "0,9", "13,5", "1,25". The trailing `(?![\d,])`
+ *  is what keeps it off Indian grouping: in "2,40,000" the "2,40" is
+ *  followed by another comma, so it never counts as a decimal. */
+const DECIMAL_COMMA = /(?<![\d.,])\d{1,3},\d{1,2}(?![\d,])/g;
+
+/**
+ * Decide whether THIS document writes decimals with a comma.
+ *
+ * Document-level on purpose. Per-number guessing is unsafe in both
+ * directions — "1,5" alone is a valid decimal in Munich and a typo in
+ * Mumbai — and the surrounding page is the only thing that disambiguates.
+ *
+ * Fails CLOSED to the existing strip-the-comma behaviour, because India is
+ * the core audience and a broken lakh notation is a worse regression than a
+ * missed European one:
+ *   - needs at least two decimal-shaped commas, so one stray comma in an
+ *     Indian report can never flip the whole document;
+ *   - and needs them to OUTNUMBER the thousands groups, so a report that
+ *     genuinely uses thousands separators keeps them.
+ *
+ * Known gap: European reports that also use "." as a thousands separator
+ * ("1.234,56"). The period side isn't handled, so those large values still
+ * mis-parse. Lab results above 1000 are almost always reported in scaled
+ * units (x10⁹/L) rather than grouped digits, so this hasn't come up.
+ */
+function usesCommaAsDecimal(text: string): boolean {
+  const decimals = text.match(DECIMAL_COMMA)?.length ?? 0;
+  if (decimals < 2) return false;
+  const thousands = text.match(THOUSANDS_GROUP)?.length ?? 0;
+  return decimals > thousands;
 }
 
 /* ------------------------------------------------------------------ */
