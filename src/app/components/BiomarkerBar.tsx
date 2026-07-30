@@ -44,26 +44,11 @@ type Tier = {
  *                      Same-day-care copy.
  */
 function tierFor(marker: Biomarker): Tier {
-  if (marker.status === 'critical') {
-    return {
-      id: 'critical',
-      label: 'See a doctor',
-      className: 'bg-concern text-on-status',
-      caption: 'Same-day medical attention is appropriate',
-    };
-  }
-  if (marker.status === 'concern') {
-    return {
-      id: 'concern',
-      // Renamed from "Critical" to "Out of range" — the prior label was
-      // overclaiming severity for borderline-abnormal readings, and now
-      // a true `critical` tier exists for the same-day cases.
-      label: 'Out of range',
-      className: 'bg-concern/85 text-on-status',
-      caption: 'Outside healthy range — worth a follow-up',
-    };
-  }
-
+  // The badge WORD stays on the app-wide plain vocabulary (Healthy / Keep an
+  // eye / Needs care / See a doctor) so a reader never maps two phrases onto
+  // one colour. The plain "which way + how much" detail (a person's real
+  // question) lives in the caption instead — directional and everyday.
+  const isBelow = marker.value < marker.min;
   const hasOptimal =
     typeof marker.optimalMin === 'number' &&
     typeof marker.optimalMax === 'number';
@@ -72,20 +57,48 @@ function tierFor(marker: Biomarker): Tier {
     marker.value >= (marker.optimalMin as number) &&
     marker.value <= (marker.optimalMax as number);
 
+  if (marker.status === 'critical') {
+    return {
+      id: 'critical',
+      label: 'See a doctor',
+      className: 'bg-concern text-on-status',
+      caption: isBelow
+        ? 'Runs low enough to get checked soon'
+        : 'Runs high enough to get checked soon',
+    };
+  }
+  if (marker.status === 'concern') {
+    return {
+      id: 'concern',
+      label: 'Needs care',
+      className: 'bg-concern/85 text-on-status',
+      caption: isBelow
+        ? 'Lower than healthy — worth a look with your doctor'
+        : 'Higher than healthy — worth a look with your doctor',
+    };
+  }
+
   if (marker.status === 'attention' || (hasOptimal && !inOptimal)) {
+    // Direction toward the ideal band when there is one — plain words.
+    const aboveIdeal =
+      hasOptimal && marker.value > (marker.optimalMax as number);
+    const belowIdeal =
+      hasOptimal && marker.value < (marker.optimalMin as number);
     return {
       id: 'borderline',
-      label: 'Borderline',
+      label: 'Keep an eye',
       className: 'bg-attention text-on-status',
-      caption: hasOptimal
-        ? 'Inside healthy band, outside optimal'
-        : 'Inside healthy band, room to improve',
+      caption: aboveIdeal
+        ? 'A little high — still in the healthy range'
+        : belowIdeal
+          ? 'A little low — still in the healthy range'
+          : 'In the healthy range, room to improve',
     };
   }
 
   return {
     id: 'optimal',
-    label: 'Optimal',
+    label: 'Healthy',
     className: 'bg-good text-on-status',
     caption: 'Right where it should be',
   };
