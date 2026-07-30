@@ -38,31 +38,22 @@ export default function FindingExplanation({
         {data.opener}
       </motion.p>
 
-      {/* Borderless side-heads instead of hairline-divided rows: the label
-          sits in a quiet left gutter, baseline-aligned to its answer, so the
-          four beats read as one calm passage rather than a chopped list — and
-          the label|value rhythm echoes the lab report the reading came from.
-          A semantic <dl> (question → answer) is also the correct a11y shape.
-          On mobile it stacks; the left gutter only appears at sm+. */}
-      <dl className="mt-8 max-w-2xl flex flex-col gap-y-6">
+      <div className="mt-8 max-w-2xl border-t border-line/60 divide-y divide-line/60">
         {data.beats.map((b) => (
-          <div
-            key={b.q}
-            className="sm:grid sm:grid-cols-[8.5rem_1fr] sm:gap-x-8 sm:items-baseline"
-          >
-            <dt
-              className={`text-micro font-bold uppercase tracking-label leading-snug sm:text-right ${
+          <div key={b.q} className="py-5">
+            <div
+              className={`text-micro font-bold uppercase tracking-label ${
                 urgent ? 'text-concern' : 'text-indigo-700'
               }`}
             >
               {b.q}
-            </dt>
-            <dd className="mt-1.5 sm:mt-0 text-body leading-relaxed text-ink-soft text-pretty">
+            </div>
+            <p className="mt-2 text-body leading-relaxed text-ink-soft text-pretty">
               {b.body}
-            </dd>
+            </p>
           </div>
         ))}
-      </dl>
+      </div>
     </section>
   );
 }
