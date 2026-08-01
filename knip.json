@@ -1,7 +1,11 @@
 {
   "$schema": "https://unpkg.com/knip@5/schema.json",
-  "entry": ["api/**/*.ts"],
-  "project": ["src/**/*.{ts,tsx}", "api/**/*.ts"],
-  "ignoreDependencies": ["tailwindcss"],
+  "entry": ["api/**/*.ts", "scripts/**/*.mjs"],
+  "project": ["src/**/*.{ts,tsx}", "api/**/*.ts", "scripts/**/*.mjs"],
+  "ignoreDependencies": [
+    "tailwindcss",
+    "@fontsource/manrope",
+    "@tesseract.js-data/eng"
+  ],
   "ignoreExportsUsedInFile": true
 }
