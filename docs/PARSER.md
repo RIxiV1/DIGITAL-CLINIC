@@ -80,7 +80,7 @@ The separation matters: Pipelines 1+2 are free (CPU on the user's device), Pipel
 
 ## The catalog and the matcher
 
-Everything the parser returns gets mapped against the catalog in [`data/biomarkerCatalog.ts`](../src/app/data/biomarkerCatalog.ts) — a hand-curated table of 77 biomarker templates (extracted out of `biomarkers.ts`, which keeps the grading/trend logic). A template looks like:
+Everything the parser returns gets mapped against the catalog in [`data/biomarkerCatalog.ts`](../src/app/data/biomarkerCatalog.ts) — a hand-curated table of 101 biomarker templates (extracted out of `biomarkers.ts`, which keeps the grading/trend logic). A template looks like:
 
 ```ts
 {
@@ -132,15 +132,20 @@ RBC               5.79   mill/mm3       4.5–5.5
 
 Without reconciliation, `245` against a reference of `150,000–450,000` lights up red as severe thrombocytopenia. The catalog's canonical unit for platelets is `/cumm` (raw cells per cubic mm), so we have to multiply the raw value by the unit's count-prefix.
 
-`unitMultiplier()` in [`services/aiParser.ts`](../src/app/services/aiParser.ts) detects:
+`unitMultiplier()` in [`services/parser/units.ts`](../src/app/services/parser/units.ts) detects:
 
-- `thou` / `thousand` / `10^3` / `10³` → ×1,000
+- `thou` / `thousand` / `10^3` / `10³` / `K` → ×1,000
 - `lakh` / `lac` / `lakhs` → ×100,000
-- `million` / `mill` / `10^6` / `10⁶` → ×1,000,000
+- `million` / `mill` / `10^6` / `10⁶` / `M` → ×1,000,000
 
-Reconciliation: `value × (geminiMultiplier / catalogMultiplier)`. So `245 thou/cumm` against catalog `/cumm` = `245 × (1000 / 1) = 245,000` ✓. `4.09 mill/cumm` against catalog `million/cumm` = `4.09 × (1e6 / 1e6) = 4.09` (unchanged, as intended).
+Reconciliation: `value × (printedMultiplier / catalogMultiplier)`. So `245 thou/cumm` against catalog `/cumm` = `245 × (1000 / 1) = 245,000` ✓. `4.09 mill/cumm` against catalog `million/cumm` = `4.09 × (1e6 / 1e6) = 4.09` (unchanged, as intended).
 
-This only handles the count-prefix family. Mass/concentration units (mg/dL, ng/mL) return multiplier 1 — the catalog's canonical unit already enforces scale there.
+The count-prefix family is only half the story — two more conversions run in the matcher:
+
+- **SI / alternative units.** When a report prints an analyte in SI (`mmol/L`, `µmol/L`, `g/L`, `pmol/L`, `nmol/L`) the template's `altUnits` carries the exact per-marker factor — glucose `mmol/L → mg/dL ×18.0156`, haemoglobin `g/L → g/dL ×0.1`, DHEA-S `µmol/L → µg/dL ×36.85`. Both the captured value **and** the captured lab range are scaled to canonical before grading, so a UK / EU / Malaysian report grades against the same band as an Indian one. `roundConvertedValue()` (also in `units.ts`) keeps power-of-ten shifts exact and rounds molar conversions to 3 sig-figs.
+- **The `mcL` microlitre spelling.** US labs (Quest, LabCorp) print `K/mcL` / `M/mcL` for `µL`; the unit gate admits `mcL` as a microlitre spelling so those CBC counts aren't dropped.
+
+Mass/concentration units with no `altUnits` (plain `mg/dL`, `ng/mL`) return multiplier 1 — the canonical unit already enforces scale. A handful of markers are deliberately **unitless** — the calculated ratios (A/G, Cholesterol/HDL, Urea/Creatinine) — and match on their alias text alone (`unit: ''`, no unit gate).
 
 ---
 
@@ -252,7 +257,7 @@ The client surfaces this as `Internal error... [<kind>: <hint>]` so the next fai
 | Add / translate a UI string | `i18n/translations.ts` — see [I18N.md](I18N.md) |
 | Tighten the Gemini prompt | `api/parse-image.ts` → `SYSTEM_PROMPT` constant |
 | Change the cascade gate | `pages/ProcessingPage.tsx` → search for `shouldCascade` |
-| Adjust unit scaling | `services/aiParser.ts` → `unitMultiplier()` |
+| Adjust unit scaling | `services/parser/units.ts` → `unitMultiplier()` / `roundConvertedValue()` |
 | Add a hallucination guard | `services/aiParser.ts` → `pruneSuspectShortNameMarkers()` (or a new pass) |
 | Fix the out-of-scope classifier | `services/pdfParser.ts` → `classifyOutOfScope()` |
 

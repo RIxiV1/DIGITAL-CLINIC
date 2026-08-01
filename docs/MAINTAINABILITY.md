@@ -9,12 +9,12 @@ Re-run the metrics before trusting them; they drift.
 | metric | value | read |
 | --- | --- | --- |
 | source LOC (excl tests) | ~30,000 | mid-size app, not bloated |
-| test files | 43 (+1 Playwright e2e) | healthy for the size |
+| test files | 52 (+1 Playwright e2e) | healthy for the size |
 | `clinical/` coverage | **10/10 modules tested** | the interpretation spine is the safest code — extend it, don't bypass it |
 | page coverage | deep tests on a few; a render smoke covers every page | thin on deep page tests, but OK *because* logic is extracted to tested `clinical/`+`utils` and pages are presentational. Keep that pattern. |
 | TODO/FIXME/HACK | **0** | clean |
 | runtime deps | 11 | lean |
-| gate | tsc + 805 tests + build all green | ✅ |
+| gate | tsc + 1108 tests + build all green | ✅ |
 | **commits ahead of `main`** | 0–few (main kept current) | ✅ P0 resolved |
 
 ## Risks, prioritized
