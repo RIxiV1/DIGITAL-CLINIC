@@ -2632,7 +2632,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'CPK',
       'CK-NAC',
     ],
-    excludeIfRowMatches: /\bMB\b|isoenzyme|\bMM\b/i,
+    // Case-SENSITIVE on the isoenzyme codes: CK-MB / CK-MM are always
+    // uppercase, so matching them case-insensitively (/i) also caught the
+    // lowercase "mm"/"mb" in ordinary tokens ("12 mm/hr"), which would wrongly
+    // drop a real total-CK row that happened to carry such an annotation.
+    excludeIfRowMatches: /\bMB\b|\bMM\b|[Ii]soenzyme/,
     unit: 'U/L',
     unitAliases: ['IU/L', 'U/l', 'iu/l'],
     // Male reference band. CK is method- and ethnicity-dependent and rises
@@ -2810,6 +2814,10 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'ANC',
       'Absolute Neutrophils',
       'Neutrophils Absolute',
+      // Comma-inverted form on LabCorp / testing.com / Quest CBCs:
+      // "Neutrophil, Absolute 3.5 K/mcL". Was dropped entirely.
+      'Neutrophil, Absolute',
+      'Neutrophils, Absolute',
     ],
     unit: '/cumm',
     unitAliases: [
@@ -2825,6 +2833,11 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'thou/cumm',
       '10^3/μL',
       '10^3/uL',
+      // K/µL family — so the US "3.5 K/mcL" absolute-neutrophil row scales
+      // ×1000 (the mcL expansion needs a K/µL token to grow the K/mcL twin).
+      'K/uL',
+      'K/μL',
+      'th/uL',
     ],
     min: 1500,
     max: 8000,
@@ -2864,6 +2877,8 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Absolute Lymphocytes',
       'Lymphocytes Absolute',
       'Lymphocyte Absolute Count',
+      'Lymphocyte, Absolute',
+      'Lymphocytes, Absolute',
       'ALC',
     ],
     unit: '/cumm',
@@ -2901,6 +2916,8 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Absolute Monocytes',
       'Monocytes Absolute',
       'Monocyte Absolute Count',
+      'Monocyte, Absolute',
+      'Monocytes, Absolute',
       'AMC',
     ],
     unit: '/cumm',
@@ -2938,6 +2955,8 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Absolute Eosinophils',
       'Eosinophils Absolute',
       'Eosinophil Absolute Count',
+      'Eosinophil, Absolute',
+      'Eosinophils, Absolute',
       'AEC',
     ],
     unit: '/cumm',
@@ -2975,6 +2994,8 @@ export const biomarkerCatalog: readonly BiomarkerTemplate[] = [
       'Absolute Basophils',
       'Basophils Absolute',
       'Basophil Absolute Count',
+      'Basophil, Absolute',
+      'Basophils, Absolute',
       'ABC',
     ],
     unit: '/cumm',

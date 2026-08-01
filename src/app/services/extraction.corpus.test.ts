@@ -889,6 +889,28 @@ const FIXTURES: Fixture[] = [
       },
     },
   },
+  {
+    name: 'Comma-inverted absolute differential — "Neutrophil, Absolute"',
+    note: 'LabCorp / testing.com / Quest print the absolute differential as "Neutrophil, Absolute 3.5 K/mcL" (name comma-inverted, US mcL unit). Every one was dropped — the aliases only had the "Absolute Neutrophil"/"Neutrophils Absolute" orders. Now captured, scaled by K/mcL ×1000, and the K/mcL unit gate keeps them out of the PERCENT differentials.',
+    text: [
+      'Neutrophil, Absolute 3.5 K/mcL 1.8-7.8',
+      'Lymphocyte, Absolute 2.5 K/mcL 1.0-4.8',
+      'Monocyte, Absolute 0.6 K/mcL 0-0.8',
+      'Eosinophil, Absolute 0.4 K/mcL 0-0.45',
+      'Basophil, Absolute 0.1 K/mcL 0-0.2',
+    ].join('\n'),
+    expect: {
+      values: {
+        anc: 3500, // 3.5 K/mcL → ×1000
+        'abs-lymphocytes': 2500,
+        'abs-monocytes': 600,
+        'abs-eosinophils': 400,
+        'abs-basophils': 100,
+      },
+      // must not leak into the percent differentials
+      absent: ['neutrophils', 'lymphocytes', 'monocytes', 'eosinophils', 'basophils'],
+    },
+  },
 ];
 
 describe('real-report extraction corpus', () => {
